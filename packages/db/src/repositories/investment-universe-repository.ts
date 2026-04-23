@@ -1,4 +1,4 @@
-import type { ActionAvailability } from '@repo/api-contracts';
+import type { ActionAvailability, CanonicalAssetMetadata } from '@repo/api-contracts';
 
 export type InvestmentUniverseAsset = {
   assetId: string;
@@ -12,6 +12,11 @@ export type InvestmentUniverseAsset = {
   riskSummary: string;
   actionAvailability: ActionAvailability;
   isSimulated: boolean;
+  metadataTags?: string[];
+  searchAliases?: string[];
+  providerSymbolMap?: Record<string, string>;
+  brokerIdentifierMap?: Record<string, string>;
+  plannedLiveTradable?: boolean;
 };
 
 const curatedInvestmentUniverse: InvestmentUniverseAsset[] = [
@@ -571,6 +576,74 @@ function makeFallbackAsset(
         : 'Expanded-coverage ETF; evaluate concentration, factor, and macro sensitivity.',
     actionAvailability: 'planned',
     isSimulated: true,
+    metadataTags: ['expanded-universe'],
+    searchAliases: [symbol],
+    providerSymbolMap: {},
+    brokerIdentifierMap: {},
+    plannedLiveTradable: false,
+  };
+}
+
+function buildDefaultMetadataTags(asset: InvestmentUniverseAsset): string[] {
+  const tags = new Set<string>([asset.assetClass, 'universe']);
+
+  if (asset.assetClass === 'crypto') {
+    tags.add('high-volatility');
+  }
+
+  if (asset.assetClass === 'etf') {
+    tags.add('basket-product');
+  }
+
+  if (asset.sector) {
+    tags.add(asset.sector.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
+  }
+
+  if (asset.category) {
+    tags.add(asset.category.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
+  }
+
+  return [...tags];
+}
+
+function buildDefaultProviderSymbolMap(asset: InvestmentUniverseAsset): Record<string, string> {
+  if (asset.assetClass === 'crypto') {
+    return {
+      binance: asset.symbol,
+      coingecko: asset.symbol,
+      twelveData: asset.symbol,
+    };
+  }
+
+  return {
+    polygon: asset.symbol,
+    tiingo: asset.symbol,
+    twelveData: asset.symbol,
+  };
+}
+
+function buildDefaultBrokerIdentifierMap(asset: InvestmentUniverseAsset): Record<string, string> {
+  if (asset.assetClass === 'crypto') {
+    const compact = asset.symbol.replace(/^BINANCE:/, '');
+    return {
+      binance: compact,
+      coinbase: compact.endsWith('USDT') ? `${compact.slice(0, -4)}-USD` : compact,
+    };
+  }
+
+  return {
+    paper: asset.symbol,
+  };
+}
+
+function normalizeInvestmentAsset(asset: InvestmentUniverseAsset): InvestmentUniverseAsset {
+  return {
+    ...asset,
+    metadataTags: asset.metadataTags ?? buildDefaultMetadataTags(asset),
+    searchAliases: asset.searchAliases ?? [asset.symbol, asset.name, asset.category, asset.sector ?? ''].filter(Boolean),
+    providerSymbolMap: asset.providerSymbolMap ?? buildDefaultProviderSymbolMap(asset),
+    brokerIdentifierMap: asset.brokerIdentifierMap ?? buildDefaultBrokerIdentifierMap(asset),
+    plannedLiveTradable: asset.plannedLiveTradable ?? false,
   };
 }
 
@@ -592,7 +665,54 @@ function mergeExpandedUniverse(base: InvestmentUniverseAsset[]) {
   return [...bySymbol.values()];
 }
 
-export const investmentUniverse: InvestmentUniverseAsset[] = mergeExpandedUniverse(curatedInvestmentUniverse);
+export const investmentUniverse: InvestmentUniverseAsset[] = mergeExpandedUniverse(curatedInvestmentUniverse).map(normalizeInvestmentAsset);
+
+export function toCanonicalAssetMetadata(asset: InvestmentUniverseAsset): CanonicalAssetMetadata {
+  return {
+    id: asset.assetId,
+    symbol: asset.symbol,
+    displaySymbol: asset.symbol.replace(/^BINANCE:/, ''),
+    name: asset.name,
+    assetClass: asset.assetClass,
+    tags: asset.metadataTags ?? [],
+    searchAliases: asset.searchAliases ?? [],
+    tradability: {
+      simulation: asset.isSimulated && asset.actionAvailability !== 'unavailable',
+      plannedLive: asset.plannedLiveTradable ?? false,
+    },
+    providerSymbolMap: asset.providerSymbolMap ?? {},
+    brokerIdentifierMap: asset.brokerIdentifierMap ?? {},
+  };
+}
+
+export function getCanonicalInvestmentMetadataMap(): Map<string, CanonicalAssetMetadata> {
+  return new Map(investmentUniverse.map((asset) => [asset.symbol, toCanonicalAssetMetadata(asset)]));
+}
+
+export function searchInvestmentUniverse(
+  query: string,
+  options?: { assetClass?: InvestmentUniverseAsset['assetClass'] },
+): InvestmentUniverseAsset[] {
+  const needle = query.trim().toLowerCase();
+  const source = options?.assetClass
+    ? investmentUniverse.filter((asset) => asset.assetClass === options.assetClass)
+    : investmentUniverse;
+
+  if (!needle) {
+    return source;
+  }
+
+  return source.filter((asset) => {
+    const aliases = asset.searchAliases ?? [];
+    return (
+      asset.symbol.toLowerCase().includes(needle) ||
+      asset.name.toLowerCase().includes(needle) ||
+      asset.category.toLowerCase().includes(needle) ||
+      (asset.sector ?? '').toLowerCase().includes(needle) ||
+      aliases.some((alias) => alias.toLowerCase().includes(needle))
+    );
+  });
+}
 
 export async function getInvestmentUniverse(): Promise<InvestmentUniverseAsset[]> {
   return investmentUniverse;

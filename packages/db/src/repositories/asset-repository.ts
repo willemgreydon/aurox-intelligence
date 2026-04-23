@@ -1,7 +1,7 @@
 import type { ActionAvailability, Asset, SimulationAssetScope } from '@repo/api-contracts';
 import { assetSchema } from '@repo/api-contracts';
 import { createDatabaseClient } from '../client';
-import { investmentUniverse, type InvestmentUniverseAsset } from './investment-universe-repository';
+import { investmentUniverse, searchInvestmentUniverse, type InvestmentUniverseAsset } from './investment-universe-repository';
 
 const marketAssetsTable = 'app.market_assets';
 
@@ -212,13 +212,11 @@ export async function searchStockAssets(query: string): Promise<CatalogAsset[]> 
   if (!normalized) {
     return assets;
   }
-
-  return assets.filter((asset) =>
-    asset.symbol.toLowerCase().includes(normalized) ||
-    asset.name.toLowerCase().includes(normalized) ||
-    asset.category.toLowerCase().includes(normalized) ||
-    (asset.sector ?? '').toLowerCase().includes(normalized),
+  const matchedSymbols = new Set(
+    searchInvestmentUniverse(normalized, { assetClass: 'stock' }).map((asset) => asset.symbol),
   );
+
+  return assets.filter((asset) => matchedSymbols.has(asset.symbol));
 }
 
 export async function getCatalogAssetBySymbol(symbol: string): Promise<CatalogAsset | null> {

@@ -6,6 +6,7 @@ import {
 } from '@repo/db';
 import {
   createSimulationBrokerAdapter,
+  checkLiveReadiness,
   runUnifiedTradeWorkflow,
   buildManualTradeBundle,
   type BrokerModeConfig,
@@ -14,9 +15,42 @@ import {
   type UnifiedTradeResult,
   type AgentContext,
   type TraceId,
+  agentOk,
   agentError,
 } from '@repo/agents';
 import { createLiveBrokerExecutionAdapter } from '../lib/brokers/live-execution-adapter';
+import { getBrokerConnectionSummary } from '../env/broker-env';
+
+type ExecutionReadinessGate = (input: {
+  config: BrokerModeConfig;
+  userId: string;
+  hasSimulationHistory: boolean;
+  hasBrokerConnection: boolean;
+}) => AgentResult<{ ready: true }>;
+
+const defaultExecutionReadinessGate: ExecutionReadinessGate = (input) => {
+  if (input.config.executionTarget !== 'live') {
+    return agentOk({ ready: true });
+  }
+
+  const readiness = checkLiveReadiness(input.config, {
+    isUserVerified: false,
+    hasBrokerConnection: input.hasBrokerConnection,
+    isMarketDataHealthy: true,
+    hasSimulationHistory: input.hasSimulationHistory,
+    isReadOnlyMode: false,
+  });
+
+  if (readiness.ready) {
+    return agentOk({ ready: true });
+  }
+
+  const blocker = readiness.checks.find((check) => !check.passed);
+  return agentError(
+    blocker?.reason ?? 'Live readiness gate denied this trade intent.',
+    'LIVE_READINESS_GATE_BLOCKED',
+  );
+};
 
 function makeContext(userId: string, modeId: string): AgentContext {
   return {
@@ -47,6 +81,9 @@ export async function executeTradeForUser(
   intent: TradeIntentPayload,
   config: BrokerModeConfig,
   userId: string,
+  hooks?: {
+    readinessGate?: ExecutionReadinessGate;
+  },
 ): Promise<AgentResult<UnifiedTradeResult>> {
   const context = makeContext(userId, config.id);
   const confidence = intent.confidence ?? 0.5;
@@ -69,6 +106,20 @@ export async function executeTradeForUser(
       'Autonomous live execution is not enabled in this patch. Use manual or ai_suggested flows first.',
       'LIVE_AUTONOMOUS_DISABLED',
     );
+  }
+
+  const brokerSummary = getBrokerConnectionSummary();
+  const workspace = await getSimulationWorkspaceIfExists(userId);
+  const readinessGate = hooks?.readinessGate ?? defaultExecutionReadinessGate;
+  const readinessResult = readinessGate({
+    config,
+    userId,
+    hasSimulationHistory: (workspace?.orders.length ?? 0) > 0,
+    hasBrokerConnection: brokerSummary.hasConfiguredBroker,
+  });
+
+  if (!readinessResult.ok) {
+    return readinessResult;
   }
 
   return runUnifiedTradeWorkflow(intent, config, bundle, context, adapter, {

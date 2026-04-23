@@ -1,5 +1,8 @@
+import { createHash } from 'node:crypto';
 import type {
   SimulationAccountSummary,
+  SimulationExecutionModel,
+  SimulationExecutionRecord,
   SimulationExecutionInput,
   SimulationOrder,
   SimulationPosition,
@@ -9,6 +12,8 @@ import type {
 } from '@repo/api-contracts';
 import {
   simulationAccountSummarySchema,
+  simulationExecutionModelSchema,
+  simulationExecutionRecordSchema,
   simulationExecutionInputSchema,
   simulationOrderSchema,
   simulationPositionSchema,
@@ -124,6 +129,10 @@ function roundQuantity(value: number) {
   return Math.round((value + Number.EPSILON) * 1e8) / 1e8;
 }
 
+function roundPrice(value: number) {
+  return Math.round((value + Number.EPSILON) * 1e8) / 1e8;
+}
+
 function isEffectivelyZero(value: number) {
   return Math.abs(value) <= 1e-8;
 }
@@ -136,7 +145,89 @@ function toIso(value: string | Date | null | undefined) {
   return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
 }
 
+function normalizeExecutionModel(model?: Partial<SimulationExecutionModel>): SimulationExecutionModel {
+  return simulationExecutionModelSchema.parse({
+    feeBps: model?.feeBps ?? 0,
+    slippageBps: model?.slippageBps ?? 0,
+    latencyMs: model?.latencyMs ?? 0,
+    venue: model?.venue ?? 'simulation_engine',
+  });
+}
+
+function applySlippage(
+  requestedPrice: number,
+  side: 'buy' | 'sell',
+  slippageBps: number,
+) {
+  const slippageMultiplier = slippageBps / 10_000;
+  if (slippageMultiplier <= 0) {
+    return requestedPrice;
+  }
+
+  const adjusted =
+    side === 'buy'
+      ? requestedPrice * (1 + slippageMultiplier)
+      : requestedPrice * (1 - slippageMultiplier);
+
+  return roundPrice(Math.max(adjusted, Number.EPSILON));
+}
+
+function buildValidationHash(input: {
+  userId: string;
+  assetId: string;
+  symbol: string;
+  side: 'buy' | 'sell';
+  quantity: number;
+  requestedPrice: number;
+  executionPrice: number;
+  feeAmount: number;
+  model: SimulationExecutionModel;
+}) {
+  const payload = JSON.stringify(input);
+  return createHash('sha256').update(payload).digest('hex');
+}
+
+function encodeOrderNotes(input: {
+  idempotencyKey?: string | undefined;
+  userNotes?: string | undefined;
+  executionRecord: SimulationExecutionRecord;
+}) {
+  const payload = JSON.stringify({
+    userNotes: input.userNotes ?? null,
+    executionRecord: input.executionRecord,
+  });
+
+  return input.idempotencyKey ? `idem:${input.idempotencyKey};${payload}` : payload;
+}
+
+function extractExecutionRecordFromNotes(notes: string | null): SimulationExecutionRecord | null {
+  if (!notes) {
+    return null;
+  }
+
+  let payload = notes;
+
+  if (payload.startsWith('idem:')) {
+    const separatorIndex = payload.indexOf(';');
+    payload = separatorIndex >= 0 ? payload.slice(separatorIndex + 1) : '';
+  }
+
+  if (!payload) {
+    return null;
+  }
+
+  try {
+    const parsedPayload = JSON.parse(payload) as { executionRecord?: unknown };
+    const parsedRecord = simulationExecutionRecordSchema.safeParse(parsedPayload.executionRecord);
+    return parsedRecord.success ? parsedRecord.data : null;
+  } catch {
+    return null;
+  }
+}
+
 function mapOrder(row: OrderRow): SimulationOrder {
+  const executionRecord = extractExecutionRecordFromNotes(row.notes);
+
   return simulationOrderSchema.parse({
     id: row.id,
     assetId: row.assetId,
@@ -151,6 +242,7 @@ function mapOrder(row: OrderRow): SimulationOrder {
     cashEffect: toNumber(row.cashEffect),
     realizedPnl: toNumber(row.realizedPnl),
     notes: row.notes,
+    executionRecord,
     createdAt: toIso(row.createdAt),
     executedAt: toIso(row.executedAt),
   });
@@ -669,11 +761,47 @@ export async function executeSimulationOrder(input: SimulationExecutionInput): P
       throw new Error('Order quantity must be greater than zero.');
     }
 
-    const grossAmount = roundCurrency(quantity * parsed.executionPrice);
-    const requestedPrice = parsed.requestedPrice ?? parsed.executionPrice;
-    const orderNotes = parsed.idempotencyKey
-      ? `idem:${parsed.idempotencyKey};${parsed.notes ?? ''}`
-      : (parsed.notes ?? null);
+    const requestedPrice = roundPrice(parsed.requestedPrice ?? parsed.executionPrice);
+    const executionModel = normalizeExecutionModel(parsed.executionModel);
+    const executionPrice = applySlippage(requestedPrice, parsed.side, executionModel.slippageBps);
+    const grossAmount = roundCurrency(quantity * executionPrice);
+    const feeAmount = roundCurrency(grossAmount * (executionModel.feeBps / 10_000));
+    const effectiveCashEffect = parsed.side === 'buy'
+      ? roundCurrency(-(grossAmount + feeAmount))
+      : roundCurrency(grossAmount - feeAmount);
+    const now = new Date().toISOString();
+    const executionRecord = simulationExecutionRecordSchema.parse({
+      executionId: crypto.randomUUID(),
+      requestedPrice,
+      executionPrice,
+      slippageAmount:
+        parsed.side === 'buy'
+          ? roundPrice(executionPrice - requestedPrice)
+          : roundPrice(requestedPrice - executionPrice),
+      slippageBps: executionModel.slippageBps,
+      feeAmount,
+      notionalAmount: grossAmount,
+      latencyMs: executionModel.latencyMs,
+      validationHash: buildValidationHash({
+        userId: parsed.userId,
+        assetId: parsed.assetId,
+        symbol: parsed.symbol,
+        side: parsed.side,
+        quantity,
+        requestedPrice,
+        executionPrice,
+        feeAmount,
+        model: executionModel,
+      }),
+      venue: executionModel.venue,
+      model: executionModel,
+      recordedAt: now,
+    });
+    const orderNotes = encodeOrderNotes({
+      idempotencyKey: parsed.idempotencyKey,
+      userNotes: parsed.notes,
+      executionRecord,
+    });
     const [lockedAccount] = await transactionClient.query<{ cashBalance: number | string; allowNegativeBalance: boolean }>(
       `
         select
@@ -722,7 +850,7 @@ export async function executeSimulationOrder(input: SimulationExecutionInput): P
       throw new Error('Position metadata mismatch detected. Refresh and submit the order again.');
     }
 
-    if (parsed.side === 'buy' && !allowNegativeBalance && currentCash < grossAmount) {
+    if (parsed.side === 'buy' && !allowNegativeBalance && currentCash < Math.abs(effectiveCashEffect)) {
       throw new Error('Insufficient fictive cash balance for this order.');
     }
 
@@ -730,7 +858,6 @@ export async function executeSimulationOrder(input: SimulationExecutionInput): P
       throw new Error('Insufficient position quantity for this sell order.');
     }
 
-    const now = new Date().toISOString();
     const orderId = crypto.randomUUID();
     const positionId = currentPosition?.id ?? crypto.randomUUID();
     let nextCashBalance = currentCash;
@@ -741,9 +868,9 @@ export async function executeSimulationOrder(input: SimulationExecutionInput): P
       const nextAverageCost =
         nextQuantity === 0
           ? 0
-          : roundQuantity(((currentQuantity * currentAverageCost) + (quantity * parsed.executionPrice)) / nextQuantity);
+          : roundQuantity(((currentQuantity * currentAverageCost) + grossAmount + feeAmount) / nextQuantity);
 
-      nextCashBalance = roundCurrency(currentCash - grossAmount);
+      nextCashBalance = roundCurrency(currentCash + effectiveCashEffect);
       if (!allowNegativeBalance && nextCashBalance < 0) {
         nextCashBalance = 0;
       }
@@ -783,10 +910,10 @@ export async function executeSimulationOrder(input: SimulationExecutionInput): P
         );
       }
     } else {
-      realizedPnl = roundCurrency((parsed.executionPrice - currentAverageCost) * quantity);
+      realizedPnl = roundCurrency((executionPrice - currentAverageCost) * quantity - feeAmount);
       const rawNextQuantity = roundQuantity(currentQuantity - quantity);
       const nextQuantity = isEffectivelyZero(rawNextQuantity) ? 0 : rawNextQuantity;
-      nextCashBalance = roundCurrency(currentCash + grossAmount);
+      nextCashBalance = roundCurrency(currentCash + effectiveCashEffect);
 
       await transactionClient.execute(
         `
@@ -848,9 +975,9 @@ export async function executeSimulationOrder(input: SimulationExecutionInput): P
         parsed.side,
         quantity,
         requestedPrice,
-        parsed.executionPrice,
+        executionPrice,
         grossAmount,
-        parsed.side === 'buy' ? -grossAmount : grossAmount,
+        effectiveCashEffect,
         realizedPnl,
         orderNotes,
         now,
@@ -877,7 +1004,7 @@ export async function executeSimulationOrder(input: SimulationExecutionInput): P
           realized_pnl,
           description,
           created_at
-        ) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 0, $13, $14, $15, $16)
+        ) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
       `,
       [
         crypto.randomUUID(),
@@ -890,11 +1017,12 @@ export async function executeSimulationOrder(input: SimulationExecutionInput): P
         parsed.symbol,
         parsed.assetClass,
         quantity,
-        parsed.executionPrice,
+        executionPrice,
         grossAmount,
-        parsed.side === 'buy' ? -grossAmount : grossAmount,
+        feeAmount,
+        effectiveCashEffect,
         realizedPnl,
-        `${parsed.side === 'buy' ? 'Bought' : 'Sold'} ${quantity} ${parsed.symbol} at ${parsed.executionPrice.toFixed(2)} USD`,
+        `${parsed.side === 'buy' ? 'Bought' : 'Sold'} ${quantity} ${parsed.symbol} at ${executionPrice.toFixed(2)} USD (fee ${feeAmount.toFixed(2)} USD)`,
         now,
       ],
     );

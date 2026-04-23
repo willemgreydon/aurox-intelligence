@@ -184,6 +184,8 @@ export async function createSimulatedOrderAction(_: FormState, formData: FormDat
       assetClass: parsed.data.assetClass as SimulationAssetClass,
       side: parsed.data.side,
       quantity: parsed.data.quantity,
+      strategyLaneId: simulationSession.laneId,
+      sessionAssetScope: simulationSession.assetScope,
       notes: `session=${simulationSession.id};lane=${parsed.data.strategyLaneId};source=${parsed.data.decisionSource}`,
       idempotencyKey: parsed.data.idempotencyKey,
     });

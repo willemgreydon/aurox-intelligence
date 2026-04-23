@@ -25,6 +25,28 @@ export const simulationSessionStatusSchema = z.enum([
 export const simulationObservationStatusSchema = z.enum(['idle', 'warming', 'watching', 'degraded', 'error']);
 export const simulationAssetScopeSchema = z.enum(['stock', 'etf', 'crypto', 'multi-asset']);
 
+export const simulationExecutionModelSchema = z.object({
+  feeBps: z.number().min(0).max(5000).default(0),
+  slippageBps: z.number().min(0).max(5000).default(0),
+  latencyMs: z.number().int().min(0).max(60_000).default(0),
+  venue: z.string().max(40).default('simulation_engine'),
+});
+
+export const simulationExecutionRecordSchema = z.object({
+  executionId: z.string(),
+  requestedPrice: z.number(),
+  executionPrice: z.number(),
+  slippageAmount: z.number(),
+  slippageBps: z.number(),
+  feeAmount: z.number(),
+  notionalAmount: z.number(),
+  latencyMs: z.number().int().nonnegative(),
+  validationHash: z.string(),
+  venue: z.string(),
+  model: simulationExecutionModelSchema,
+  recordedAt: z.string(),
+});
+
 export const simulationExecutionInputSchema = z.object({
   userId: z.string().min(1),
   assetId: z.string().min(1),
@@ -36,6 +58,7 @@ export const simulationExecutionInputSchema = z.object({
   requestedPrice: z.number().positive().optional(),
   notes: z.string().max(500).optional(),
   idempotencyKey: z.string().max(64).optional(),
+  executionModel: simulationExecutionModelSchema.partial().optional(),
 });
 
 export const simulationAccountSummarySchema = z.object({
@@ -89,6 +112,7 @@ export const simulationOrderSchema = z.object({
   cashEffect: z.number(),
   realizedPnl: z.number(),
   notes: z.string().nullable(),
+  executionRecord: simulationExecutionRecordSchema.nullable().optional(),
   createdAt: z.string(),
   executedAt: z.string(),
 });
@@ -164,6 +188,8 @@ export type SimulationLaneMode = z.infer<typeof simulationLaneModeSchema>;
 export type SimulationSessionStatus = z.infer<typeof simulationSessionStatusSchema>;
 export type SimulationObservationStatus = z.infer<typeof simulationObservationStatusSchema>;
 export type SimulationAssetScope = z.infer<typeof simulationAssetScopeSchema>;
+export type SimulationExecutionModel = z.infer<typeof simulationExecutionModelSchema>;
+export type SimulationExecutionRecord = z.infer<typeof simulationExecutionRecordSchema>;
 export type SimulationExecutionInput = z.infer<typeof simulationExecutionInputSchema>;
 export type SimulationAccountSummary = z.infer<typeof simulationAccountSummarySchema>;
 export type SimulationPosition = z.infer<typeof simulationPositionSchema>;

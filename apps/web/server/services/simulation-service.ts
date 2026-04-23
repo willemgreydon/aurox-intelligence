@@ -103,6 +103,13 @@ export async function executeSimulationOrderForCurrentUser(input: {
   assetClass: SimulationAssetClass;
   side: 'buy' | 'sell';
   quantity: number;
+  strategyLaneId?:
+    | 'manual_stock_lane'
+    | 'manual_multi_asset_lane'
+    | 'ai_copilot_lane'
+    | 'signal_follow_lane'
+    | 'agent_sandbox_lane';
+  sessionAssetScope?: 'stock' | 'etf' | 'crypto' | 'multi-asset';
   notes?: string;
   idempotencyKey?: string;
 }) {
@@ -124,6 +131,14 @@ export async function executeSimulationOrderForCurrentUser(input: {
 
   if (!Number.isFinite(input.quantity) || input.quantity <= 0) {
     throw new Error('Order quantity must be greater than zero.');
+  }
+
+  if (input.strategyLaneId === 'manual_stock_lane' && input.assetClass !== 'stock') {
+    throw new Error('The manual stock lane only supports stock orders.');
+  }
+
+  if (input.sessionAssetScope && input.sessionAssetScope !== 'multi-asset' && input.sessionAssetScope !== input.assetClass) {
+    throw new Error(`The active session only allows ${input.sessionAssetScope.toUpperCase()} orders.`);
   }
 
   const workspace = await getSimulationWorkspace(session.user.id);
@@ -162,5 +177,11 @@ export async function executeSimulationOrderForCurrentUser(input: {
     requestedPrice: observation.price,
     ...(input.notes ? { notes: input.notes } : {}),
     ...(input.idempotencyKey ? { idempotencyKey: input.idempotencyKey } : {}),
+    executionModel: {
+      feeBps: input.assetClass === 'crypto' ? 12 : 3,
+      slippageBps: input.assetClass === 'crypto' ? 15 : 4,
+      latencyMs: input.assetClass === 'crypto' ? 220 : 90,
+      venue: 'simulation_engine',
+    },
   });
 }
