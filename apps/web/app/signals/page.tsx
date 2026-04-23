@@ -1,0 +1,113 @@
+import { WorkstationPageHeader } from '../../components/asset/workstation-page-header';
+import { InsightCallout } from '../../components/analytics/insight-callout';
+import { AnalysisToolbar } from '../../components/filters/analysis-toolbar';
+import { SignalBreakdownPanel } from '../../components/signals/signal-breakdown-panel';
+import { SignalSnapshotCard } from '../../components/signals/signal-snapshot-card';
+import { AnalyticsTable } from '../../components/tables/analytics-table';
+import { Section } from '../../components/ui/section';
+import type { TableColumn } from '../../lib/dashboard/analytics-fixtures';
+import { getSignalsPageData } from '../../server/services/analysis-service';
+
+export const dynamic = 'force-dynamic';
+
+type SignalRow = {
+  asset: string;
+  interpretation: string;
+  score: string;
+  price: string;
+  updated: string;
+};
+
+const signalColumns: Array<TableColumn<SignalRow>> = [
+  { key: 'asset', label: 'Asset' },
+  { key: 'interpretation', label: 'Interpretation' },
+  { key: 'score', label: 'Score', align: 'right' },
+  { key: 'price', label: 'Latest price', align: 'right' },
+  { key: 'updated', label: 'Updated', align: 'right' },
+];
+
+export default async function SignalsPage() {
+  const data = await getSignalsPageData();
+  const signalRows = data.signals.map((signal) => ({
+    asset: signal.assetName,
+    interpretation: signal.interpretationLabel,
+    score: signal.scoreLabel,
+    price: signal.latestPriceLabel,
+    updated: signal.notes[1] ?? 'Unavailable',
+  }));
+  const leadSignal = data.signals[0];
+
+  return (
+    <>
+      <Section className="dashboard-section dashboard-section--hero">
+        <WorkstationPageHeader
+          eyebrow="Signals"
+          title={data.overview.title}
+          description={data.overview.description}
+          summary={data.overview.summary}
+          statusLabel={data.overview.statusLabel}
+          statusTone={data.overview.statusTone}
+          meta={[
+            { label: 'Last updated', value: data.overview.lastUpdatedLabel },
+            { label: 'Tracked signals', value: String(data.signals.length) },
+          ]}
+          actions={[
+            { href: '/dashboard', label: 'Open dashboard' },
+            { href: '/forecasts', label: 'View forecasts' },
+          ]}
+        />
+      </Section>
+
+      <Section className="dashboard-section">
+        <AnalysisToolbar
+          title="Provider-backed technical signal review"
+          subtitle="Signal outputs are derived from live tracked stock histories using the pure signals package and exposed through the server query layer."
+        />
+      </Section>
+
+      <Section className="dashboard-section">
+        {leadSignal ? (
+          <div className="analytics-two-grid">
+            <SignalSnapshotCard
+              title={leadSignal.assetName}
+              score={leadSignal.scoreLabel}
+              direction={leadSignal.interpretation === 'bullish' ? 'up' : leadSignal.interpretation === 'bearish' ? 'down' : 'flat'}
+              tone={leadSignal.interpretation === 'bullish' ? 'positive' : leadSignal.interpretation === 'bearish' ? 'negative' : 'neutral'}
+              description={leadSignal.notes[0] ?? 'Composite signal derived from provider-backed price history.'}
+              confidence={Math.round(leadSignal.confidenceScore * 100)}
+            />
+            <SignalBreakdownPanel
+              title={`${leadSignal.assetName} breakdown`}
+              items={[
+                { label: 'Latest price', value: leadSignal.latestPriceLabel, tone: 'neutral' },
+                { label: 'Short MA', value: leadSignal.shortMovingAverageLabel, tone: 'positive' },
+                { label: 'Long MA', value: leadSignal.longMovingAverageLabel, tone: 'neutral' },
+                { label: 'Momentum', value: leadSignal.momentumLabel, tone: leadSignal.interpretation === 'bullish' ? 'positive' : leadSignal.interpretation === 'bearish' ? 'negative' : 'neutral' },
+                { label: 'Volatility', value: leadSignal.volatilityLabel, tone: 'neutral' },
+                { label: 'Trend strength', value: leadSignal.trendStrengthLabel, tone: leadSignal.interpretation === 'bullish' ? 'positive' : leadSignal.interpretation === 'bearish' ? 'negative' : 'neutral' },
+              ]}
+            />
+          </div>
+        ) : (
+          <div className="table-panel__empty">No tracked assets currently have enough history to derive signals.</div>
+        )}
+      </Section>
+
+      <Section className="dashboard-section dashboard-section--tinted">
+        <div className="analytics-two-grid">
+          <AnalyticsTable
+            title="Signal universe"
+            subtitle="Signal snapshot table for the tracked stock universe."
+            columns={signalColumns}
+            rows={signalRows}
+            emptyMessage="No signal rows are available yet."
+          />
+          <InsightCallout
+            title="Signals stay truthful"
+            body="These signals are derived from provider-backed stock history and simple pure-package indicators, not fabricated model outputs."
+          />
+        </div>
+      </Section>
+    </>
+  );
+}

@@ -1,0 +1,473 @@
+{
+  "shell": {
+    "brandTitle": "Aurox Intelligence",
+    "brandSubtitle": "Financial Signal Platform",
+    "nav": {
+      "markets": "Markets",
+      "analytics": "Analytics",
+      "invest": "Invest",
+      "ops": "Operations",
+      "marketOverview": "Market overview",
+      "stocks": "Stocks",
+      "fx": "FX",
+      "dashboard": "Dashboard",
+      "signals": "Signals",
+      "forecasts": "Forecasts",
+      "simulation": "Simulation",
+      "investHome": "Invest home",
+      "investStocks": "Stocks lane",
+      "investEtfs": "ETF lane",
+      "investCrypto": "Crypto lane",
+      "investAccounts": "Account connections",
+      "admin": "Admin",
+      "monitoring": "Monitoring"
+    },
+    "auth": {
+      "login": "Log in",
+      "signup": "Sign up",
+      "account": "Account overview",
+      "profile": "Profile",
+      "settings": "Settings",
+      "logout": "Sign out",
+      "member": "Member account",
+      "admin": "Administrator"
+    },
+    "marketPulse": "Market pulse",
+    "theme": "Theme",
+    "language": "Language",
+    "menuLabel": "Menu",
+    "mobileMenuDescription": "Markets, analytics, simulation workflows, and account controls in one mobile command surface.",
+    "openMenu": "Open navigation menu",
+    "closeMenu": "Close navigation menu",
+    "closeOverlay": "Close menu overlay",
+    "closeNavigation": "Close navigation"
+  },
+  "ticker": {
+    "aria": "Market ticker",
+    "emptyAria": "Market ticker unavailable",
+    "sourceSummary": "Refreshable ticker snapshot from {{provider}}.",
+    "errorSummary": "Ticker snapshot unavailable: {{message}}",
+    "emptyState": "Ticker data is currently unavailable from the configured provider."
+  },
+  "status": {
+    "nominal": "Nominal",
+    "attention": "Attention",
+    "degraded": "Degraded"
+  },
+  "common": {
+    "home": "Home",
+    "lastUpdated": "Last updated",
+    "freshness": "Freshness",
+    "coverage": "Coverage",
+    "actionAvailability": "Action availability",
+    "providerPath": "Provider path",
+    "sourceSummary": "Source summary",
+    "quote": "Quote",
+    "move": "Move",
+    "price": "Price",
+    "historyWindow": "History window",
+    "currentQuote": "Current quote",
+    "dailyMove": "Daily move",
+    "providerSource": "Provider source",
+    "unavailable": "Unavailable",
+    "partial": "Partial",
+    "details": "Details",
+    "live": "Live",
+    "none": "None",
+    "simulationDisclosure": "Simulation only. No real money, brokerage execution, or regulated order routing is performed."
+  },
+  "auth": {
+    "loginEyebrow": "Authentication",
+    "loginTitle": "Sign in to your account",
+    "loginDescription": "Pick up your account dashboard, profile settings, and saved authenticated workspace without losing the broader platform shell.",
+    "signupEyebrow": "Account setup",
+    "signupTitle": "Create your Aurox account",
+    "signupDescription": "Start with a secure login, persistent session handling, and a dedicated account workspace that fits the platform's existing structure.",
+    "secureSession": "Secure session persistence",
+    "protectedWorkspace": "Protected account workspace",
+    "profileManagement": "Profile and password management",
+    "needAccount": "Need an account?",
+    "createOne": "Create one",
+    "alreadyRegistered": "Already registered?",
+    "signIn": "Sign in",
+    "signInShort": "Sign in",
+    "createAccount": "Create account",
+    "createAccountTitle": "Create your account",
+    "emailAddress": "Email address",
+    "password": "Password",
+    "fullName": "Full name",
+    "confirmPassword": "Confirm password",
+    "passwordHint": "Passwords must be at least 8 characters and include uppercase, lowercase, and numeric characters.",
+    "loginFormDescription": "Access your account dashboard, saved profile, and security settings.",
+    "registerFormDescription": "Set up a secure workspace for account preferences, saved sessions, and platform access.",
+    "emailPlaceholder": "you@example.com",
+    "passwordPlaceholder": "Enter your password",
+    "namePlaceholder": "Ada Lovelace",
+    "newPasswordPlaceholder": "Choose a strong password",
+    "confirmPasswordPlaceholder": "Repeat your password",
+    "signingIn": "Signing in...",
+    "creatingAccount": "Creating account...",
+    "newHere": "New here?"
+  },
+  "dashboard": {
+    "headerEyebrow": "Operational dashboard",
+    "destinations": "Dashboard destinations",
+    "controlsEyebrow": "Workstation filters",
+    "controlsTitle": "Cross-surface chart controls",
+    "controlsSubtitle": "Switch chart types, time periods, and account defaults without leaving the current workstation.",
+    "marketOverview": "Market overview",
+    "brokerTools": "Broker tools",
+    "systemObservation": "Financial system observation",
+    "watchlist": "Personal watchlist",
+    "forecastAnalysis": "Forecast and signal analysis",
+    "simulatedDisclosure": "All payment, banking, and order actions are simulated in this release.",
+    "languagePreference": "Language preference",
+    "chartType": "Chart type",
+    "timePeriod": "Time period",
+    "savePreferences": "Save preferences",
+    "preferencesSaved": "Preferences update ready",
+    "latestOrders": "Latest simulated orders",
+    "noOrders": "No simulated orders have been created yet.",
+    "addToWatchlist": "Add to watchlist",
+    "removeFromWatchlist": "Remove from watchlist",
+    "buySimulated": "Simulate buy",
+    "sellSimulated": "Simulate sell",
+    "marketSnapshotTitle": "Snapshot of the current market intelligence posture",
+    "trackedStocks": "Live tracked stocks",
+    "trackedStocksDetail": "Actual provider-backed stock quotes currently loaded into the interface.",
+    "positiveBreadth": "Positive breadth",
+    "positiveBreadthDetail": "Tracked symbols currently printing a positive session move.",
+    "negativeBreadth": "Negative breadth",
+    "negativeBreadthDetail": "Tracked symbols currently under pressure in the live quote set.",
+    "marketSourceTitle": "Live market source",
+    "providerLabel": "Provider",
+    "quoteFreshness": "Quote freshness",
+    "savedAssetsTitle": "Saved tracked assets for this account",
+    "savedAssetsEmpty": "Save assets from invest surfaces to build an account-specific monitoring lane.",
+    "simulationWorkspaceTitle": "Simulation execution",
+    "latestOrdersSubtitle": "Latest simulated buy and sell intents recorded for this account.",
+    "systemObservationSubtitle": "Operational status, provider timing, and repository-backed observation lanes.",
+    "stockColumn": "Symbol",
+    "priceColumn": "Price",
+    "moveColumn": "Move",
+    "sourceColumn": "Source",
+    "freshnessColumn": "Freshness",
+    "sideColumn": "Side",
+    "statusColumn": "Status",
+    "assetClassColumn": "Asset class",
+    "createdColumn": "Created",
+    "typeColumn": "Type",
+    "cashDeltaColumn": "Cash delta"
+  },
+  "account": {
+    "preferencesTitle": "Workspace preferences",
+    "preferencesDescription": "Control your locale, default chart behavior, visible dashboard modules, and tracked symbols.",
+    "trackedSymbols": "Tracked symbols",
+    "visibleModules": "Visible modules",
+    "locale": "Locale",
+    "defaultChartType": "Default chart type",
+    "defaultTimePeriod": "Default time period",
+    "trackedSymbolsHint": "Use commas to separate symbols such as AAPL, MSFT, NVDA, BINANCE:BTCUSDT.",
+    "simulationPreferencesTitle": "Simulation broker mode defaults",
+    "preferredBrokerMode": "Preferred broker mode",
+    "brokerModeCapitalLimitUsd": "Broker mode capital limit (USD)",
+    "microTradeAllocationPercent": "Micro-trade allocation (%)",
+    "defaultAssetScope": "Default asset scope",
+    "activityPreferencesTitle": "Activity preferences",
+    "orderActivityDigest": "Enable order activity digest",
+    "laneStatusAlerts": "Enable lane status alerts"
+  },
+  "invest": {
+    "heroEyebrow": "Investment architecture",
+    "guidanceEyebrow": "AI guidance",
+    "guidanceTitle": "Explainable recommendations, not perfect predictions",
+    "featuredEyebrow": "Featured assets",
+    "featuredTitle": "Cross-asset planning board",
+    "fundingEyebrow": "Funding and accounts",
+    "fundingTitle": "Bank-connection readiness",
+    "actionModel": "Action model",
+    "planningFirst": "Planning-first"
+  },
+  "home": {
+    "heroEyebrow": "Financial intelligence platform",
+    "heroTitle": "Market breadth, explainable signals, and simulation investing in one calm workstation.",
+    "heroDescription": "Aurox Intelligence combines live market context, a production-minded simulation account, and decision support designed for deliberate investing workflows.",
+    "openStocks": "Open stocks workstation",
+    "openDashboard": "Open dashboard",
+    "reviewAsset": "Review {{symbol}}",
+    "provider": "Provider",
+    "currentSnapshotTitle": "Current stock snapshot",
+    "currentSnapshotSubtitle": "Live monitored equity intelligence pulled through the stock read model.",
+    "liveTrackedStocks": "Live tracked stocks",
+    "liveTrackedStocksCaption": "Current provider-backed stock quotes visible in the product shell.",
+    "positiveBreadth": "Positive breadth",
+    "positiveBreadthCaption": "Share of the tracked equity set currently printing a positive move.",
+    "topMover": "Top mover",
+    "topMoverCaption": "Fast readout of the strongest current stock move in the monitored set.",
+    "featuredStock": "Featured stock",
+    "historyPreviewAria": "{{symbol}} price history preview",
+    "noHistory": "Historical stock data is not yet available.",
+    "platformHighlights": "Platform highlights"
+  },
+  "homeSections": {
+    "capabilities": {
+      "eyebrow": "Platform capabilities",
+      "title": "The foundation now reflects the product we are actually building.",
+      "description": "The shell now communicates forecasting, data quality, explainability, and operator value instead of reading like a starter template.",
+      "items": [
+        {
+          "title": "Stock trend prediction",
+          "description": "Frame directional moves with scenario-ready forecasts, confidence ranges, and a path toward model review surfaces."
+        },
+        {
+          "title": "Currency value analysis",
+          "description": "Track FX pairs with relative-strength context, macro factor overlays, and future workstation hooks for cross-market analysis."
+        },
+        {
+          "title": "Signal engineering",
+          "description": "Keep feature logic pure and reusable so technical, event, and macro signals can evolve without leaking into UI layers."
+        },
+        {
+          "title": "Explainable forecasts",
+          "description": "Surface the factors behind a forecast so analysts can inspect why the system leans bullish, cautious, or defensive."
+        },
+        {
+          "title": "Ingestion observability",
+          "description": "Treat freshness, canonicalization, and provider health as first-class product states rather than hidden backend details."
+        },
+        {
+          "title": "Decision support shell",
+          "description": "Create a semantic application frame that can grow into dashboard, admin, and workflow-specific product surfaces."
+        }
+      ]
+    },
+    "modules": {
+      "eyebrow": "Product modules",
+      "title": "A reusable entry frame for every surface we know is coming.",
+      "description": "These module cards establish a stable navigation and content grammar for future route-level work without overbuilding the component library today.",
+      "enterModule": "Enter module",
+      "items": [
+        {
+          "eyebrow": "Stocks",
+          "title": "Trend monitoring workspace",
+          "description": "Longer-horizon equity monitoring with regime shifts, factor contribution views, and forecast comparisons.",
+          "href": "/stocks"
+        },
+        {
+          "eyebrow": "FX",
+          "title": "Currency intelligence surface",
+          "description": "Pair-level valuation, momentum snapshots, and macro-aware commentary shells for future analyst workflows.",
+          "href": "/fx"
+        },
+        {
+          "eyebrow": "Signals",
+          "title": "Feature registry",
+          "description": "A home for technical, macro, and event-derived features with traceable provenance and validation status.",
+          "href": "/dashboard"
+        },
+        {
+          "eyebrow": "Ingestion",
+          "title": "Freshness and source health",
+          "description": "Operational visibility into source coverage, canonicalization steps, and recomputation triggers.",
+          "href": "/admin"
+        }
+      ]
+    },
+    "explainability": {
+      "eyebrow": "Explainability path",
+      "title": "Forecast outputs should always be inspectable.",
+      "description": "This shell creates room for evidence trails, scenario deltas, and model confidence commentary without smuggling forecasting behavior into the UI.",
+      "dataFlowEyebrow": "Data flow teaser",
+      "kpis": [
+        {
+          "label": "Why a forecast moved",
+          "value": "Feature influence"
+        },
+        {
+          "label": "What changed",
+          "value": "Scenario deltas"
+        },
+        {
+          "label": "How much to trust it",
+          "value": "Confidence bands"
+        }
+      ],
+      "flow": [
+        {
+          "title": "Ingest and canonicalize",
+          "description": "Providers and background jobs land raw market data, then normalize it into durable, query-friendly contracts.",
+          "value": "providers -> ingestion"
+        },
+        {
+          "title": "Engineer features",
+          "description": "Pure analytics packages generate reusable signals so forecast quality does not depend on route-level code.",
+          "value": "ingestion -> signals"
+        },
+        {
+          "title": "Score and explain",
+          "description": "Forecasting produces directional output plus feature-level reasoning that can later feed analyst review panels.",
+          "value": "signals -> forecasting"
+        },
+        {
+          "title": "Render operator context",
+          "description": "The web shell presents system status, explainability summaries, and decision-ready navigation without owning the analytics logic.",
+          "value": "forecasting -> web"
+        }
+      ]
+    },
+    "systemStatus": {
+      "eyebrow": "Operational framing",
+      "title": "Status, freshness, and roadmap-ready panels belong in the shell.",
+      "description": "We now have a place for system condition, empty states, and next-step product framing before the live analytics data is wired in.",
+      "systemStatusTitle": "System status",
+      "systemStatusBody": "Placeholder widgets grounded in product reality.",
+      "systemStatusBadge": "Stable",
+      "roadmapTitle": "What should come next",
+      "roadmapBody": "The foundation is ready for route-specific dashboards and data-backed module surfaces.",
+      "systems": [
+        {
+          "name": "Market ingestion",
+          "detail": "Canonical equity and FX source sync completed 4 minutes ago.",
+          "label": "Healthy",
+          "tone": "success"
+        },
+        {
+          "name": "Signal recomputation",
+          "detail": "Momentum and macro factor batch running for the next forecast window.",
+          "label": "Processing",
+          "tone": "warning"
+        },
+        {
+          "name": "Forecast explainability cache",
+          "detail": "Audit-ready payload schema prepared for future dashboard panels.",
+          "label": "Ready",
+          "tone": "success"
+        }
+      ],
+      "roadmap": [
+        {
+          "title": "Dashboard route scaffolding",
+          "detail": "Use the new shell primitives to establish dashboard-specific layouts and preview panels."
+        },
+        {
+          "title": "Token package hardening",
+          "detail": "Promote CSS variables into documented token exports and add chart or table roles as real surfaces appear."
+        },
+        {
+          "title": "Data-backed homepage panels",
+          "detail": "Replace placeholder copy with server-driven freshness, health, and forecast summaries once contracts are ready."
+        }
+      ]
+    }
+  },
+  "simulation": {
+    "navLabel": "Simulation",
+    "title": "Investment simulation",
+    "description": "Paper-trading workspace with fictive cash, auditable orders, portfolio tracking, and clear simulation disclosures.",
+    "cashBalance": "Cash balance",
+    "portfolioValue": "Portfolio value",
+    "unrealizedPnl": "Unrealized P&L",
+    "realizedPnl": "Realized P&L",
+    "buy": "Buy",
+    "sell": "Sell",
+    "quantity": "Quantity",
+    "resetAccount": "Reset simulation account",
+    "resetConfirmation": "Simulation account reset.",
+    "orderRecorded": "Simulation order recorded.",
+    "insufficientCash": "Insufficient fictive cash balance for this order.",
+    "insufficientQuantity": "Insufficient position quantity for this sell order.",
+    "transactions": "Transactions",
+    "positions": "Positions",
+    "orders": "Orders",
+    "snapshots": "Snapshots",
+    "assetUniverse": "Tradable simulation universe",
+    "assetUniverseDescription": "Execute deterministic paper trades across stocks, ETFs, and crypto using server-side pricing and auditable ledger updates.",
+    "assetPrice": "Market price",
+    "assetRisk": "Risk framing",
+    "statusLive": "Live",
+    "symbolColumn": "Symbol",
+    "quantityColumn": "Quantity",
+    "averageCostColumn": "Average cost",
+    "marketValueColumn": "Market value",
+    "unrealizedPnlColumn": "Unrealized P&L",
+    "sideColumn": "Side",
+    "priceColumn": "Price",
+    "createdColumn": "Created",
+    "typeColumn": "Type",
+    "cashDeltaColumn": "Cash delta",
+    "realizedPnlColumn": "Realized P&L",
+    "snapshotCount": "Snapshots",
+    "positionCount": "Open positions",
+    "emptyPositions": "No simulation positions are open yet.",
+    "emptyTransactions": "No simulation transactions are available yet.",
+    "emptyOrders": "No simulation orders are available yet.",
+    "disclosure": "Simulation only. Orders are executed with fictive money and do not interact with a real broker or payment provider.",
+    "statusEmpty": "No simulation session has been started yet. Start a lane to initialize a workstation.",
+    "statusRunning": "Session is running in simulation mode.",
+    "statusPaused": "Session is paused. Resume the lane to enable trading actions.",
+    "statusStopped": "Session is not currently running. Trading actions are read-only.",
+    "statusFailed": "Session failed and requires a manual restart.",
+    "statusError": "Observation feed is unavailable. Trading is read-only.",
+    "statusDegraded": "Observation feed is degraded. Trading is read-only until freshness recovers."
+  },
+  "marketGraph": {
+    "title": "Market graph",
+    "subtitle": "Fullscreen market history with timeframe controls, overlays, and comparative context.",
+    "open": "Open fullscreen market graph",
+    "timeframe": "Timeframe",
+    "graphType": "Graph type",
+    "line": "Line",
+    "candles": "Candles",
+    "movingAverage": "Moving average",
+    "signals": "Signals",
+    "compare": "Compare asset",
+    "selectAsset": "Primary asset",
+    "noCompare": "No comparison",
+    "lastPrice": "Last price",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "panLeft": "Pan left",
+    "panRight": "Pan right",
+    "resetView": "Reset view",
+    "viewport": "Viewport controls",
+    "historyRange": "History range",
+    "chartAria": "{{symbol}} market chart",
+    "noData": "No market history is available for this view."
+  },
+  "stocks": {
+    "providerUnavailableSummary": "Live stocks snapshot is unavailable: {{message}}",
+    "trackingSummary": "Tracking {{count}} live stock quotes from {{provider}}.",
+    "noObservationsSummary": "No stock observations are currently available from the configured provider.",
+    "historyUnavailable": "No historical stock bars are currently available for this symbol.",
+    "historyRangeSeparator": "to"
+  },
+  "table": {
+    "rowDetails": "Details"
+  },
+  "footer": {
+    "groupMarkets": "Markets & Data",
+    "groupInvest": "Invest & Simulate",
+    "groupPlatform": "Platform",
+    "groupLegal": "Legal & Info",
+    "brandMeta": "Production-grade financial intelligence foundations for explainable forecasts, signal engineering, and operator-facing decision support.",
+    "disclosure": "Simulation only. No real money, brokerage execution, or regulated order routing is performed on this platform.",
+    "stocksLink": "Stocks",
+    "fxLink": "FX monitor",
+    "signalsLink": "Signals",
+    "forecastsLink": "Forecasts",
+    "stockAllocationLink": "Stock allocation",
+    "etfComparisonLink": "ETF comparison",
+    "cryptoTrackingLink": "Crypto tracking",
+    "simulationLink": "Portfolio simulation",
+    "adminLink": "Admin console",
+    "monitoringLink": "Monitoring",
+    "accountLink": "Account",
+    "profileLink": "Profile & settings",
+    "legalLink": "Legal overview",
+    "termsLink": "Terms of Use",
+    "privacyLink": "Privacy Policy",
+    "riskLink": "Risk Disclosure",
+    "imprintLink": "Legal Notice",
+    "copyrightSuffix": "Designed for institutional analytics teams and internal operators."
+  }
+}

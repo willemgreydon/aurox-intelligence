@@ -1,0 +1,473 @@
+{
+  "shell": {
+    "brandTitle": "Aurox Intelligence",
+    "brandSubtitle": "Finanz-Signalplattform",
+    "nav": {
+      "markets": "Märkte",
+      "analytics": "Analysen",
+      "invest": "Investieren",
+      "ops": "Betrieb",
+      "marketOverview": "Marktüberblick",
+      "stocks": "Aktien",
+      "fx": "FX",
+      "dashboard": "Dashboard",
+      "signals": "Signale",
+      "forecasts": "Prognosen",
+      "simulation": "Simulation",
+      "investHome": "Investment-Start",
+      "investStocks": "Aktienbereich",
+      "investEtfs": "ETF-Bereich",
+      "investCrypto": "Kryptobereich",
+      "investAccounts": "Kontoverbindungen",
+      "admin": "Admin",
+      "monitoring": "Monitoring"
+    },
+    "auth": {
+      "login": "Anmelden",
+      "signup": "Registrieren",
+      "account": "Kontoübersicht",
+      "profile": "Profil",
+      "settings": "Einstellungen",
+      "logout": "Abmelden",
+      "member": "Mitgliedskonto",
+      "admin": "Administrator"
+    },
+    "marketPulse": "Marktpuls",
+    "theme": "Design",
+    "language": "Sprache",
+    "menuLabel": "Menü",
+    "mobileMenuDescription": "Märkte, Analysen, Simulations-Workflows und Kontosteuerung in einer mobilen Kommandooberfläche.",
+    "openMenu": "Navigationsmenü öffnen",
+    "closeMenu": "Navigationsmenü schließen",
+    "closeOverlay": "Menü-Overlay schließen",
+    "closeNavigation": "Navigation schließen"
+  },
+  "ticker": {
+    "aria": "Markt-Ticker",
+    "emptyAria": "Markt-Ticker nicht verfügbar",
+    "sourceSummary": "Aktualisierbarer Ticker-Schnappschuss von {{provider}}.",
+    "errorSummary": "Ticker-Schnappschuss nicht verfügbar: {{message}}",
+    "emptyState": "Ticker-Daten sind vom konfigurierten Provider derzeit nicht verfügbar."
+  },
+  "status": {
+    "nominal": "Nominal",
+    "attention": "Achtung",
+    "degraded": "Beeinträchtigt"
+  },
+  "common": {
+    "home": "Startseite",
+    "lastUpdated": "Zuletzt aktualisiert",
+    "freshness": "Aktualität",
+    "coverage": "Abdeckung",
+    "actionAvailability": "Aktionsverfügbarkeit",
+    "providerPath": "Provider-Pfad",
+    "sourceSummary": "Quellenübersicht",
+    "quote": "Kurs",
+    "move": "Bewegung",
+    "price": "Preis",
+    "historyWindow": "Historienfenster",
+    "currentQuote": "Aktueller Kurs",
+    "dailyMove": "Tagesbewegung",
+    "providerSource": "Provider-Quelle",
+    "unavailable": "Nicht verfügbar",
+    "partial": "Teilweise",
+    "details": "Details",
+    "live": "Live",
+    "none": "Keine",
+    "simulationDisclosure": "Nur Simulation. Es werden weder echtes Geld noch Broker-Ausführung oder reguliertes Order-Routing verwendet."
+  },
+  "auth": {
+    "loginEyebrow": "Authentifizierung",
+    "loginTitle": "Bei Ihrem Konto anmelden",
+    "loginDescription": "Greifen Sie auf Ihr Dashboard, Ihre Profileinstellungen und Ihren gespeicherten authentifizierten Workspace zu, ohne die Plattform zu verlassen.",
+    "signupEyebrow": "Kontoerstellung",
+    "signupTitle": "Ihr Aurox-Konto erstellen",
+    "signupDescription": "Starten Sie mit sicherem Login, persistenter Sitzungsverwaltung und einem dedizierten Arbeitsbereich für Ihr Konto.",
+    "secureSession": "Sichere Sitzungen",
+    "protectedWorkspace": "Geschützter Konto-Workspace",
+    "profileManagement": "Profil- und Passwortverwaltung",
+    "needAccount": "Noch kein Konto?",
+    "createOne": "Jetzt erstellen",
+    "alreadyRegistered": "Bereits registriert?",
+    "signIn": "Anmelden",
+    "signInShort": "Anmelden",
+    "createAccount": "Konto erstellen",
+    "createAccountTitle": "Ihr Konto erstellen",
+    "emailAddress": "E-Mail-Adresse",
+    "password": "Passwort",
+    "fullName": "Vollständiger Name",
+    "confirmPassword": "Passwort bestätigen",
+    "passwordHint": "Passwörter müssen mindestens 8 Zeichen lang sein und Groß-, Kleinbuchstaben sowie Zahlen enthalten.",
+    "loginFormDescription": "Greifen Sie auf Ihr Kontodashboard, Ihr gespeichertes Profil und Ihre Sicherheitseinstellungen zu.",
+    "registerFormDescription": "Richten Sie einen sicheren Workspace für Kontoeinstellungen, gespeicherte Sitzungen und Plattformzugang ein.",
+    "emailPlaceholder": "sie@example.com",
+    "passwordPlaceholder": "Passwort eingeben",
+    "namePlaceholder": "Ada Lovelace",
+    "newPasswordPlaceholder": "Ein starkes Passwort wählen",
+    "confirmPasswordPlaceholder": "Passwort wiederholen",
+    "signingIn": "Anmeldung läuft...",
+    "creatingAccount": "Konto wird erstellt...",
+    "newHere": "Neu hier?"
+  },
+  "dashboard": {
+    "headerEyebrow": "Operatives Dashboard",
+    "destinations": "Dashboard-Ziele",
+    "controlsEyebrow": "Workstation-Filter",
+    "controlsTitle": "Chart-Steuerung über alle Oberflächen",
+    "controlsSubtitle": "Wechseln Sie Diagrammtyp, Zeitraum und Kontostandards direkt in der aktuellen Workstation.",
+    "marketOverview": "Marktüberblick",
+    "brokerTools": "Broker-Werkzeuge",
+    "systemObservation": "Beobachtung des Finanzsystems",
+    "watchlist": "Persönliche Watchlist",
+    "forecastAnalysis": "Prognose- und Signalanalyse",
+    "simulatedDisclosure": "Alle Zahlungs-, Bank- und Orderaktionen sind in dieser Version simuliert.",
+    "languagePreference": "Spracheinstellung",
+    "chartType": "Diagrammtyp",
+    "timePeriod": "Zeitraum",
+    "savePreferences": "Einstellungen speichern",
+    "preferencesSaved": "Einstellungen bereit",
+    "latestOrders": "Neueste simulierte Orders",
+    "noOrders": "Noch keine simulierten Orders vorhanden.",
+    "addToWatchlist": "Zur Watchlist hinzufügen",
+    "removeFromWatchlist": "Von der Watchlist entfernen",
+    "buySimulated": "Kauf simulieren",
+    "sellSimulated": "Verkauf simulieren",
+    "marketSnapshotTitle": "Momentaufnahme der aktuellen Marktintelligenz",
+    "trackedStocks": "Live überwachte Aktien",
+    "trackedStocksDetail": "Tatsächlich vom Provider geladene Aktienkurse in der Oberfläche.",
+    "positiveBreadth": "Positive Breite",
+    "positiveBreadthDetail": "Überwachte Symbole mit positiver Tagesbewegung.",
+    "negativeBreadth": "Negative Breite",
+    "negativeBreadthDetail": "Überwachte Symbole mit negativem Druck im Live-Set.",
+    "marketSourceTitle": "Live-Marktquelle",
+    "providerLabel": "Provider",
+    "quoteFreshness": "Kursaktualität",
+    "savedAssetsTitle": "Gespeicherte Assets für dieses Konto",
+    "savedAssetsEmpty": "Speichern Sie Assets aus den Investment-Oberflächen, um eine kontospezifische Beobachtungsspur aufzubauen.",
+    "simulationWorkspaceTitle": "Simulationsausführung",
+    "latestOrdersSubtitle": "Zuletzt erfasste simulierte Kauf- und Verkaufsabsichten dieses Kontos.",
+    "systemObservationSubtitle": "Operativer Status, Provider-Timing und repository-gestützte Beobachtungsbahnen.",
+    "stockColumn": "Symbol",
+    "priceColumn": "Preis",
+    "moveColumn": "Bewegung",
+    "sourceColumn": "Quelle",
+    "freshnessColumn": "Aktualität",
+    "sideColumn": "Seite",
+    "statusColumn": "Status",
+    "assetClassColumn": "Assetklasse",
+    "createdColumn": "Erstellt",
+    "typeColumn": "Typ",
+    "cashDeltaColumn": "Cash-Veränderung"
+  },
+  "account": {
+    "preferencesTitle": "Workspace-Einstellungen",
+    "preferencesDescription": "Steuern Sie Sprache, Standarddiagramme, sichtbare Dashboard-Module und beobachtete Symbole.",
+    "trackedSymbols": "Beobachtete Symbole",
+    "visibleModules": "Sichtbare Module",
+    "locale": "Sprache",
+    "defaultChartType": "Standarddiagramm",
+    "defaultTimePeriod": "Standardzeitraum",
+    "trackedSymbolsHint": "Symbole mit Kommas trennen, z. B. AAPL, MSFT, NVDA, BINANCE:BTCUSDT.",
+    "simulationPreferencesTitle": "Standardwerte fÃ¼r Simulations-Broker-Modi",
+    "preferredBrokerMode": "Bevorzugter Broker-Modus",
+    "brokerModeCapitalLimitUsd": "Kapital-Limit des Broker-Modus (USD)",
+    "microTradeAllocationPercent": "Micro-Trade-Allokation (%)",
+    "defaultAssetScope": "Standard-Asset-Scope",
+    "activityPreferencesTitle": "AktivitÃ¤tseinstellungen",
+    "orderActivityDigest": "Order-AktivitÃ¤tszusammenfassung aktivieren",
+    "laneStatusAlerts": "Lane-Status-Benachrichtigungen aktivieren"
+  },
+  "invest": {
+    "heroEyebrow": "Investment-Architektur",
+    "guidanceEyebrow": "KI-Einordnung",
+    "guidanceTitle": "Erklärbare Empfehlungen statt perfekter Vorhersagen",
+    "featuredEyebrow": "Ausgewählte Assets",
+    "featuredTitle": "Planungsboard über alle Assetklassen",
+    "fundingEyebrow": "Finanzierung und Konten",
+    "fundingTitle": "Bereitschaft für Kontoverbindungen",
+    "actionModel": "Aktionsmodell",
+    "planningFirst": "Planungsorientiert"
+  },
+  "home": {
+    "heroEyebrow": "Finanzintelligenz-Plattform",
+    "heroTitle": "Marktbreite, erklärbare Signale und Simulations-Investing in einem ruhigen Workspace.",
+    "heroDescription": "Aurox Intelligence verbindet Live-Markt-Kontext, ein produktionsnahes Simulationskonto und Entscheidungshilfen für bewusstes Investieren.",
+    "openStocks": "Aktien-Workspace öffnen",
+    "openDashboard": "Dashboard öffnen",
+    "reviewAsset": "{{symbol}} prüfen",
+    "provider": "Provider",
+    "currentSnapshotTitle": "Aktuelle Aktienübersicht",
+    "currentSnapshotSubtitle": "Live überwachte Aktienintelligenz aus dem Stock-Read-Model.",
+    "liveTrackedStocks": "Live überwachte Aktien",
+    "liveTrackedStocksCaption": "Aktuell im Produkt-Shell sichtbare, provider-gestützte Aktienkurse.",
+    "positiveBreadth": "Positive Breite",
+    "positiveBreadthCaption": "Anteil des überwachten Aktienuniversums mit positiver Bewegung.",
+    "topMover": "Stärkster Beweger",
+    "topMoverCaption": "Schnellüberblick über die stärkste aktuelle Bewegung im überwachten Set.",
+    "featuredStock": "Ausgewählte Aktie",
+    "historyPreviewAria": "Kursverlaufsvorschau für {{symbol}}",
+    "noHistory": "Historische Aktiendaten sind derzeit noch nicht verfügbar.",
+    "platformHighlights": "Plattform-Highlights"
+  },
+  "homeSections": {
+    "capabilities": {
+      "eyebrow": "Plattform-Fähigkeiten",
+      "title": "Das Fundament spiegelt jetzt das Produkt wider, das wir tatsächlich bauen.",
+      "description": "Die Shell kommuniziert nun Prognosen, Datenqualität, Erklärbarkeit und operativen Nutzen statt wie ein Starter-Template zu wirken.",
+      "items": [
+        {
+          "title": "Aktien-Trendprognosen",
+          "description": "Richten Sie Kursbewegungen mit szenariobasierten Prognosen, Konfidenzspannen und einem Pfad zu Modell-Review-Oberflächen ein."
+        },
+        {
+          "title": "Währungsanalyse",
+          "description": "Verfolgen Sie FX-Paare mit Relative-Strength-Kontext, Makro-Overlays und künftigen Workstation-Hooks für Cross-Market-Analysen."
+        },
+        {
+          "title": "Signal-Engineering",
+          "description": "Halten Sie Feature-Logik rein und wiederverwendbar, damit technische, ereignisbasierte und Makro-Signale nicht in UI-Schichten auslaufen."
+        },
+        {
+          "title": "Erklärbare Prognosen",
+          "description": "Machen Sie die Faktoren hinter einer Prognose sichtbar, damit Analysten nachvollziehen können, warum das System bullisch, vorsichtig oder defensiv ist."
+        },
+        {
+          "title": "Ingestion-Beobachtbarkeit",
+          "description": "Behandeln Sie Aktualität, Kanonisierung und Provider-Gesundheit als erstklassige Produktzustände statt als versteckte Backend-Details."
+        },
+        {
+          "title": "Decision-Support-Shell",
+          "description": "Schaffen Sie einen semantischen Anwendungsrahmen, der zu Dashboard-, Admin- und workflow-spezifischen Produktflächen wachsen kann."
+        }
+      ]
+    },
+    "modules": {
+      "eyebrow": "Produktmodule",
+      "title": "Ein wiederverwendbarer Einstieg für jede Oberfläche, die wir kommen sehen.",
+      "description": "Diese Modulkarten etablieren eine stabile Navigations- und Inhaltsgrammatik für künftige Routen, ohne die Komponentenbibliothek heute zu überbauen.",
+      "enterModule": "Modul öffnen",
+      "items": [
+        {
+          "eyebrow": "Aktien",
+          "title": "Trend-Monitoring-Workspace",
+          "description": "Längerfristige Aktienbeobachtung mit Regimewechseln, Faktorbeiträgen und Prognosevergleichen.",
+          "href": "/stocks"
+        },
+        {
+          "eyebrow": "FX",
+          "title": "Währungs-Intelligence-Oberfläche",
+          "description": "Bewertung auf Paarebene, Momentum-Schnappschüsse und makro-sensitive Kommentar-Shells für künftige Analysten-Workflows.",
+          "href": "/fx"
+        },
+        {
+          "eyebrow": "Signale",
+          "title": "Feature-Register",
+          "description": "Ein Zuhause für technische, makro- und ereignisgetriebene Features mit nachvollziehbarer Herkunft und Validierungsstatus.",
+          "href": "/dashboard"
+        },
+        {
+          "eyebrow": "Ingestion",
+          "title": "Aktualität und Quellengesundheit",
+          "description": "Operative Sicht auf Quellabdeckung, Kanonisierungsschritte und Rechen-Neuauslöser.",
+          "href": "/admin"
+        }
+      ]
+    },
+    "explainability": {
+      "eyebrow": "Pfad zur Erklärbarkeit",
+      "title": "Prognoseergebnisse sollten immer prüfbar sein.",
+      "description": "Diese Shell schafft Raum für Evidenzpfade, Szenario-Deltas und Modellvertrauens-Kommentare, ohne Prognoseverhalten in die UI zu schmuggeln.",
+      "dataFlowEyebrow": "Datenfluss-Vorschau",
+      "kpis": [
+        {
+          "label": "Warum sich eine Prognose bewegt hat",
+          "value": "Feature-Einfluss"
+        },
+        {
+          "label": "Was sich verändert hat",
+          "value": "Szenario-Deltas"
+        },
+        {
+          "label": "Wie stark man ihr vertrauen sollte",
+          "value": "Konfidenzbänder"
+        }
+      ],
+      "flow": [
+        {
+          "title": "Einspeisen und kanonisieren",
+          "description": "Provider und Hintergrundjobs liefern Rohdaten, die anschließend in belastbare, abfragefreundliche Verträge normalisiert werden.",
+          "value": "providers -> ingestion"
+        },
+        {
+          "title": "Features erzeugen",
+          "description": "Reine Analysepakete generieren wiederverwendbare Signale, damit Prognosequalität nicht von Routen-Code abhängt.",
+          "value": "ingestion -> signals"
+        },
+        {
+          "title": "Bewerten und erklären",
+          "description": "Forecasting erzeugt Richtungs-Output plus Feature-bezogene Begründungen, die später Analysten-Review-Panels speisen können.",
+          "value": "signals -> forecasting"
+        },
+        {
+          "title": "Operator-Kontext darstellen",
+          "description": "Die Web-Shell zeigt Systemstatus, Erklärbarkeits-Zusammenfassungen und entscheidungsreife Navigation, ohne die Analytiklogik zu besitzen.",
+          "value": "forecasting -> web"
+        }
+      ]
+    },
+    "systemStatus": {
+      "eyebrow": "Operativer Rahmen",
+      "title": "Status-, Aktualitäts- und Roadmap-Panels gehören in die Shell.",
+      "description": "Wir haben jetzt einen Platz für Systemzustand, Empty States und Produkt-Nächste-Schritte, bevor Live-Analytik vollständig verdrahtet ist.",
+      "systemStatusTitle": "Systemstatus",
+      "systemStatusBody": "Platzhalter-Widgets mit echtem Produktbezug.",
+      "systemStatusBadge": "Stabil",
+      "roadmapTitle": "Was als Nächstes kommen sollte",
+      "roadmapBody": "Das Fundament ist bereit für routenspezifische Dashboards und datengetriebene Moduloberflächen.",
+      "systems": [
+        {
+          "name": "Markt-Ingestion",
+          "detail": "Kanonische Synchronisierung für Aktien- und FX-Quellen wurde vor 4 Minuten abgeschlossen.",
+          "label": "Gesund",
+          "tone": "success"
+        },
+        {
+          "name": "Signal-Neuberechnung",
+          "detail": "Momentum- und Makrofaktoren-Batch läuft für das nächste Prognosefenster.",
+          "label": "In Bearbeitung",
+          "tone": "warning"
+        },
+        {
+          "name": "Forecast-Erklärbarkeits-Cache",
+          "detail": "Audit-fähiges Payload-Schema ist für zukünftige Dashboard-Panels vorbereitet.",
+          "label": "Bereit",
+          "tone": "success"
+        }
+      ],
+      "roadmap": [
+        {
+          "title": "Dashboard-Routen-Gerüst",
+          "detail": "Nutzen Sie die neuen Shell-Primitiven, um dashboard-spezifische Layouts und Preview-Panels zu etablieren."
+        },
+        {
+          "title": "Härtung des Token-Pakets",
+          "detail": "Überführen Sie CSS-Variablen in dokumentierte Token-Exporte und ergänzen Sie Chart- oder Tabellenrollen, sobald reale Flächen erscheinen."
+        },
+        {
+          "title": "Datengetriebene Homepage-Panels",
+          "detail": "Ersetzen Sie Platzhaltertexte durch serverseitige Aktualitäts-, Gesundheits- und Prognose-Zusammenfassungen, sobald die Verträge bereit sind."
+        }
+      ]
+    }
+  },
+  "simulation": {
+    "navLabel": "Simulation",
+    "title": "Investment-Simulation",
+    "description": "Paper-Trading-Workspace mit fiktivem Cash, auditierbaren Orders, Portfoliotracking und klaren Simulationshinweisen.",
+    "cashBalance": "Cash-Bestand",
+    "portfolioValue": "Portfoliowert",
+    "unrealizedPnl": "Nicht realisierter P&L",
+    "realizedPnl": "Realisierter P&L",
+    "buy": "Kaufen",
+    "sell": "Verkaufen",
+    "quantity": "Menge",
+    "resetAccount": "Simulationskonto zurücksetzen",
+    "resetConfirmation": "Simulationskonto wurde zurückgesetzt.",
+    "orderRecorded": "Simulationsorder erfasst.",
+    "insufficientCash": "Nicht genug fiktives Guthaben für diese Order.",
+    "insufficientQuantity": "Nicht genügend Positionsmenge für diesen Verkauf.",
+    "transactions": "Transaktionen",
+    "positions": "Positionen",
+    "orders": "Orders",
+    "snapshots": "Snapshots",
+    "assetUniverse": "Handelbares Simulationsuniversum",
+    "assetUniverseDescription": "Deterministische Paper Trades über Aktien, ETFs und Krypto mit serverseitiger Preisstellung und auditierbarem Ledger.",
+    "assetPrice": "Marktpreis",
+    "assetRisk": "Risikokontext",
+    "statusLive": "Live",
+    "symbolColumn": "Symbol",
+    "quantityColumn": "Menge",
+    "averageCostColumn": "Durchschnittskosten",
+    "marketValueColumn": "Marktwert",
+    "unrealizedPnlColumn": "Nicht realisierter P&L",
+    "sideColumn": "Seite",
+    "priceColumn": "Preis",
+    "createdColumn": "Erstellt",
+    "typeColumn": "Typ",
+    "cashDeltaColumn": "Cash-Veränderung",
+    "realizedPnlColumn": "Realisierter P&L",
+    "snapshotCount": "Snapshots",
+    "positionCount": "Offene Positionen",
+    "emptyPositions": "Noch keine offenen Simulationspositionen vorhanden.",
+    "emptyTransactions": "Noch keine Simulationstransaktionen vorhanden.",
+    "emptyOrders": "Noch keine Simulationsorders vorhanden.",
+    "disclosure": "Nur Simulation. Orders werden mit fiktivem Geld ausgeführt und interagieren weder mit einem echten Broker noch mit einem realen Zahlungsanbieter.",
+    "statusEmpty": "Es wurde noch keine Simulationssitzung gestartet. Starten Sie eine Lane, um eine Workstation zu initialisieren.",
+    "statusRunning": "Die Sitzung läuft im Simulationsmodus.",
+    "statusPaused": "Die Sitzung ist pausiert. Setzen Sie die Lane fort, um Trading-Aktionen zu aktivieren.",
+    "statusStopped": "Die Sitzung läuft derzeit nicht. Trading-Aktionen sind schreibgeschützt.",
+    "statusFailed": "Die Sitzung ist fehlgeschlagen und erfordert einen manuellen Neustart.",
+    "statusError": "Der Beobachtungs-Feed ist nicht verfügbar. Trading ist schreibgeschützt.",
+    "statusDegraded": "Der Beobachtungs-Feed ist eingeschränkt. Trading ist schreibgeschützt, bis die Frische wiederhergestellt ist."
+  },
+  "marketGraph": {
+    "title": "Marktgraph",
+    "subtitle": "Vollbild-Markthistorie mit Zeitraumsteuerung, Overlays und Vergleichskontext.",
+    "open": "Vollbild-Marktgraph öffnen",
+    "timeframe": "Zeitraum",
+    "graphType": "Diagrammtyp",
+    "line": "Linie",
+    "candles": "Kerzen",
+    "movingAverage": "Gleitender Durchschnitt",
+    "signals": "Signale",
+    "compare": "Asset vergleichen",
+    "selectAsset": "Primäres Asset",
+    "noCompare": "Kein Vergleich",
+    "lastPrice": "Letzter Preis",
+    "zoomIn": "Vergrößern",
+    "zoomOut": "Verkleinern",
+    "panLeft": "Nach links verschieben",
+    "panRight": "Nach rechts verschieben",
+    "resetView": "Ansicht zurücksetzen",
+    "viewport": "Viewport-Steuerung",
+    "historyRange": "Historienbereich",
+    "chartAria": "Marktchart für {{symbol}}",
+    "noData": "Für diese Ansicht ist keine Markthistorie verfügbar."
+  },
+  "stocks": {
+    "providerUnavailableSummary": "Live-Aktien-Schnappschuss ist nicht verfügbar: {{message}}",
+    "trackingSummary": "{{count}} Live-Aktienkurse von {{provider}} werden verfolgt.",
+    "noObservationsSummary": "Vom konfigurierten Provider sind derzeit keine Aktienbeobachtungen verfügbar.",
+    "historyUnavailable": "Für dieses Symbol sind derzeit keine historischen Aktienbalken verfügbar.",
+    "historyRangeSeparator": "bis"
+  },
+  "table": {
+    "rowDetails": "Details"
+  },
+  "footer": {
+    "groupMarkets": "Märkte & Daten",
+    "groupInvest": "Investieren & Simulieren",
+    "groupPlatform": "Plattform",
+    "groupLegal": "Rechtliches & Info",
+    "brandMeta": "Produktionsreife Grundlagen für Finanzintelligenz: erklärbare Prognosen, Signal-Engineering und operativer Entscheidungssupport.",
+    "disclosure": "Nur Simulation. Kein echtes Geld, keine Brokerausführung oder reguliertes Auftragsrouting auf dieser Plattform.",
+    "stocksLink": "Aktien",
+    "fxLink": "FX-Monitor",
+    "signalsLink": "Signale",
+    "forecastsLink": "Prognosen",
+    "stockAllocationLink": "Aktienallokation",
+    "etfComparisonLink": "ETF-Vergleich",
+    "cryptoTrackingLink": "Krypto-Tracking",
+    "simulationLink": "Portfolio-Simulation",
+    "adminLink": "Admin-Konsole",
+    "monitoringLink": "Monitoring",
+    "accountLink": "Konto",
+    "profileLink": "Profil & Einstellungen",
+    "legalLink": "Rechtlicher Überblick",
+    "termsLink": "Nutzungsbedingungen",
+    "privacyLink": "Datenschutzrichtlinie",
+    "riskLink": "Risikohinweis",
+    "imprintLink": "Impressum",
+    "copyrightSuffix": "Entwickelt für institutionelle Analyseteams und interne Betreiber."
+  }
+}

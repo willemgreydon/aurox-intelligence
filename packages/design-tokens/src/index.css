@@ -1,0 +1,243 @@
+:root {
+  color-scheme: light;
+
+  /* Primitive neutrals */
+  --color-white: #ffffff;
+  --color-black: #020617;
+  --color-slate-50: #f7f9fc;
+  --color-slate-100: #eef2f7;
+  --color-slate-150: #e6ebf2;
+  --color-slate-200: #dae2ee;
+  --color-slate-300: #b7c4d6;
+  --color-slate-400: #8394ab;
+  --color-slate-500: #5d718c;
+  --color-slate-600: #42556f;
+  --color-slate-700: #2c3f56;
+  --color-slate-800: #19283c;
+  --color-slate-900: #0e1726;
+  --color-slate-950: #08111d;
+
+  /* Primitive accents */
+  --color-blue-100: #d8e7ff;
+  --color-blue-200: #b1ceff;
+  --color-blue-300: #7eacff;
+  --color-blue-400: #4a86f7;
+  --color-blue-500: #2f66d0;
+  --color-blue-600: #204fa9;
+  --color-blue-700: #183c80;
+
+  --color-cyan-300: #68d6ff;
+  --color-cyan-400: #3cbef2;
+  --color-cyan-500: #129fcb;
+
+  --color-emerald-300: #7fe4c4;
+  --color-emerald-400: #34c38f;
+  --color-emerald-500: #0a9b6b;
+
+  --color-amber-300: #ffd67a;
+  --color-amber-400: #ffbf47;
+  --color-amber-500: #d49414;
+
+  --color-red-300: #ffb4b0;
+  --color-red-400: #f47f75;
+  --color-red-500: #d85b4f;
+
+  /* Typography */
+  --font-family-sans: "IBM Plex Sans", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-family-mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  --font-size-2xs: 0.6875rem;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.5rem;
+  --font-size-5xl: 3.5rem;
+  --font-size-6xl: 4.5rem;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --line-height-tight: 1.1;
+  --line-height-heading: 1.2;
+  --line-height-body: 1.65;
+
+  /* Spacing */
+  --space-0: 0;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-14: 3.5rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --space-24: 6rem;
+  --space-28: 7rem;
+  --space-32: 8rem;
+
+  /* Radius */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.875rem;
+  --radius-lg: 1.25rem;
+  --radius-xl: 1.75rem;
+  --radius-pill: 999px;
+
+  /* Shadows */
+  --shadow-sm: 0 10px 30px rgba(8, 17, 29, 0.06);
+  --shadow-md: 0 20px 48px rgba(8, 17, 29, 0.1);
+  --shadow-lg: 0 32px 80px rgba(8, 17, 29, 0.16);
+
+  /* Layout */
+  --layout-max-width: 76rem;
+  --layout-content-width: 68rem;
+  --layout-reading-width: 48rem;
+  --header-height: 4.5rem;
+
+  /* Borders */
+  --border-width-thin: 1px;
+  --border-width-strong: 1.5px;
+
+  /* Motion */
+  --duration-fast: 150ms;
+  --duration-base: 220ms;
+  --duration-slow: 320ms;
+  --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-emphasis: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Z-index */
+  --z-base: 0;
+  --z-sticky: 100;
+  --z-dropdown: 200;
+  --z-modal: 400;
+
+  /* Charts and data roles */
+  --chart-positive: var(--color-emerald-400);
+  --chart-neutral: var(--color-blue-400);
+  --chart-caution: var(--color-amber-400);
+  --chart-negative: var(--color-red-400);
+  --chart-series-a: var(--color-blue-500);
+  --chart-series-b: var(--color-cyan-500);
+  --chart-series-c: var(--color-emerald-500);
+  --chart-series-d: var(--color-amber-500);
+  --chart-series-e: var(--color-red-500);
+
+  /* Semantic defaults - light */
+  --app-bg: #f5f7fb;
+  --app-bg-elevated: #edf2f9;
+  --app-bg-strong: #dbe5f3;
+  --surface-base: rgba(255, 255, 255, 0.82);
+  --surface-raised: rgba(255, 255, 255, 0.94);
+  --surface-strong: #ffffff;
+  --surface-inverse: #0f1b2d;
+  --surface-accent: linear-gradient(135deg, rgba(47, 102, 208, 0.18), rgba(60, 190, 242, 0.08));
+  --surface-analytics: rgba(248, 251, 255, 0.86);
+  --surface-chart: rgba(255, 255, 255, 0.96);
+  --surface-chart-muted: rgba(237, 242, 249, 0.8);
+  --border-subtle: rgba(25, 40, 60, 0.08);
+  --border-default: rgba(25, 40, 60, 0.14);
+  --border-strong: rgba(25, 40, 60, 0.24);
+  --border-chart-grid: rgba(25, 40, 60, 0.08);
+  --text-primary: #0f1b2d;
+  --text-secondary: #465a76;
+  --text-tertiary: #6f829d;
+  --text-inverse: #f7f9fc;
+  --text-accent: #204fa9;
+  --text-axis: #6f829d;
+  --text-legend: #465a76;
+  --action-primary-bg: #204fa9;
+  --action-primary-bg-hover: #183c80;
+  --action-primary-text: #f8fbff;
+  --action-secondary-bg: rgba(255, 255, 255, 0.7);
+  --action-secondary-bg-hover: rgba(255, 255, 255, 0.92);
+  --action-secondary-text: #0f1b2d;
+  --control-compact-bg: rgba(255, 255, 255, 0.82);
+  --control-compact-bg-hover: rgba(255, 255, 255, 0.98);
+  --control-compact-text: #0f1b2d;
+  --control-compact-border: rgba(25, 40, 60, 0.12);
+  --row-hover-bg: rgba(47, 102, 208, 0.06);
+  --row-selected-bg: rgba(47, 102, 208, 0.1);
+  --table-header-bg: rgba(237, 242, 249, 0.72);
+  --table-row-border: rgba(25, 40, 60, 0.1);
+  --panel-density-compact: 0.875rem;
+  --control-height-compact: 2.25rem;
+  --table-row-height: 3rem;
+  --stat-emphasis-bg: rgba(47, 102, 208, 0.08);
+  --confidence-band-bg: rgba(47, 102, 208, 0.1);
+  --confidence-band-strong: rgba(47, 102, 208, 0.18);
+  --focus-ring: rgba(47, 102, 208, 0.28);
+  --hero-glow: radial-gradient(circle at top, rgba(47, 102, 208, 0.16), transparent 56%);
+  --grid-line: rgba(25, 40, 60, 0.08);
+  --status-success-bg: rgba(10, 155, 107, 0.14);
+  --status-success-text: #0a7f59;
+  --status-info-bg: rgba(47, 102, 208, 0.12);
+  --status-info-text: #204fa9;
+  --status-warning-bg: rgba(212, 148, 20, 0.14);
+  --status-warning-text: #9c6a0d;
+  --status-danger-bg: rgba(216, 91, 79, 0.16);
+  --status-danger-text: #b4483e;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --app-bg: #08111d;
+  --app-bg-elevated: #0e1726;
+  --app-bg-strong: #132035;
+  --surface-base: rgba(15, 27, 45, 0.76);
+  --surface-raised: rgba(19, 32, 53, 0.9);
+  --surface-strong: #16253b;
+  --surface-inverse: #f7f9fc;
+  --surface-accent: linear-gradient(135deg, rgba(74, 134, 247, 0.28), rgba(60, 190, 242, 0.14));
+  --surface-analytics: rgba(14, 23, 38, 0.88);
+  --surface-chart: rgba(19, 32, 53, 0.94);
+  --surface-chart-muted: rgba(14, 23, 38, 0.82);
+  --border-subtle: rgba(183, 196, 214, 0.08);
+  --border-default: rgba(183, 196, 214, 0.14);
+  --border-strong: rgba(183, 196, 214, 0.24);
+  --border-chart-grid: rgba(183, 196, 214, 0.08);
+  --text-primary: #f7f9fc;
+  --text-secondary: #b7c4d6;
+  --text-tertiary: #8394ab;
+  --text-inverse: #0f1b2d;
+  --text-accent: #b1ceff;
+  --text-axis: #8394ab;
+  --text-legend: #b7c4d6;
+  --action-primary-bg: #4a86f7;
+  --action-primary-bg-hover: #7eacff;
+  --action-primary-text: #08111d;
+  --action-secondary-bg: rgba(15, 27, 45, 0.72);
+  --action-secondary-bg-hover: rgba(19, 32, 53, 0.94);
+  --action-secondary-text: #f7f9fc;
+  --control-compact-bg: rgba(15, 27, 45, 0.76);
+  --control-compact-bg-hover: rgba(19, 32, 53, 0.94);
+  --control-compact-text: #f7f9fc;
+  --control-compact-border: rgba(183, 196, 214, 0.16);
+  --row-hover-bg: rgba(74, 134, 247, 0.12);
+  --row-selected-bg: rgba(74, 134, 247, 0.18);
+  --table-header-bg: rgba(19, 32, 53, 0.88);
+  --table-row-border: rgba(183, 196, 214, 0.1);
+  --panel-density-compact: 0.875rem;
+  --control-height-compact: 2.25rem;
+  --table-row-height: 3rem;
+  --stat-emphasis-bg: rgba(74, 134, 247, 0.12);
+  --confidence-band-bg: rgba(74, 134, 247, 0.16);
+  --confidence-band-strong: rgba(74, 134, 247, 0.24);
+  --focus-ring: rgba(126, 172, 255, 0.34);
+  --hero-glow: radial-gradient(circle at top, rgba(74, 134, 247, 0.28), transparent 54%);
+  --grid-line: rgba(183, 196, 214, 0.08);
+  --status-success-bg: rgba(52, 195, 143, 0.16);
+  --status-success-text: #7fe4c4;
+  --status-info-bg: rgba(74, 134, 247, 0.2);
+  --status-info-text: #b1ceff;
+  --status-warning-bg: rgba(255, 191, 71, 0.16);
+  --status-warning-text: #ffd67a;
+  --status-danger-bg: rgba(244, 127, 117, 0.18);
+  --status-danger-text: #ffb4b0;
+}
