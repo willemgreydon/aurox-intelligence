@@ -4,20 +4,25 @@ import { WorkstationPageHeader } from '../../components/asset/workstation-page-h
 import { MarketGraphSection } from '../../components/charts/market-graph-section';
 import { Card } from '../../components/ui/card';
 import { CompactStatCard } from '../../components/stats/compact-stat-card';
-import { SimulatedOrderForm, WatchlistToggleForm } from '../../components/invest/simulation-action-form';
+import { MarketViewToggle, type MarketViewMode } from '../../components/invest/market-view-toggle';
+import { InvestableAssetCard } from '../../components/invest/investable-asset-card';
+import { MarketAssetRow } from '../../components/invest/market-asset-row';
+import { QuickTradeActions } from '../../components/invest/quick-trade-actions';
 import { StatePanel } from '../../components/ui/state-panel';
 import { getMessages } from '../../lib/i18n/messages';
 import { formatDateTimeLabel } from '../../lib/formatters';
+import { getOptionalCurrentSession } from '../../server/auth/session';
 import { getRequestLocale } from '../../server/i18n/locale';
 import { formatPercentChange, formatUsdPrice, formatFreshnessLabel, getQuoteTimestamp } from '../../server/lib/quote-display';
 import { getMarketGraphData } from '../../server/services/market-graph-service';
-import { getStockCatalogPageData } from '../../server/services/stock-simulation-service';
+import { getStockCatalogPageData, loadMiniHistorySeries } from '../../server/services/stock-simulation-service';
 
 export const dynamic = 'force-dynamic';
 
 type StocksPageProps = {
   searchParams?: Promise<{
     q?: string;
+    view?: string;
   }>;
 };
 
@@ -26,14 +31,17 @@ export default async function StocksPage({ searchParams }: StocksPageProps) {
   const messages = getMessages(locale);
   const params = searchParams ? await searchParams : {};
   const query = params?.q?.trim() ?? '';
-  const [stocks, graph] = await Promise.all([
+  const viewMode: MarketViewMode = params?.view === 'list' ? 'list' : 'grid';
+  const [stocks, graph, auth] = await Promise.all([
     getStockCatalogPageData(query),
     getMarketGraphData({
       assetClass: 'stock',
       preferredSymbols: ['AAPL', 'MSFT', 'NVDA', 'AMZN', 'GOOGL'],
       limit: 14,
     }),
+    getOptionalCurrentSession(),
   ]);
+  const sparklineBySymbol = await loadMiniHistorySeries(stocks.stocks.map((entry) => entry.asset.symbol), 24);
   const pricedStocks = stocks.stocks.filter((entry) => typeof entry.quote?.price === 'number');
   const latestObservedAt =
     stocks.stocks
@@ -116,44 +124,78 @@ export default async function StocksPage({ searchParams }: StocksPageProps) {
               {stocks.providerError ?? 'Quotes and historical charts are backed by the market-data provider path and cached for reuse.'}
             </p>
           </div>
+          <MarketViewToggle
+            basePath="/stocks"
+            view={viewMode}
+            query={{ q: query || undefined }}
+          />
         </header>
-        <div className="analytics-two-grid">
+        <div className={viewMode === 'grid' ? 'analytics-two-grid' : 'market-list'}>
           {stocks.stocks.length > 0 ? (
             stocks.stocks.map((entry) => (
-              <Card key={entry.asset.assetId} className="analytics-card">
-                <div className="analytics-card__header">
-                  <div>
-                    <div className="section__eyebrow">{entry.asset.sector ?? entry.asset.category}</div>
-                    <h3>{entry.asset.symbol}</h3>
-                    <p>{entry.asset.name}</p>
-                  </div>
-                </div>
-                <div className="analytics-card__body">
-                  <p>{formatUsdPrice(entry.quote?.price ?? null, locale, messages.common.unavailable)}</p>
-                  <p>{formatPercentChange(entry.quote?.changePercent ?? null, messages.common.partial)}</p>
-                  <p>{formatFreshnessLabel(getQuoteTimestamp(entry.quote), locale, messages.common.unavailable)}</p>
-                  <p>{entry.asset.thesis}</p>
-                  {entry.position ? (
-                    <p>
-                      Held: {entry.position.quantity.toFixed(4)} shares, market value {formatUsdPrice(entry.position.marketValue, locale, messages.common.unavailable)}
-                    </p>
-                  ) : null}
-                </div>
-                <div className="analytics-card__action-grid">
-                  <Link href={`/stocks/${entry.asset.symbol}`} className="button button--secondary">
-                    {messages.common.details}
-                  </Link>
-                  <WatchlistToggleForm
-                    assetId={entry.asset.assetId}
-                    symbol={entry.asset.symbol}
-                    assetClass="stock"
-                    active={entry.isWatched}
-                    label={entry.isWatched ? messages.dashboard.removeFromWatchlist : messages.dashboard.addToWatchlist}
-                  />
-                  <SimulatedOrderForm assetId={entry.asset.assetId} symbol={entry.asset.symbol} assetClass="stock" side="buy" label={messages.dashboard.buySimulated} />
-                  <SimulatedOrderForm assetId={entry.asset.assetId} symbol={entry.asset.symbol} assetClass="stock" side="sell" label={messages.dashboard.sellSimulated} />
-                </div>
-              </Card>
+              viewMode === 'grid' ? (
+                <InvestableAssetCard
+                  key={entry.asset.assetId}
+                  href={`/stocks/${entry.asset.symbol}`}
+                  title={entry.asset.name}
+                  symbol={entry.asset.symbol}
+                  categoryLabel={entry.asset.sector ?? entry.asset.category}
+                  thesis={entry.asset.thesis}
+                  priceLabel={formatUsdPrice(entry.quote?.price ?? null, locale, messages.common.unavailable)}
+                  changeLabel={formatPercentChange(entry.quote?.changePercent ?? null, messages.common.partial)}
+                  freshnessLabel={formatFreshnessLabel(getQuoteTimestamp(entry.quote), locale, messages.common.unavailable)}
+                  actionAvailability={entry.asset.actionAvailability}
+                  insightStance={entry.quote?.changePercent && entry.quote.changePercent < 0 ? 'negative' : entry.quote?.changePercent && entry.quote.changePercent > 0 ? 'positive' : 'neutral'}
+                  riskSummary={entry.position
+                    ? `Held ${entry.position.quantity.toFixed(4)} shares · Market value ${formatUsdPrice(entry.position.marketValue, locale, messages.common.unavailable)}`
+                    : entry.asset.riskSummary}
+                  sparkline={sparklineBySymbol[entry.asset.symbol] ?? []}
+                  actions={(
+                    <QuickTradeActions
+                      detailHref={`/stocks/${entry.asset.symbol}`}
+                      assetId={entry.asset.assetId}
+                      symbol={entry.asset.symbol}
+                      assetClass="stock"
+                      isAuthenticated={Boolean(auth)}
+                      strategyLaneId="manual_stock_lane"
+                      showWatchlist
+                      isWatched={entry.isWatched}
+                      watchlistLabelAdd={messages.dashboard.addToWatchlist}
+                      watchlistLabelRemove={messages.dashboard.removeFromWatchlist}
+                    />
+                  )}
+                />
+              ) : (
+                <MarketAssetRow
+                  key={entry.asset.assetId}
+                  symbol={entry.asset.symbol}
+                  title={entry.asset.name}
+                  category={entry.asset.sector ?? entry.asset.category}
+                  thesis={entry.asset.thesis}
+                  priceLabel={formatUsdPrice(entry.quote?.price ?? null, locale, messages.common.unavailable)}
+                  changeLabel={formatPercentChange(entry.quote?.changePercent ?? null, messages.common.partial)}
+                  freshnessLabel={formatFreshnessLabel(getQuoteTimestamp(entry.quote), locale, messages.common.unavailable)}
+                  actionAvailability={entry.asset.actionAvailability}
+                  insightStance={entry.quote?.changePercent && entry.quote.changePercent < 0 ? 'negative' : entry.quote?.changePercent && entry.quote.changePercent > 0 ? 'positive' : 'neutral'}
+                  sparkline={sparklineBySymbol[entry.asset.symbol] ?? []}
+                  actions={(
+                    <div className="market-row__action-grid">
+                      <QuickTradeActions
+                        detailHref={`/stocks/${entry.asset.symbol}`}
+                        assetId={entry.asset.assetId}
+                        symbol={entry.asset.symbol}
+                        assetClass="stock"
+                        isAuthenticated={Boolean(auth)}
+                        strategyLaneId="manual_stock_lane"
+                        showWatchlist
+                        isWatched={entry.isWatched}
+                        watchlistLabelAdd={messages.dashboard.addToWatchlist}
+                        watchlistLabelRemove={messages.dashboard.removeFromWatchlist}
+                      />
+                    </div>
+                  )}
+                />
+              )
             ))
           ) : (
             <StatePanel

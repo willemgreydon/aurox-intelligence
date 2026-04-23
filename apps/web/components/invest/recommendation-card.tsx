@@ -1,5 +1,6 @@
 import { Card } from '../ui/card';
 import { StatusBadge } from '../ui/status-badge';
+import { MiniSparkline } from '../charts/mini-sparkline';
 
 type RecommendationCardProps = {
   symbol: string;
@@ -7,6 +8,7 @@ type RecommendationCardProps = {
   confidence: number;
   summary: string;
   reasons: string[];
+  sparkline?: number[];
 };
 
 function mapTone(action: RecommendationCardProps['action']) {
@@ -25,9 +27,9 @@ function mapTone(action: RecommendationCardProps['action']) {
   return 'info' as const;
 }
 
-export function RecommendationCard({ symbol, action, confidence, summary, reasons }: RecommendationCardProps) {
+export function RecommendationCard({ symbol, action, confidence, summary, reasons, sparkline }: RecommendationCardProps) {
   return (
-    <Card className="analytics-card">
+    <Card className="analytics-card market-card">
       <div className="analytics-card__header">
         <div>
           <div className="section__eyebrow">AI recommendation</div>
@@ -35,6 +37,9 @@ export function RecommendationCard({ symbol, action, confidence, summary, reason
           <p>{summary}</p>
         </div>
         <StatusBadge tone={mapTone(action)}>{action}</StatusBadge>
+      </div>
+      <div className="market-card__chart market-card__chart--recommendation">
+        <MiniSparkline points={sparkline} label={`${symbol} recommendation trend`} />
       </div>
       <div className="analytics-card__body">
         <p>Confidence: {(confidence * 100).toFixed(0)}%</p>

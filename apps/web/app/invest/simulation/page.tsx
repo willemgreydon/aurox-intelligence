@@ -7,10 +7,12 @@ import { CompactStatCard } from '../../../components/stats/compact-stat-card';
 import { Card } from '../../../components/ui/card';
 import { BrokerModeLaunchpad } from '../../../components/invest/broker-mode-launchpad';
 import { PriceHistoryPanel } from '../../../components/charts/price-history-panel';
+import { InvestableAssetCard } from '../../../components/invest/investable-asset-card';
+import { MarketAssetRow } from '../../../components/invest/market-asset-row';
+import { MarketViewToggle, type MarketViewMode } from '../../../components/invest/market-view-toggle';
+import { QuickTradeActions } from '../../../components/invest/quick-trade-actions';
 import {
   ResetSimulationAccountForm,
-  SimulatedOrderForm,
-  WatchlistToggleForm,
 } from '../../../components/invest/simulation-action-form';
 import type { TableColumn } from '../../../lib/dashboard/analytics-fixtures';
 import { getMessages } from '../../../lib/i18n/messages';
@@ -18,10 +20,12 @@ import { formatDateTimeLabel, formatShortDateLabel } from '../../../lib/formatte
 import { getRequestLocale } from '../../../server/i18n/locale';
 import {
   formatFreshnessLabel,
+  formatPercentChange,
   formatUsdPrice,
   getQuoteTimestamp,
 } from '../../../server/lib/quote-display';
 import { getSimulationWorkstationStateForCurrentUser } from '../../../server/services/simulation-workstation-service';
+import { loadMiniHistorySeries } from '../../../server/services/stock-simulation-service';
 
 export const dynamic = 'force-dynamic';
 
@@ -80,20 +84,24 @@ function formatPercent(value: number) {
 
 function getAssetDetailHref(symbol: string, assetClass: 'stock' | 'etf' | 'crypto') {
   if (assetClass === 'stock') {
-    return `/stocks/${symbol}`;
+    return `/stocks/${encodeURIComponent(symbol)}`;
   }
 
-  return assetClass === 'etf' ? '/invest/etfs' : '/invest/crypto';
+  return assetClass === 'etf'
+    ? `/invest/etfs/${encodeURIComponent(symbol)}`
+    : `/invest/crypto/${encodeURIComponent(symbol)}`;
 }
 
 export default async function SimulationPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ session?: string; lane?: string }>;
+  searchParams?: Promise<{ session?: string; lane?: string; assetView?: string }>;
 }) {
   const locale = await getRequestLocale();
   const messages = getMessages(locale);
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const assetViewMode: MarketViewMode =
+    resolvedSearchParams?.assetView === 'list' ? 'list' : 'grid';
 
   const workstation = await getSimulationWorkstationStateForCurrentUser({
     sessionId: resolvedSearchParams?.session ?? null,
@@ -188,6 +196,13 @@ export default async function SimulationPage({
     !portfolio || portfolio.summary.equityValue === 0
       ? 0
       : ((portfolio.summary.equityValue - 100000) / 100000) * 100;
+  const sparklineSymbols = [
+    ...new Set([
+      ...workstation.watchlist.map((item) => item.asset.symbol),
+      ...workstation.tradableAssets.map((item) => item.asset.symbol),
+    ]),
+  ];
+  const sparklineBySymbol = await loadMiniHistorySeries(sparklineSymbols, 24);
 
   if (!portfolio) {
     return (
@@ -491,51 +506,78 @@ export default async function SimulationPage({
               Saved assets stay one click away from detail, buy, and sell actions across stocks, ETFs, and crypto.
             </p>
           </div>
+          <MarketViewToggle
+            basePath="/invest/simulation"
+            view={assetViewMode}
+            paramKey="assetView"
+            query={{
+              session: resolvedSearchParams?.session,
+              lane: resolvedSearchParams?.lane,
+            }}
+          />
         </header>
-        <div className="analytics-two-grid">
+        <div className={assetViewMode === 'grid' ? 'analytics-two-grid' : 'market-list'}>
           {workstation.watchlist.length > 0 ? (
             workstation.watchlist.map((item) => (
-              <Card key={item.asset.assetId} className="analytics-card">
-                <div className="analytics-card__header">
-                  <div>
-                    <div className="section__eyebrow">{item.asset.category}</div>
-                    <h3>{item.asset.symbol}</h3>
-                    <p>{item.asset.name}</p>
-                  </div>
-                </div>
-                <div className="analytics-card__body">
-                  <p>{formatUsdPrice(item.quote?.price ?? null, locale, messages.common.unavailable)}</p>
-                  <p>{formatFreshnessLabel(getQuoteTimestamp(item.quote), locale, messages.common.unavailable)}</p>
-                  <p>{item.asset.thesis}</p>
-                </div>
-                <div className="analytics-card__action-grid">
-                  <Link href={getAssetDetailHref(item.asset.symbol, item.asset.assetClass)} className="button button--secondary">
-                    {messages.common.details}
-                  </Link>
-                  <SimulatedOrderForm
-                    assetId={item.asset.assetId}
-                    symbol={item.asset.symbol}
-                    assetClass={item.asset.assetClass}
-                    side="buy"
-                    strategyLaneId={workstation.session?.laneId ?? 'manual_stock_lane'}
-                    label={messages.dashboard.buySimulated}
-                    simulationSessionId={workstation.session?.id}
-                    disabled={workstation.isReadOnly}
-                    disabledReason={workstation.isReadOnly ? workstation.statusMessage : undefined}
-                  />
-                  <SimulatedOrderForm
-                    assetId={item.asset.assetId}
-                    symbol={item.asset.symbol}
-                    assetClass={item.asset.assetClass}
-                    side="sell"
-                    strategyLaneId={workstation.session?.laneId ?? 'manual_stock_lane'}
-                    label={messages.dashboard.sellSimulated}
-                    simulationSessionId={workstation.session?.id}
-                    disabled={workstation.isReadOnly}
-                    disabledReason={workstation.isReadOnly ? workstation.statusMessage : undefined}
-                  />
-                </div>
-              </Card>
+              assetViewMode === 'grid' ? (
+                <InvestableAssetCard
+                  key={item.asset.assetId}
+                  href={getAssetDetailHref(item.asset.symbol, item.asset.assetClass)}
+                  title={item.asset.name}
+                  symbol={item.asset.symbol}
+                  categoryLabel={item.asset.category}
+                  thesis={item.asset.thesis}
+                  priceLabel={formatUsdPrice(item.quote?.price ?? null, locale, messages.common.unavailable)}
+                  changeLabel="Watchlist"
+                  freshnessLabel={formatFreshnessLabel(getQuoteTimestamp(item.quote), locale, messages.common.unavailable)}
+                  actionAvailability={item.asset.actionAvailability}
+                  insightStance="neutral"
+                  riskSummary={item.asset.riskSummary}
+                  sparkline={sparklineBySymbol[item.asset.symbol] ?? []}
+                  actions={(
+                    <QuickTradeActions
+                      detailHref={getAssetDetailHref(item.asset.symbol, item.asset.assetClass)}
+                      assetId={item.asset.assetId}
+                      symbol={item.asset.symbol}
+                      assetClass={item.asset.assetClass}
+                      strategyLaneId={workstation.session?.laneId ?? 'manual_stock_lane'}
+                      simulationSessionId={workstation.session?.id ?? undefined}
+                      disabled={workstation.isReadOnly}
+                      disabledReason={workstation.isReadOnly ? workstation.statusMessage : undefined}
+                      isAuthenticated
+                    />
+                  )}
+                />
+              ) : (
+                <MarketAssetRow
+                  key={item.asset.assetId}
+                  symbol={item.asset.symbol}
+                  title={item.asset.name}
+                  category={item.asset.category}
+                  thesis={item.asset.thesis}
+                  priceLabel={formatUsdPrice(item.quote?.price ?? null, locale, messages.common.unavailable)}
+                  changeLabel="Watchlist"
+                  freshnessLabel={formatFreshnessLabel(getQuoteTimestamp(item.quote), locale, messages.common.unavailable)}
+                  actionAvailability={item.asset.actionAvailability}
+                  insightStance="neutral"
+                  sparkline={sparklineBySymbol[item.asset.symbol] ?? []}
+                  actions={(
+                    <div className="market-row__action-grid">
+                      <QuickTradeActions
+                        detailHref={getAssetDetailHref(item.asset.symbol, item.asset.assetClass)}
+                        assetId={item.asset.assetId}
+                        symbol={item.asset.symbol}
+                        assetClass={item.asset.assetClass}
+                        strategyLaneId={workstation.session?.laneId ?? 'manual_stock_lane'}
+                        simulationSessionId={workstation.session?.id ?? undefined}
+                        disabled={workstation.isReadOnly}
+                        disabledReason={workstation.isReadOnly ? workstation.statusMessage : undefined}
+                        isAuthenticated
+                      />
+                    </div>
+                  )}
+                />
+              )
             ))
           ) : (
             <Card className="analytics-card">
@@ -561,61 +603,87 @@ export default async function SimulationPage({
             </p>
           </div>
         </header>
-        <div className="analytics-two-grid">
+        <div className={assetViewMode === 'grid' ? 'analytics-two-grid' : 'market-list'}>
           {workstation.tradableAssets.map((entry) => (
-            <Card key={entry.asset.assetId} className="analytics-card">
-              <div className="analytics-card__header">
-                <div>
-                  <div className="section__eyebrow">{entry.asset.sector ?? entry.asset.category}</div>
-                  <h3>{entry.asset.name}</h3>
-                  <p>{entry.asset.symbol}</p>
-                </div>
-              </div>
-              <div className="analytics-card__body">
-                <p>{formatUsdPrice(entry.quote?.price ?? null, locale, messages.common.unavailable)}</p>
-                <p>{formatFreshnessLabel(getQuoteTimestamp(entry.quote), locale, messages.common.unavailable)}</p>
-                <p>{entry.asset.thesis}</p>
-                <p>{entry.asset.riskSummary}</p>
-              </div>
-              <div className="analytics-card__action-grid">
-                <Link href={getAssetDetailHref(entry.asset.symbol, entry.asset.assetClass)} className="button button--secondary">
-                  {messages.common.details}
-                </Link>
-                <WatchlistToggleForm
-                  assetId={entry.asset.assetId}
-                  symbol={entry.asset.symbol}
-                  assetClass={entry.asset.assetClass}
-                  active={entry.isWatched}
-                  label={
-                    entry.isWatched
-                      ? messages.dashboard.removeFromWatchlist
-                      : messages.dashboard.addToWatchlist
-                  }
-                />
-                <SimulatedOrderForm
-                  assetId={entry.asset.assetId}
-                  symbol={entry.asset.symbol}
-                  assetClass={entry.asset.assetClass}
-                  side="buy"
-                  strategyLaneId={workstation.session?.laneId ?? 'manual_stock_lane'}
-                  label={messages.dashboard.buySimulated}
-                  simulationSessionId={workstation.session?.id}
-                  disabled={workstation.isReadOnly}
-                  disabledReason={workstation.isReadOnly ? workstation.statusMessage : undefined}
-                />
-                <SimulatedOrderForm
-                  assetId={entry.asset.assetId}
-                  symbol={entry.asset.symbol}
-                  assetClass={entry.asset.assetClass}
-                  side="sell"
-                  strategyLaneId={workstation.session?.laneId ?? 'manual_stock_lane'}
-                  label={messages.dashboard.sellSimulated}
-                  simulationSessionId={workstation.session?.id}
-                  disabled={workstation.isReadOnly}
-                  disabledReason={workstation.isReadOnly ? workstation.statusMessage : undefined}
-                />
-              </div>
-            </Card>
+            assetViewMode === 'grid' ? (
+              <InvestableAssetCard
+                key={entry.asset.assetId}
+                href={getAssetDetailHref(entry.asset.symbol, entry.asset.assetClass)}
+                title={entry.asset.name}
+                symbol={entry.asset.symbol}
+                categoryLabel={entry.asset.sector ?? entry.asset.category}
+                thesis={entry.asset.thesis}
+                priceLabel={formatUsdPrice(entry.quote?.price ?? null, locale, messages.common.unavailable)}
+                changeLabel={formatFreshnessLabel(getQuoteTimestamp(entry.quote), locale, messages.common.unavailable)}
+                freshnessLabel={formatFreshnessLabel(getQuoteTimestamp(entry.quote), locale, messages.common.unavailable)}
+                actionAvailability={entry.asset.actionAvailability}
+                insightStance={
+                  entry.quote?.changePercent && entry.quote.changePercent < 0
+                    ? 'negative'
+                    : entry.quote?.changePercent && entry.quote.changePercent > 0
+                      ? 'positive'
+                      : 'neutral'
+                }
+                riskSummary={entry.asset.riskSummary}
+                sparkline={sparklineBySymbol[entry.asset.symbol] ?? []}
+                actions={(
+                  <QuickTradeActions
+                    detailHref={getAssetDetailHref(entry.asset.symbol, entry.asset.assetClass)}
+                    assetId={entry.asset.assetId}
+                    symbol={entry.asset.symbol}
+                    assetClass={entry.asset.assetClass}
+                    strategyLaneId={workstation.session?.laneId ?? 'manual_stock_lane'}
+                    simulationSessionId={workstation.session?.id ?? undefined}
+                    disabled={workstation.isReadOnly}
+                    disabledReason={workstation.isReadOnly ? workstation.statusMessage : undefined}
+                    isAuthenticated
+                    showWatchlist
+                    isWatched={entry.isWatched}
+                    watchlistLabelAdd={messages.dashboard.addToWatchlist}
+                    watchlistLabelRemove={messages.dashboard.removeFromWatchlist}
+                  />
+                )}
+              />
+            ) : (
+              <MarketAssetRow
+                key={entry.asset.assetId}
+                symbol={entry.asset.symbol}
+                title={entry.asset.name}
+                category={entry.asset.sector ?? entry.asset.category}
+                thesis={entry.asset.thesis}
+                priceLabel={formatUsdPrice(entry.quote?.price ?? null, locale, messages.common.unavailable)}
+                changeLabel={formatPercentChange(entry.quote?.changePercent ?? null, messages.common.partial)}
+                freshnessLabel={formatFreshnessLabel(getQuoteTimestamp(entry.quote), locale, messages.common.unavailable)}
+                actionAvailability={entry.asset.actionAvailability}
+                insightStance={
+                  entry.quote?.changePercent && entry.quote.changePercent < 0
+                    ? 'negative'
+                    : entry.quote?.changePercent && entry.quote.changePercent > 0
+                      ? 'positive'
+                      : 'neutral'
+                }
+                sparkline={sparklineBySymbol[entry.asset.symbol] ?? []}
+                actions={(
+                  <div className="market-row__action-grid">
+                    <QuickTradeActions
+                      detailHref={getAssetDetailHref(entry.asset.symbol, entry.asset.assetClass)}
+                      assetId={entry.asset.assetId}
+                      symbol={entry.asset.symbol}
+                      assetClass={entry.asset.assetClass}
+                      strategyLaneId={workstation.session?.laneId ?? 'manual_stock_lane'}
+                      simulationSessionId={workstation.session?.id ?? undefined}
+                      disabled={workstation.isReadOnly}
+                      disabledReason={workstation.isReadOnly ? workstation.statusMessage : undefined}
+                      isAuthenticated
+                      showWatchlist
+                      isWatched={entry.isWatched}
+                      watchlistLabelAdd={messages.dashboard.addToWatchlist}
+                      watchlistLabelRemove={messages.dashboard.removeFromWatchlist}
+                    />
+                  </div>
+                )}
+              />
+            )
           ))}
         </div>
       </Section>

@@ -1,51 +1,34 @@
 import Link from 'next/link';
 import { getUserWatchlist } from '@repo/db';
-import type { InvestmentRecommendation, InvestableAssetSummary } from '@repo/api-contracts';
 import { Section } from '../../components/ui/section';
 import { WorkstationPageHeader } from '../../components/asset/workstation-page-header';
 import { Card } from '../../components/ui/card';
 import { CompactStatCard } from '../../components/stats/compact-stat-card';
 import { InvestmentCapabilityCard } from '../../components/invest/investment-capability-card';
 import { InvestableAssetCard } from '../../components/invest/investable-asset-card';
+import { MarketAssetRow } from '../../components/invest/market-asset-row';
+import { MarketViewToggle, type MarketViewMode } from '../../components/invest/market-view-toggle';
+import { QuickTradeActions } from '../../components/invest/quick-trade-actions';
 import { RecommendationCard } from '../../components/invest/recommendation-card';
 import { BrokerModeLaunchpad } from '../../components/invest/broker-mode-launchpad';
-import { SimulatedOrderForm, WatchlistToggleForm } from '../../components/invest/simulation-action-form';
 import { getMessages } from '../../lib/i18n/messages';
 import { getOptionalCurrentSession } from '../../server/auth/session';
 import { getRequestLocale } from '../../server/i18n/locale';
 import { formatFreshnessLabel, formatPercentChange, formatUsdPrice } from '../../server/lib/quote-display';
 import { getInvestOverviewData } from '../../server/services/invest-service';
-import { getSimulationOverviewDataForUser } from '../../server/services/stock-simulation-service';
+import { getSimulationOverviewDataForUser, loadMiniHistorySeries } from '../../server/services/stock-simulation-service';
 
 export const dynamic = 'force-dynamic';
 
-function isValidRecommendation(
-  item: unknown,
-): item is InvestmentRecommendation {
-  if (!item || typeof item !== 'object') return false;
-  const r = item as InvestmentRecommendation;
-  return (
-    typeof r.symbol === 'string' &&
-    r.symbol.length > 0 &&
-    typeof r.action === 'string' &&
-    Array.isArray(r.reasons)
-  );
-}
-
-function isValidAsset(item: unknown): item is InvestableAssetSummary {
-  if (!item || typeof item !== 'object') return false;
-  const a = item as InvestableAssetSummary;
-  return (
-    typeof a.assetId === 'string' &&
-    a.assetId.length > 0 &&
-    typeof a.symbol === 'string' &&
-    a.symbol.length > 0
-  );
-}
-
-export default async function InvestPage() {
+export default async function InvestPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ view?: string }>;
+}) {
   const locale = await getRequestLocale();
   const messages = getMessages(locale);
+  const params = searchParams ? await searchParams : {};
+  const viewMode: MarketViewMode = params?.view === 'list' ? 'list' : 'grid';
 
   const [invest, auth] = await Promise.all([
     getInvestOverviewData(locale, messages),
@@ -59,11 +42,18 @@ export default async function InvestPage() {
       ])
     : [[], null];
 
-  const safeRecommendations = (invest.recommendations ?? []).filter(isValidRecommendation);
+  const recommendations = invest.recommendations;
 
   const stockGroup = invest.groupedAssets.find((g) => g.assetClass === 'stock');
-  const safeStocks = (stockGroup?.items ?? []).filter(isValidAsset);
+  const stocks = stockGroup?.items ?? [];
   const simulationSummary = simulationOverview?.summary ?? null;
+  const sparklineSymbols = [
+    ...new Set([
+      ...stocks.map((item) => item.symbol),
+      ...recommendations.map((item) => item.symbol),
+    ]),
+  ];
+  const sparklineBySymbol = await loadMiniHistorySeries(sparklineSymbols, 24);
 
   return (
     <>
@@ -174,9 +164,9 @@ export default async function InvestPage() {
           />
           <InvestmentCapabilityCard
             title="ETFs and crypto"
-            description="Visible in the broader product roadmap, but not yet executable in simulation."
-            statusLabel="Limited"
-            statusTone="warning"
+            description="Supported in research surfaces and manual multi-asset simulation lanes."
+            statusLabel="Supported"
+            statusTone="success"
           />
         </div>
       </Section>
@@ -190,19 +180,47 @@ export default async function InvestPage() {
               Research candidates with thesis, risk framing, and fast simulation entry points.
             </p>
           </div>
+          <MarketViewToggle basePath="/invest" view={viewMode} />
         </header>
 
-        {safeRecommendations.length > 0 ? (
-          <div className="analytics-two-grid">
-            {safeRecommendations.map((item) => (
-              <RecommendationCard
-                key={item.symbol}
-                symbol={item.symbol}
-                action={item.action}
-                confidence={item.confidence}
-                summary={item.summary}
-                reasons={item.reasons}
-              />
+        {recommendations.length > 0 ? (
+          <div className={viewMode === 'grid' ? 'analytics-two-grid' : 'market-list'}>
+            {recommendations.map((item) => (
+              viewMode === 'grid' ? (
+                <RecommendationCard
+                  key={item.symbol}
+                  symbol={item.symbol}
+                  action={item.action}
+                  confidence={item.confidence}
+                  summary={item.summary}
+                  reasons={item.reasons}
+                  sparkline={sparklineBySymbol[item.symbol] ?? []}
+                />
+              ) : (
+                <MarketAssetRow
+                  key={item.symbol}
+                  symbol={item.symbol}
+                  title={`Recommendation: ${item.action}`}
+                  category={`Confidence ${(item.confidence * 100).toFixed(0)}%`}
+                  thesis={item.summary}
+                  priceLabel={item.reasons[0] ?? 'No primary reason'}
+                  changeLabel={item.riskNotice}
+                  freshnessLabel={item.isPersonalized ? 'Personalized' : 'Market-wide'}
+                  actionAvailability="simulated"
+                  insightStance={item.action === 'avoid' || item.action === 'trim' ? 'negative' : item.action === 'accumulate' ? 'positive' : 'neutral'}
+                  sparkline={sparklineBySymbol[item.symbol] ?? []}
+                  actions={(
+                    <div className="market-row__action-grid">
+                      <Link href="/invest/simulation" className="button button--secondary">
+                        Open simulation
+                      </Link>
+                      <Link href="/invest/overview" className="button button--secondary">
+                        Review thesis
+                      </Link>
+                    </div>
+                  )}
+                />
+              )
             ))}
           </div>
         ) : (
@@ -232,68 +250,77 @@ export default async function InvestPage() {
           </div>
         </header>
 
-        {safeStocks.length > 0 ? (
-          <div className="analytics-two-grid">
-            {safeStocks.map((item) => {
+        {stocks.length > 0 ? (
+          <div className={viewMode === 'grid' ? 'analytics-two-grid' : 'market-list'}>
+            {stocks.map((item) => {
               const isWatched = watchlist.some((w) => w.assetId === item.assetId);
 
               return (
-                <InvestableAssetCard
-                  key={item.assetId}
-                  href={`/stocks/${item.symbol}`}
-                  title={item.name}
-                  symbol={item.symbol}
-                  thesis={item.thesis}
-                  priceLabel={formatUsdPrice(item.price, locale, messages.common.unavailable)}
-                  changeLabel={formatPercentChange(item.changePercent, messages.common.partial)}
-                  freshnessLabel={formatFreshnessLabel(
-                    item.lastUpdatedAt,
-                    locale,
-                    messages.common.unavailable,
-                  )}
-                  actionAvailability={item.actionAvailability}
-                  insightStance={item.insightStance}
-                  riskSummary={item.riskSummary}
-                  actions={
-                    auth ? (
-                      <>
-                        <WatchlistToggleForm
+                viewMode === 'grid' ? (
+                  <InvestableAssetCard
+                    key={item.assetId}
+                    href={`/stocks/${item.symbol}`}
+                    title={item.name}
+                    symbol={item.symbol}
+                    categoryLabel={item.sector ?? item.category}
+                    thesis={item.thesis}
+                    priceLabel={formatUsdPrice(item.price, locale, messages.common.unavailable)}
+                    changeLabel={formatPercentChange(item.changePercent, messages.common.partial)}
+                    freshnessLabel={formatFreshnessLabel(
+                      item.lastUpdatedAt,
+                      locale,
+                      messages.common.unavailable,
+                    )}
+                    actionAvailability={item.actionAvailability}
+                    insightStance={item.insightStance}
+                    riskSummary={item.riskSummary}
+                    sparkline={sparklineBySymbol[item.symbol] ?? []}
+                    actions={(
+                      <QuickTradeActions
+                        detailHref={`/stocks/${item.symbol}`}
+                        assetId={item.assetId}
+                        symbol={item.symbol}
+                        assetClass="stock"
+                        isAuthenticated={Boolean(auth)}
+                        strategyLaneId="manual_stock_lane"
+                        showWatchlist
+                        isWatched={isWatched}
+                        watchlistLabelAdd={messages.dashboard.addToWatchlist}
+                        watchlistLabelRemove={messages.dashboard.removeFromWatchlist}
+                      />
+                    )}
+                  />
+                ) : (
+                  <MarketAssetRow
+                    key={item.assetId}
+                    symbol={item.symbol}
+                    title={item.name}
+                    category={item.sector ?? item.category}
+                    thesis={item.thesis}
+                    priceLabel={formatUsdPrice(item.price, locale, messages.common.unavailable)}
+                    changeLabel={formatPercentChange(item.changePercent, messages.common.partial)}
+                    freshnessLabel={formatFreshnessLabel(item.lastUpdatedAt, locale, messages.common.unavailable)}
+                    actionAvailability={item.actionAvailability}
+                    insightStance={item.insightStance}
+                    sparkline={sparklineBySymbol[item.symbol] ?? []}
+                    actions={(
+                      <div className="market-row__action-grid">
+                        <QuickTradeActions
+                          detailHref={`/stocks/${item.symbol}`}
                           assetId={item.assetId}
                           symbol={item.symbol}
                           assetClass="stock"
-                          active={isWatched}
-                          label={
-                            isWatched
-                              ? messages.dashboard.removeFromWatchlist
-                              : messages.dashboard.addToWatchlist
-                          }
-                        />
-
-                        <SimulatedOrderForm
-                          assetId={item.assetId}
-                          symbol={item.symbol}
-                          assetClass="stock"
-                          side="buy"
+                          isAuthenticated={Boolean(auth)}
                           strategyLaneId="manual_stock_lane"
-                          label={messages.dashboard.buySimulated}
+                          showWatchlist
+                          isWatched={isWatched}
+                          watchlistLabelAdd={messages.dashboard.addToWatchlist}
+                          watchlistLabelRemove={messages.dashboard.removeFromWatchlist}
                         />
-
-                        <SimulatedOrderForm
-                          assetId={item.assetId}
-                          symbol={item.symbol}
-                          assetClass="stock"
-                          side="sell"
-                          strategyLaneId="manual_stock_lane"
-                          label={messages.dashboard.sellSimulated}
-                        />
-                      </>
-                    ) : (
-                      <Link href="/login" className="button button--primary">
-                        Sign in
-                      </Link>
-                    )
-                  }
-                />
+                      </div>
+                    )}
+                  />
+                )
               );
             })}
           </div>

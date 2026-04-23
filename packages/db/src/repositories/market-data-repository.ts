@@ -28,6 +28,10 @@ type DailyBarRow = {
   fetchedAt: string | Date;
 };
 
+type RankedDailyBarRow = DailyBarRow & {
+  rowNum: number;
+};
+
 type AssetProfileRow = {
   symbol: string;
   assetId: string | null;
@@ -386,6 +390,69 @@ export async function getMarketHistoryBars(symbol: string, limit = 90): Promise<
   } catch (error) {
     if (isMissingMarketDataSchemaError(error)) {
       return [];
+    }
+
+    throw error;
+  }
+}
+
+export async function getMarketHistoryBarsBySymbols(
+  symbols: string[],
+  limit = 24,
+): Promise<Record<string, PersistedMarketHistoryBar[]>> {
+  const normalized = [...new Set(symbols.map((symbol) => symbol.trim().toUpperCase()).filter(Boolean))];
+  const client = createDatabaseClient();
+
+  if (!client.isConfigured || normalized.length === 0 || limit <= 0) {
+    return {};
+  }
+
+  try {
+    const placeholders = normalized.map((_, index) => `$${index + 1}`).join(', ');
+    const limitPlaceholder = `$${normalized.length + 1}`;
+    const rows = await client.query<RankedDailyBarRow>(
+      `
+        select
+          ranked.symbol,
+          ranked."observedOn",
+          ranked.open,
+          ranked.high,
+          ranked.low,
+          ranked.close,
+          ranked.volume,
+          ranked.source,
+          ranked."fetchedAt",
+          ranked."rowNum"
+        from (
+          select
+            symbol,
+            observed_on as "observedOn",
+            open,
+            high,
+            low,
+            close,
+            volume,
+            source,
+            fetched_at as "fetchedAt",
+            row_number() over (partition by symbol order by observed_on desc) as "rowNum"
+          from ${marketDailyBarsTable}
+          where symbol in (${placeholders})
+        ) ranked
+        where ranked."rowNum" <= ${limitPlaceholder}
+        order by ranked.symbol asc, ranked."observedOn" asc
+      `,
+      [...normalized, limit],
+    );
+
+    return rows.reduce<Record<string, PersistedMarketHistoryBar[]>>((acc, row) => {
+      const mapped = mapHistoryRow(row);
+      const bucket = acc[mapped.symbol] ?? (acc[mapped.symbol] = []);
+      bucket.push(mapped);
+      return acc;
+    }, {});
+  } catch (error) {
+    if (isMissingMarketDataSchemaError(error)) {
+      return {};
     }
 
     throw error;

@@ -14,7 +14,7 @@ export type InvestmentUniverseAsset = {
   isSimulated: boolean;
 };
 
-export const investmentUniverse: InvestmentUniverseAsset[] = [
+const curatedInvestmentUniverse: InvestmentUniverseAsset[] = [
   {
     assetId: 'stock-aapl',
     symbol: 'AAPL',
@@ -526,6 +526,73 @@ export const investmentUniverse: InvestmentUniverseAsset[] = [
     isSimulated: true,
   },
 ];
+
+const EXPANDED_STOCK_SYMBOLS = [
+  'AAPL','MSFT','NVDA','AMZN','GOOGL','META','TSLA','AVGO','AMD','NFLX','ORCL','CRM','ADBE','INTC','QCOM','ARM','PLTR','SNOW','SHOP','UBER',
+  'ABNB','COIN','HOOD','SOFI','JPM','BAC','GS','MS','V','MA','PYPL','AXP','WMT','COST','PG','KO','PEP','MCD','NKE','SBUX',
+  'XOM','CVX','SLB','COP','LLY','JNJ','MRK','PFE','UNH','ABBV','CAT','GE','BA','RTX','DE','DIS','SONY','TM','SAP','ASML',
+  'AMAT','LRCX','KLAC','MU','TXN','ADI','PANW','CRWD','ZS','NET','DDOG','MDB','NOW','TEAM','INTU','ANET','WDAY','SQ','RBLX','TTD',
+  'MELI','SE','BABA','PDD','JD','TCEHY','NIO','RIVN','LCID','F','GM','RACE','MBLY','STLA','VZ','T','TMUS','CMCSA','CHTR','ATVI',
+  'EA','U','ROKU','SPOT','LYFT','DASH','CVNA','BKNG','EXPE','MAR','HLT','DAL','UAL','AAL','LUV','CSCO','IBM','HPQ','DELL','HPE',
+  'CSX','UNP','NSC','FDX','UPS','ETN','HON','MMM','PH','ITW','EMR','LMT','NOC','GD','HII','C','SCHW','BLK','BX','KKR',
+  'CME','ICE','CB','AIG','PGR','TRV','ALL','BK','USB','PNC','TFC','WFC','COF','DFS','MSCI','SPGI','MCO','ADP','PAYX','FIS',
+  'GPN','FI','TTWO','AMGN','GILD','BIIB','REGN','VRTX','ISRG','SYK','BSX','MDT','ABT','DHR','TMO','BMY','ZTS','CVS','CI','HUM',
+  'LOW','HD','TGT','KR','DG','DLTR','KHC','CL','KMB','MDLZ','GIS','CPB','HSY','MNST','KDP','PM','MO','EL','UL','RIO',
+  'BHP','FCX','NEM','GOLD','NUE','STLD','X','MP','LULU','ETSY','PINS','SNAP','PTON','DOCU','ZM','OKTA','TWLO','SMCI','ENPH','SEDG',
+  'FSLR','NEE','DUK','SO','AEP','XEL','EIX','EXC','SRE','PCG',
+] as const;
+
+const EXPANDED_ETF_SYMBOLS = [
+  'SPY','VOO','IVV','VTI','QQQ','VUG','SCHD','DIA','IWM','XLK','XLF','XLE','XLV','XLY','XLI','XLP','XLC','XLU','XLB','XLRE',
+  'SMH','ARKK','SOXX','GLD','SLV','IAU','TLT','IEF','SHY','BND','AGG','LQD','HYG','VNQ','VEA','VWO','EEM','SCHG','SPLG','VYM',
+  'VO','VB','IJH','IJR','SCHB','ITOT','SCHF','VXUS','BIL','SGOV','TIP','SCHP','MBB','BNDX','EMB','MINT','USFR','TFLO','RSP','SPYG',
+  'SPYD','SPDW','SPAB','VT','ACWI','URTH','QQQM','IVW','IWF','IWD','IWN','IWO','IWB','IWR','IWP','IWS','MTUM','QUAL','USMV','VLUE',
+] as const;
+
+function makeFallbackAsset(
+  symbol: string,
+  assetClass: 'stock' | 'etf',
+): InvestmentUniverseAsset {
+  return {
+    assetId: `${assetClass}-${symbol.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+    symbol,
+    name: symbol,
+    assetClass,
+    category: assetClass === 'stock' ? 'Expanded stock universe' : 'Expanded ETF universe',
+    geography: 'United States',
+    sector: assetClass === 'stock' ? 'Diversified' : null,
+    thesis:
+      assetClass === 'stock'
+        ? 'Additional high-coverage equity symbol for broader live monitoring and scanning.'
+        : 'Additional benchmark/product symbol for broader live ETF monitoring and scanning.',
+    riskSummary:
+      assetClass === 'stock'
+        ? 'Expanded-coverage symbol; evaluate liquidity, volatility, and current catalyst risk.'
+        : 'Expanded-coverage ETF; evaluate concentration, factor, and macro sensitivity.',
+    actionAvailability: 'planned',
+    isSimulated: true,
+  };
+}
+
+function mergeExpandedUniverse(base: InvestmentUniverseAsset[]) {
+  const bySymbol = new Map(base.map((asset) => [asset.symbol, asset]));
+
+  for (const symbol of EXPANDED_STOCK_SYMBOLS) {
+    if (!bySymbol.has(symbol)) {
+      bySymbol.set(symbol, makeFallbackAsset(symbol, 'stock'));
+    }
+  }
+
+  for (const symbol of EXPANDED_ETF_SYMBOLS) {
+    if (!bySymbol.has(symbol)) {
+      bySymbol.set(symbol, makeFallbackAsset(symbol, 'etf'));
+    }
+  }
+
+  return [...bySymbol.values()];
+}
+
+export const investmentUniverse: InvestmentUniverseAsset[] = mergeExpandedUniverse(curatedInvestmentUniverse);
 
 export async function getInvestmentUniverse(): Promise<InvestmentUniverseAsset[]> {
   return investmentUniverse;

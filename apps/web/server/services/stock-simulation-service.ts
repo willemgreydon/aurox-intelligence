@@ -2,6 +2,7 @@
 
 import {
   getCatalogAssetBySymbol,
+  getMarketHistoryBarsBySymbols,
   getLatestMarketQuoteSnapshots,
   getMarketHistoryBars,
   getSimulationWorkspace,
@@ -64,6 +65,32 @@ function normalizeHistoryBars(bars: PersistedMarketHistoryBar[]): PersistedMarke
   return [...dedupedByTimestamp.values()].sort(
     (left, right) => new Date(left.timestamp).getTime() - new Date(right.timestamp).getTime(),
   );
+}
+
+export async function loadMiniHistorySeries(
+  symbols: string[],
+  limit = 24,
+): Promise<Record<string, number[]>> {
+  const normalized = [...new Set(symbols.map((symbol) => symbol.trim().toUpperCase()).filter(Boolean))];
+
+  if (normalized.length === 0 || limit <= 0) {
+    return {};
+  }
+
+  const rowsBySymbol = await getMarketHistoryBarsBySymbols(normalized, limit);
+  const seriesBySymbol: Record<string, number[]> = {};
+
+  for (const symbol of normalized) {
+    const bars = normalizeHistoryBars(rowsBySymbol[symbol] ?? []);
+    const closes = bars
+      .map((bar) => bar.close)
+      .filter((value) => Number.isFinite(value))
+      .slice(-limit);
+
+    seriesBySymbol[symbol] = closes;
+  }
+
+  return seriesBySymbol;
 }
 
 export async function loadQuoteSnapshots(symbols: string[]): Promise<PersistedMarketQuoteSnapshot[]> {
@@ -241,11 +268,31 @@ export type StockDetailPageData = {
   } | null;
 };
 
-export async function getStockDetailPageData(symbol: string): Promise<StockDetailPageData | null> {
+export type InvestableAssetDetailPageData = {
+  asset: CatalogAsset;
+  quote: PersistedMarketQuoteSnapshot | null;
+  history: PersistedMarketHistoryBar[];
+  isWatched: boolean;
+  position: {
+    quantity: number;
+    averageCost: number;
+    marketValue: number;
+    unrealizedPnl: number;
+  } | null;
+};
+
+export async function getInvestableAssetDetailPageData(
+  symbol: string,
+  requiredAssetClass?: CatalogAsset['assetClass'],
+): Promise<InvestableAssetDetailPageData | null> {
   const normalized = symbol.trim().toUpperCase();
   const asset = await getCatalogAssetBySymbol(normalized);
 
-  if (!asset || asset.assetClass !== 'stock') {
+  if (!asset || (requiredAssetClass ? asset.assetClass !== requiredAssetClass : false)) {
+    return null;
+  }
+
+  if (asset.assetClass !== 'stock' && asset.assetClass !== 'etf' && asset.assetClass !== 'crypto') {
     return null;
   }
 
@@ -284,6 +331,11 @@ export async function getStockDetailPageData(symbol: string): Promise<StockDetai
     isWatched,
     position,
   };
+}
+
+export async function getStockDetailPageData(symbol: string): Promise<StockDetailPageData | null> {
+  const detail = await getInvestableAssetDetailPageData(symbol, 'stock');
+  return detail;
 }
 
 export type SimulationPortfolioPageData = {

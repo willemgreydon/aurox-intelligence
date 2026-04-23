@@ -1,6 +1,13 @@
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import * as nextEnv from '@next/env';
 import { z } from 'zod';
+import {
+  DEFAULT_CRYPTO_SYMBOLS,
+  DEFAULT_ETF_SYMBOLS,
+  DEFAULT_INDEX_SYMBOLS,
+  DEFAULT_STOCK_SYMBOLS,
+} from './market/default-symbol-universe';
 
 const { loadEnvConfig } = nextEnv;
 
@@ -20,17 +27,13 @@ function ensureEnvLoaded() {
     return;
   }
 
-  const cwd = process.cwd();
-
+  const currentDir = path.dirname(fileURLToPath(import.meta.url));
+  const repoRoot = path.resolve(currentDir, '../../..');
   const candidateDirs = [
-    cwd,
-    path.resolve(cwd, '.'),
-    path.resolve(cwd, 'apps/web'),
-    path.resolve(cwd, 'apps/worker'),
-    path.resolve(cwd, '..'),
-    path.resolve(cwd, '../..'),
-    path.resolve(cwd, '../../apps/web'),
-    path.resolve(cwd, '../../apps/worker'),
+    repoRoot,
+    path.resolve(repoRoot, 'apps/web'),
+    path.resolve(repoRoot, 'apps/worker'),
+    path.resolve(repoRoot, 'packages/providers'),
   ];
 
   for (const dir of candidateDirs) {
@@ -88,147 +91,6 @@ const providerEnvSchema = z.object({
 
 export type ProviderEnv = z.infer<typeof providerEnvSchema>;
 export type MarketDataProvider = ProviderEnv['MARKET_DATA_PROVIDER'];
-
-const DEFAULT_STOCK_SYMBOLS = [
-  'AAPL',
-  'MSFT',
-  'NVDA',
-  'AMZN',
-  'GOOGL',
-  'META',
-  'TSLA',
-  'AVGO',
-  'AMD',
-  'NFLX',
-  'ORCL',
-  'CRM',
-  'ADBE',
-  'INTC',
-  'QCOM',
-  'ARM',
-  'PLTR',
-  'SNOW',
-  'SHOP',
-  'UBER',
-  'ABNB',
-  'COIN',
-  'HOOD',
-  'SOFI',
-  'JPM',
-  'BAC',
-  'GS',
-  'MS',
-  'V',
-  'MA',
-  'PYPL',
-  'AXP',
-  'WMT',
-  'COST',
-  'PG',
-  'KO',
-  'PEP',
-  'MCD',
-  'NKE',
-  'SBUX',
-  'XOM',
-  'CVX',
-  'SLB',
-  'COP',
-  'LLY',
-  'JNJ',
-  'MRK',
-  'PFE',
-  'UNH',
-  'ABBV',
-  'CAT',
-  'GE',
-  'BA',
-  'RTX',
-  'DE',
-  'DIS',
-  'SONY',
-  'TM',
-  'SAP',
-  'ASML',
-];
-
-const DEFAULT_ETF_SYMBOLS = [
-  'SPY',
-  'VOO',
-  'IVV',
-  'VTI',
-  'QQQ',
-  'VUG',
-  'SCHD',
-  'DIA',
-  'IWM',
-  'XLK',
-  'XLF',
-  'XLE',
-  'XLV',
-  'XLY',
-  'XLI',
-  'XLP',
-  'XLC',
-  'XLU',
-  'XLB',
-  'XLRE',
-  'SMH',
-  'ARKK',
-  'SOXX',
-  'GLD',
-  'SLV',
-  'IAU',
-  'TLT',
-  'IEF',
-  'SHY',
-  'BND',
-  'AGG',
-  'LQD',
-  'HYG',
-  'VNQ',
-  'VEA',
-  'VWO',
-  'EEM',
-  'SCHG',
-  'SPLG',
-  'VYM',
-];
-
-const DEFAULT_CRYPTO_SYMBOLS = [
-  'BINANCE:BTCUSDT',
-  'BINANCE:ETHUSDT',
-  'BINANCE:SOLUSDT',
-  'BINANCE:XRPUSDT',
-  'BINANCE:BNBUSDT',
-  'BINANCE:ADAUSDT',
-  'BINANCE:AVAXUSDT',
-  'BINANCE:DOGEUSDT',
-  'BINANCE:LINKUSDT',
-  'BINANCE:DOTUSDT',
-  'BINANCE:MATICUSDT',
-  'BINANCE:LTCUSDT',
-  'BINANCE:BCHUSDT',
-  'BINANCE:UNIUSDT',
-  'BINANCE:ATOMUSDT',
-  'BINANCE:NEARUSDT',
-  'BINANCE:APTUSDT',
-  'BINANCE:ARBUSDT',
-  'BINANCE:OPUSDT',
-  'BINANCE:ETCUSDT',
-  'BINANCE:FILUSDT',
-  'BINANCE:ICPUSDT',
-  'BINANCE:INJUSDT',
-  'BINANCE:TONUSDT',
-  'BINANCE:TRXUSDT',
-  'BINANCE:HBARUSDT',
-  'BINANCE:VETUSDT',
-  'BINANCE:ALGOUSDT',
-  'BINANCE:AAVEUSDT',
-  'BINANCE:RNDRUSDT',
-];
-
-const DEFAULT_INDEX_SYMBOLS = ['SPX', 'NDX', 'DJI', 'VIX'];
 
 function parseCsv(input: string | undefined): string[] {
   return (input ?? '')

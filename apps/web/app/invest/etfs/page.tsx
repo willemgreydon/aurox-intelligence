@@ -1,27 +1,43 @@
+import { getUserWatchlist } from '@repo/db';
 import { Section } from '../../../components/ui/section';
 import { WorkstationPageHeader } from '../../../components/asset/workstation-page-header';
 import { MarketGraphSection } from '../../../components/charts/market-graph-section';
 import { InvestableAssetCard } from '../../../components/invest/investable-asset-card';
+import { MarketAssetRow } from '../../../components/invest/market-asset-row';
+import { MarketViewToggle, type MarketViewMode } from '../../../components/invest/market-view-toggle';
+import { QuickTradeActions } from '../../../components/invest/quick-trade-actions';
 import { getMessages } from '../../../lib/i18n/messages';
+import { getOptionalCurrentSession } from '../../../server/auth/session';
 import { getRequestLocale } from '../../../server/i18n/locale';
 import { formatFreshnessLabel, formatPercentChange, formatUsdPrice } from '../../../server/lib/quote-display';
 import { getMarketGraphData } from '../../../server/services/market-graph-service';
 import { getInvestOverviewData } from '../../../server/services/invest-service';
+import { loadMiniHistorySeries } from '../../../server/services/stock-simulation-service';
 
 export const dynamic = 'force-dynamic';
 
-export default async function InvestEtfsPage() {
+export default async function InvestEtfsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ view?: string }>;
+}) {
   const locale = await getRequestLocale();
   const messages = getMessages(locale);
-  const [invest, graph] = await Promise.all([
+  const params = searchParams ? await searchParams : {};
+  const viewMode: MarketViewMode = params?.view === 'list' ? 'list' : 'grid';
+  const [invest, graph, auth] = await Promise.all([
     getInvestOverviewData(locale, messages),
     getMarketGraphData({
       assetClass: 'etf',
       preferredSymbols: ['SPY', 'QQQ', 'VTI', 'IWM', 'TLT'],
       limit: 10,
     }),
+    getOptionalCurrentSession(),
   ]);
   const group = invest.groupedAssets.find((item) => item.assetClass === 'etf');
+  const items = group?.items ?? [];
+  const watchlist = auth ? await getUserWatchlist(auth.user.id) : [];
+  const sparklineBySymbol = await loadMiniHistorySeries(items.map((item) => item.symbol), 24);
 
   return (
     <>
@@ -48,21 +64,81 @@ export default async function InvestEtfsPage() {
         />
       </Section>
       <Section className="dashboard-section">
-        <div className="analytics-two-grid">
-          {(group?.items ?? []).map((item) => (
-            <InvestableAssetCard
-              key={item.assetId}
-              href="/invest/etfs"
-              title={item.name}
-              symbol={item.symbol}
-              thesis={item.thesis}
-              priceLabel={formatUsdPrice(item.price, locale, messages.common.unavailable)}
-              changeLabel={formatPercentChange(item.changePercent, messages.common.partial)}
-              freshnessLabel={formatFreshnessLabel(item.lastUpdatedAt, locale, messages.common.unavailable)}
-              actionAvailability={item.actionAvailability}
-              insightStance={item.insightStance}
-              riskSummary={item.riskSummary}
-            />
+        <header className="dashboard-section-heading">
+          <div>
+            <div className="section__eyebrow">ETF listings</div>
+            <h2 className="dashboard-section-heading__title">Benchmark ETFs with simulation-ready actions</h2>
+            <p className="dashboard-section-heading__description">
+              Switch between card and row mode without leaving the lane.
+            </p>
+          </div>
+          <MarketViewToggle basePath="/invest/etfs" view={viewMode} />
+        </header>
+        <div className={viewMode === 'grid' ? 'analytics-two-grid' : 'market-list'}>
+          {items.map((item) => (
+            viewMode === 'grid' ? (
+              <InvestableAssetCard
+                key={item.assetId}
+                href={`/invest/etfs/${encodeURIComponent(item.symbol)}`}
+                title={item.name}
+                symbol={item.symbol}
+                categoryLabel={item.category}
+                thesis={item.thesis}
+                priceLabel={formatUsdPrice(item.price, locale, messages.common.unavailable)}
+                changeLabel={formatPercentChange(item.changePercent, messages.common.partial)}
+                freshnessLabel={formatFreshnessLabel(item.lastUpdatedAt, locale, messages.common.unavailable)}
+                actionAvailability={item.actionAvailability}
+                insightStance={item.insightStance}
+                riskSummary={item.riskSummary}
+                sparkline={sparklineBySymbol[item.symbol] ?? []}
+                actions={(
+                  <QuickTradeActions
+                    detailHref={`/invest/etfs/${encodeURIComponent(item.symbol)}`}
+                    detailLabel="Open detail"
+                    assetId={item.assetId}
+                    symbol={item.symbol}
+                    assetClass="etf"
+                    isAuthenticated={Boolean(auth)}
+                    strategyLaneId="manual_multi_asset_lane"
+                    showWatchlist
+                    isWatched={watchlist.some((entry) => entry.assetId === item.assetId)}
+                    watchlistLabelAdd={messages.dashboard.addToWatchlist}
+                    watchlistLabelRemove={messages.dashboard.removeFromWatchlist}
+                  />
+                )}
+              />
+            ) : (
+              <MarketAssetRow
+                key={item.assetId}
+                symbol={item.symbol}
+                title={item.name}
+                category={item.category}
+                thesis={item.thesis}
+                priceLabel={formatUsdPrice(item.price, locale, messages.common.unavailable)}
+                changeLabel={formatPercentChange(item.changePercent, messages.common.partial)}
+                freshnessLabel={formatFreshnessLabel(item.lastUpdatedAt, locale, messages.common.unavailable)}
+                actionAvailability={item.actionAvailability}
+                insightStance={item.insightStance}
+                sparkline={sparklineBySymbol[item.symbol] ?? []}
+                actions={(
+                  <div className="market-row__action-grid">
+                    <QuickTradeActions
+                      detailHref={`/invest/etfs/${encodeURIComponent(item.symbol)}`}
+                      detailLabel="Open detail"
+                      assetId={item.assetId}
+                      symbol={item.symbol}
+                      assetClass="etf"
+                      isAuthenticated={Boolean(auth)}
+                      strategyLaneId="manual_multi_asset_lane"
+                      showWatchlist
+                      isWatched={watchlist.some((entry) => entry.assetId === item.assetId)}
+                      watchlistLabelAdd={messages.dashboard.addToWatchlist}
+                      watchlistLabelRemove={messages.dashboard.removeFromWatchlist}
+                    />
+                  </div>
+                )}
+              />
+            )
           ))}
         </div>
       </Section>

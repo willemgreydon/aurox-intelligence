@@ -1,97 +1,26 @@
 import type { MarketAssetKind } from './types';
+import {
+  DEFAULT_CRYPTO_SYMBOLS,
+  DEFAULT_ETF_SYMBOLS,
+  DEFAULT_INDEX_SYMBOLS,
+} from './default-symbol-universe';
 
-const ETF_SYMBOLS = new Set([
-  'SPY',
-  'VOO',
-  'IVV',
-  'VTI',
-  'QQQ',
-  'VUG',
-  'SCHD',
-  'DIA',
-  'IWM',
-  'XLK',
-  'XLF',
-  'XLE',
-  'XLV',
-  'XLY',
-  'XLI',
-  'XLP',
-  'XLC',
-  'XLU',
-  'XLB',
-  'XLRE',
-  'SMH',
-  'ARKK',
-  'SOXX',
-  'GLD',
-  'SLV',
-  'IAU',
-  'TLT',
-  'IEF',
-  'SHY',
-  'BND',
-  'AGG',
-  'LQD',
-  'HYG',
-  'VNQ',
-  'VEA',
-  'VWO',
-  'EEM',
-  'SCHG',
-  'SPLG',
-  'VYM',
-]);
+const ETF_SYMBOLS = new Set(DEFAULT_ETF_SYMBOLS);
 
-const INDEX_SYMBOLS = new Set([
-  'SPX',
-  'NDX',
-  'DJI',
-  'VIX',
-  '^GSPC',
-  '^IXIC',
-  '^DJI',
-  '^VIX',
-]);
+const INDEX_SYMBOLS = new Set(DEFAULT_INDEX_SYMBOLS);
 
-const COMMON_CRYPTO_BASES = new Set([
-  'BTC',
-  'ETH',
-  'SOL',
-  'XRP',
-  'BNB',
-  'ADA',
-  'AVAX',
-  'DOGE',
-  'LINK',
-  'DOT',
-  'MATIC',
-  'POL',
-  'LTC',
-  'BCH',
-  'UNI',
-  'ATOM',
-  'NEAR',
-  'APT',
-  'ARB',
-  'OP',
-  'ETC',
-  'FIL',
-  'ICP',
-  'INJ',
-  'TON',
-  'TRX',
-  'HBAR',
-  'VET',
-  'ALGO',
-  'AAVE',
-  'RNDR',
-  'SUI',
-  'SEI',
-  'PEPE',
-  'SHIB',
-  'TAO',
-]);
+const COMMON_CRYPTO_BASES = new Set(
+  DEFAULT_CRYPTO_SYMBOLS
+    .filter((symbol) => symbol.startsWith('BINANCE:'))
+    .map((symbol) => symbol.replace('BINANCE:', ''))
+    .map((pair) => {
+      if (pair.endsWith('USDT')) return pair.slice(0, -4);
+      if (pair.endsWith('USD')) return pair.slice(0, -3);
+      if (pair.endsWith('BTC')) return pair.slice(0, -3);
+      if (pair.endsWith('ETH')) return pair.slice(0, -3);
+      return pair;
+    }),
+);
 
 const COINGECKO_ID_BY_SYMBOL: Record<string, string> = {
   'BINANCE:BTCUSDT': 'bitcoin',

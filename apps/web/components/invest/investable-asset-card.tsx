@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { StatusBadge } from '../ui/status-badge';
 import { Card } from '../ui/card';
 import { cn } from '../../lib/utils';
+import { MiniSparkline } from '../charts/mini-sparkline';
 
 type InvestableAssetCardProps = {
   href: string;
@@ -15,6 +16,8 @@ type InvestableAssetCardProps = {
   actionAvailability: 'available' | 'simulated' | 'planned' | 'unavailable';
   insightStance: 'positive' | 'negative' | 'neutral';
   riskSummary: string;
+  sparkline?: number[];
+  categoryLabel?: string;
   actions?: ReactNode;
 };
 
@@ -33,16 +36,16 @@ function mapTone(value: InvestableAssetCardProps['actionAvailability']) {
 
 export function InvestableAssetCard(props: InvestableAssetCardProps) {
   return (
-    <Card className="analytics-card">
+    <Card className="analytics-card market-card">
       <div className="analytics-card__header">
         <div>
-          <div className="section__eyebrow">{props.symbol}</div>
+          <div className="section__eyebrow">{props.categoryLabel ?? props.symbol}</div>
           <h3>{props.title}</h3>
-          <p>{props.thesis}</p>
+          <p className="market-card__symbol">{props.symbol}</p>
         </div>
         <StatusBadge tone={mapTone(props.actionAvailability)}>{props.actionAvailability}</StatusBadge>
       </div>
-      <div className="comparison-stat">
+      <div className="comparison-stat market-card__quote-grid">
         <div>
           <div className="comparison-stat__label">Quote</div>
           <div className="comparison-stat__value">{props.priceLabel}</div>
@@ -60,13 +63,17 @@ export function InvestableAssetCard(props: InvestableAssetCardProps) {
             {props.changeLabel}
           </div>
         </div>
+        <div className="market-card__chart">
+          <MiniSparkline points={props.sparkline} label={`${props.symbol} trend`} />
+        </div>
       </div>
       <div className="analytics-card__body">
+        <p>{props.thesis}</p>
         <p>{props.riskSummary}</p>
         <p>Freshness: {props.freshnessLabel}</p>
-        <div className="analytics-card__actions">
+        <div className="analytics-card__action-grid market-card__actions">
           <Link href={props.href} className="button button--secondary">
-            Open asset lane
+            Open asset
           </Link>
           {props.actions}
         </div>
