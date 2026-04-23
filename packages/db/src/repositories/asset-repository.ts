@@ -87,6 +87,22 @@ function listFallbackAssets(assetClass?: InvestmentUniverseAsset['assetClass']) 
     .map(mapFallbackAsset);
 }
 
+function mergeCatalogAssetsWithFallback(
+  fallbackAssets: CatalogAsset[],
+  persistedAssets: CatalogAsset[],
+): CatalogAsset[] {
+  if (persistedAssets.length === 0) {
+    return fallbackAssets;
+  }
+
+  const persistedBySymbol = new Map(persistedAssets.map((asset) => [asset.symbol, asset]));
+  const merged = fallbackAssets.map((asset) => persistedBySymbol.get(asset.symbol) ?? asset);
+  const knownSymbols = new Set(merged.map((asset) => asset.symbol));
+  const persistedOnly = persistedAssets.filter((asset) => !knownSymbols.has(asset.symbol));
+
+  return [...merged, ...persistedOnly];
+}
+
 export async function listAssets(): Promise<Asset[]> {
   const assets = await listCatalogAssets();
 
@@ -155,11 +171,9 @@ export async function listCatalogAssets(
       params,
     );
 
-    if (rows.length === 0) {
-      return listFallbackAssets(assetClass);
-    }
-
-    return rows.map(mapMarketAsset);
+    const fallbackAssets = listFallbackAssets(assetClass);
+    const persistedAssets = rows.map(mapMarketAsset);
+    return mergeCatalogAssetsWithFallback(fallbackAssets, persistedAssets);
   } catch (error) {
     if (isMissingMarketAssetsError(error)) {
       return listFallbackAssets(assetClass);
