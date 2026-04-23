@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { StockDetailViewModel, StocksOverviewViewModel } from '../../server/mappers/stocks-mapper';
+import type { StocksOverviewViewModel } from '../../server/mappers/stocks-mapper';
 import type { getMarketGraphData } from '../../server/services/market-graph-service';
 import { Card } from '../ui/card';
 import { Section } from '../ui/section';
@@ -8,7 +8,7 @@ import { MarketGraphWorkspace } from '../charts/market-graph-workspace';
 
 type HeroSectionProps = {
   stocks: StocksOverviewViewModel;
-  featuredStock: StockDetailViewModel | null;
+  featuredSymbol: string | null;
   marketGraph: Awaited<ReturnType<typeof getMarketGraphData>>;
   labels: {
     eyebrow: string;
@@ -62,7 +62,7 @@ type HeroSectionProps = {
   };
 };
 
-export function HeroSection({ stocks, featuredStock, marketGraph, labels }: HeroSectionProps) {
+export function HeroSection({ stocks, featuredSymbol, marketGraph, labels }: HeroSectionProps) {
   const positiveBreadth = stocks.trackedStocks.length > 0 ? Math.round((stocks.trackedStocks.filter((item) => (item.changePercent ?? 0) > 0).length / stocks.trackedStocks.length) * 100) : 0;
   const featuredMove = stocks.topMovers[0];
   const metrics = [
@@ -98,8 +98,8 @@ export function HeroSection({ stocks, featuredStock, marketGraph, labels }: Hero
             <Link href="/market" className="button button--secondary">
               {labels.marketGraph}
             </Link>
-            <Link href={featuredStock ? `/stocks/${featuredStock.symbol}` : '/dashboard'} className="button button--secondary">
-              {featuredStock ? labels.reviewAsset(featuredStock.symbol) : labels.openDashboard}
+            <Link href={featuredSymbol ? `/stocks/${featuredSymbol}` : '/dashboard'} className="button button--secondary">
+              {featuredSymbol ? labels.reviewAsset(featuredSymbol) : labels.openDashboard}
             </Link>
           </div>
 

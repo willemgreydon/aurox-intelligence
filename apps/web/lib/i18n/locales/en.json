@@ -40,7 +40,12 @@
     "openMenu": "Open navigation menu",
     "closeMenu": "Close navigation menu",
     "closeOverlay": "Close menu overlay",
-    "closeNavigation": "Close navigation"
+    "closeNavigation": "Close navigation",
+    "preloader": {
+      "loadingStocks": "loading stocks...",
+      "loadingEtfs": "loading etfs...",
+      "loadingCrypto": "loading crypto..."
+    }
   },
   "ticker": {
     "aria": "Market ticker",

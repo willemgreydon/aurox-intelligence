@@ -1,4 +1,4 @@
-import { getStockDetailData, getStocksOverviewData } from '../server/services/stocks-service';
+import { getStocksOverviewData } from '../server/services/stocks-service';
 import { getMarketGraphData } from '../server/services/market-graph-service';
 import { HeroSection } from '../components/sections/hero-section';
 import { CapabilitiesSection } from '../components/sections/capabilities-section';
@@ -18,13 +18,12 @@ export default async function HomePage() {
     getMarketGraphData(),
   ]);
   const featuredSymbol = stocks.topMovers[0]?.symbol ?? stocks.trackedStocks[0]?.symbol ?? null;
-  const featuredStock = featuredSymbol ? await getStockDetailData(featuredSymbol, locale, messages) : null;
 
   return (
     <>
       <HeroSection
         stocks={stocks}
-        featuredStock={featuredStock}
+        featuredSymbol={featuredSymbol}
         marketGraph={marketGraph}
         labels={{
           eyebrow: messages.home.heroEyebrow,

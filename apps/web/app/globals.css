@@ -133,6 +133,47 @@ code,
   overflow-x: clip;
 }
 
+.page-preloader {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-sticky) + 20);
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at center, rgba(47, 102, 208, 0.14), transparent 45%),
+    color-mix(in srgb, var(--app-bg) 92%, #000 8%);
+  backdrop-filter: blur(10px);
+  transition: opacity 220ms var(--ease-standard), visibility 220ms var(--ease-standard);
+}
+
+.page-preloader--closing {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.page-preloader__center {
+  display: grid;
+  place-items: center;
+  gap: var(--space-3);
+  text-align: center;
+}
+
+.page-preloader__percent {
+  color: var(--text-primary);
+  font-family: var(--font-family-mono);
+  font-size: clamp(1.05rem, 1.5vw, 1.35rem);
+  letter-spacing: 0.08em;
+}
+
+.page-preloader__message {
+  color: var(--text-secondary);
+  font-family: var(--font-family-mono);
+  font-size: clamp(0.75rem, 1.1vw, 0.9rem);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  animation: preloader-blink 1s steps(1, end) infinite;
+}
+
 .page-main {
   position: relative;
   overflow-x: clip;
@@ -3788,6 +3829,18 @@ code,
 
   to {
     transform: translateX(calc(-50% - var(--space-3)));
+  }
+}
+
+@keyframes preloader-blink {
+  0%,
+  55% {
+    opacity: 1;
+  }
+
+  56%,
+  100% {
+    opacity: 0.35;
   }
 }
 

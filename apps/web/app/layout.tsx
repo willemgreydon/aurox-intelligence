@@ -7,6 +7,7 @@ import { getMessages } from '../lib/i18n/messages';
 import { ThemeProvider } from '../components/layout/theme-provider';
 import { Header } from '../components/layout/header';
 import { Footer } from '../components/layout/footer';
+import { PagePreloader } from '../components/layout/page-preloader';
 import { getRequestLocale } from '../server/i18n/locale';
 
 const sans = IBM_Plex_Sans({
@@ -51,6 +52,13 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     >
       <body suppressHydrationWarning>
         <ThemeProvider initialTheme={initialTheme} cookieKey={THEME_COOKIE_KEY}>
+          <PagePreloader
+            labels={{
+              loadingStocks: messages.shell.preloader.loadingStocks,
+              loadingEtfs: messages.shell.preloader.loadingEtfs,
+              loadingCrypto: messages.shell.preloader.loadingCrypto,
+            }}
+          />
           <div className="app-shell">
             <Header locale={locale} messages={messages} />
             <main className="page-main">{children}</main>
