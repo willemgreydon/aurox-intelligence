@@ -1,36 +1,64 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalEnv": [
+    "DATABASE_URL",
+    "DIRECT_URL",
+    "AUTH_SECRET",
+    "AUTH_SESSION_DAYS",
+    "WORKER_CONCURRENCY",
+    "LOG_LEVEL",
+    "MARKET_DATA_PROVIDER",
+    "MARKET_STREAM_PROVIDER",
+    "MARKET_METADATA_PROVIDER",
+    "MARKET_HISTORY_FALLBACK_PROVIDERS",
+    "MARKET_QUOTE_FALLBACK_PROVIDERS",
+    "CRYPTO_STREAM_PROVIDER",
+    "CRYPTO_HISTORY_PROVIDER",
+    "FINNHUB_API_KEY",
+    "EODHD_API_KEY",
+    "POLYGON_API_KEY",
+    "TWELVE_DATA_API_KEY",
+    "TIINGO_API_KEY",
+    "COINGECKO_API_KEY",
+    "FINNHUB_MARKET_SYMBOLS",
+    "EODHD_MARKET_SYMBOLS",
+    "MARKET_SYMBOLS",
+    "APP_BASE_URL",
+    "BROKER_EXECUTION_PROVIDER",
+    "BROKER_DRY_RUN",
+    "BROKER_SANDBOX_MODE",
+    "BROKER_ALLOWED_LIVE_MODE_IDS",
+    "BROKER_ORDER_TIMEOUT_MS",
+    "BINANCE_API_KEY",
+    "BINANCE_API_SECRET",
+    "BINANCE_API_BASE_URL",
+    "BINANCE_RECV_WINDOW_MS",
+    "BINANCE_ALLOWED_SYMBOLS",
+    "COINBASE_API_KEY_ID",
+    "COINBASE_API_KEY_SECRET",
+    "COINBASE_API_BASE_URL",
+    "COINBASE_ALLOWED_PRODUCT_IDS",
+    "COINBASE_JWT_EXPIRES_IN_SEC",
+    "ENABLE_EXPERIMENTAL_COREPACK"
+  ],
   "tasks": {
     "build": {
-      "dependsOn": [
-        "^build"
-      ],
-      "outputs": [
-        "dist/**",
-        ".next/**"
-      ]
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".next/**"]
     },
     "dev": {
       "cache": false,
       "persistent": true
     },
     "lint": {
-      "dependsOn": [
-        "^lint"
-      ]
+      "dependsOn": ["^lint"]
     },
     "typecheck": {
-      "dependsOn": [
-        "^typecheck"
-      ]
+      "dependsOn": ["^typecheck"]
     },
     "test": {
-      "dependsOn": [
-        "^test"
-      ],
-      "outputs": [
-        "coverage/**"
-      ]
+      "dependsOn": ["^test"],
+      "outputs": ["coverage/**"]
     },
     "clean": {
       "cache": false

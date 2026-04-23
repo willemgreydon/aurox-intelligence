@@ -31,6 +31,23 @@ interface BinanceOrderResponse {
   status?: string;
 }
 
+function getBinanceErrorDetail(raw: unknown): string {
+  if (!raw || typeof raw !== 'object') {
+    return 'no detail';
+  }
+
+  const value = raw as { msg?: unknown; code?: unknown };
+
+  if (typeof value.msg === 'string' && value.msg.length > 0) {
+    return value.msg;
+  }
+
+  if (typeof value.code === 'string' || typeof value.code === 'number') {
+    return String(value.code);
+  }
+
+  return 'no detail';
+}
 function assertConfigured() {
   const env = getBrokerEnv();
 
@@ -155,29 +172,29 @@ export async function placeBinanceMarketOrder(
     env.BROKER_ORDER_TIMEOUT_MS,
   );
 
-  const raw = (await response.json().catch(() => null)) as BinanceOrderResponse | null;
+  const raw = (await response.json().catch(() => null)) as unknown;
 
   if (!response.ok || !raw) {
-    const detail = raw
-      ? ` — ${(raw as Record<string, unknown>).msg ?? (raw as Record<string, unknown>).code ?? 'no detail'}`
-      : '';
+    const detail = raw ? ` - ${getBinanceErrorDetail(raw)}` : '';
     throw new Error(`Binance order failed (HTTP ${response.status})${detail}.`);
   }
 
-  const executedQty = Number(raw.executedQty ?? input.quantity);
-  const quoteQty = Number(raw.cummulativeQuoteQty ?? requestedPrice * executedQty);
+  const parsed = raw as BinanceOrderResponse;
+  const executedQty = Number(parsed.executedQty ?? input.quantity);
+  const quoteQty = Number(parsed.cummulativeQuoteQty ?? requestedPrice * executedQty);
   const executedPrice = executedQty > 0 ? quoteQty / executedQty : requestedPrice;
 
   return {
     broker: 'binance',
-    orderId: String(raw.orderId),
-    symbol: raw.symbol ?? symbol,
+    orderId: String(parsed.orderId),
+    symbol: parsed.symbol ?? symbol,
     side: input.side,
     executedQuantity: executedQty,
     executedPrice,
     requestedPrice,
-    status: raw.status === 'NEW' ? 'submitted' : 'filled',
-    filledAt: new Date(raw.transactTime ?? Date.now()).toISOString(),
+    status: parsed.status === 'NEW' ? 'submitted' : 'filled',
+    filledAt: new Date(parsed.transactTime ?? Date.now()).toISOString(),
     raw,
   };
 }
+

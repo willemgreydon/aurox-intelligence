@@ -63,6 +63,7 @@ export default async function InvestPage() {
 
   const stockGroup = invest.groupedAssets.find((g) => g.assetClass === 'stock');
   const safeStocks = (stockGroup?.items ?? []).filter(isValidAsset);
+  const simulationSummary = simulationOverview?.summary ?? null;
 
   return (
     <>
@@ -72,8 +73,8 @@ export default async function InvestPage() {
           title="Investing and simulation"
           description="Research market ideas, save a watchlist, and manage paper-trading sessions in one place."
           summary={messages.common.simulationDisclosure}
-          statusLabel={simulationOverview?.status ?? 'simulation'}
-          statusTone={simulationOverview?.statusTone ?? 'info'}
+          statusLabel="simulation"
+          statusTone="info"
           meta={[
             {
               label: messages.common.lastUpdated,
@@ -85,12 +86,8 @@ export default async function InvestPage() {
             },
             {
               label: 'Simulation equity',
-              value: simulationOverview
-                ? formatUsdPrice(
-                    simulationOverview.totalEquity,
-                    locale,
-                    messages.common.unavailable,
-                  )
+              value: simulationSummary
+                ? formatUsdPrice(simulationSummary.equityValue, locale, messages.common.unavailable)
                 : messages.common.unavailable,
             },
           ]}
@@ -104,13 +101,11 @@ export default async function InvestPage() {
 
       <Section className="dashboard-section">
         <BrokerModeLaunchpad
-          baseCapitalUsd={simulationOverview?.initialCashBalance ?? 100000}
+          baseCapitalUsd={100000}
           isAuthenticated={Boolean(auth)}
           simulationHref="/invest/simulation"
           returnTo="/invest/simulation"
-          defaultLaneId={simulationOverview?.activeLaneId ?? 'manual_stock_lane'}
-          activeSessionId={simulationOverview?.sessionId ?? null}
-          activeLaneId={simulationOverview?.activeLaneId ?? null}
+          defaultLaneId="manual_stock_lane"
           title="Start or resume simulation"
           description="Choose a supported lane and open the simulation workstation in a running state."
         />
@@ -121,9 +116,9 @@ export default async function InvestPage() {
           <CompactStatCard
             label="Simulation equity"
             value={
-              simulationOverview
+              simulationSummary
                 ? formatUsdPrice(
-                    simulationOverview.totalEquity,
+                    simulationSummary.equityValue,
                     locale,
                     messages.common.unavailable,
                   )
@@ -136,7 +131,7 @@ export default async function InvestPage() {
             value={
               simulationOverview
                 ? formatUsdPrice(
-                    simulationOverview.availableCash,
+                    simulationSummary?.availableCash ?? null,
                     locale,
                     messages.common.unavailable,
                   )
@@ -146,7 +141,7 @@ export default async function InvestPage() {
           />
           <CompactStatCard
             label="Open positions"
-            value={simulationOverview ? String(simulationOverview.activeInvestmentCount) : '0'}
+            value={simulationSummary ? String(simulationSummary.activeInvestmentCount) : '0'}
             detail="Currently active simulated investments."
           />
           <CompactStatCard
@@ -279,17 +274,8 @@ export default async function InvestPage() {
                           symbol={item.symbol}
                           assetClass="stock"
                           side="buy"
-                          strategyLaneId={simulationOverview?.activeLaneId ?? 'manual_stock_lane'}
-                          simulationSessionId={simulationOverview?.sessionId ?? undefined}
+                          strategyLaneId="manual_stock_lane"
                           label={messages.dashboard.buySimulated}
-                          disabled={!simulationOverview?.sessionId || simulationOverview.isReadOnly}
-                          disabledReason={
-                            !simulationOverview?.sessionId
-                              ? 'Start a simulation session first.'
-                              : simulationOverview.isReadOnly
-                                ? simulationOverview.statusMessage
-                                : undefined
-                          }
                         />
 
                         <SimulatedOrderForm
@@ -297,17 +283,8 @@ export default async function InvestPage() {
                           symbol={item.symbol}
                           assetClass="stock"
                           side="sell"
-                          strategyLaneId={simulationOverview?.activeLaneId ?? 'manual_stock_lane'}
-                          simulationSessionId={simulationOverview?.sessionId ?? undefined}
+                          strategyLaneId="manual_stock_lane"
                           label={messages.dashboard.sellSimulated}
-                          disabled={!simulationOverview?.sessionId || simulationOverview.isReadOnly}
-                          disabledReason={
-                            !simulationOverview?.sessionId
-                              ? 'Start a simulation session first.'
-                              : simulationOverview.isReadOnly
-                                ? simulationOverview.statusMessage
-                                : undefined
-                          }
                         />
                       </>
                     ) : (
