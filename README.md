@@ -4,6 +4,11 @@ Production-oriented monorepo for market intelligence, signals/forecasting, and s
 
 This repository uses Turborepo + pnpm with a Next.js web app and a TypeScript worker, backed by Postgres and shared domain contracts.
 
+## Production URLs
+
+- Production: `https://aurox.mitterbergerlab.at`
+- Vercel project should also include the subdomain as a verified custom domain.
+
 ## Table of Contents
 
 1. [What This Repo Contains](#what-this-repo-contains)
@@ -20,8 +25,9 @@ This repository uses Turborepo + pnpm with a Next.js web app and a TypeScript wo
 12. [Simulation and Live-Execution Safety](#simulation-and-live-execution-safety)
 13. [Worker Scheduling and Data Pipeline](#worker-scheduling-and-data-pipeline)
 14. [Deployment](#deployment)
-15. [Troubleshooting](#troubleshooting)
-16. [Contribution Guidance](#contribution-guidance)
+15. [Domain and DNS](#domain-and-dns)
+16. [Troubleshooting](#troubleshooting)
+17. [Contribution Guidance](#contribution-guidance)
 
 ## What This Repo Contains
 
@@ -179,6 +185,11 @@ Canonical template: [`.env.example`](./.env.example)
 - `FINNHUB_MARKET_SYMBOLS`
 - `EODHD_MARKET_SYMBOLS`
 
+Notes:
+
+- Leave `MARKET_SYMBOLS` empty to use the expanded in-code default market universe.
+- Setting `MARKET_SYMBOLS` in Vercel overrides defaults. If this is set to a short list (for example ~32 symbols), frontend coverage will also be short.
+
 ### Broker Safety + Execution
 
 - `BROKER_EXECUTION_PROVIDER` (`simulation | binance | coinbase`)
@@ -334,6 +345,23 @@ Important:
 - Commit `package.json` and `pnpm-lock.yaml` changes together.
 - If lockfile and manifest diverge, CI with `--frozen-lockfile` fails.
 - Redeploying an old failed Vercel deployment keeps the old commit SHA; trigger a fresh deployment from latest `main`.
+
+Recommended production env values (Vercel):
+
+- `NEXT_PUBLIC_APP_URL=https://aurox.mitterbergerlab.at`
+- `APP_BASE_URL=https://aurox.mitterbergerlab.at`
+
+## Domain and DNS
+
+For `aurox.mitterbergerlab.at` via World4You + Vercel:
+
+1. Add `aurox.mitterbergerlab.at` in Vercel project Domains.
+2. In World4You DNS, set:
+   - Type: `CNAME`
+   - Host/Name: `aurox`
+   - Value/Target: `cname.vercel-dns.com`
+3. Remove conflicting records for `aurox` (`A`, `AAAA`, or extra `CNAME`).
+4. Wait for DNS propagation, then recheck Vercel domain status.
 
 ## Troubleshooting
 
