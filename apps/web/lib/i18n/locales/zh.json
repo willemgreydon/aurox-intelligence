@@ -5,7 +5,7 @@
       "markets": "市场",
       "analytics": "分析",
       "invest": "投资",
-      "ops": "运维",
+      "ops": "运营",
       "marketOverview": "市场总览",
       "stocks": "股票",
       "dashboard": "仪表盘",
@@ -14,36 +14,296 @@
       "simulation": "模拟",
       "investHome": "投资首页",
       "investStocks": "股票通道",
-      "investEtfs": "ETF通道",
+      "investEtfs": "ETF 通道",
       "investCrypto": "加密通道",
       "investAccounts": "账户连接",
+      "admin": "管理",
       "monitoring": "监控"
     },
     "auth": {
       "login": "登录",
       "signup": "注册",
-      "account": "账户",
+      "account": "账户总览",
       "profile": "个人资料",
       "settings": "设置",
       "logout": "退出登录",
-      "member": "成员",
+      "member": "成员账户",
       "admin": "管理员"
     },
     "marketPulse": "市场脉搏",
     "theme": "主题",
     "language": "语言",
     "menuLabel": "菜单",
-    "mobileMenuDescription": "在一个移动工作界面中整合市场、分析、模拟和账户控制。",
+    "mobileMenuDescription": "在一个移动工作界面中整合市场、分析、模拟流程与账户控制。",
     "openMenu": "打开导航菜单",
     "closeMenu": "关闭导航菜单",
-    "closeOverlay": "关闭菜单",
+    "closeOverlay": "关闭菜单层",
     "closeNavigation": "关闭导航"
   },
+  "ticker": {
+    "aria": "市场行情滚动条",
+    "emptyAria": "市场行情不可用",
+    "sourceSummary": "来自 {{provider}} 的可刷新行情快照。",
+    "errorSummary": "行情快照不可用：{{message}}",
+    "emptyState": "当前配置的数据提供商暂时无法提供行情数据。"
+  },
   "status": {
-    "attention": "注意",
+    "nominal": "正常",
+    "attention": "关注",
     "degraded": "降级"
   },
   "common": {
-    "home": "首页"
+    "home": "首页",
+    "lastUpdated": "最近更新",
+    "freshness": "新鲜度",
+    "coverage": "覆盖范围",
+    "actionAvailability": "操作可用性",
+    "providerPath": "提供商路径",
+    "sourceSummary": "来源摘要",
+    "quote": "报价",
+    "move": "涨跌",
+    "price": "价格",
+    "historyWindow": "历史区间",
+    "currentQuote": "当前报价",
+    "dailyMove": "日内涨跌",
+    "providerSource": "数据来源",
+    "unavailable": "不可用",
+    "partial": "部分可用",
+    "details": "详情",
+    "live": "实时",
+    "none": "无",
+    "simulationDisclosure": "仅用于模拟。不会执行真实资金、真实券商下单或受监管的订单路由。"
+  },
+  "home": {
+    "heroEyebrow": "金融智能平台",
+    "heroTitle": "把市场广度、可解释信号与模拟投资整合到一个沉稳工作台。",
+    "heroDescription": "Aurox Intelligence 将实时市场上下文、生产级模拟账户与可解释决策支持结合，服务于审慎投资流程。",
+    "openStocks": "打开股票工作台",
+    "openDashboard": "打开仪表盘",
+    "reviewAsset": "查看 {{symbol}}",
+    "provider": "提供商",
+    "currentSnapshotTitle": "当前股票快照",
+    "currentSnapshotSubtitle": "通过股票读模型汇聚的实时监控股票情报。",
+    "liveTrackedStocks": "实时跟踪股票",
+    "liveTrackedStocksCaption": "当前产品界面可见的提供商股票报价数量。",
+    "positiveBreadth": "上涨广度",
+    "positiveBreadthCaption": "当前跟踪股票中处于上涨状态的占比。",
+    "topMover": "涨幅领先",
+    "topMoverCaption": "当前监控集合中涨跌最强股票的快速读数。",
+    "featuredStock": "重点股票",
+    "historyPreviewAria": "{{symbol}} 价格历史预览",
+    "noHistory": "该股票暂无历史数据。",
+    "platformHighlights": "平台亮点"
+  },
+  "homeSections": {
+    "capabilities": {
+      "eyebrow": "平台能力",
+      "title": "基础层已经更贴近我们真正要构建的产品。",
+      "description": "应用框架现在清晰表达预测、数据质量、可解释性与操作价值，而不再像模板页面。",
+      "items": [
+        {
+          "title": "股票趋势预测",
+          "description": "通过场景化预测、置信区间与后续模型评审面板，为方向判断提供结构化依据。"
+        },
+        {
+          "title": "汇率价值分析",
+          "description": "跟踪外汇货币对，结合相对强弱与宏观因子，并预留跨市场分析工作台扩展。"
+        },
+        {
+          "title": "信号工程",
+          "description": "保持特征逻辑纯净可复用，让技术、事件与宏观信号迭代而不污染 UI 层。"
+        },
+        {
+          "title": "可解释预测",
+          "description": "展示预测背后的影响因子，让分析师明确系统为何偏多、谨慎或防御。"
+        },
+        {
+          "title": "采集可观测性",
+          "description": "把新鲜度、规范化和提供商健康度作为产品一等状态，而不是隐藏后端细节。"
+        },
+        {
+          "title": "决策支持外壳",
+          "description": "建立可扩展的应用语义框架，平滑演进到仪表盘、管理与流程化产品表面。"
+        }
+      ]
+    },
+    "modules": {
+      "eyebrow": "产品模块",
+      "title": "为已规划的每个页面提供可复用入口框架。",
+      "description": "这些模块卡片先建立稳定的导航与内容语法，在不过度设计组件库的前提下支撑后续路由开发。",
+      "enterModule": "进入模块",
+      "items": [
+        {
+          "eyebrow": "股票",
+          "title": "趋势监控工作台",
+          "description": "面向更长周期的股票监控，支持状态切换、因子贡献和预测对比。",
+          "href": "/stocks"
+        },
+        {
+          "eyebrow": "外汇",
+          "title": "货币情报界面",
+          "description": "提供货币对估值、动量快照与宏观语境，支撑后续分析流程。",
+          "href": "/fx"
+        },
+        {
+          "eyebrow": "信号",
+          "title": "特征注册中心",
+          "description": "集中管理技术面、宏观与事件特征，并保留可追溯来源与验证状态。",
+          "href": "/dashboard"
+        },
+        {
+          "eyebrow": "采集",
+          "title": "新鲜度与源健康",
+          "description": "提供源覆盖、规范化步骤与重计算触发条件的运行可视化。",
+          "href": "/admin"
+        }
+      ]
+    },
+    "explainability": {
+      "eyebrow": "可解释路径",
+      "title": "预测输出必须始终可审阅。",
+      "description": "该框架为证据链、场景差异与置信说明预留空间，同时避免把预测逻辑塞进 UI。",
+      "dataFlowEyebrow": "数据流程预览",
+      "kpis": [
+        {
+          "label": "为何预测发生变化",
+          "value": "特征影响"
+        },
+        {
+          "label": "发生了什么变化",
+          "value": "场景差异"
+        },
+        {
+          "label": "可信程度如何",
+          "value": "置信区间"
+        }
+      ],
+      "flow": [
+        {
+          "title": "采集并规范化",
+          "description": "提供商与后台任务先落地原始市场数据，再规范成稳定、可查询的数据契约。",
+          "value": "providers -> ingestion"
+        },
+        {
+          "title": "构建特征",
+          "description": "在纯分析包内生成可复用信号，确保预测质量不依赖路由层代码。",
+          "value": "ingestion -> signals"
+        },
+        {
+          "title": "打分与解释",
+          "description": "预测层输出方向结论及特征级解释，为后续分析复盘面板提供输入。",
+          "value": "signals -> forecasting"
+        },
+        {
+          "title": "呈现操作上下文",
+          "description": "Web 外壳仅负责系统状态与解释摘要展示，不承载分析核心逻辑。",
+          "value": "forecasting -> web"
+        }
+      ]
+    },
+    "systemStatus": {
+      "eyebrow": "运行框架",
+      "title": "状态、新鲜度与路线图面板应属于产品外壳。",
+      "description": "在实时分析数据完全接入前，我们已经为系统状态、空态与下一步产品引导预留了结构。",
+      "systemStatusTitle": "系统状态",
+      "systemStatusBody": "以产品现实为基础的占位组件。",
+      "systemStatusBadge": "稳定",
+      "roadmapTitle": "下一步建议",
+      "roadmapBody": "当前基础已经可以承接路由级仪表盘与数据驱动模块。",
+      "systems": [
+        {
+          "name": "市场采集",
+          "detail": "股票与外汇源规范化同步在 4 分钟前完成。",
+          "label": "健康",
+          "tone": "success"
+        },
+        {
+          "name": "信号重算",
+          "detail": "动量与宏观因子批处理正在为下一窗口运行。",
+          "label": "处理中",
+          "tone": "warning"
+        },
+        {
+          "name": "预测解释缓存",
+          "detail": "用于后续仪表盘面板的审计载荷结构已准备就绪。",
+          "label": "就绪",
+          "tone": "success"
+        }
+      ],
+      "roadmap": [
+        {
+          "title": "仪表盘路由脚手架",
+          "detail": "使用当前外壳原语建立仪表盘专属布局与预览面板。"
+        },
+        {
+          "title": "Token 包加固",
+          "detail": "把 CSS 变量升级为文档化 token 导出，并补齐图表/表格角色。"
+        },
+        {
+          "title": "首页面板数据化",
+          "detail": "在契约就绪后，用服务端新鲜度、健康度和预测摘要替换占位文案。"
+        }
+      ]
+    }
+  },
+  "marketGraph": {
+    "title": "市场图表",
+    "subtitle": "全屏历史行情，支持周期控制、叠加指标与对比分析。",
+    "open": "打开全屏市场图",
+    "timeframe": "时间范围",
+    "graphType": "图表类型",
+    "line": "折线",
+    "candles": "K 线",
+    "movingAverage": "移动均线",
+    "signals": "信号",
+    "compare": "对比资产",
+    "selectAsset": "主资产",
+    "noCompare": "不对比",
+    "lastPrice": "最新价格",
+    "zoomIn": "放大",
+    "zoomOut": "缩小",
+    "panLeft": "左移",
+    "panRight": "右移",
+    "resetView": "重置视图",
+    "viewport": "视图控制",
+    "historyRange": "历史区间",
+    "chartAria": "{{symbol}} 市场图表",
+    "noData": "当前视图暂无可用历史行情数据。"
+  },
+  "stocks": {
+    "providerUnavailableSummary": "实时股票快照不可用：{{message}}",
+    "trackingSummary": "正在跟踪来自 {{provider}} 的 {{count}} 条实时股票报价。",
+    "noObservationsSummary": "当前配置提供商暂无可用股票观测数据。",
+    "historyUnavailable": "该标的当前没有可用历史 K 线数据。",
+    "historyRangeSeparator": "至"
+  },
+  "table": {
+    "rowDetails": "详情"
+  },
+  "footer": {
+    "groupMarkets": "市场与数据",
+    "groupInvest": "投资与模拟",
+    "groupPlatform": "平台",
+    "groupLegal": "法律与信息",
+    "brandMeta": "面向可解释预测、信号工程与运营决策支持的生产级金融智能基础设施。",
+    "disclosure": "仅用于模拟。本平台不执行真实资金、真实券商下单或受监管订单路由。",
+    "stocksLink": "股票",
+    "fxLink": "外汇监控",
+    "signalsLink": "信号",
+    "forecastsLink": "预测",
+    "stockAllocationLink": "股票配置",
+    "etfComparisonLink": "ETF 对比",
+    "cryptoTrackingLink": "加密资产跟踪",
+    "simulationLink": "组合模拟",
+    "adminLink": "管理控制台",
+    "monitoringLink": "监控",
+    "accountLink": "账户",
+    "profileLink": "资料与设置",
+    "legalLink": "法律总览",
+    "termsLink": "使用条款",
+    "privacyLink": "隐私政策",
+    "riskLink": "风险披露",
+    "imprintLink": "法律声明",
+    "copyrightSuffix": "为机构分析团队与内部运营人员而设计。"
   }
 }
