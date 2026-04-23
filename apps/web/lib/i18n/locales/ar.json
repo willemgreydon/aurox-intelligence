@@ -1,0 +1,49 @@
+{
+  "shell": {
+    "brandSubtitle": "منصة إشارات مالية",
+    "nav": {
+      "markets": "الأسواق",
+      "analytics": "التحليلات",
+      "invest": "الاستثمار",
+      "ops": "العمليات",
+      "marketOverview": "نظرة السوق",
+      "stocks": "الأسهم",
+      "dashboard": "لوحة التحكم",
+      "signals": "الإشارات",
+      "forecasts": "التوقعات",
+      "simulation": "المحاكاة",
+      "investHome": "صفحة الاستثمار",
+      "investStocks": "مسار الأسهم",
+      "investEtfs": "مسار ETF",
+      "investCrypto": "مسار العملات الرقمية",
+      "investAccounts": "الحسابات",
+      "monitoring": "المراقبة"
+    },
+    "auth": {
+      "login": "تسجيل الدخول",
+      "signup": "إنشاء حساب",
+      "account": "الحساب",
+      "profile": "الملف الشخصي",
+      "settings": "الإعدادات",
+      "logout": "تسجيل الخروج",
+      "member": "عضو",
+      "admin": "مشرف"
+    },
+    "marketPulse": "نبض السوق",
+    "theme": "السمة",
+    "language": "اللغة",
+    "menuLabel": "القائمة",
+    "mobileMenuDescription": "الأسواق والتحليلات والمحاكاة وإدارة الحساب ضمن واجهة جوال واحدة.",
+    "openMenu": "فتح قائمة التنقل",
+    "closeMenu": "إغلاق قائمة التنقل",
+    "closeOverlay": "إغلاق القائمة",
+    "closeNavigation": "إغلاق التنقل"
+  },
+  "status": {
+    "attention": "تنبيه",
+    "degraded": "متدهور"
+  },
+  "common": {
+    "home": "الرئيسية"
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "shell": {
+    "brandSubtitle": "Plataforma de sinais financeiros",
+    "nav": {
+      "markets": "Mercados",
+      "analytics": "Análises",
+      "invest": "Investir",
+      "ops": "Operações",
+      "marketOverview": "Visão de mercado",
+      "stocks": "Ações",
+      "dashboard": "Painel",
+      "signals": "Sinais",
+      "forecasts": "Previsões",
+      "simulation": "Simulação",
+      "investHome": "Início investir",
+      "investStocks": "Painel ações",
+      "investEtfs": "Painel ETF",
+      "investCrypto": "Painel cripto",
+      "investAccounts": "Contas",
+      "monitoring": "Monitoramento"
+    },
+    "auth": {
+      "login": "Entrar",
+      "signup": "Criar conta",
+      "account": "Conta",
+      "profile": "Perfil",
+      "settings": "Configurações",
+      "logout": "Sair",
+      "member": "Membro",
+      "admin": "Administrador"
+    },
+    "marketPulse": "Pulso de mercado",
+    "theme": "Tema",
+    "language": "Idioma",
+    "menuLabel": "Menu",
+    "mobileMenuDescription": "Mercados, análises, simulação e controles de conta em uma superfície móvel.",
+    "openMenu": "Abrir navegação",
+    "closeMenu": "Fechar navegação",
+    "closeOverlay": "Fechar menu",
+    "closeNavigation": "Fechar navegação"
+  },
+  "status": {
+    "attention": "Atenção",
+    "degraded": "Degradado"
+  },
+  "common": {
+    "home": "Início"
+  }
+}

@@ -1,24 +1,26 @@
 'use server';
 
+import { localeSchema } from '@repo/api-contracts';
 import { getUserDashboardPreset, saveUserDashboardPreset } from '@repo/db';
-import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { getOptionalCurrentSession } from '../auth/session';
 import { LOCALE_COOKIE_KEY } from '../i18n/locale';
-
-const localeSchema = z.enum(['en', 'de', 'fr']);
 
 export async function setLocalePreferenceAction(input: string) {
   const locale = localeSchema.parse(input);
   const session = await getOptionalCurrentSession();
 
   if (session) {
-    const preset = await getUserDashboardPreset(session.user.id);
-    await saveUserDashboardPreset(session.user.id, {
-      ...preset,
-      locale,
-    });
+    try {
+      const preset = await getUserDashboardPreset(session.user.id);
+      await saveUserDashboardPreset(session.user.id, {
+        ...preset,
+        locale,
+      });
+    } catch (error) {
+      console.error('Failed to persist locale preference. Falling back to cookie-only locale.', error);
+    }
   }
 
   const cookieStore = await cookies();

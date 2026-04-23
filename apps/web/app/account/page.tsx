@@ -1,6 +1,6 @@
 import { Card } from '../../components/ui/card';
 import { getSimulationWorkspace } from '@repo/db';
-import { getMessages } from '../../lib/i18n/messages';
+import { getMessages, localeLabels } from '../../lib/i18n/messages';
 import { requireCurrentSession } from '../../server/auth/session';
 import { getRequestLocale } from '../../server/i18n/locale';
 import { getAccountOverviewData } from '../../server/services/account-service';
@@ -80,7 +80,7 @@ export default async function AccountOverviewPage() {
           <dl className="account-stats">
             <div>
               <dt>{messages.account.locale}</dt>
-              <dd>{overview.preferences.locale.toUpperCase()}</dd>
+              <dd>{localeLabels[overview.preferences.locale]}</dd>
             </div>
             <div>
               <dt>{messages.account.defaultChartType}</dt>

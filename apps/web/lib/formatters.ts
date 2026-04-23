@@ -1,15 +1,32 @@
 import type { Locale } from '@repo/api-contracts';
 
 function toLocaleTag(locale: Locale): string {
-  if (locale === 'de') {
-    return 'de-DE';
+  switch (locale) {
+    case 'de':
+      return 'de-DE';
+    case 'fr':
+      return 'fr-FR';
+    case 'es':
+      return 'es-ES';
+    case 'it':
+      return 'it-IT';
+    case 'pt':
+      return 'pt-PT';
+    case 'nl':
+      return 'nl-NL';
+    case 'zh':
+      return 'zh-CN';
+    case 'ja':
+      return 'ja-JP';
+    case 'ko':
+      return 'ko-KR';
+    case 'ar':
+      return 'ar-SA';
+    case 'hi':
+      return 'hi-IN';
+    default:
+      return 'en-US';
   }
-
-  if (locale === 'fr') {
-    return 'fr-FR';
-  }
-
-  return 'en-US';
 }
 
 export function formatPercent(value: number): string {

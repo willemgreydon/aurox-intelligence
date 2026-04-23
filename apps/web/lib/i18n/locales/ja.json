@@ -1,0 +1,49 @@
+{
+  "shell": {
+    "brandSubtitle": "金融シグナルプラットフォーム",
+    "nav": {
+      "markets": "マーケット",
+      "analytics": "分析",
+      "invest": "投資",
+      "ops": "運用",
+      "marketOverview": "市場概要",
+      "stocks": "株式",
+      "dashboard": "ダッシュボード",
+      "signals": "シグナル",
+      "forecasts": "予測",
+      "simulation": "シミュレーション",
+      "investHome": "投資ホーム",
+      "investStocks": "株式レーン",
+      "investEtfs": "ETFレーン",
+      "investCrypto": "暗号資産レーン",
+      "investAccounts": "口座連携",
+      "monitoring": "監視"
+    },
+    "auth": {
+      "login": "ログイン",
+      "signup": "アカウント作成",
+      "account": "アカウント",
+      "profile": "プロフィール",
+      "settings": "設定",
+      "logout": "ログアウト",
+      "member": "メンバー",
+      "admin": "管理者"
+    },
+    "marketPulse": "マーケットパルス",
+    "theme": "テーマ",
+    "language": "言語",
+    "menuLabel": "メニュー",
+    "mobileMenuDescription": "市場、分析、シミュレーション、アカウント操作をモバイルで一元化。",
+    "openMenu": "ナビゲーションを開く",
+    "closeMenu": "ナビゲーションを閉じる",
+    "closeOverlay": "メニューを閉じる",
+    "closeNavigation": "ナビゲーションを閉じる"
+  },
+  "status": {
+    "attention": "注意",
+    "degraded": "低下"
+  },
+  "common": {
+    "home": "ホーム"
+  }
+}

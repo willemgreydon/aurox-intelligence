@@ -1,0 +1,49 @@
+{
+  "shell": {
+    "brandSubtitle": "금융 시그널 플랫폼",
+    "nav": {
+      "markets": "시장",
+      "analytics": "분석",
+      "invest": "투자",
+      "ops": "운영",
+      "marketOverview": "시장 개요",
+      "stocks": "주식",
+      "dashboard": "대시보드",
+      "signals": "시그널",
+      "forecasts": "예측",
+      "simulation": "시뮬레이션",
+      "investHome": "투자 홈",
+      "investStocks": "주식 레인",
+      "investEtfs": "ETF 레인",
+      "investCrypto": "암호화폐 레인",
+      "investAccounts": "계정 연결",
+      "monitoring": "모니터링"
+    },
+    "auth": {
+      "login": "로그인",
+      "signup": "회원가입",
+      "account": "계정",
+      "profile": "프로필",
+      "settings": "설정",
+      "logout": "로그아웃",
+      "member": "멤버",
+      "admin": "관리자"
+    },
+    "marketPulse": "시장 펄스",
+    "theme": "테마",
+    "language": "언어",
+    "menuLabel": "메뉴",
+    "mobileMenuDescription": "시장, 분석, 시뮬레이션, 계정 제어를 하나의 모바일 화면에서 제공합니다.",
+    "openMenu": "탐색 메뉴 열기",
+    "closeMenu": "탐색 메뉴 닫기",
+    "closeOverlay": "메뉴 닫기",
+    "closeNavigation": "탐색 닫기"
+  },
+  "status": {
+    "attention": "주의",
+    "degraded": "저하"
+  },
+  "common": {
+    "home": "홈"
+  }
+}

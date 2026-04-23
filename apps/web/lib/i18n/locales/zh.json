@@ -1,0 +1,49 @@
+{
+  "shell": {
+    "brandSubtitle": "金融信号平台",
+    "nav": {
+      "markets": "市场",
+      "analytics": "分析",
+      "invest": "投资",
+      "ops": "运维",
+      "marketOverview": "市场总览",
+      "stocks": "股票",
+      "dashboard": "仪表盘",
+      "signals": "信号",
+      "forecasts": "预测",
+      "simulation": "模拟",
+      "investHome": "投资首页",
+      "investStocks": "股票通道",
+      "investEtfs": "ETF通道",
+      "investCrypto": "加密通道",
+      "investAccounts": "账户连接",
+      "monitoring": "监控"
+    },
+    "auth": {
+      "login": "登录",
+      "signup": "注册",
+      "account": "账户",
+      "profile": "个人资料",
+      "settings": "设置",
+      "logout": "退出登录",
+      "member": "成员",
+      "admin": "管理员"
+    },
+    "marketPulse": "市场脉搏",
+    "theme": "主题",
+    "language": "语言",
+    "menuLabel": "菜单",
+    "mobileMenuDescription": "在一个移动工作界面中整合市场、分析、模拟和账户控制。",
+    "openMenu": "打开导航菜单",
+    "closeMenu": "关闭导航菜单",
+    "closeOverlay": "关闭菜单",
+    "closeNavigation": "关闭导航"
+  },
+  "status": {
+    "attention": "注意",
+    "degraded": "降级"
+  },
+  "common": {
+    "home": "首页"
+  }
+}

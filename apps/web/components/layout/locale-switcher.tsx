@@ -4,6 +4,7 @@ import type { Locale } from '@repo/api-contracts';
 import { useRouter } from 'next/navigation';
 import { useTransition } from 'react';
 import { setLocalePreferenceAction } from '../../server/actions/locale-actions';
+import { localeLabels, supportedLocales } from '../../lib/i18n/locale-options';
 
 type LocaleSwitcherProps = {
   locale: Locale;
@@ -11,11 +12,25 @@ type LocaleSwitcherProps = {
   compact?: boolean;
 };
 
-const locales: Locale[] = ['en', 'de', 'fr'];
-
 export function LocaleSwitcher({ locale, label, compact = false }: LocaleSwitcherProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+
+  const handleLocaleChange = (nextLocale: Locale) => {
+    if (nextLocale === locale) {
+      return;
+    }
+
+    startTransition(() => {
+      void (async () => {
+        try {
+          await setLocalePreferenceAction(nextLocale);
+        } finally {
+          router.refresh();
+        }
+      })();
+    });
+  };
 
   return (
     <div
@@ -23,26 +38,22 @@ export function LocaleSwitcher({ locale, label, compact = false }: LocaleSwitche
       aria-label={label}
       aria-busy={isPending}
     >
-      {!compact ? <span className="locale-switcher__label">{label}</span> : null}
-      <div className="locale-switcher__options">
-        {locales.map((option) => (
-          <button
-            key={option}
-            type="button"
-            className={`locale-switcher__option${option === locale ? ' locale-switcher__option--active' : ''}`}
-            disabled={isPending}
-            onClick={() =>
-              startTransition(() => {
-                void setLocalePreferenceAction(option).then(() => {
-                  router.refresh();
-                });
-              })
-            }
-          >
-            {option.toUpperCase()}
-          </button>
-        ))}
-      </div>
+      <label className="locale-switcher__field">
+        {!compact ? <span className="locale-switcher__label">{label}</span> : null}
+        <select
+          className="locale-switcher__select"
+          value={locale}
+          aria-label={label}
+          disabled={isPending}
+          onChange={(event) => handleLocaleChange(event.currentTarget.value as Locale)}
+        >
+          {supportedLocales.map((option) => (
+            <option key={option} value={option}>
+              {localeLabels[option]}
+            </option>
+          ))}
+        </select>
+      </label>
     </div>
   );
 }

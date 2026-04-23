@@ -7,11 +7,11 @@ import {
   type ChartType,
   type DashboardModuleId,
   type DashboardPreset,
-  type Locale,
   type TimePeriod,
 } from '@repo/api-contracts';
 import { useActionState } from 'react';
 import { availableChartTypes, availableDashboardModules, availableTimePeriods } from '../../lib/workspace';
+import { localeLabels, supportedLocales } from '../../lib/i18n/locale-options';
 import { emptyFormState } from '../../server/auth/forms';
 import { updateWorkspacePreferencesAction } from '../../server/actions/account-actions';
 import { FormSubmitButton } from '../auth/form-submit-button';
@@ -39,7 +39,6 @@ type WorkspacePreferencesFormProps = {
   };
 };
 
-const locales: Locale[] = ['en', 'de', 'fr'];
 const brokerModes: BrokerMode[] = [
   'manual_stock_lane',
   'manual_multi_asset_lane',
@@ -83,9 +82,9 @@ export function WorkspacePreferencesForm({ preset, labels }: WorkspacePreference
         <label className="form-field">
           <span>{labels.locale}</span>
           <select name="locale" defaultValue={preset.locale}>
-            {locales.map((locale) => (
+            {supportedLocales.map((locale) => (
               <option key={locale} value={locale}>
-                {locale.toUpperCase()}
+                {localeLabels[locale]}
               </option>
             ))}
           </select>

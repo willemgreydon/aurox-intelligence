@@ -1,0 +1,49 @@
+{
+  "shell": {
+    "brandSubtitle": "Financieel signaalplatform",
+    "nav": {
+      "markets": "Markten",
+      "analytics": "Analyse",
+      "invest": "Investeren",
+      "ops": "Operaties",
+      "marketOverview": "Marktoverzicht",
+      "stocks": "Aandelen",
+      "dashboard": "Dashboard",
+      "signals": "Signalen",
+      "forecasts": "Prognoses",
+      "simulation": "Simulatie",
+      "investHome": "Investeren start",
+      "investStocks": "Aandelen lane",
+      "investEtfs": "ETF lane",
+      "investCrypto": "Crypto lane",
+      "investAccounts": "Accounts",
+      "monitoring": "Monitoring"
+    },
+    "auth": {
+      "login": "Inloggen",
+      "signup": "Account maken",
+      "account": "Account",
+      "profile": "Profiel",
+      "settings": "Instellingen",
+      "logout": "Uitloggen",
+      "member": "Lid",
+      "admin": "Beheerder"
+    },
+    "marketPulse": "Marktpuls",
+    "theme": "Thema",
+    "language": "Taal",
+    "menuLabel": "Menu",
+    "mobileMenuDescription": "Markten, analyse, simulatie en accountbediening in één mobiel oppervlak.",
+    "openMenu": "Navigatie openen",
+    "closeMenu": "Navigatie sluiten",
+    "closeOverlay": "Menu sluiten",
+    "closeNavigation": "Navigatie sluiten"
+  },
+  "status": {
+    "attention": "Let op",
+    "degraded": "Verlaagd"
+  },
+  "common": {
+    "home": "Home"
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "shell": {
+    "brandSubtitle": "वित्तीय सिग्नल प्लेटफ़ॉर्म",
+    "nav": {
+      "markets": "बाज़ार",
+      "analytics": "विश्लेषण",
+      "invest": "निवेश",
+      "ops": "ऑपरेशन्स",
+      "marketOverview": "मार्केट ओवरव्यू",
+      "stocks": "स्टॉक्स",
+      "dashboard": "डैशबोर्ड",
+      "signals": "सिग्नल",
+      "forecasts": "पूर्वानुमान",
+      "simulation": "सिमुलेशन",
+      "investHome": "निवेश होम",
+      "investStocks": "स्टॉक लेन",
+      "investEtfs": "ETF लेन",
+      "investCrypto": "क्रिप्टो लेन",
+      "investAccounts": "अकाउंट कनेक्शन",
+      "monitoring": "मॉनिटरिंग"
+    },
+    "auth": {
+      "login": "लॉग इन",
+      "signup": "साइन अप",
+      "account": "अकाउंट",
+      "profile": "प्रोफ़ाइल",
+      "settings": "सेटिंग्स",
+      "logout": "लॉग आउट",
+      "member": "सदस्य",
+      "admin": "एडमिन"
+    },
+    "marketPulse": "मार्केट पल्स",
+    "theme": "थीम",
+    "language": "भाषा",
+    "menuLabel": "मेन्यू",
+    "mobileMenuDescription": "बाज़ार, एनालिटिक्स, सिमुलेशन और अकाउंट नियंत्रण एक ही मोबाइल सतह पर।",
+    "openMenu": "नेविगेशन खोलें",
+    "closeMenu": "नेविगेशन बंद करें",
+    "closeOverlay": "मेन्यू बंद करें",
+    "closeNavigation": "नेविगेशन बंद करें"
+  },
+  "status": {
+    "attention": "ध्यान",
+    "degraded": "कमज़ोर"
+  },
+  "common": {
+    "home": "होम"
+  }
+}
