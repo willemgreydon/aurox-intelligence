@@ -1,42 +1,66 @@
-# Broker & Market Infrastructure
+﻿# Broker and Market Infrastructure
 
-## Core Components
+This document explains how Aurox models broker and exchange infrastructure today and for future live migration.
 
-### 1. Exchanges
-- Centralized (NYSE, NASDAQ, Binance)
-- Decentralized (DEXs)
+## Current Operating Mode
 
-### 2. Brokers
-- Retail brokers
-- Institutional brokers
-- Prime brokers
+Aurox is simulation-first.
 
-### 3. Market Makers
-- Provide liquidity
-- Tighten spreads
+- No real-money execution is enabled by default.
+- Live adapter seams exist but are readiness-gated.
+- Simulation remains authoritative for execution semantics.
 
-### 4. Clearing Houses
-- Settlement guarantee
-- Counterparty risk management
+## Infrastructure Components
 
----
+1. Market Data Providers
+- quote/history sources
+- symbol normalization and routing
 
-## Order Types
+2. Execution Adapters
+- simulation adapter (active)
+- live adapters (guarded paths)
 
-- Market Order
-- Limit Order
-- Stop Loss
-- Stop Limit
+3. Readiness and Policy Layer
+- mode registry
+- readiness checks
+- risk/policy gating
 
----
+4. Persistence Layer
+- order and transaction journals
+- account and portfolio state
+- snapshots for audit and analytics
 
-## Execution Flow
+## Broker Capability Model
 
-User → Broker → Exchange → Matching Engine → Trade Execution → Settlement
+A broker capability shape should include:
+- supported asset classes
+- supported order types
+- symbol/product allowlist requirements
+- fee model characteristics
+- rate limit and timeout constraints
+- sandbox availability
 
----
+## Current Live-Seam Guardrails
 
-## Latency Considerations
+- broker credentials must be present
+- readiness checks must pass
+- autonomous live execution is blocked
+- non-crypto live paths remain unsupported
 
-- High-frequency trading advantages
-- Slippage impact
+## Execution Environments
+
+- `simulation`: default, deterministic paper execution
+- `live`: explicit and gated, currently restricted
+
+## Operational Recommendations
+
+- keep `BROKER_DRY_RUN=true` during integration verification
+- enable mode IDs incrementally, never globally all at once
+- monitor connectivity and permission checks continuously
+
+## Future Work
+
+1. broker reconciliation workflow
+2. live order lifecycle and partial-fill handling
+3. operational kill-switch controls
+4. broker capability registry synced with product surfaces

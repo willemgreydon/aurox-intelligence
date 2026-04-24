@@ -1,36 +1,80 @@
-# Factor Models
+﻿# Factor Models
 
-## Core Factors
+This document defines factor model design for Aurox Intelligence.
 
-### 1. Momentum
-- Price trend continuation
+## Objective
 
-### 2. Value
-- Undervalued vs intrinsic value
+Transform raw market features into interpretable factor exposures that improve ranking, risk framing, and portfolio construction.
 
-### 3. Size
-- Small vs large cap performance
+## Factor Universe
 
-### 4. Volatility
-- Low vs high volatility assets
+Core cross-asset factors:
+- momentum
+- volatility
+- liquidity proxy
+- concentration/crowding proxy
+- trend persistence
 
-### 5. Liquidity
-- Ease of trading
+Asset-class specific factors:
+- equities: sector beta, size proxy, earnings sensitivity proxy
+- ETFs: underlying concentration, duration/theme sensitivity
+- crypto: regime beta, liquidity instability, funding/crowding proxies
 
----
+## Architecture Placement
 
-## Crypto-Specific Factors
+- feature extraction in domain packages (`signals`, future `analytics` modules)
+- factor scoring as pure deterministic transforms
+- contract publication through `api-contracts`
+- route consumption through read mappers/services
 
-- Network growth
-- Developer activity
-- On-chain usage
+## Scoring Pipeline
 
----
+1. gather normalized features
+2. winsorize outliers
+3. z-score or percentile normalize
+4. apply factor-specific transform
+5. compose into factor vector
 
-## Implementation
+## Example Factor Vector
 
-Factor Score = Weighted combination of normalized features
+```text
+{
+  momentum: 0.62,
+  volatility: -0.31,
+  liquidity: 0.12,
+  trendPersistence: 0.44,
+  crowdingRisk: -0.55
+}
+```
 
-Used for:
-- Ranking engine
-- Portfolio construction
+## Interpretation Conventions
+
+- positive is favorable only if factor semantics define it as such
+- factor polarity must be explicit in metadata
+- never assume all positive values are good
+
+## Use Cases
+
+- universe ranking
+- portfolio tilt decisions
+- anomaly diagnosis
+- risk communication in portfolio surfaces
+
+## Reliability Controls
+
+- minimum sample windows
+- stale-data penalties
+- confidence score per factor vector
+- deterministic fallback to neutral vector when data incomplete
+
+## Backtesting Guidance
+
+- avoid leakage in horizon alignment
+- evaluate regime-segmented performance
+- measure turnover impact and stability
+
+## Future Work
+
+- add macro-linked factors
+- add transaction-cost-aware factor decay
+- add lane-specific factor constraints for simulation

@@ -1,66 +1,106 @@
-# Finance Intelligence System – Master Overview
+﻿# Finance Intelligence System Overview
 
-## Purpose
+This is the platform-level systems reference for Aurox Intelligence.
 
-This system is designed to provide a unified intelligence layer across:
+## Objective
 
-- Crypto markets
-- Stock markets
-- ETF ecosystems
-- Macro environment
-- Cross-asset signals
+Deliver a trustworthy intelligence and simulation environment for multi-asset decision support.
 
-## Core Capabilities
+## Capability Pillars
 
-- Market Data Aggregation
-- Feature Engineering
-- Signal Generation
-- Factor Modeling
-- Risk Assessment
-- Portfolio Optimization
-- Anomaly Detection
-- Reporting & Decision Support
+1. Market Data
+- real quote/history retrieval via provider adapters
+- fallback and cache resilience
+- canonical symbol handling
 
-## System Layers
+2. Analytics
+- deterministic signal derivation
+- forecast scenario generation
+- explainability summaries
 
-### 1. Data Layer
-- Raw price data (OHLCV)
-- Order book data
-- On-chain data (crypto)
-- Fundamental data (stocks/ETFs)
-- Macro indicators
+3. Simulation Execution
+- lane-aware order placement
+- persisted account and position state
+- auditable order/transaction journals
 
-### 2. Feature Layer
-- Technical indicators
-- Statistical transformations
-- Derived metrics (volatility, momentum)
+4. Workstation UX
+- dense market scanning surfaces
+- quick action pathways
+- portfolio and order oversight
 
-### 3. Signal Layer
-- Trend signals
-- Mean reversion signals
-- Breakout signals
-- Regime detection
+## Layered Model
 
-### 4. Intelligence Layer
-- Ranking engine
-- Screening engine
-- Anomaly detection
-- Factor decomposition
+### Data Ingestion Layer
+- provider clients, retries, routing, normalization
+- quote/history persistence
 
-### 5. Execution Layer
-- Trade decision logic
-- Position sizing
-- Risk control
+### Contract Layer
+- shared Zod schemas
+- strongly typed read/write boundaries
 
-### 6. Reporting Layer
-- Performance reports
-- KPI dashboards
-- Risk summaries
+### Domain Logic Layer
+- signal and forecasting packages
+- trading policies and readiness logic
 
-## Design Principles
+### Persistence Layer
+- DB repositories and read model queries
+- simulation accounting and journaling
 
-- Deterministic logic over black-box guessing
-- Pure function pipelines
-- Modular architecture
-- Cross-asset compatibility
-- Explainability first
+### Presentation Layer
+- Next.js App Router pages
+- server-side query/mapper/service orchestration
+- reusable workstation components
+
+## Core Invariants
+
+- No provider logic in UI.
+- No DB logic in UI.
+- Simulation updates are transactional and deterministic.
+- Route view models are explicit and reusable.
+- Live execution remains gated until readiness conditions pass.
+
+## Primary Read Models
+
+- invest overview read model
+- simulation workstation state
+- portfolio read model
+- market graph read model
+- stock catalog/detail read models
+
+## Primary Write Models
+
+- watchlist toggles
+- simulation session start/resume
+- simulated order execution
+- simulation account reset
+
+## Risk Controls (Current)
+
+- lane restrictions (`manual_stock_lane` vs multi-asset lanes)
+- asset class and session scope checks
+- tradability checks
+- cash/quantity validation
+- live-readiness gate seam for live execution targets
+
+## Extensibility Direction
+
+Planned evolutionary direction:
+- first-class execution record table
+- richer broker capability matrix and product mapping
+- deeper simulation realism controls
+- enhanced portfolio analytics and attribution
+
+## Performance and Reliability Principles
+
+- cache-aware quote/history loads
+- avoid redundant provider calls
+- use server-side orchestration for expensive joins
+- maintain graceful degradation when providers fail
+
+## Governance
+
+Changes are accepted when they:
+- preserve boundary discipline
+- keep contract compatibility
+- improve deterministic behavior
+- maintain user trust in data semantics

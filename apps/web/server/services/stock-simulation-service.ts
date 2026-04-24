@@ -93,7 +93,10 @@ export async function loadMiniHistorySeries(
   return seriesBySymbol;
 }
 
-export async function loadQuoteSnapshots(symbols: string[]): Promise<PersistedMarketQuoteSnapshot[]> {
+export async function loadQuoteSnapshots(
+  symbols: string[],
+  knownAssetIdBySymbol?: ReadonlyMap<string, string>,
+): Promise<PersistedMarketQuoteSnapshot[]> {
   const normalized = [...new Set(symbols.map((symbol) => symbol.trim().toUpperCase()).filter(Boolean))];
 
   if (normalized.length === 0) {
@@ -108,8 +111,8 @@ export async function loadQuoteSnapshots(symbols: string[]): Promise<PersistedMa
     return normalized.flatMap((symbol) => (cachedBySymbol.get(symbol) ? [cachedBySymbol.get(symbol)!] : []));
   }
 
-  const assets = await listCatalogAssets();
-  const assetIdBySymbol = new Map(assets.map((asset) => [asset.symbol, asset.assetId]));
+  // Use the pre-built map when the caller already has the catalog, avoiding a duplicate DB round-trip.
+  const assetIdBySymbol = knownAssetIdBySymbol ?? new Map((await listCatalogAssets()).map((asset) => [asset.symbol, asset.assetId]));
 
   try {
     const fetchedSnapshots = await fetchMarketSnapshot({

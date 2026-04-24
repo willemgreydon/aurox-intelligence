@@ -8,16 +8,14 @@ import { MarketGraphWorkspace } from '../charts/market-graph-workspace';
 
 type HeroSectionProps = {
   stocks: StocksOverviewViewModel;
-  featuredSymbol: string | null;
   marketGraph: Awaited<ReturnType<typeof getMarketGraphData>>;
   labels: {
     eyebrow: string;
     title: string;
     description: string;
     openStocks: string;
-    marketGraph: string;
-    openDashboard: string;
-    reviewAsset: (symbol: string) => string;
+    viewSimulation: string;
+    reviewRiskLayer: string;
     provider: string;
     currentSnapshotTitle: string;
     currentSnapshotSubtitle: string;
@@ -62,7 +60,7 @@ type HeroSectionProps = {
   };
 };
 
-export function HeroSection({ stocks, featuredSymbol, marketGraph, labels }: HeroSectionProps) {
+export function HeroSection({ stocks, marketGraph, labels }: HeroSectionProps) {
   const positiveBreadth = stocks.trackedStocks.length > 0 ? Math.round((stocks.trackedStocks.filter((item) => (item.changePercent ?? 0) > 0).length / stocks.trackedStocks.length) * 100) : 0;
   const featuredMove = stocks.topMovers[0];
   const metrics = [
@@ -92,14 +90,14 @@ export function HeroSection({ stocks, featuredSymbol, marketGraph, labels }: Her
           <p className="hero__lede">{labels.description}</p>
 
           <div className="hero__actions">
-            <Link href="/stocks" className="button button--primary">
+            <Link href="/invest" className="button button--primary">
               {labels.openStocks}
             </Link>
-            <Link href="/market" className="button button--secondary">
-              {labels.marketGraph}
+            <Link href="/invest/simulation" className="button button--secondary">
+              {labels.viewSimulation}
             </Link>
-            <Link href={featuredSymbol ? `/stocks/${featuredSymbol}` : '/dashboard'} className="button button--secondary">
-              {featuredSymbol ? labels.reviewAsset(featuredSymbol) : labels.openDashboard}
+            <Link href="/dashboard" className="button button--secondary">
+              {labels.reviewRiskLayer}
             </Link>
           </div>
 

@@ -66,5 +66,13 @@ export function runCapitalGuard(
 
   const allowedOrderNotional = computeAllowedOrderNotional(config, state, allowedCapital);
 
+  // Remaining daily budget is exhausted when prior orders have consumed the full envelope.
+  if (allowedOrderNotional <= 0) {
+    return agentError<CapitalGuardResult>(
+      'Capital envelope exhausted for this mode.',
+      'CAPITAL_GUARD_ENVELOPE_EXHAUSTED',
+    );
+  }
+
   return agentOk<CapitalGuardResult>({ state, allowedCapital, allowedOrderNotional });
 }

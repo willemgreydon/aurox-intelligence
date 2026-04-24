@@ -1,120 +1,87 @@
-# Best Practices
+﻿# Best Practices
 
-This document captures the architectural and implementation practices that should be preserved as the platform evolves.
+This guide defines implementation standards for contributors and coding agents.
 
-## Boundary Rules
+## 1. Boundary Discipline
 
-- Keep provider access inside `packages/providers`.
-- Keep DB access inside `packages/db`.
-- Keep ingestion orchestration inside `packages/ingestion`.
-- Keep signal logic pure inside `packages/signals`.
-- Keep forecast logic pure inside `packages/forecasting`.
-- Keep shared schemas and DTOs inside `packages/api-contracts`.
-- Keep route rendering and read orchestration inside `apps/web`.
-- Do not move provider logic into React components or page files.
-- Do not move forecasting or signal logic into route handlers or components.
+Always preserve monorepo boundaries.
 
-## Web Read Architecture
+- DB access: only `packages/db`
+- Provider API access: only `packages/providers`
+- Contracts/types: only `packages/api-contracts`
+- Signal logic: only `packages/signals`
+- Forecast logic: only `packages/forecasting`
+- Route orchestration and rendering: `apps/web`
 
-For any new product surface, prefer this pattern:
+Never move provider or persistence logic into React components.
 
-1. add or reuse a provider/DB read boundary
-2. create a route-specific query in `apps/web/server/queries`
-3. map raw results into a stable shape in `apps/web/server/mappers`
-4. expose the final route-facing data through `apps/web/server/services`
-5. keep page components focused on presentation and layout
+## 2. Read Architecture Standard
 
-Avoid skipping directly from page components to raw provider or DB access.
+For new route families use:
 
-## UI and Design System
+1. Query (`apps/web/server/queries`)
+2. Mapper (`apps/web/server/mappers`)
+3. Service (`apps/web/server/services`)
+4. Route page
+5. UI components
 
-- Use the token system in `packages/design-tokens` as the single source of truth.
-- Prefer semantic roles over raw color or spacing values.
-- Keep the current workstation-style density and analytical tone.
-- Add reusable primitives only when a pattern clearly repeats.
-- Prefer a small number of strong components over many weak variants.
-- Keep charts, tables, filters, and stat panels semantically consistent.
+Do not bypass mapper/service by building domain logic in page files.
 
-## Truthfulness Rules
+## 3. Contract-First Development
 
-- Prefer truthful partial data over fake completeness.
-- When data is unavailable, render explicit empty or partial states.
-- When historical data is missing, show a real empty state, not a synthetic chart.
-- When signals or forecasts are derived from simplified logic, say so in the UI copy and docs.
-- Do not label anything “live” unless it actually comes through the provider or persistence boundary.
+- Add/extend Zod schemas before wiring business logic.
+- Export types from contract packages and consume by inference.
+- Prefer additive schema changes over breaking renames.
+- If schema changes affect runtime persistence, keep backward-compatible parsing.
 
-## Route Design Guidance
+## 4. Simulation Safety Rules
 
-### Dashboard
+- Simulation is persisted execution, not sample UI state.
+- Enforce deterministic arithmetic and rounding strategy.
+- Validate lane constraints and asset tradability server-side.
+- Capture auditable metadata for fills and account effects.
 
-- Mix operational and market summaries carefully.
-- Prefer live or persisted read models for top-level metrics.
-- Keep placeholder analytical sections clearly separated from real operational data.
+## 5. UI Composition Rules
 
-### Stocks and FX
+- Reuse existing workstation components for consistency.
+- Keep action surfaces dense but readable.
+- Support both list and grid for scanning vs execution speed.
+- Prefer server-rendered state over unnecessary client state.
 
-- Overview routes should center on tracked universe, freshness, and current state.
-- Detail routes should center on current quote, real history, and clear next modules.
-- Keep unsupported modules structurally ready but visibly partial.
+## 6. Data Truthfulness Rules
 
-### Signals and Forecasts
+- Never fabricate market prices to fill gaps silently.
+- Surface freshness and fallback status explicitly.
+- Keep empty/loading/error states clear and actionable.
+- Use partial data honestly rather than synthetic completeness.
 
-- Expose them as analytical read surfaces, not marketing pages.
-- Build them from shared pure package logic.
-- Keep explainability first-class.
-- Be explicit about calibration limits and unsupported horizons.
+## 7. Migration Strategy
 
-### Admin and Monitoring
+For any major change:
+- choose additive evolution first
+- keep current flows operational
+- introduce extension points with concrete integration path
+- avoid dead abstractions
 
-- Treat admin surfaces as operational tools.
-- Prefer explicit warnings, freshness, and health summaries.
-- Keep provider and pipeline checks visible and typed.
+## 8. Testing and Verification
 
-## Package Export Guidance
+At minimum for non-trivial changes:
+- package-level typecheck for modified packages
+- route behavior smoke validation for affected surfaces
+- deterministic scenario checks for execution math changes
 
-Internal workspace packages used by Next.js should follow the repository’s current internal-source export pattern when appropriate:
+## 9. Documentation Standard
 
-- `main: "src/index.ts"`
-- `types: "src/index.ts"`
-- `exports: { ".": "./src/index.ts" }`
+Every meaningful vertical slice should document:
+- source of truth contracts
+- read/write flow
+- invariants
+- failure modes
+- migration considerations
 
-This pattern is currently used to keep workspace package resolution stable inside the app during local builds.
+## 10. Anti-Patterns to Avoid
 
-## State Handling Expectations
-
-Every serious surface should explicitly consider:
-
-- loading
-- empty state
-- missing provider data
-- stale timestamps
-- unsupported asset or pair
-- partial signal/forecast coverage
-- persistence not configured
-
-Silent failure is worse than a visible partial-state message.
-
-## Universe Expansion Guidance
-
-If the tracked universe is broadened:
-
-- avoid scattering hardcoded asset arrays across pages
-- prefer provider config or a dedicated asset registry read model
-- normalize symbols before they cross package boundaries
-- keep stock and FX identity handling explicit in query/mapping layers
-
-## Documentation Practices
-
-- Keep documentation in-repo under `docs/architecture`.
-- Update docs when adding new route families, provider capabilities, or package seams.
-- Prefer documenting actual current state, not aspirational architecture.
-- Link the README to deeper architecture documents instead of duplicating everything there.
-
-## Recommended Next Priorities
-
-The strongest post-v1 improvements are:
-
-- move market history and tracked assets into persistence-backed read models
-- expand the tracked universe through a formal asset registry
-- persist signal and forecast outputs for dashboard/admin reuse
-- add fundamentals and news read models only when they can be done truthfully
+- domain calculations inside component render functions
+- direct DB/provider imports in route components
+- copy-paste models diverging from shared contracts
+- hiding risk assumptions in implicit defaults

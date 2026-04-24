@@ -1,6 +1,7 @@
 import { getStocksOverviewData } from '../server/services/stocks-service';
 import { getMarketGraphData } from '../server/services/market-graph-service';
 import { HeroSection } from '../components/sections/hero-section';
+import { LaneOverviewSection } from '../components/sections/lane-overview-section';
 import { CapabilitiesSection } from '../components/sections/capabilities-section';
 import { ModulesSection } from '../components/sections/modules-section';
 import { ExplainabilitySection } from '../components/sections/explainability-section';
@@ -17,22 +18,19 @@ export default async function HomePage() {
     getStocksOverviewData(locale, messages),
     getMarketGraphData(),
   ]);
-  const featuredSymbol = stocks.topMovers[0]?.symbol ?? stocks.trackedStocks[0]?.symbol ?? null;
 
   return (
     <>
       <HeroSection
         stocks={stocks}
-        featuredSymbol={featuredSymbol}
         marketGraph={marketGraph}
         labels={{
           eyebrow: messages.home.heroEyebrow,
           title: messages.home.heroTitle,
           description: messages.home.heroDescription,
           openStocks: messages.home.openStocks,
-          marketGraph: messages.marketGraph.open,
-          openDashboard: messages.home.openDashboard,
-          reviewAsset: (symbol) => messages.home.reviewAsset.replace('{{symbol}}', symbol),
+          viewSimulation: messages.home.viewSimulation,
+          reviewRiskLayer: messages.home.reviewRiskLayer,
           provider: messages.home.provider,
           currentSnapshotTitle: messages.home.currentSnapshotTitle,
           currentSnapshotSubtitle: messages.home.currentSnapshotSubtitle,
@@ -76,6 +74,7 @@ export default async function HomePage() {
           },
         }}
       />
+      <LaneOverviewSection labels={messages.homeSections.lanes} />
       <CapabilitiesSection labels={messages.homeSections.capabilities} />
       <ModulesSection labels={messages.homeSections.modules} />
       <ExplainabilitySection labels={messages.homeSections.explainability} />

@@ -1,40 +1,77 @@
-# Risk Management
+﻿# Risk Management
 
-## Risk Types
+This document defines current and target risk controls for Aurox Intelligence simulation workflows.
 
-- Market risk
-- Liquidity risk
-- Counterparty risk
-- Operational risk
+## Scope
 
----
+Current system risk management primarily governs simulation execution safety and account integrity.
 
-## Core Metrics
+## Risk Classes
 
-- Value at Risk (VaR)
-- Expected Shortfall
-- Maximum Drawdown
-- Volatility
+1. Execution Risk
+- invalid quantity or price
+- insufficient cash/position
+- lane/asset-scope violations
 
----
+2. Market Risk
+- adverse price movement after fill
+- concentration in single symbols or asset classes
 
-## Position Sizing
+3. Model Risk
+- stale or partial data inputs
+- low-confidence recommendations
 
-- Fixed % allocation
-- Volatility-adjusted sizing
-- Kelly Criterion
+4. Operational Risk
+- provider degradation
+- stale caches
+- incorrect environment configuration
 
----
+## Current Enforced Controls
 
-## Portfolio Risk
+- deterministic pre-trade validation
+- lane enforcement (`manual_stock_lane` vs multi-asset lanes)
+- tradability checks via catalog metadata
+- capital and held-quantity checks
+- read-only mode behavior on degraded session state
 
-- Correlation matrix
-- Diversification score
+## Simulation Accounting Controls
 
----
+- transactional order + account updates
+- realized/unrealized PnL recomputation
+- snapshot capture for audit and equity curve
+- execution metadata support for fee/slippage/latency hooks
 
-## Rules
+## Risk Metrics to Surface
 
-- Max exposure per asset
-- Max drawdown threshold
-- Stop-loss enforcement
+Portfolio-level:
+- gross exposure
+- asset class concentration
+- realized/unrealized PnL split
+- drawdown from starting equity
+
+Trade-level:
+- fee impact
+- slippage impact
+- effective cash effect
+- validation hash / execution record
+
+## Policy Integration
+
+Risk controls should remain composable through:
+- `packages/agents` policy engine
+- broker mode config constraints
+- live readiness checks
+
+## Incident Response
+
+If risk invariants break:
+1. block further execution actions
+2. preserve full audit trail
+3. expose explicit status and reason
+4. require manual operator review before re-enable
+
+## Next Enhancements
+
+- hard daily loss caps in simulation account layer
+- portfolio-level concentration limits in execution validator
+- deterministic scenario stress snapshots

@@ -1,3 +1,16 @@
+export {
+  rankAssets,
+  computeCompositeScore,
+  computeRiskPenalty,
+  mapRankingRecommendation,
+  computeRankingConfidence,
+} from './ranking-engine';
+export type {
+  AssetRankingInput,
+  CompositeScoreComponents,
+  RiskPenaltyFactors,
+} from './ranking-engine';
+
 import type {
   InvestmentRecommendation,
   MarketInsightSummary,

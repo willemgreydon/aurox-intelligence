@@ -194,173 +194,230 @@
     "planningFirst": "Planning-first"
   },
   "home": {
-    "heroEyebrow": "Financial intelligence platform",
-    "heroTitle": "Market breadth, explainable signals, and simulation investing in one calm workstation.",
-    "heroDescription": "Aurox Intelligence combines live market context, a production-minded simulation account, and decision support designed for deliberate investing workflows.",
-    "openStocks": "Open stocks workstation",
+    "heroEyebrow": "Aurox Intelligence",
+    "heroTitle": "AI-native market intelligence, simulation trading, and risk-governed execution.",
+    "heroDescription": "Aurox Intelligence combines deterministic asset ranking, explainable AI signals, and a production-grade simulation engine in one auditable workstation built for deliberate investors.",
+    "openStocks": "Open Invest Workstation",
+    "viewSimulation": "View Simulation",
+    "reviewRiskLayer": "Review Risk Layer",
     "openDashboard": "Open dashboard",
     "reviewAsset": "Review {{symbol}}",
     "provider": "Provider",
-    "currentSnapshotTitle": "Current stock snapshot",
-    "currentSnapshotSubtitle": "Live monitored equity intelligence pulled through the stock read model.",
-    "liveTrackedStocks": "Live tracked stocks",
-    "liveTrackedStocksCaption": "Current provider-backed stock quotes visible in the product shell.",
+    "currentSnapshotTitle": "Live market snapshot",
+    "currentSnapshotSubtitle": "Provider-backed equity intelligence pulled through the ranking and signal pipeline.",
+    "liveTrackedStocks": "Tracked assets",
+    "liveTrackedStocksCaption": "Current provider-backed quotes active across the monitored asset universe.",
     "positiveBreadth": "Positive breadth",
-    "positiveBreadthCaption": "Share of the tracked equity set currently printing a positive move.",
+    "positiveBreadthCaption": "Share of the tracked asset set currently printing a constructive session move.",
     "topMover": "Top mover",
-    "topMoverCaption": "Fast readout of the strongest current stock move in the monitored set.",
-    "featuredStock": "Featured stock",
+    "topMoverCaption": "Strongest price move in the monitored set based on the latest provider snapshot.",
+    "featuredStock": "Featured asset",
     "historyPreviewAria": "{{symbol}} price history preview",
-    "noHistory": "Historical stock data is not yet available.",
-    "platformHighlights": "Platform highlights"
+    "noHistory": "Historical price data is not yet available for this asset.",
+    "platformHighlights": "Platform trust signals"
   },
   "homeSections": {
     "capabilities": {
       "eyebrow": "Platform capabilities",
-      "title": "The foundation now reflects the product we are actually building.",
-      "description": "The shell now communicates forecasting, data quality, explainability, and operator value instead of reading like a starter template.",
+      "title": "A deterministic intelligence engine beneath a financial workstation.",
+      "description": "Every output is reproducible, every signal is explainable, and every execution path is guarded by explicit risk rules before an order is ever considered.",
       "items": [
         {
-          "title": "Stock trend prediction",
-          "description": "Frame directional moves with scenario-ready forecasts, confidence ranges, and a path toward model review surfaces."
+          "title": "Deterministic ranking engine",
+          "description": "Composite scores from signal, factor, regime, and risk inputs rank every asset deterministically — same inputs always produce the same ordered output."
         },
         {
-          "title": "Currency value analysis",
-          "description": "Track FX pairs with relative-strength context, macro factor overlays, and future workstation hooks for cross-market analysis."
+          "title": "Explainable AI signals",
+          "description": "Every recommendation surfaces a confidence score, risk notice, and reasoning trail so analysts can inspect the why, not just read the what."
         },
         {
-          "title": "Signal engineering",
-          "description": "Keep feature logic pure and reusable so technical, event, and macro signals can evolve without leaking into UI layers."
+          "title": "Simulation-first execution",
+          "description": "A production-grade paper trading engine replicates real market mechanics — order routing, fills, position accounting — without touching real capital."
         },
         {
-          "title": "Explainable forecasts",
-          "description": "Surface the factors behind a forecast so analysts can inspect why the system leans bullish, cautious, or defensive."
+          "title": "Multi-asset coverage",
+          "description": "Stocks, ETFs, and crypto tracked in a unified asset taxonomy with consistent signal derivation and explicit action availability gates per instrument."
         },
         {
-          "title": "Ingestion observability",
-          "description": "Treat freshness, canonicalization, and provider health as first-class product states rather than hidden backend details."
+          "title": "Risk governance layer",
+          "description": "Exposure limits, drawdown caps, and instrument constraints are enforced before any execution path is unlocked — for simulation and future live orders alike."
         },
         {
-          "title": "Decision support shell",
-          "description": "Create a semantic application frame that can grow into dashboard, admin, and workflow-specific product surfaces."
+          "title": "Provider observability",
+          "description": "Market data freshness, source health, and provider fallback state are first-class product dimensions surfaced to the operator, not hidden backend details."
         }
       ]
     },
     "modules": {
-      "eyebrow": "Product modules",
-      "title": "A reusable entry frame for every surface we know is coming.",
-      "description": "These module cards establish a stable navigation and content grammar for future route-level work without overbuilding the component library today.",
+      "eyebrow": "Workstation modules",
+      "title": "Every intelligence surface in one navigable workstation.",
+      "description": "Each module owns a distinct research or execution domain with consistent data freshness indicators, risk-aware action controls, and clear simulation disclosure.",
       "enterModule": "Enter module",
       "items": [
         {
+          "eyebrow": "Invest",
+          "title": "Intelligence and simulation hub",
+          "description": "AI-ranked assets, market recommendations, simulation order entry, and portfolio tracking — all in one invest workstation.",
+          "href": "/invest"
+        },
+        {
           "eyebrow": "Stocks",
-          "title": "Trend monitoring workspace",
-          "description": "Longer-horizon equity monitoring with regime shifts, factor contribution views, and forecast comparisons.",
+          "title": "Equity research workspace",
+          "description": "Deep equity analysis with quote tracking, watchlist management, sparkline history, and simulation order entry per symbol.",
           "href": "/stocks"
         },
         {
-          "eyebrow": "FX",
-          "title": "Currency intelligence surface",
-          "description": "Pair-level valuation, momentum snapshots, and macro-aware commentary shells for future analyst workflows.",
-          "href": "/fx"
+          "eyebrow": "Market graph",
+          "title": "Interactive chart workstation",
+          "description": "OHLCV candlestick and line charts with signal overlays, multi-asset compare, and configurable time viewport controls.",
+          "href": "/market"
         },
         {
-          "eyebrow": "Signals",
-          "title": "Feature registry",
-          "description": "A home for technical, macro, and event-derived features with traceable provenance and validation status.",
+          "eyebrow": "Dashboard",
+          "title": "Operational overview",
+          "description": "Simulation performance summary, order history, provider health status, and cross-surface workstation configuration.",
           "href": "/dashboard"
-        },
-        {
-          "eyebrow": "Ingestion",
-          "title": "Freshness and source health",
-          "description": "Operational visibility into source coverage, canonicalization steps, and recomputation triggers.",
-          "href": "/admin"
         }
       ]
     },
     "explainability": {
-      "eyebrow": "Explainability path",
-      "title": "Forecast outputs should always be inspectable.",
-      "description": "This shell creates room for evidence trails, scenario deltas, and model confidence commentary without smuggling forecasting behavior into the UI.",
-      "dataFlowEyebrow": "Data flow teaser",
+      "eyebrow": "Intelligence pipeline",
+      "title": "From raw market data to ranked, explainable investment context.",
+      "description": "Every recommendation is traceable to a signal input, a risk check, and a disclosed confidence score. No opaque outputs, no unqualified buy or sell claims.",
+      "dataFlowEyebrow": "Data flow",
       "kpis": [
         {
-          "label": "Why a forecast moved",
-          "value": "Feature influence"
-        },
-        {
-          "label": "What changed",
-          "value": "Scenario deltas"
+          "label": "Why a score moved",
+          "value": "Signal influence"
         },
         {
           "label": "How much to trust it",
           "value": "Confidence bands"
+        },
+        {
+          "label": "What the risk is",
+          "value": "Risk disclosure"
         }
       ],
       "flow": [
         {
-          "title": "Ingest and canonicalize",
-          "description": "Providers and background jobs land raw market data, then normalize it into durable, query-friendly contracts.",
-          "value": "providers -> ingestion"
+          "title": "Ingest market data",
+          "description": "Provider adapters normalize OHLCV, quote, and macro signals into durable canonical observations with freshness tracking.",
+          "value": "providers → ingestion"
         },
         {
-          "title": "Engineer features",
-          "description": "Pure analytics packages generate reusable signals so forecast quality does not depend on route-level code.",
-          "value": "ingestion -> signals"
+          "title": "Derive signals",
+          "description": "Pure signal packages compute momentum, volatility, and trend features deterministically — no I/O, no hidden state, no randomness.",
+          "value": "ingestion → signals"
         },
         {
-          "title": "Score and explain",
-          "description": "Forecasting produces directional output plus feature-level reasoning that can later feed analyst review panels.",
-          "value": "signals -> forecasting"
+          "title": "Rank and score",
+          "description": "The composite ranking engine applies weighted factors and risk penalties to produce ordered, explainable asset scores across all tracked instruments.",
+          "value": "signals → intelligence"
         },
         {
-          "title": "Render operator context",
-          "description": "The web shell presents system status, explainability summaries, and decision-ready navigation without owning the analytics logic.",
-          "value": "forecasting -> web"
+          "title": "Recommend and disclose",
+          "description": "Every recommendation includes reasoning, confidence, suitability, and a risk notice — never a bare directive without context or disclosure.",
+          "value": "intelligence → workstation"
         }
       ]
     },
     "systemStatus": {
-      "eyebrow": "Operational framing",
-      "title": "Status, freshness, and roadmap-ready panels belong in the shell.",
-      "description": "We now have a place for system condition, empty states, and next-step product framing before the live analytics data is wired in.",
-      "systemStatusTitle": "System status",
-      "systemStatusBody": "Placeholder widgets grounded in product reality.",
-      "systemStatusBadge": "Stable",
-      "roadmapTitle": "What should come next",
-      "roadmapBody": "The foundation is ready for route-specific dashboards and data-backed module surfaces.",
+      "eyebrow": "System readiness",
+      "title": "Production-realistic status, simulation-first by design.",
+      "description": "All system components report their operational state. Simulation is the default execution target. Live execution and autonomous trading are explicitly gated.",
+      "systemStatusTitle": "Core systems",
+      "systemStatusBody": "Ranking engine, simulation trading, and market data pipelines.",
+      "systemStatusBadge": "Operational",
+      "roadmapTitle": "Gated capabilities",
+      "roadmapBody": "Live execution and autonomous trading remain explicitly locked behind readiness, risk approval, and policy verification.",
       "systems": [
         {
-          "name": "Market ingestion",
-          "detail": "Canonical equity and FX source sync completed 4 minutes ago.",
-          "label": "Healthy",
+          "name": "Ranking engine",
+          "detail": "Deterministic composite score ranking active for all tracked assets across stocks, ETFs, and crypto.",
+          "label": "Active",
           "tone": "success"
         },
         {
-          "name": "Signal recomputation",
-          "detail": "Momentum and macro factor batch running for the next forecast window.",
-          "label": "Processing",
-          "tone": "warning"
+          "name": "Simulation trading",
+          "detail": "Paper trading, order management, position accounting, and transaction audit running without real capital.",
+          "label": "Active",
+          "tone": "success"
         },
         {
-          "name": "Forecast explainability cache",
-          "detail": "Audit-ready payload schema prepared for future dashboard panels.",
-          "label": "Ready",
+          "name": "Market data providers",
+          "detail": "Quote and OHLCV ingestion active with stale-cache fallback and provider health observation.",
+          "label": "Live",
           "tone": "success"
+        },
+        {
+          "name": "Live broker execution",
+          "detail": "Real brokerage execution is not enabled in this release. Gated behind readiness and compliance verification.",
+          "label": "Gated",
+          "tone": "info"
         }
       ],
       "roadmap": [
         {
-          "title": "Dashboard route scaffolding",
-          "detail": "Use the new shell primitives to establish dashboard-specific layouts and preview panels."
+          "title": "Autonomous execution lane",
+          "detail": "Autonomous trading requires explicit readiness verification, risk cap approval, and broker API connectivity before any gate is opened."
         },
         {
-          "title": "Token package hardening",
-          "detail": "Promote CSS variables into documented token exports and add chart or table roles as real surfaces appear."
+          "title": "Live broker connectivity",
+          "detail": "Real brokerage execution will be enabled only after risk gate passage, broker validation, and compliance review are completed and signed off."
         },
         {
-          "title": "Data-backed homepage panels",
-          "detail": "Replace placeholder copy with server-driven freshness, health, and forecast summaries once contracts are ready."
+          "title": "Historical signal backtesting",
+          "detail": "Backtesting surfaces for signal validation and strategy stress-testing are on the roadmap after simulation hardening is complete."
+        }
+      ]
+    },
+    "lanes": {
+      "eyebrow": "Intelligence lanes",
+      "title": "Five purpose-built lanes for every stage of the investment workflow.",
+      "description": "Each lane owns a distinct domain from raw data ingestion to risk-governed execution. All lanes share a unified asset taxonomy and enforce explicit risk rules.",
+      "enterLane": "Open lane",
+      "flowSteps": ["Data", "Signals", "Risk", "Simulation", "Portfolio"],
+      "items": [
+        {
+          "label": "Lane 01",
+          "title": "Market Intelligence Lane",
+          "description": "Deterministic asset ranking, explainable signals, and AI-driven market context across stocks, ETFs, and crypto — all traceable to their inputs.",
+          "features": ["Composite score ranking", "Explainable AI signals", "Regime and factor analysis"],
+          "href": "/invest",
+          "statusLabel": "Active"
+        },
+        {
+          "label": "Lane 02",
+          "title": "Simulation Trading Lane",
+          "description": "Production-grade paper trading with real market mechanics — order routing, position accounting, fee tracking, and full transaction audit history.",
+          "features": ["Simulated buy and sell orders", "Portfolio PnL tracking", "Order and transaction audit"],
+          "href": "/invest/simulation",
+          "statusLabel": "Active"
+        },
+        {
+          "label": "Lane 03",
+          "title": "Risk Governance Lane",
+          "description": "Exposure limits, drawdown monitoring, and instrument constraints are enforced before any execution path is opened — for simulation and future live orders.",
+          "features": ["Max exposure enforcement", "Drawdown monitoring", "Instrument constraint checks"],
+          "href": "/dashboard",
+          "statusLabel": "Active"
+        },
+        {
+          "label": "Lane 04",
+          "title": "Execution Readiness Lane",
+          "description": "Broker adapter readiness gates, asset validation, and live execution eligibility checks — all auditable before any order can be routed to a real venue.",
+          "features": ["Broker readiness gate", "Asset scope validation", "Live execution gating"],
+          "href": "/invest",
+          "statusLabel": "Gated"
+        },
+        {
+          "label": "Lane 05",
+          "title": "Portfolio Intelligence Lane",
+          "description": "Cross-asset allocation view, factor exposure analysis, and simulation performance attribution — presenting positions in structured, explainable context.",
+          "features": ["Cross-asset allocation view", "Factor exposure analysis", "Simulation PnL attribution"],
+          "href": "/stocks",
+          "statusLabel": "Active"
         }
       ]
     }

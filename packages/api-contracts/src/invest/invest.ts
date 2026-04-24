@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { freshnessStateSchema, routeStatusSchema, sentimentStateSchema } from '../market/market';
 import { simulationLaneIdSchema } from '../simulation/simulation';
+import { assetRankingSchema } from '../ranking/ranking';
 
 export const actionAvailabilitySchema = z.enum(['available', 'simulated', 'planned', 'unavailable']);
 export const recommendationActionSchema = z.enum(['accumulate', 'hold', 'watch', 'trim', 'avoid']);
@@ -96,6 +97,7 @@ export const investOverviewSchema = z.object({
       items: z.array(investableAssetSummarySchema),
     }),
   ),
+  rankedAssets: z.array(assetRankingSchema),
   emptyStateMessage: z.string().nullable(),
 });
 

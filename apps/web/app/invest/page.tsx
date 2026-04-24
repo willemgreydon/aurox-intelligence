@@ -11,6 +11,7 @@ import { MarketViewToggle, type MarketViewMode } from '../../components/invest/m
 import { QuickTradeActions } from '../../components/invest/quick-trade-actions';
 import { RecommendationCard } from '../../components/invest/recommendation-card';
 import { BrokerModeLaunchpad } from '../../components/invest/broker-mode-launchpad';
+import { RankedAssetsPanel } from '../../components/invest/ranked-assets-panel';
 import { getMessages } from '../../lib/i18n/messages';
 import { getOptionalCurrentSession } from '../../server/auth/session';
 import { getRequestLocale } from '../../server/i18n/locale';
@@ -233,6 +234,35 @@ export default async function InvestPage({
                   The recommendation feed returned incomplete items. The page stays available while
                   invalid entries are skipped.
                 </p>
+              </div>
+            </div>
+          </Card>
+        )}
+      </Section>
+
+      <Section className="dashboard-section">
+        <header className="dashboard-section-heading">
+          <div>
+            <div className="section__eyebrow">Intelligence</div>
+            <h2 className="dashboard-section-heading__title">Market ranking</h2>
+            <p className="dashboard-section-heading__description">
+              Deterministic composite score ranking across all tracked assets. Scores reflect signal,
+              factor, regime, and risk inputs from available market data.
+            </p>
+          </div>
+        </header>
+
+        {invest.rankedAssets.length > 0 ? (
+          <Card className="analytics-card">
+            <RankedAssetsPanel items={invest.rankedAssets.slice(0, 25)} />
+          </Card>
+        ) : (
+          <Card className="analytics-card">
+            <div className="analytics-card__header">
+              <div>
+                <div className="section__eyebrow">Intelligence</div>
+                <h3>No ranking data available</h3>
+                <p>Rankings will appear once market data has been loaded for tracked assets.</p>
               </div>
             </div>
           </Card>

@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Read",
+      "Grep",
+      "Glob",
+      "LS",
+      "Edit",
+      "MultiEdit",
+      "Write",
+      "Bash(pnpm --filter:* typecheck*)",
+      "Bash(pnpm --filter:* test*)",
+      "Bash(pnpm typecheck*)",
+      "Bash(pnpm test*)",
+      "Bash(pnpm lint*)",
+      "Bash(pnpm build*)",
+      "Bash(pnpm build:web*)",
+      "Bash(node packages/db/scripts/migrate.mjs*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)"
+    ],
+    "ask": [
+      "Bash(pnpm install*)",
+      "Bash(pnpm clean*)",
+      "Bash(rm*)",
+      "Bash(del*)",
+      "Bash(git checkout*)",
+      "Bash(git reset*)",
+      "Bash(git clean*)",
+      "Bash(git commit*)",
+      "Bash(git push*)"
+    ],
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(rm -rf ~)",
+      "Bash(rm -rf .git)",
+      "Bash(git push --force*)",
+      "Bash(git reset --hard*)",
+      "Bash(curl * | sh*)",
+      "Bash(wget * | sh*)",
+      "Bash(npm publish*)",
+      "Bash(pnpm publish*)",
+      "Bash(env)",
+      "Bash(printenv)",
+      "Read(.env)",
+      "Read(.env.local)",
+      "Read(.env.production)",
+      "Read(**/*secret*)",
+      "Read(**/*credential*)",
+      "Read(**/*token*)",
+      "Write(.env)",
+      "Write(.env.local)",
+      "Write(.env.production)"
+    ]
+  },
+  "env": {
+    "AUROX_CLAUDE_MODE": "enterprise",
+    "AUROX_EXECUTION_DEFAULT": "simulation",
+    "AUROX_LIVE_EXECUTION": "disabled",
+    "AUROX_REQUIRE_RISK_REVIEW": "true"
+  }
+}

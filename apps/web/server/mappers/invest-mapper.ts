@@ -1,5 +1,10 @@
 import type { InvestOverview, Locale } from '@repo/api-contracts';
-import { deriveInvestmentRecommendation, deriveMarketInsight } from '@repo/ai-market-intelligence';
+import {
+  deriveInvestmentRecommendation,
+  deriveMarketInsight,
+  rankAssets,
+  type AssetRankingInput,
+} from '@repo/ai-market-intelligence';
 import type { InvestReadModel } from '../queries/invest-query';
 import { getFreshnessState, getLatestTimestamp } from '../lib/market-data';
 import { mapOptionalTimestamp, mapRouteStatusLabel, mapRouteStatusTone } from './route-presentation';
@@ -33,54 +38,73 @@ export type InvestOverviewViewModel = InvestOverview & {
 export function mapInvestOverview(readModel: InvestReadModel): InvestOverview {
   const lastUpdatedAt = getLatestTimestamp(readModel.observations);
   const freshnessState = getFreshnessState(lastUpdatedAt);
-  const items = readModel.assets.map((asset) => {
+  const sourceSummary = readModel.providerError
+    ? 'partial provider coverage'
+    : `${readModel.provider.toUpperCase()} quote context`;
+
+  const enriched = readModel.assets.map((asset) => {
     const observation = readModel.observations.find((item) => item.symbol === asset.symbol);
+    const assetFreshness = getFreshnessState(observation?.timestamp);
     const insight = deriveMarketInsight({
       assetId: asset.assetId,
       symbol: asset.symbol,
       price: observation?.price ?? null,
       changePercent: observation?.changePercent ?? null,
       forecastBias: null,
-      freshnessState: getFreshnessState(observation?.timestamp),
-      sourceSummary: readModel.providerError ? 'partial provider coverage' : `${readModel.provider.toUpperCase()} quote context`,
+      freshnessState: assetFreshness,
+      sourceSummary,
     });
-
-    return {
-      assetId: asset.assetId,
-      symbol: asset.symbol,
-      name: asset.name,
-      assetClass: asset.assetClass,
-      category: asset.category,
-      geography: asset.geography,
-      sector: asset.sector,
-      thesis: asset.thesis,
-      price: observation?.price ?? null,
-      changePercent: observation?.changePercent ?? null,
-      freshnessState: getFreshnessState(observation?.timestamp),
-      lastUpdatedAt: observation?.timestamp ?? null,
-      actionAvailability: asset.actionAvailability,
-      isSimulated: asset.isSimulated,
-      riskSummary: asset.riskSummary,
-      insightStance: insight.stance,
-    };
+    return { asset, observation, insight, assetFreshness };
   });
-  const recommendations = items
-    .map((asset) =>
+
+  const items = enriched.map(({ asset, observation, insight, assetFreshness }) => ({
+    assetId: asset.assetId,
+    symbol: asset.symbol,
+    name: asset.name,
+    assetClass: asset.assetClass,
+    category: asset.category,
+    geography: asset.geography,
+    sector: asset.sector,
+    thesis: asset.thesis,
+    price: observation?.price ?? null,
+    changePercent: observation?.changePercent ?? null,
+    freshnessState: assetFreshness,
+    lastUpdatedAt: observation?.timestamp ?? null,
+    actionAvailability: asset.actionAvailability,
+    isSimulated: asset.isSimulated,
+    riskSummary: asset.riskSummary,
+    insightStance: insight.stance,
+  }));
+
+  const recommendations = enriched
+    .map(({ asset, observation, insight, assetFreshness }) =>
       deriveInvestmentRecommendation({
         assetId: asset.assetId,
         assetName: asset.name,
         symbol: asset.symbol,
-        price: asset.price,
-        changePercent: asset.changePercent,
+        price: observation?.price ?? null,
+        changePercent: observation?.changePercent ?? null,
         forecastBias: null,
-        freshnessState: asset.freshnessState,
-        sourceSummary: readModel.providerError ? 'partial provider coverage' : `${readModel.provider.toUpperCase()} quote context`,
+        freshnessState: assetFreshness,
+        sourceSummary,
         actionAvailability: asset.actionAvailability,
         riskSummary: asset.riskSummary,
       }),
     )
     .sort((left, right) => right.confidence - left.confidence)
     .slice(0, 4);
+
+  const rankingInputs: AssetRankingInput[] = enriched.map(({ asset, observation, insight, assetFreshness }) => ({
+    assetId: asset.assetId,
+    symbol: asset.symbol,
+    assetKind: asset.assetClass,
+    changePercent: observation?.changePercent ?? null,
+    historyCloses: readModel.historySeriesBySymbol[asset.symbol] ?? [],
+    freshnessState: assetFreshness,
+    insightStance: insight.stance,
+    insightConfidence: insight.confidence,
+  }));
+  const rankedAssets = rankAssets(rankingInputs);
 
   return {
     title: 'Investment workspace',
@@ -121,6 +145,7 @@ export function mapInvestOverview(readModel: InvestReadModel): InvestOverview {
       },
     ],
     recommendations,
+    rankedAssets,
     bankConnections: readModel.bankConnections,
     linkedAccounts: readModel.linkedAccounts,
     featuredAssets: items.slice(0, 4),

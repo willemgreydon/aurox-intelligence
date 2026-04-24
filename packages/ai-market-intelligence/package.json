@@ -22,7 +22,8 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@repo/api-contracts": "workspace:*"
+    "@repo/api-contracts": "workspace:*",
+    "@repo/signals": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.8.3",

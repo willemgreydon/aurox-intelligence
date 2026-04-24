@@ -1,30 +1,62 @@
-# Anomaly Detection
+﻿# Anomaly Detection
 
-## Goal
+This document defines anomaly detection goals and integration patterns.
 
-Detect unusual market behavior.
+## Objective
 
----
+Detect meaningful deviations in market or portfolio behavior and surface actionable context without false alarm noise.
 
-## Types
+## Anomaly Classes
 
-- Price spikes
-- Volume anomalies
-- Volatility explosions
-- Correlation breakdown
+1. Price Behavior
+- sudden returns outside expected volatility envelope
+- unusual gap/mean-reversion patterns
 
----
+2. Liquidity/Execution
+- abnormal slippage or fee profiles
+- repeated rejected/failed order patterns
 
-## Methods
+3. Portfolio Behavior
+- abrupt concentration changes
+- unexpected drawdown acceleration
 
-- Z-score thresholding
-- Isolation Forest
-- Rolling statistical deviations
+4. Data Integrity
+- quote freshness degradation
+- provider divergence spikes
 
----
+## Detection Strategy
 
-## Output
+Start simple and deterministic:
+- rolling z-score thresholds
+- volatility-adjusted residual checks
+- rule-based integrity flags
 
-- anomalyScore
-- anomalyType
-- severity
+Then add model-based detectors where clearly beneficial.
+
+## Output Contract (Recommended)
+
+- `anomalyType`
+- `severity` (`low`, `medium`, `high`, `critical`)
+- `score`
+- `detectedAt`
+- `evidence`
+- `affectedSymbols`
+- `recommendedAction`
+
+## Product Integration
+
+- dashboard risk/status callouts
+- portfolio and orders diagnostic panels
+- operator/admin monitoring workflows
+
+## False Positive Management
+
+- enforce cooldown windows
+- require multi-signal confirmation for high-severity alerts
+- log suppressions and acknowledgment history
+
+## Future Work
+
+- regime-aware threshold adaptation
+- cross-asset contagion anomaly analysis
+- anomaly backtesting quality metrics

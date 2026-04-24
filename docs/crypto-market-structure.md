@@ -1,44 +1,49 @@
-# Crypto Market Structure
+﻿# Crypto Market Structure
 
-## Key Characteristics
+This document captures crypto-specific constraints for analytics and simulation design.
+
+## Core Market Properties
 
 - 24/7 trading
-- High volatility
-- Fragmented liquidity
-- Exchange-dependent pricing
+- fragmented liquidity across venues
+- high intraday volatility
+- structural gap risk around news/liquidations
 
-## Market Participants
+## Implications for Aurox
 
-- Retail traders
-- Whales
-- Market makers
-- DeFi protocols
+1. Quote Freshness Sensitivity
+- stale crypto quotes degrade simulation realism quickly
+- route surfaces should show freshness explicitly
 
-## Unique Data Sources
+2. Execution Modeling
+- higher default slippage assumptions than equities
+- fee and spread sensitivity should be visible in reports
 
-- On-chain metrics
-  - Active addresses
-  - Transaction volume
-  - Whale movements
-- Exchange flows
-- Funding rates (perpetual futures)
+3. Risk Controls
+- tighter position sizing and concentration caps recommended
+- lane-level safeguards should be stronger for crypto assets
 
-## Market Regimes
+## Useful Crypto Metrics
 
-- Bull (expansion phase)
-- Bear (contraction phase)
-- Sideways (accumulation)
+- realized volatility windows
+- trend persistence
+- liquidity proxy (spread/depth where available)
+- crowding proxy (funding/open interest in future versions)
 
-## Critical Metrics
+## Current Supported Universe Behavior
 
-- Realized volatility
-- Implied volatility
-- Funding rate
-- Open interest
-- Net inflow/outflow
+- major crypto symbols are represented through canonical symbol mappings
+- tradability is governed through asset catalog metadata
+- simulation execution routes through multi-asset lanes
 
-## Structural Risks
+## Data Caveats
 
-- Exchange failure
-- Smart contract risk
-- Liquidity collapse
+- weekend and overnight regime shifts are common
+- venue-specific pricing divergence can appear
+- provider fallback behavior must be transparent to users
+
+## Future Enhancements
+
+- venue-aware liquidity quality scoring
+- richer crypto-specific factor stack
+- stress scenarios for liquidation cascades

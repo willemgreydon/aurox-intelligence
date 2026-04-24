@@ -176,4 +176,52 @@ describe('runCapitalGuard', () => {
       expect(result.value.allowedOrderNotional).toBe(250);
     }
   });
+
+  it('rejects when usedCapitalToday exactly equals allowedCapital (boundary exhaustion)', () => {
+    // maxAbsolute=1000, maxPercentOfCash=0.02, cashBalance=50_000
+    // allowedCapital = min(1000, 50_000 * 0.02) = min(1000, 1000) = 1000
+    // usedCapitalToday = 1000 → remaining = 0 → should reject
+    const boundaryConfig: BrokerModeConfig = {
+      ...modeConfig,
+      capital: { maxAbsolute: 1000, maxPercentOfCash: 0.02, maxPerTrade: 1000 },
+    };
+    const exactOrder = makeOrder({ grossAmount: 1000 });
+    const result = runCapitalGuard(makeSummary({ cashBalance: 50_000 }), [exactOrder], boundaryConfig);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.code).toBe('CAPITAL_GUARD_ENVELOPE_EXHAUSTED');
+    }
+  });
+
+  it('approves with reduced allowedOrderNotional when envelope is partially used', () => {
+    // allowedCapital = min(1000, 50_000 * 0.02) = 1000
+    // usedCapitalToday = 600 → remaining = 400; capped by maxPerTrade=1000 → 400
+    const partialConfig: BrokerModeConfig = {
+      ...modeConfig,
+      capital: { maxAbsolute: 1000, maxPercentOfCash: 0.02, maxPerTrade: 1000 },
+    };
+    const partialOrder = makeOrder({ grossAmount: 600 });
+    const result = runCapitalGuard(makeSummary({ cashBalance: 50_000 }), [partialOrder], partialConfig);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.allowedOrderNotional).toBe(400);
+    }
+  });
+
+  it('rejects when usedCapitalToday far exceeds the envelope (over-spending guard)', () => {
+    // Edge: past orders consumed more than the configured cap (e.g. cap was lowered after orders)
+    const shrunkConfig: BrokerModeConfig = {
+      ...modeConfig,
+      capital: { maxAbsolute: 100, maxPercentOfCash: 0.001, maxPerTrade: 100 },
+    };
+    const largeOrder = makeOrder({ grossAmount: 10_000 });
+    const result = runCapitalGuard(makeSummary({ cashBalance: 50_000 }), [largeOrder], shrunkConfig);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.code).toBe('CAPITAL_GUARD_ENVELOPE_EXHAUSTED');
+    }
+  });
 });

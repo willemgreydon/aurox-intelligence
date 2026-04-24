@@ -10,7 +10,8 @@
     "emitDeclarationOnly": false,
     "baseUrl": ".",
     "paths": {
-      "@repo/api-contracts": ["../api-contracts/dist/index.d.ts"]
+      "@repo/api-contracts": ["../api-contracts/dist/index.d.ts"],
+      "@repo/signals": ["../signals/dist/index.d.ts"]
     }
   },
   "include": ["src/**/*.ts"],

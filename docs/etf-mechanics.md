@@ -1,31 +1,46 @@
-# ETF Mechanics
+﻿# ETF Mechanics
 
-## Core Concept
+This document provides ETF-specific guidance for Aurox analytics and simulation.
 
-ETF = Exchange-Traded Fund tracking an index or basket of assets.
+## ETF Characteristics
 
-## Creation / Redemption
+- basket-based exposure
+- intraday trading with exchange liquidity
+- potential divergence between market price and NAV
 
-- Authorized Participants (APs)
-- Create ETF shares via underlying basket
-- Arbitrage price deviations
+## Why ETFs Matter in Aurox
 
-## Types
+- benchmark comparison surfaces
+- allocation anchor instruments
+- macro and sector expression in simulation
 
-- Passive ETFs
-- Active ETFs
-- Leveraged ETFs
-- Synthetic ETFs
+## Modeling Considerations
 
-## Key Metrics
+1. Tracking Behavior
+- ETF return can diverge from index/NAV over short horizons
+- analytics should label benchmark assumptions clearly
 
-- NAV (Net Asset Value)
-- Tracking Error
-- Expense Ratio
-- Liquidity
+2. Liquidity and Spread
+- less-liquid ETFs may have wider spreads
+- execution assumptions should include potential slippage
 
-## Risks
+3. Concentration
+- thematic ETFs may behave like concentrated factor bets
+- portfolio concentration reports should account for this
 
-- Tracking deviation
-- Liquidity mismatch
-- Derivative exposure (synthetic ETFs)
+## Current Product Integration
+
+- dedicated ETF route family (`/invest/etfs`)
+- shared market card/row components with quick simulation actions
+- multi-asset lane execution path for ETF orders
+
+## Risk Notes
+
+- synthetic/leverage ETF complexities are not fully modeled yet
+- users should treat simulation fills as deterministic approximations
+
+## Future Enhancements
+
+- NAV premium/discount analytics
+- underlying holdings exposure decomposition
+- ETF-specific liquidity risk scoring

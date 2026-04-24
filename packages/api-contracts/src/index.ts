@@ -1,4 +1,5 @@
 export * from './assets/asset';
+export * from './ranking/ranking';
 export * from './account/account';
 export * from './admin/admin';
 export * from './dashboard/dashboard';
