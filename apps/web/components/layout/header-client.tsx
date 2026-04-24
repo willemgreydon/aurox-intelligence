@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -164,7 +165,7 @@ export function HeaderClient({ locale, messages, ticker, auth, navGroups }: Head
           <div className="site-header__inner">
             <Link href="/" className="site-brand" aria-label="Aurox Intelligence home">
               <span className="site-brand__mark" aria-hidden="true">
-                AX
+                <Image src="/aurox.svg" alt="" width={44} height={44} className="site-brand__mark-icon" />
               </span>
               <span className="site-brand__content">
                 <span className="site-brand__title">{messages.shell.brandTitle}</span>
@@ -252,7 +253,7 @@ export function HeaderClient({ locale, messages, ticker, auth, navGroups }: Head
             <div className="site-menu-overlay__header">
               <div className="site-menu-overlay__brand">
                 <span className="site-brand__mark" aria-hidden="true">
-                  AX
+                  <Image src="/aurox.svg" alt="" width={44} height={44} className="site-brand__mark-icon" />
                 </span>
                 <div className="site-menu-overlay__brand-copy">
                   <strong>{messages.shell.brandTitle}</strong>

@@ -150,6 +150,16 @@ export const portfolioAllocationItemSchema = z.object({
   percent: z.number(),
 });
 
+export const portfolioRiskLevelSchema = z.enum(['low', 'medium', 'high', 'critical', 'unavailable']);
+
+export const portfolioRiskProfileSchema = z.object({
+  level: portfolioRiskLevelSchema,
+  drawdownPercent: z.number().nonnegative(),
+  topConcentrationSymbol: z.string().nullable(),
+  topConcentrationPercent: z.number().nonnegative(),
+  explanation: z.string(),
+});
+
 export const investPortfolioViewModelSchema = z.object({
   status: routeStatusSchema,
   statusReason: z.string(),
@@ -174,9 +184,12 @@ export const investPortfolioViewModelSchema = z.object({
   allocationByAsset: z.array(portfolioAllocationItemSchema),
   watchlistCount: z.number().int().nonnegative(),
   emptyStateMessage: z.string().nullable(),
+  riskProfile: portfolioRiskProfileSchema.nullable(),
   asOf: z.string(),
 });
 
+export type PortfolioRiskLevel = z.infer<typeof portfolioRiskLevelSchema>;
+export type PortfolioRiskProfile = z.infer<typeof portfolioRiskProfileSchema>;
 export type ActionAvailability = z.infer<typeof actionAvailabilitySchema>;
 export type RecommendationAction = z.infer<typeof recommendationActionSchema>;
 export type BankConnectionStatus = z.infer<typeof bankConnectionStatusSchema>;

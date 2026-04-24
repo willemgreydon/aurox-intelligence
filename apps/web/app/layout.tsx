@@ -8,6 +8,7 @@ import { ThemeProvider } from '../components/layout/theme-provider';
 import { Header } from '../components/layout/header';
 import { Footer } from '../components/layout/footer';
 import { PagePreloader } from '../components/layout/page-preloader';
+import { ScrollResetter } from '../components/layout/scroll-resetter';
 import { getRequestLocale } from '../server/i18n/locale';
 
 const sans = IBM_Plex_Sans({
@@ -26,6 +27,10 @@ export const metadata: Metadata = {
   title: 'Aurox Intelligence',
   description:
     'Institutional-grade financial intelligence for stock trend prediction, FX analysis, explainable forecasts, and signal-driven decision support.',
+  icons: {
+    icon: '/aurox.svg',
+    shortcut: '/aurox.svg',
+  },
 };
 
 type ThemeMode = 'light' | 'dark';
@@ -52,7 +57,9 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     >
       <body suppressHydrationWarning>
         <ThemeProvider initialTheme={initialTheme} cookieKey={THEME_COOKIE_KEY}>
+          <ScrollResetter />
           <PagePreloader
+            minDurationMs={400}
             labels={{
               loadingStocks: messages.shell.preloader.loadingStocks,
               loadingEtfs: messages.shell.preloader.loadingEtfs,

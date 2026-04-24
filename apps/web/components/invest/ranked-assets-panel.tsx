@@ -111,38 +111,40 @@ export function RankedAssetsPanel({ items }: RankedAssetsPanelProps) {
               hidden={!isOpen}
               aria-live="polite"
             >
-              <div className="market-ranking__details-grid">
-                <section className="market-ranking__block">
-                  <h4>Explanation bullets</h4>
-                  <ul className="market-ranking__bullets">
-                    {explanationBullets.map((bullet, index) => (
-                      <li key={`${item.assetId}-exp-${index}`}>{bullet}</li>
-                    ))}
-                  </ul>
-                </section>
-
-                <section className="market-ranking__block">
-                  <h4>Signal summary</h4>
-                  <p>{item.signalSummary}</p>
-                  <h4>Factor summary</h4>
-                  <p>{item.factorSummary}</p>
-                  <h4>Regime summary</h4>
-                  <p>{item.regimeSummary}</p>
-                  <h4>Risk summary</h4>
-                  <p>{item.riskSummary}</p>
-                </section>
-
-                {caveats.length > 0 ? (
-                  <section className="market-ranking__block market-ranking__block--caveat">
-                    <h4>Data caveats</h4>
+              {isOpen ? (
+                <div className="market-ranking__details-grid">
+                  <section className="market-ranking__block">
+                    <h4>Explanation bullets</h4>
                     <ul className="market-ranking__bullets">
-                      {caveats.map((caveat, index) => (
-                        <li key={`${item.assetId}-caveat-${index}`}>{caveat}</li>
+                      {explanationBullets.map((bullet, index) => (
+                        <li key={`${item.assetId}-exp-${index}`}>{bullet}</li>
                       ))}
                     </ul>
                   </section>
-                ) : null}
-              </div>
+
+                  <section className="market-ranking__block">
+                    <h4>Signal summary</h4>
+                    <p>{item.signalSummary}</p>
+                    <h4>Factor summary</h4>
+                    <p>{item.factorSummary}</p>
+                    <h4>Regime summary</h4>
+                    <p>{item.regimeSummary}</p>
+                    <h4>Risk summary</h4>
+                    <p>{item.riskSummary}</p>
+                  </section>
+
+                  {caveats.length > 0 ? (
+                    <section className="market-ranking__block market-ranking__block--caveat">
+                      <h4>Data caveats</h4>
+                      <ul className="market-ranking__bullets">
+                        {caveats.map((caveat, index) => (
+                          <li key={`${item.assetId}-caveat-${index}`}>{caveat}</li>
+                        ))}
+                      </ul>
+                    </section>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           </article>
         );

@@ -4,6 +4,8 @@
   PortfolioFilterState,
   PortfolioPositionItem,
   PortfolioRecentTrade,
+  PortfolioRiskLevel,
+  PortfolioRiskProfile,
   RouteStatus,
 } from '@repo/api-contracts';
 import { investPortfolioViewModelSchema } from '@repo/api-contracts';
@@ -139,6 +141,60 @@ function mapClosedPositionItems(
   });
 }
 
+function computeRiskProfile(
+  workspaceSummary: NonNullable<PortfolioReadModel['workstation']['workspace']>['summary'],
+  allocationByAsset: PortfolioAllocationItem[],
+): PortfolioRiskProfile {
+  const initialCash = workspaceSummary.initialCashBalance;
+  const drawdownPercent =
+    initialCash > 0
+      ? Math.max(0, (initialCash - workspaceSummary.equityValue) / initialCash)
+      : 0;
+
+  const topAsset = allocationByAsset[0] ?? null;
+  const topConcentrationPercent = topAsset?.percent ?? 0;
+  const topConcentrationSymbol = topAsset?.label ?? null;
+
+  let level: PortfolioRiskLevel;
+  let explanation: string;
+  const drawdownPct = (drawdownPercent * 100).toFixed(1);
+  const concPct = topConcentrationPercent.toFixed(1);
+
+  if (drawdownPercent > 0.20 || topConcentrationPercent > 60) {
+    level = 'critical';
+    const parts: string[] = [`Drawdown is ${drawdownPct}% of initial capital.`];
+    if (topConcentrationPercent > 60 && topConcentrationSymbol) {
+      parts.push(`${topConcentrationSymbol} represents ${concPct}% of open equity — severe single-asset concentration.`);
+    }
+    parts.push('Review positions and consider reducing exposure.');
+    explanation = parts.join(' ');
+  } else if (drawdownPercent > 0.10 || topConcentrationPercent > 40) {
+    level = 'high';
+    const parts: string[] = [`Drawdown is ${drawdownPct}% of initial capital.`];
+    if (topConcentrationPercent > 40 && topConcentrationSymbol) {
+      parts.push(`${topConcentrationSymbol} represents ${concPct}% of open equity.`);
+    }
+    parts.push('Risk is elevated. Consider rebalancing.');
+    explanation = parts.join(' ');
+  } else if (drawdownPercent > 0.05 || topConcentrationPercent > 25) {
+    level = 'medium';
+    const parts: string[] = [`Drawdown is ${drawdownPct}% of initial capital.`];
+    if (topConcentrationPercent > 25 && topConcentrationSymbol) {
+      parts.push(`${topConcentrationSymbol} is the top holding at ${concPct}% of open equity.`);
+    }
+    parts.push('Moderate risk — monitor position concentration.');
+    explanation = parts.join(' ');
+  } else if (workspaceSummary.activeInvestmentCount > 0 || workspaceSummary.equityValue > 0) {
+    level = 'low';
+    explanation = `Portfolio is within normal simulation risk bounds. Drawdown is ${drawdownPct}% of initial capital.`;
+  } else {
+    level = 'unavailable';
+    explanation = 'No open positions — risk assessment not applicable.';
+  }
+
+  return { level, drawdownPercent, topConcentrationSymbol, topConcentrationPercent, explanation };
+}
+
 export function mapInvestPortfolioViewModel(
   readModel: PortfolioReadModel,
   rawFilters?: PortfolioFilterInput,
@@ -161,6 +217,7 @@ export function mapInvestPortfolioViewModel(
       allocationByAsset: [],
       watchlistCount: readModel.workstation.watchlist.length,
       emptyStateMessage: 'No simulation portfolio is active yet. Start a session to build positions.',
+      riskProfile: null,
       asOf: new Date().toISOString(),
     });
   }
@@ -242,6 +299,10 @@ export function mapInvestPortfolioViewModel(
       filteredOpen.length === 0 && filteredClosed.length === 0
         ? 'No positions match the current filters.'
         : null,
+    riskProfile: computeRiskProfile(
+      workspace.summary,
+      computeAllocationItems(openPositions, (item) => item.symbol, (item) => item.symbol).slice(0, 12),
+    ),
     asOf: new Date().toISOString(),
   });
 }

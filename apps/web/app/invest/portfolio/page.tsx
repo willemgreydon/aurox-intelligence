@@ -122,6 +122,15 @@ export default async function PortfolioPage({
         ? 'warning'
         : 'danger';
 
+  const riskTone =
+    portfolio.riskProfile?.level === 'low'
+      ? 'success'
+      : portfolio.riskProfile?.level === 'medium'
+        ? 'warning'
+        : portfolio.riskProfile?.level === 'high' || portfolio.riskProfile?.level === 'critical'
+          ? 'danger'
+          : 'info';
+
   return (
     <>
       <Section className="dashboard-section dashboard-section--hero">
@@ -158,6 +167,60 @@ export default async function PortfolioPage({
           <CompactStatCard label="Realized P&L" value={summary ? formatSignedUsd(summary.realizedPnl, locale) : '-'} detail="Locked-in gain/loss from closed trades." />
         </div>
       </Section>
+
+      {portfolio.riskProfile ? (
+        <Section className="dashboard-section dashboard-section--tinted">
+          <header className="dashboard-section-heading">
+            <div>
+              <div className="section__eyebrow">Risk intelligence</div>
+              <h2 className="dashboard-section-heading__title">Portfolio risk profile</h2>
+              <p className="dashboard-section-heading__description">
+                Deterministic risk classification based on drawdown and concentration. Simulation-only — no live capital at risk.
+              </p>
+            </div>
+            <span className={`status-pill status-pill--${riskTone}`}>
+              {portfolio.riskProfile.level.charAt(0).toUpperCase() + portfolio.riskProfile.level.slice(1)}
+            </span>
+          </header>
+          <div className="analytics-strip">
+            <CompactStatCard
+              label="Risk level"
+              value={portfolio.riskProfile.level.toUpperCase()}
+              detail="Composite risk classification: low / medium / high / critical."
+            />
+            <CompactStatCard
+              label="Drawdown"
+              value={`${(portfolio.riskProfile.drawdownPercent * 100).toFixed(2)}%`}
+              detail="Current drawdown from initial simulation capital."
+            />
+            <CompactStatCard
+              label="Top concentration"
+              value={
+                portfolio.riskProfile.topConcentrationSymbol
+                  ? `${portfolio.riskProfile.topConcentrationSymbol} ${portfolio.riskProfile.topConcentrationPercent.toFixed(1)}%`
+                  : '—'
+              }
+              detail="Largest single-asset share of open equity. Values above 25% indicate concentration risk."
+            />
+          </div>
+          <Card className="analytics-card">
+            <div className="analytics-card__header">
+              <div>
+                <div className="section__eyebrow">Risk explanation</div>
+                <h3>Assessment</h3>
+                <p>{portfolio.riskProfile.explanation}</p>
+              </div>
+            </div>
+            <div className="analytics-card__body">
+              <p>
+                Risk level is calculated from drawdown relative to initial capital and single-asset
+                concentration in open positions. This is a simulation-environment assessment only.
+                No real capital is at risk.
+              </p>
+            </div>
+          </Card>
+        </Section>
+      ) : null}
 
       <Section className="dashboard-section dashboard-section--tinted">
         <header className="dashboard-section-heading">

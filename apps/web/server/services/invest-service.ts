@@ -9,5 +9,14 @@ export async function getInvestOverviewData(
 ): Promise<InvestOverviewViewModel> {
   const readModel = await getInvestReadModel();
   const snapshot = mapInvestOverview(readModel);
-  return mapInvestOverviewViewModel(snapshot, locale, messages);
+  return mapInvestOverviewViewModel(
+    snapshot,
+    locale,
+    messages,
+    readModel.historySeriesBySymbol,
+    readModel.provider,
+    readModel.providerError,
+    readModel.observations.length,
+    readModel.assets.length,
+  );
 }

@@ -11,10 +11,21 @@ import { mapOptionalTimestamp, mapRouteStatusLabel, mapRouteStatusTone } from '.
 import { getMessages, type AppMessages } from '../../lib/i18n/messages';
 import { formatFreshnessLabel, formatPercentChange, formatUsdPrice } from '../lib/quote-display';
 
+export type DataHealthViewModel = {
+  provider: string;
+  providerError: string | null;
+  symbolsLoaded: number;
+  symbolsTotal: number;
+  freshnessLabel: string;
+  freshnessTone: 'success' | 'warning' | 'info';
+};
+
 export type InvestOverviewViewModel = InvestOverview & {
   statusLabel: string;
   statusTone: ReturnType<typeof mapRouteStatusTone>;
   lastUpdatedLabel: string;
+  sparklineBySymbol: Record<string, number[]>;
+  dataHealth: DataHealthViewModel;
   featuredAssets: Array<
     InvestOverview['featuredAssets'][number] & {
       priceLabel: string;
@@ -41,9 +52,10 @@ export function mapInvestOverview(readModel: InvestReadModel): InvestOverview {
   const sourceSummary = readModel.providerError
     ? 'partial provider coverage'
     : `${readModel.provider.toUpperCase()} quote context`;
+  const observationBySymbol = new Map(readModel.observations.map((item) => [item.symbol, item]));
 
   const enriched = readModel.assets.map((asset) => {
-    const observation = readModel.observations.find((item) => item.symbol === asset.symbol);
+    const observation = observationBySymbol.get(asset.symbol);
     const assetFreshness = getFreshnessState(observation?.timestamp);
     const insight = deriveMarketInsight({
       assetId: asset.assetId,
@@ -158,16 +170,51 @@ export function mapInvestOverview(readModel: InvestReadModel): InvestOverview {
   };
 }
 
+function mapFreshnessLabel(state: InvestOverview['freshnessState']): string {
+  switch (state) {
+    case 'live': return 'Fresh';
+    case 'delayed': return 'Delayed';
+    case 'stale': return 'Stale';
+    case 'partial': return 'Partial';
+    case 'unavailable': default: return 'Unavailable';
+  }
+}
+
+function mapFreshnessTone(state: InvestOverview['freshnessState']): DataHealthViewModel['freshnessTone'] {
+  return state === 'live' ? 'success' : state === 'delayed' || state === 'stale' ? 'warning' : 'info';
+}
+
 export function mapInvestOverviewViewModel(
   snapshot: InvestOverview,
   locale: Locale = 'en',
   messages: AppMessages = getMessages(locale),
+  historySeriesBySymbol: Record<string, number[]> = {},
+  provider: string = 'cache',
+  providerError: string | null = null,
+  symbolsLoaded: number = 0,
+  symbolsTotal: number = 0,
 ): InvestOverviewViewModel {
+  const sparklineBySymbol: Record<string, number[]> = {};
+  for (const [symbol, series] of Object.entries(historySeriesBySymbol)) {
+    sparklineBySymbol[symbol] = series.slice(-24);
+  }
+
+  const dataHealth: DataHealthViewModel = {
+    provider,
+    providerError,
+    symbolsLoaded,
+    symbolsTotal,
+    freshnessLabel: mapFreshnessLabel(snapshot.freshnessState),
+    freshnessTone: mapFreshnessTone(snapshot.freshnessState),
+  };
+
   return {
     ...snapshot,
     statusLabel: mapRouteStatusLabel(snapshot.status, messages.status),
     statusTone: mapRouteStatusTone(snapshot.status),
     lastUpdatedLabel: mapOptionalTimestamp(snapshot.lastUpdatedAt, locale, messages).absolute,
+    sparklineBySymbol,
+    dataHealth,
     featuredAssets: snapshot.featuredAssets.map((item) => ({
       ...item,
       priceLabel: formatUsdPrice(item.price, locale, messages.common.unavailable),

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { cache, Suspense } from 'react';
 import { getUserWatchlist } from '@repo/db';
 import { Section } from '../../components/ui/section';
 import { WorkstationPageHeader } from '../../components/asset/workstation-page-header';
@@ -12,14 +13,375 @@ import { QuickTradeActions } from '../../components/invest/quick-trade-actions';
 import { RecommendationCard } from '../../components/invest/recommendation-card';
 import { BrokerModeLaunchpad } from '../../components/invest/broker-mode-launchpad';
 import { RankedAssetsPanel } from '../../components/invest/ranked-assets-panel';
-import { getMessages } from '../../lib/i18n/messages';
+import { getMessages, type AppMessages } from '../../lib/i18n/messages';
 import { getOptionalCurrentSession } from '../../server/auth/session';
 import { getRequestLocale } from '../../server/i18n/locale';
 import { formatFreshnessLabel, formatPercentChange, formatUsdPrice } from '../../server/lib/quote-display';
 import { getInvestOverviewData } from '../../server/services/invest-service';
-import { getSimulationOverviewDataForUser, loadMiniHistorySeries } from '../../server/services/stock-simulation-service';
+import { getSimulationOverviewDataForUser } from '../../server/services/stock-simulation-service';
+import type { Locale } from '@repo/api-contracts';
 
 export const dynamic = 'force-dynamic';
+
+// Deduplicates getInvestOverviewData across all async Server Components in one render.
+// React's cache() resets per-request, so this is safe and request-scoped.
+// Cross-request caching is handled by the module-level 60s TTL in invest-query.ts.
+const getInvestData = cache(getInvestOverviewData);
+
+// ── Simulation stats (stream independently) ──────────────────────────────────
+
+async function SimulationStats({
+  userId,
+  locale,
+  unavailableLabel,
+}: {
+  userId: string;
+  locale: Locale;
+  unavailableLabel: string;
+}) {
+  const overview = await getSimulationOverviewDataForUser(userId);
+  const summary = overview.summary;
+  return (
+    <>
+      <CompactStatCard
+        label="Simulation equity"
+        value={formatUsdPrice(summary.equityValue, locale, unavailableLabel)}
+        detail="Current paper-portfolio equity across the active simulation workspace."
+      />
+      <CompactStatCard
+        label="Available cash"
+        value={formatUsdPrice(summary.availableCash, locale, unavailableLabel)}
+        detail="Cash currently available for new simulated orders."
+      />
+      <CompactStatCard
+        label="Open positions"
+        value={String(summary.activeInvestmentCount)}
+        detail="Currently active simulated investments."
+      />
+    </>
+  );
+}
+
+function SimulationStatsPlaceholder({ unavailableLabel }: { unavailableLabel: string }) {
+  return (
+    <>
+      <CompactStatCard label="Simulation equity" value={unavailableLabel} detail="Current paper-portfolio equity across the active simulation workspace." />
+      <CompactStatCard label="Available cash" value={unavailableLabel} detail="Cash currently available for new simulated orders." />
+      <CompactStatCard label="Open positions" value="0" detail="Currently active simulated investments." />
+    </>
+  );
+}
+
+// ── Streaming: Data health card ───────────────────────────────────────────────
+
+async function InvestDataHealthSection({ locale, messages }: { locale: Locale; messages: AppMessages }) {
+  const invest = await getInvestData(locale, messages);
+  return (
+    <Card className="analytics-card">
+      <div className="analytics-card__header">
+        <div>
+          <div className="section__eyebrow">Data source</div>
+          <h3>Market data freshness</h3>
+          <p>
+            {invest.dataHealth.providerError
+              ? 'Provider returned an error — quote context is partial or cached.'
+              : `Quote context loaded from ${invest.dataHealth.provider.toUpperCase()}.`}
+          </p>
+        </div>
+        <span className={`status-pill status-pill--${invest.dataHealth.freshnessTone}`}>
+          {invest.dataHealth.freshnessLabel}
+        </span>
+      </div>
+      <div className="analytics-strip">
+        <CompactStatCard
+          label="Provider"
+          value={invest.dataHealth.provider.toUpperCase()}
+          detail="Active market data source for this request."
+        />
+        <CompactStatCard
+          label="Last updated"
+          value={invest.lastUpdatedLabel}
+          detail="Most recent quote observation across all tracked assets."
+        />
+        <CompactStatCard
+          label="Freshness"
+          value={invest.dataHealth.freshnessLabel}
+          detail="live = <20 min · delayed = <2 h · stale = <24 h"
+        />
+        <CompactStatCard
+          label="Symbols loaded"
+          value={`${invest.dataHealth.symbolsLoaded} / ${invest.dataHealth.symbolsTotal}`}
+          detail="Assets with a live or cached price observation."
+        />
+      </div>
+      {invest.dataHealth.providerError ? (
+        <div className="analytics-card__body">
+          <p>Provider error: {invest.dataHealth.providerError}</p>
+        </div>
+      ) : null}
+    </Card>
+  );
+}
+
+function InvestDataHealthSkeleton() {
+  return (
+    <Card className="analytics-card shimmer-block" style={{ minHeight: '11rem' }}>
+      <div className="analytics-card__header">
+        <div>
+          <div className="section__eyebrow">Data source</div>
+          <h3>Market data freshness</h3>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+// ── Streaming: Recommendations ────────────────────────────────────────────────
+
+async function RecommendationsSection({
+  locale,
+  messages,
+  viewMode,
+}: {
+  locale: Locale;
+  messages: AppMessages;
+  viewMode: MarketViewMode;
+}) {
+  const invest = await getInvestData(locale, messages);
+  const recommendations = invest.recommendations;
+  const sparklineBySymbol = invest.sparklineBySymbol;
+
+  if (recommendations.length === 0) {
+    return (
+      <Card className="analytics-card">
+        <div className="analytics-card__header">
+          <div>
+            <div className="section__eyebrow">Recommendations</div>
+            <h3>No valid recommendations available</h3>
+            <p>
+              The recommendation feed returned incomplete items. The page stays available while
+              invalid entries are skipped.
+            </p>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <div className={viewMode === 'grid' ? 'analytics-two-grid' : 'market-list'}>
+      {recommendations.map((item) =>
+        viewMode === 'grid' ? (
+          <RecommendationCard
+            key={item.symbol}
+            symbol={item.symbol}
+            action={item.action}
+            confidence={item.confidence}
+            summary={item.summary}
+            reasons={item.reasons}
+            sparkline={sparklineBySymbol[item.symbol] ?? []}
+          />
+        ) : (
+          <MarketAssetRow
+            key={item.symbol}
+            symbol={item.symbol}
+            title={`Recommendation: ${item.action}`}
+            category={`Confidence ${(item.confidence * 100).toFixed(0)}%`}
+            thesis={item.summary}
+            priceLabel={item.reasons[0] ?? 'No primary reason'}
+            changeLabel={item.riskNotice}
+            freshnessLabel={item.isPersonalized ? 'Personalized' : 'Market-wide'}
+            actionAvailability="simulated"
+            insightStance={
+              item.action === 'avoid' || item.action === 'trim'
+                ? 'negative'
+                : item.action === 'accumulate'
+                  ? 'positive'
+                  : 'neutral'
+            }
+            sparkline={sparklineBySymbol[item.symbol] ?? []}
+            actions={
+              <div className="market-row__action-grid">
+                <Link href="/invest/simulation" className="button button--secondary">
+                  Open simulation
+                </Link>
+                <Link href="/invest/overview" className="button button--secondary">
+                  Review thesis
+                </Link>
+              </div>
+            }
+          />
+        ),
+      )}
+    </div>
+  );
+}
+
+function RecommendationsSkeleton({ viewMode }: { viewMode: MarketViewMode }) {
+  return (
+    <div className={viewMode === 'grid' ? 'analytics-two-grid' : 'market-list'}>
+      <div className="analytics-card shimmer-block" style={{ minHeight: '14rem' }} />
+      <div className="analytics-card shimmer-block" style={{ minHeight: '14rem' }} />
+    </div>
+  );
+}
+
+// ── Streaming: Market ranking ─────────────────────────────────────────────────
+
+async function MarketRankingSection({ locale, messages }: { locale: Locale; messages: AppMessages }) {
+  const invest = await getInvestData(locale, messages);
+
+  if (invest.rankedAssets.length === 0) {
+    return (
+      <Card className="analytics-card">
+        <div className="analytics-card__header">
+          <div>
+            <div className="section__eyebrow">Intelligence</div>
+            <h3>No ranking data available</h3>
+            <p>Rankings will appear once market data has been loaded for tracked assets.</p>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="analytics-card">
+      <RankedAssetsPanel items={invest.rankedAssets.slice(0, 25)} />
+    </Card>
+  );
+}
+
+function MarketRankingSkeleton() {
+  return (
+    <div className="analytics-card shimmer-block" style={{ minHeight: '20rem' }} />
+  );
+}
+
+// ── Streaming: Stock universe ─────────────────────────────────────────────────
+
+async function StockUniverseSection({
+  locale,
+  messages,
+  viewMode,
+  isAuthenticated,
+  watchlist,
+}: {
+  locale: Locale;
+  messages: AppMessages;
+  viewMode: MarketViewMode;
+  isAuthenticated: boolean;
+  watchlist: Array<{ assetId: string }>;
+}) {
+  const invest = await getInvestData(locale, messages);
+  const stockGroup = invest.groupedAssets.find((g) => g.assetClass === 'stock');
+  const stocks = stockGroup?.items ?? [];
+  const sparklineBySymbol = invest.sparklineBySymbol;
+
+  if (stocks.length === 0) {
+    return (
+      <Card className="analytics-card">
+        <div className="analytics-card__header">
+          <div>
+            <div className="section__eyebrow">Investable stocks</div>
+            <h3>No stock entries available</h3>
+            <p>
+              The stock universe is currently empty or unavailable. Check back once market data
+              has been loaded.
+            </p>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <div className={viewMode === 'grid' ? 'analytics-two-grid' : 'market-list'}>
+      {stocks.map((item) => {
+        const isWatched = watchlist.some((w) => w.assetId === item.assetId);
+
+        return viewMode === 'grid' ? (
+          <InvestableAssetCard
+            key={item.assetId}
+            href={`/stocks/${item.symbol}`}
+            title={item.name}
+            symbol={item.symbol}
+            categoryLabel={item.sector ?? item.category}
+            thesis={item.thesis}
+            priceLabel={formatUsdPrice(item.price, locale, messages.common.unavailable)}
+            changeLabel={formatPercentChange(item.changePercent, messages.common.partial)}
+            freshnessLabel={formatFreshnessLabel(
+              item.lastUpdatedAt,
+              locale,
+              messages.common.unavailable,
+            )}
+            actionAvailability={item.actionAvailability}
+            insightStance={item.insightStance}
+            riskSummary={item.riskSummary}
+            sparkline={sparklineBySymbol[item.symbol] ?? []}
+            actions={
+              <QuickTradeActions
+                detailHref={`/stocks/${item.symbol}`}
+                assetId={item.assetId}
+                symbol={item.symbol}
+                assetClass="stock"
+                isAuthenticated={isAuthenticated}
+                strategyLaneId="manual_stock_lane"
+                showWatchlist
+                isWatched={isWatched}
+                watchlistLabelAdd={messages.dashboard.addToWatchlist}
+                watchlistLabelRemove={messages.dashboard.removeFromWatchlist}
+              />
+            }
+          />
+        ) : (
+          <MarketAssetRow
+            key={item.assetId}
+            symbol={item.symbol}
+            title={item.name}
+            category={item.sector ?? item.category}
+            thesis={item.thesis}
+            priceLabel={formatUsdPrice(item.price, locale, messages.common.unavailable)}
+            changeLabel={formatPercentChange(item.changePercent, messages.common.partial)}
+            freshnessLabel={formatFreshnessLabel(item.lastUpdatedAt, locale, messages.common.unavailable)}
+            actionAvailability={item.actionAvailability}
+            insightStance={item.insightStance}
+            sparkline={sparklineBySymbol[item.symbol] ?? []}
+            actions={
+              <div className="market-row__action-grid">
+                <QuickTradeActions
+                  detailHref={`/stocks/${item.symbol}`}
+                  assetId={item.assetId}
+                  symbol={item.symbol}
+                  assetClass="stock"
+                  isAuthenticated={isAuthenticated}
+                  strategyLaneId="manual_stock_lane"
+                  showWatchlist
+                  isWatched={isWatched}
+                  watchlistLabelAdd={messages.dashboard.addToWatchlist}
+                  watchlistLabelRemove={messages.dashboard.removeFromWatchlist}
+                />
+              </div>
+            }
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+function StockUniverseSkeleton({ viewMode }: { viewMode: MarketViewMode }) {
+  return (
+    <div className={viewMode === 'grid' ? 'analytics-two-grid' : 'market-list'}>
+      <div className="analytics-card shimmer-block" style={{ minHeight: '18rem' }} />
+      <div className="analytics-card shimmer-block" style={{ minHeight: '18rem' }} />
+      <div className="analytics-card shimmer-block" style={{ minHeight: '18rem' }} />
+      <div className="analytics-card shimmer-block" style={{ minHeight: '18rem' }} />
+    </div>
+  );
+}
+
+// ── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function InvestPage({
   searchParams,
@@ -31,33 +393,16 @@ export default async function InvestPage({
   const params = searchParams ? await searchParams : {};
   const viewMode: MarketViewMode = params?.view === 'list' ? 'list' : 'grid';
 
-  const [invest, auth] = await Promise.all([
-    getInvestOverviewData(locale, messages),
-    getOptionalCurrentSession(),
-  ]);
-
-  const [watchlist, simulationOverview] = auth
-    ? await Promise.all([
-        getUserWatchlist(auth.user.id),
-        getSimulationOverviewDataForUser(auth.user.id),
-      ])
-    : [[], null];
-
-  const recommendations = invest.recommendations;
-
-  const stockGroup = invest.groupedAssets.find((g) => g.assetClass === 'stock');
-  const stocks = stockGroup?.items ?? [];
-  const simulationSummary = simulationOverview?.summary ?? null;
-  const sparklineSymbols = [
-    ...new Set([
-      ...stocks.map((item) => item.symbol),
-      ...recommendations.map((item) => item.symbol),
-    ]),
-  ];
-  const sparklineBySymbol = await loadMiniHistorySeries(sparklineSymbols, 24);
+  // Auth is fast — await it so watchlist and auth-gated sections render immediately.
+  const auth = await getOptionalCurrentSession();
+  // Watchlist is awaited here so the hero meta and stat strip show the count without waiting
+  // for invest data. getInvestData is NOT awaited — it is deferred to the async Server
+  // Components below. React cache() deduplicates the call across all four of them.
+  const watchlist = auth ? await getUserWatchlist(auth.user.id) : [];
 
   return (
     <>
+      {/* ── Shell (renders immediately) ───────────────────────────────────── */}
       <Section className="dashboard-section dashboard-section--hero">
         <WorkstationPageHeader
           eyebrow={messages.shell.nav.investHome}
@@ -67,20 +412,7 @@ export default async function InvestPage({
           statusLabel="simulation"
           statusTone="info"
           meta={[
-            {
-              label: messages.common.lastUpdated,
-              value: invest.lastUpdatedLabel ?? messages.common.unavailable,
-            },
-            {
-              label: 'Watchlist',
-              value: String(watchlist.length),
-            },
-            {
-              label: 'Simulation equity',
-              value: simulationSummary
-                ? formatUsdPrice(simulationSummary.equityValue, locale, messages.common.unavailable)
-                : messages.common.unavailable,
-            },
+            { label: 'Watchlist', value: String(watchlist.length) },
           ]}
           actions={[
             { href: '/invest/simulation', label: messages.simulation.navLabel },
@@ -102,39 +434,23 @@ export default async function InvestPage({
         />
       </Section>
 
+      {/* ── Data freshness (streams in) ───────────────────────────────────── */}
+      <Section className="dashboard-section">
+        <Suspense fallback={<InvestDataHealthSkeleton />}>
+          <InvestDataHealthSection locale={locale} messages={messages} />
+        </Suspense>
+      </Section>
+
+      {/* ── Simulation stats strip (watchlist count immediate; sim stats stream) */}
       <Section className="dashboard-section">
         <div className="analytics-strip">
-          <CompactStatCard
-            label="Simulation equity"
-            value={
-              simulationSummary
-                ? formatUsdPrice(
-                    simulationSummary.equityValue,
-                    locale,
-                    messages.common.unavailable,
-                  )
-                : messages.common.unavailable
-            }
-            detail="Current paper-portfolio equity across the active simulation workspace."
-          />
-          <CompactStatCard
-            label="Available cash"
-            value={
-              simulationOverview
-                ? formatUsdPrice(
-                    simulationSummary?.availableCash ?? null,
-                    locale,
-                    messages.common.unavailable,
-                  )
-                : messages.common.unavailable
-            }
-            detail="Cash currently available for new simulated orders."
-          />
-          <CompactStatCard
-            label="Open positions"
-            value={simulationSummary ? String(simulationSummary.activeInvestmentCount) : '0'}
-            detail="Currently active simulated investments."
-          />
+          <Suspense fallback={<SimulationStatsPlaceholder unavailableLabel={messages.common.unavailable} />}>
+            {auth ? (
+              <SimulationStats userId={auth.user.id} locale={locale} unavailableLabel={messages.common.unavailable} />
+            ) : (
+              <SimulationStatsPlaceholder unavailableLabel={messages.common.unavailable} />
+            )}
+          </Suspense>
           <CompactStatCard
             label="Saved watchlist"
             value={String(watchlist.length)}
@@ -143,6 +459,7 @@ export default async function InvestPage({
         </div>
       </Section>
 
+      {/* ── Capabilities (renders immediately — static content) ───────────── */}
       <Section className="dashboard-section dashboard-section--tinted">
         <div className="analytics-two-grid">
           <InvestmentCapabilityCard
@@ -172,6 +489,7 @@ export default async function InvestPage({
         </div>
       </Section>
 
+      {/* ── Recommendations (streams in) ──────────────────────────────────── */}
       <Section className="dashboard-section">
         <header className="dashboard-section-heading">
           <div>
@@ -183,63 +501,12 @@ export default async function InvestPage({
           </div>
           <MarketViewToggle basePath="/invest" view={viewMode} />
         </header>
-
-        {recommendations.length > 0 ? (
-          <div className={viewMode === 'grid' ? 'analytics-two-grid' : 'market-list'}>
-            {recommendations.map((item) => (
-              viewMode === 'grid' ? (
-                <RecommendationCard
-                  key={item.symbol}
-                  symbol={item.symbol}
-                  action={item.action}
-                  confidence={item.confidence}
-                  summary={item.summary}
-                  reasons={item.reasons}
-                  sparkline={sparklineBySymbol[item.symbol] ?? []}
-                />
-              ) : (
-                <MarketAssetRow
-                  key={item.symbol}
-                  symbol={item.symbol}
-                  title={`Recommendation: ${item.action}`}
-                  category={`Confidence ${(item.confidence * 100).toFixed(0)}%`}
-                  thesis={item.summary}
-                  priceLabel={item.reasons[0] ?? 'No primary reason'}
-                  changeLabel={item.riskNotice}
-                  freshnessLabel={item.isPersonalized ? 'Personalized' : 'Market-wide'}
-                  actionAvailability="simulated"
-                  insightStance={item.action === 'avoid' || item.action === 'trim' ? 'negative' : item.action === 'accumulate' ? 'positive' : 'neutral'}
-                  sparkline={sparklineBySymbol[item.symbol] ?? []}
-                  actions={(
-                    <div className="market-row__action-grid">
-                      <Link href="/invest/simulation" className="button button--secondary">
-                        Open simulation
-                      </Link>
-                      <Link href="/invest/overview" className="button button--secondary">
-                        Review thesis
-                      </Link>
-                    </div>
-                  )}
-                />
-              )
-            ))}
-          </div>
-        ) : (
-          <Card className="analytics-card">
-            <div className="analytics-card__header">
-              <div>
-                <div className="section__eyebrow">Recommendations</div>
-                <h3>No valid recommendations available</h3>
-                <p>
-                  The recommendation feed returned incomplete items. The page stays available while
-                  invalid entries are skipped.
-                </p>
-              </div>
-            </div>
-          </Card>
-        )}
+        <Suspense fallback={<RecommendationsSkeleton viewMode={viewMode} />}>
+          <RecommendationsSection locale={locale} messages={messages} viewMode={viewMode} />
+        </Suspense>
       </Section>
 
+      {/* ── Market ranking (streams in) ───────────────────────────────────── */}
       <Section className="dashboard-section">
         <header className="dashboard-section-heading">
           <div>
@@ -251,24 +518,12 @@ export default async function InvestPage({
             </p>
           </div>
         </header>
-
-        {invest.rankedAssets.length > 0 ? (
-          <Card className="analytics-card">
-            <RankedAssetsPanel items={invest.rankedAssets.slice(0, 25)} />
-          </Card>
-        ) : (
-          <Card className="analytics-card">
-            <div className="analytics-card__header">
-              <div>
-                <div className="section__eyebrow">Intelligence</div>
-                <h3>No ranking data available</h3>
-                <p>Rankings will appear once market data has been loaded for tracked assets.</p>
-              </div>
-            </div>
-          </Card>
-        )}
+        <Suspense fallback={<MarketRankingSkeleton />}>
+          <MarketRankingSection locale={locale} messages={messages} />
+        </Suspense>
       </Section>
 
+      {/* ── Stock universe (streams in) ───────────────────────────────────── */}
       <Section className="dashboard-section">
         <header className="dashboard-section-heading">
           <div>
@@ -279,97 +534,18 @@ export default async function InvestPage({
             </p>
           </div>
         </header>
-
-        {stocks.length > 0 ? (
-          <div className={viewMode === 'grid' ? 'analytics-two-grid' : 'market-list'}>
-            {stocks.map((item) => {
-              const isWatched = watchlist.some((w) => w.assetId === item.assetId);
-
-              return (
-                viewMode === 'grid' ? (
-                  <InvestableAssetCard
-                    key={item.assetId}
-                    href={`/stocks/${item.symbol}`}
-                    title={item.name}
-                    symbol={item.symbol}
-                    categoryLabel={item.sector ?? item.category}
-                    thesis={item.thesis}
-                    priceLabel={formatUsdPrice(item.price, locale, messages.common.unavailable)}
-                    changeLabel={formatPercentChange(item.changePercent, messages.common.partial)}
-                    freshnessLabel={formatFreshnessLabel(
-                      item.lastUpdatedAt,
-                      locale,
-                      messages.common.unavailable,
-                    )}
-                    actionAvailability={item.actionAvailability}
-                    insightStance={item.insightStance}
-                    riskSummary={item.riskSummary}
-                    sparkline={sparklineBySymbol[item.symbol] ?? []}
-                    actions={(
-                      <QuickTradeActions
-                        detailHref={`/stocks/${item.symbol}`}
-                        assetId={item.assetId}
-                        symbol={item.symbol}
-                        assetClass="stock"
-                        isAuthenticated={Boolean(auth)}
-                        strategyLaneId="manual_stock_lane"
-                        showWatchlist
-                        isWatched={isWatched}
-                        watchlistLabelAdd={messages.dashboard.addToWatchlist}
-                        watchlistLabelRemove={messages.dashboard.removeFromWatchlist}
-                      />
-                    )}
-                  />
-                ) : (
-                  <MarketAssetRow
-                    key={item.assetId}
-                    symbol={item.symbol}
-                    title={item.name}
-                    category={item.sector ?? item.category}
-                    thesis={item.thesis}
-                    priceLabel={formatUsdPrice(item.price, locale, messages.common.unavailable)}
-                    changeLabel={formatPercentChange(item.changePercent, messages.common.partial)}
-                    freshnessLabel={formatFreshnessLabel(item.lastUpdatedAt, locale, messages.common.unavailable)}
-                    actionAvailability={item.actionAvailability}
-                    insightStance={item.insightStance}
-                    sparkline={sparklineBySymbol[item.symbol] ?? []}
-                    actions={(
-                      <div className="market-row__action-grid">
-                        <QuickTradeActions
-                          detailHref={`/stocks/${item.symbol}`}
-                          assetId={item.assetId}
-                          symbol={item.symbol}
-                          assetClass="stock"
-                          isAuthenticated={Boolean(auth)}
-                          strategyLaneId="manual_stock_lane"
-                          showWatchlist
-                          isWatched={isWatched}
-                          watchlistLabelAdd={messages.dashboard.addToWatchlist}
-                          watchlistLabelRemove={messages.dashboard.removeFromWatchlist}
-                        />
-                      </div>
-                    )}
-                  />
-                )
-              );
-            })}
-          </div>
-        ) : (
-          <Card className="analytics-card">
-            <div className="analytics-card__header">
-              <div>
-                <div className="section__eyebrow">Investable stocks</div>
-                <h3>No stock entries available</h3>
-                <p>
-                  The stock universe is currently empty or unavailable. Check back once market data
-                  has been loaded.
-                </p>
-              </div>
-            </div>
-          </Card>
-        )}
+        <Suspense fallback={<StockUniverseSkeleton viewMode={viewMode} />}>
+          <StockUniverseSection
+            locale={locale}
+            messages={messages}
+            viewMode={viewMode}
+            isAuthenticated={Boolean(auth)}
+            watchlist={watchlist}
+          />
+        </Suspense>
       </Section>
 
+      {/* ── Bank/safety (renders immediately — static content) ────────────── */}
       <Section className="dashboard-section dashboard-section--tinted">
         <div className="analytics-two-grid">
           <Card className="analytics-card">
