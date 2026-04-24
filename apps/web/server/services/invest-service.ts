@@ -19,5 +19,10 @@ export async function getInvestOverviewData(
     readModel.providerError,
     readModel.observations.length,
     readModel.assets.length,
+    readModel.page,
+    readModel.pageSize,
+    readModel.totalAssets,
+    readModel.hasNextPage,
+    readModel.hasPreviousPage,
   );
 }

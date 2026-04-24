@@ -8,6 +8,11 @@ export type InvestReadModel = {
   provider: string;
   providerError: string | null;
   assets: CatalogAsset[];
+  totalAssets: number;
+  page: number;
+  pageSize: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
   observations: ProviderMarketObservation[];
   historySeriesBySymbol: Record<string, number[]>;
   linkedAccounts: ConnectedInvestmentAccount[];
@@ -25,6 +30,9 @@ export type InvestReadModelOptions = {
   includeHistory?: boolean;
   preferredSymbols?: string[];
   pageContext?: string;
+  assetClassFilter?: CatalogAsset['assetClass'];
+  page?: number;
+  pageSize?: number;
 };
 
 type ResolvedInvestReadModelOptions = {
@@ -33,6 +41,9 @@ type ResolvedInvestReadModelOptions = {
   includeHistory: boolean;
   preferredSymbols: string[];
   pageContext: string;
+  assetClassFilter: CatalogAsset['assetClass'] | null;
+  page: number;
+  pageSize: number | null;
 };
 
 type InvestCacheEntry = { data: InvestReadModel; cachedAt: number; ttlMs: number };
@@ -63,6 +74,22 @@ function resolveOptions(options: InvestReadModelOptions): ResolvedInvestReadMode
     includeHistory: options.includeHistory ?? true,
     preferredSymbols: [...new Set((options.preferredSymbols ?? []).map((symbol) => symbol.trim().toUpperCase()).filter(Boolean))],
     pageContext: options.pageContext?.trim() || 'invest',
+    assetClassFilter:
+      options.assetClassFilter === 'stock' ||
+      options.assetClassFilter === 'etf' ||
+      options.assetClassFilter === 'crypto' ||
+      options.assetClassFilter === 'fx' ||
+      options.assetClassFilter === 'index'
+        ? options.assetClassFilter
+        : null,
+    page:
+      typeof options.page === 'number' && Number.isFinite(options.page) && options.page > 0
+        ? Math.floor(options.page)
+        : 1,
+    pageSize:
+      typeof options.pageSize === 'number' && Number.isFinite(options.pageSize) && options.pageSize > 0
+        ? Math.floor(options.pageSize)
+        : null,
   };
 }
 
@@ -87,8 +114,11 @@ function buildInvestCacheKey(provider: string, assets: CatalogAsset[], options: 
     `read=${INVEST_READ_TYPE}`,
     `provider=${provider}`,
     `context=${options.pageContext}`,
+    `assetClass=${options.assetClassFilter ?? 'all'}`,
     `assetKind=stock,etf,crypto`,
     `quoteLimit=${options.quoteSymbolLimit ?? 'all'}`,
+    `page=${options.page}`,
+    `pageSize=${options.pageSize ?? 'all'}`,
     `historyRange=30`,
     `historyLimit=${options.includeHistory ? options.historySymbolLimit : 0}`,
     `symbols=${symbols.join(',')}`,
@@ -124,11 +154,28 @@ export async function getInvestReadModel(options: InvestReadModelOptions = {}): 
   const provider = getProviderEnv().MARKET_DATA_PROVIDER;
 
   const [catalogAssets, linkedAccounts] = await Promise.all([loadCatalogAssets(), loadLinkedAccounts()]);
-  const prioritizedAssets = prioritizeAssets(catalogAssets, resolvedOptions.preferredSymbols);
+  const scopedCatalogAssets =
+    resolvedOptions.assetClassFilter === null
+      ? catalogAssets
+      : catalogAssets.filter((asset) => asset.assetClass === resolvedOptions.assetClassFilter);
+  const prioritizedAssets = prioritizeAssets(scopedCatalogAssets, resolvedOptions.preferredSymbols);
+  const totalAssets = prioritizedAssets.length;
+  const pagedAssets = (() => {
+    if (resolvedOptions.pageSize === null) {
+      return prioritizedAssets;
+    }
+    const startIndex = (resolvedOptions.page - 1) * resolvedOptions.pageSize;
+    return prioritizedAssets.slice(startIndex, startIndex + resolvedOptions.pageSize);
+  })();
   const assets =
     resolvedOptions.quoteSymbolLimit === null
-      ? prioritizedAssets
-      : prioritizedAssets.slice(0, resolvedOptions.quoteSymbolLimit);
+      ? pagedAssets
+      : pagedAssets.slice(0, resolvedOptions.quoteSymbolLimit);
+  const hasPreviousPage = resolvedOptions.page > 1 && totalAssets > 0;
+  const hasNextPage =
+    resolvedOptions.pageSize !== null
+      ? resolvedOptions.page * resolvedOptions.pageSize < totalAssets
+      : false;
   const cacheKey = buildInvestCacheKey(provider, assets, resolvedOptions);
   const cached = getFreshCacheEntry(cacheKey);
   if (cached) {
@@ -142,7 +189,7 @@ export async function getInvestReadModel(options: InvestReadModelOptions = {}): 
   const assetIdBySymbol: ReadonlyMap<string, string> = new Map(assets.map((asset) => [asset.symbol, asset.assetId]));
 
   if (dev) {
-    console.debug(`[invest-query] cache miss context=${resolvedOptions.pageContext} symbols=${assets.length}/${catalogAssets.length}`);
+    console.debug(`[invest-query] cache miss context=${resolvedOptions.pageContext} symbols=${assets.length}/${scopedCatalogAssets.length}`);
     console.debug(`[invest-query] catalog+accounts: ${(performance.now() - t0).toFixed(0)}ms`);
   }
 
@@ -191,6 +238,11 @@ export async function getInvestReadModel(options: InvestReadModelOptions = {}): 
       provider: observations[0]?.source ?? 'cache',
       providerError: null,
       assets,
+      totalAssets,
+      page: resolvedOptions.page,
+      pageSize: resolvedOptions.pageSize ?? assets.length,
+      hasNextPage,
+      hasPreviousPage,
       observations,
       historySeriesBySymbol,
       linkedAccounts,
@@ -201,6 +253,11 @@ export async function getInvestReadModel(options: InvestReadModelOptions = {}): 
       provider: 'cache',
       providerError: error instanceof Error ? error.message : 'Unable to fetch investment quote context.',
       assets,
+      totalAssets,
+      page: resolvedOptions.page,
+      pageSize: resolvedOptions.pageSize ?? assets.length,
+      hasNextPage,
+      hasPreviousPage,
       observations: [],
       historySeriesBySymbol: {},
       linkedAccounts,

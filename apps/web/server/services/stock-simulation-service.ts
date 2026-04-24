@@ -60,11 +60,13 @@ function setCacheValue<T>(cache: Map<string, CacheEntry<T>>, key: string, value:
 
 function buildQuoteCacheKey(symbols: string[]) {
   const provider = getProviderEnv().MARKET_DATA_PROVIDER;
-  return `provider=${provider}|assetKind=stock,etf,crypto|symbols=${symbols.join(',')}`;
+  const normalizedSymbols = [...symbols].sort();
+  return `provider=${provider}|assetKind=stock,etf,crypto|symbols=${normalizedSymbols.join(',')}`;
 }
 
 function buildHistorySeriesCacheKey(symbols: string[], limit: number) {
-  return `interval=1d|range=${limit}|symbols=${symbols.join(',')}`;
+  const normalizedSymbols = [...symbols].sort();
+  return `interval=1d|range=${limit}|symbols=${normalizedSymbols.join(',')}`;
 }
 
 function isFreshEnough(timestamp: string | null | undefined, maxAgeMs: number) {
@@ -309,6 +311,11 @@ export async function loadHistoryBars(symbol: string): Promise<PersistedMarketHi
 
 export type StockCatalogPageData = {
   query: string;
+  totalStocks: number;
+  page: number;
+  pageSize: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
   stocks: Array<{
     asset: CatalogAsset;
     quote: PersistedMarketQuoteSnapshot | null;
@@ -322,12 +329,28 @@ export type StockCatalogPageData = {
   providerError: string | null;
 };
 
-export async function getStockCatalogPageData(query = ''): Promise<StockCatalogPageData> {
+export async function getStockCatalogPageData(
+  query = '',
+  options: { page?: number; pageSize?: number } = {},
+): Promise<StockCatalogPageData> {
+  const page =
+    typeof options.page === 'number' && Number.isFinite(options.page) && options.page > 0
+      ? Math.floor(options.page)
+      : 1;
+  const pageSize =
+    typeof options.pageSize === 'number' && Number.isFinite(options.pageSize) && options.pageSize > 0
+      ? Math.floor(options.pageSize)
+      : 36;
   const [session, assets] = await Promise.all([
     getOptionalCurrentSession(),
     searchStockAssets(query),
   ]);
-  const quotes = await loadQuoteSnapshots(assets.map((asset) => asset.symbol));
+  const totalStocks = assets.length;
+  const startIndex = (page - 1) * pageSize;
+  const pagedAssets = assets.slice(startIndex, startIndex + pageSize);
+  const hasPreviousPage = page > 1 && totalStocks > 0;
+  const hasNextPage = page * pageSize < totalStocks;
+  const quotes = await loadQuoteSnapshots(pagedAssets.map((asset) => asset.symbol));
   const quoteBySymbol = new Map(quotes.map((quote) => [quote.symbol, quote]));
 
   const watchlist = session ? await getUserWatchlist(session.user.id) : [];
@@ -337,8 +360,13 @@ export async function getStockCatalogPageData(query = ''): Promise<StockCatalogP
 
   return {
     query,
+    totalStocks,
+    page,
+    pageSize,
+    hasNextPage,
+    hasPreviousPage,
     providerError: quotes.length === 0 ? 'Live or cached quote data is currently unavailable.' : null,
-    stocks: assets.map((asset) => {
+    stocks: pagedAssets.map((asset) => {
       const quote = quoteBySymbol.get(asset.symbol) ?? null;
       const position = positionBySymbol.get(asset.symbol) ?? null;
 

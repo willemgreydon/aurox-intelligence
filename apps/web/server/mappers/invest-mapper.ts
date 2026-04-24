@@ -26,6 +26,13 @@ export type InvestOverviewViewModel = InvestOverview & {
   lastUpdatedLabel: string;
   sparklineBySymbol: Record<string, number[]>;
   dataHealth: DataHealthViewModel;
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalItems: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
   featuredAssets: Array<
     InvestOverview['featuredAssets'][number] & {
       priceLabel: string;
@@ -193,6 +200,11 @@ export function mapInvestOverviewViewModel(
   providerError: string | null = null,
   symbolsLoaded: number = 0,
   symbolsTotal: number = 0,
+  page: number = 1,
+  pageSize: number = 1,
+  totalItems: number = 0,
+  hasNextPage: boolean = false,
+  hasPreviousPage: boolean = false,
 ): InvestOverviewViewModel {
   const sparklineBySymbol: Record<string, number[]> = {};
   for (const [symbol, series] of Object.entries(historySeriesBySymbol)) {
@@ -215,6 +227,13 @@ export function mapInvestOverviewViewModel(
     lastUpdatedLabel: mapOptionalTimestamp(snapshot.lastUpdatedAt, locale, messages).absolute,
     sparklineBySymbol,
     dataHealth,
+    pagination: {
+      page: Math.max(1, page),
+      pageSize: Math.max(1, pageSize),
+      totalItems: Math.max(0, totalItems),
+      hasNextPage,
+      hasPreviousPage,
+    },
     featuredAssets: snapshot.featuredAssets.map((item) => ({
       ...item,
       priceLabel: formatUsdPrice(item.price, locale, messages.common.unavailable),
