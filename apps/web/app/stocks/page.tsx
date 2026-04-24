@@ -23,6 +23,7 @@ type StocksPageProps = {
   searchParams?: Promise<{
     q?: string;
     view?: string;
+    page?: string;
   }>;
 };
 
@@ -32,8 +33,12 @@ export default async function StocksPage({ searchParams }: StocksPageProps) {
   const params = searchParams ? await searchParams : {};
   const query = params?.q?.trim() ?? '';
   const viewMode: MarketViewMode = params?.view === 'list' ? 'list' : 'grid';
+  const page = Number.isFinite(Number(params?.page)) && Number(params?.page) > 0
+    ? Math.floor(Number(params?.page))
+    : 1;
+  const pageSize = viewMode === 'list' ? 24 : 18;
   const [stocks, graph, auth] = await Promise.all([
-    getStockCatalogPageData(query),
+    getStockCatalogPageData(query, { page, pageSize }),
     getMarketGraphData({
       assetClass: 'stock',
       preferredSymbols: ['AAPL', 'MSFT', 'NVDA', 'AMZN', 'GOOGL'],
@@ -53,6 +58,17 @@ export default async function StocksPage({ searchParams }: StocksPageProps) {
   const averageMove = pricedStocks.length
     ? pricedStocks.reduce((sum, entry) => sum + (entry.quote?.changePercent ?? 0), 0) / pricedStocks.length
     : 0;
+  const totalPages = Math.max(1, Math.ceil(stocks.totalStocks / stocks.pageSize));
+  const previousPageHref = `/stocks?${new URLSearchParams({
+    ...(query ? { q: query } : {}),
+    ...(viewMode === 'list' ? { view: 'list' } : {}),
+    page: String(Math.max(1, stocks.page - 1)),
+  }).toString()}`;
+  const nextPageHref = `/stocks?${new URLSearchParams({
+    ...(query ? { q: query } : {}),
+    ...(viewMode === 'list' ? { view: 'list' } : {}),
+    page: String(stocks.page + 1),
+  }).toString()}`;
 
   return (
     <>
@@ -205,6 +221,29 @@ export default async function StocksPage({ searchParams }: StocksPageProps) {
             />
           )}
         </div>
+        {stocks.totalStocks > stocks.pageSize ? (
+          <div className="market-pagination">
+            <span className="market-pagination__meta">
+              Page {stocks.page} of {totalPages} · {stocks.totalStocks} symbols
+            </span>
+            <div className="market-pagination__actions">
+              {stocks.hasPreviousPage ? (
+                <Link href={previousPageHref} className="button button--secondary">
+                  Previous
+                </Link>
+              ) : (
+                <span className="button button--secondary" aria-disabled="true">Previous</span>
+              )}
+              {stocks.hasNextPage ? (
+                <Link href={nextPageHref} className="button button--secondary">
+                  Next
+                </Link>
+              ) : (
+                <span className="button button--secondary" aria-disabled="true">Next</span>
+              )}
+            </div>
+          </div>
+        ) : null}
       </Section>
     </>
   );

@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { getUserWatchlist } from '@repo/db';
 import { Section } from '../../../components/ui/section';
 import { WorkstationPageHeader } from '../../../components/asset/workstation-page-header';
@@ -19,14 +20,24 @@ export const dynamic = 'force-dynamic';
 export default async function InvestCryptoPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ view?: string }>;
+  searchParams?: Promise<{ view?: string; page?: string }>;
 }) {
   const locale = await getRequestLocale();
   const messages = getMessages(locale);
   const params = searchParams ? await searchParams : {};
   const viewMode: MarketViewMode = params?.view === 'list' ? 'list' : 'grid';
+  const page = Number.isFinite(Number(params?.page)) && Number(params?.page) > 0
+    ? Math.floor(Number(params?.page))
+    : 1;
+  const pageSize = viewMode === 'list' ? 20 : 16;
   const [invest, graph, auth] = await Promise.all([
-    getInvestOverviewData(locale, messages),
+    getInvestOverviewData(locale, messages, {
+      assetClassFilter: 'crypto',
+      page,
+      pageSize,
+      includeHistory: false,
+      pageContext: 'invest-crypto-page',
+    }),
     getMarketGraphData({
       assetClass: 'crypto',
       preferredSymbols: ['BINANCE:BTCUSDT', 'BINANCE:ETHUSDT', 'BINANCE:SOLUSDT'],
@@ -38,6 +49,15 @@ export default async function InvestCryptoPage({
   const items = group?.items ?? [];
   const watchlist = auth ? await getUserWatchlist(auth.user.id) : [];
   const sparklineBySymbol = await loadMiniHistorySeries(items.map((item) => item.symbol), 24);
+  const totalPages = Math.max(1, Math.ceil(invest.pagination.totalItems / invest.pagination.pageSize));
+  const previousPageHref = `/invest/crypto?${new URLSearchParams({
+    ...(viewMode === 'list' ? { view: 'list' } : {}),
+    page: String(Math.max(1, invest.pagination.page - 1)),
+  }).toString()}`;
+  const nextPageHref = `/invest/crypto?${new URLSearchParams({
+    ...(viewMode === 'list' ? { view: 'list' } : {}),
+    page: String(invest.pagination.page + 1),
+  }).toString()}`;
 
   return (
     <>
@@ -141,6 +161,25 @@ export default async function InvestCryptoPage({
             )
           ))}
         </div>
+        {invest.pagination.totalItems > invest.pagination.pageSize ? (
+          <div className="market-pagination">
+            <span className="market-pagination__meta">
+              Page {invest.pagination.page} of {totalPages} · {invest.pagination.totalItems} assets
+            </span>
+            <div className="market-pagination__actions">
+              {invest.pagination.hasPreviousPage ? (
+                <Link href={previousPageHref} className="button button--secondary">Previous</Link>
+              ) : (
+                <span className="button button--secondary" aria-disabled="true">Previous</span>
+              )}
+              {invest.pagination.hasNextPage ? (
+                <Link href={nextPageHref} className="button button--secondary">Next</Link>
+              ) : (
+                <span className="button button--secondary" aria-disabled="true">Next</span>
+              )}
+            </div>
+          </div>
+        ) : null}
       </Section>
     </>
   );
