@@ -9,13 +9,16 @@ import {
   type StocksOverviewViewModel,
 } from '../mappers/stocks-mapper';
 import { getStockDetailReadModel } from '../queries/stock-detail-query';
-import { getStocksReadModel } from '../queries/stocks-query';
+import { getStocksReadModel, type StocksReadModelOptions } from '../queries/stocks-query';
+
+export type StocksOverviewOptions = StocksReadModelOptions;
 
 export async function getStocksOverviewData(
   locale?: Locale,
   messages?: AppMessages,
+  options?: StocksOverviewOptions,
 ): Promise<StocksOverviewViewModel> {
-  const readModel = await getStocksReadModel();
+  const readModel = await getStocksReadModel(options);
   const snapshot = mapStocksOverview(readModel, locale, messages);
   return mapStocksOverviewViewModel(snapshot, locale, messages);
 }

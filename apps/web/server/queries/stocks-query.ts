@@ -10,12 +10,34 @@ export type StocksReadModel = {
   stockMetadata: InvestmentUniverseAsset[];
 };
 
-export async function getStocksReadModel(): Promise<StocksReadModel> {
+export type StocksReadModelOptions = {
+  symbolLimit?: number;
+};
+
+export async function getStocksReadModel(options: StocksReadModelOptions = {}): Promise<StocksReadModel> {
+  const dev = process.env.NODE_ENV === 'development';
+  const t0 = dev ? performance.now() : 0;
   const [dashboard, investmentUniverse] = await Promise.all([getDashboardReadModel(), getInvestmentUniverse()]);
-  const stockMetadata = investmentUniverse.filter((item) => item.assetClass === 'stock' || item.assetClass === 'etf');
+  const allStockMetadata = investmentUniverse.filter((item) => item.assetClass === 'stock' || item.assetClass === 'etf');
+  const symbolLimit =
+    typeof options.symbolLimit === 'number' && Number.isFinite(options.symbolLimit) && options.symbolLimit > 0
+      ? Math.floor(options.symbolLimit)
+      : null;
+  const stockMetadata =
+    symbolLimit === null ? allStockMetadata : allStockMetadata.slice(0, symbolLimit);
+  if (dev) {
+    console.debug(
+      `[stocks-query] dashboard+universe (${stockMetadata.length}${symbolLimit !== null ? `/${allStockMetadata.length}` : ''}): ${(performance.now() - t0).toFixed(0)}ms`,
+    );
+  }
 
   try {
+    const t1 = dev ? performance.now() : 0;
     const observations = await loadQuoteSnapshots(stockMetadata.map((item) => item.symbol));
+    if (dev) {
+      console.debug(`[stocks-query] quote-snapshots (${stockMetadata.length}): ${(performance.now() - t1).toFixed(0)}ms`);
+      console.debug(`[stocks-query] total: ${(performance.now() - t0).toFixed(0)}ms`);
+    }
 
     return {
       provider: observations[0]?.source ?? 'cache',

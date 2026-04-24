@@ -27,13 +27,11 @@ import {
 } from '../../lib/dashboard/analytics-fixtures';
 import { resolveChartType, resolveTimePeriod } from '../../lib/workspace';
 import { buildChangeDistribution, buildComparisonBars, countDirectionalMoves } from '../../lib/market-surface';
-import { getInvestOverviewData } from '../../server/services/invest-service';
 import { getDashboardData } from '../../server/services/dashboard-service';
 import { getDashboardMarketAnalyticsData } from '../../server/services/dashboard-market-service';
 import { getStocksOverviewData } from '../../server/services/stocks-service';
 import { getWorkspacePreferences } from '../../server/services/workspace-service';
 import { getRequestLocale } from '../../server/i18n/locale';
-import { formatFreshnessLabel, formatUsdPrice } from '../../server/lib/quote-display';
 
 type StockSnapshotRow = {
   symbol: string;
@@ -50,7 +48,6 @@ type DashboardPageProps = {
 type DashboardData = Awaited<ReturnType<typeof getDashboardData>>;
 type StocksData = Awaited<ReturnType<typeof getStocksOverviewData>>;
 type LiveAnalyticsData = Awaited<ReturnType<typeof getDashboardMarketAnalyticsData>>;
-type InvestData = Awaited<ReturnType<typeof getInvestOverviewData>>;
 type UserWatchlistData = Awaited<ReturnType<typeof getUserWatchlist>>;
 type UserOrdersData = Awaited<ReturnType<typeof listSimulatedOrdersForUser>>;
 type UserTransactionsData = Awaited<ReturnType<typeof listSimulationTransactionsForUser>>;
@@ -59,14 +56,33 @@ type DashboardRequestLoaders = {
   dashboardPromise: Promise<DashboardData>;
   stocksPromise: Promise<StocksData>;
   liveAnalyticsPromise: Promise<LiveAnalyticsData>;
-  investPromise: Promise<InvestData>;
   watchlistPromise: Promise<UserWatchlistData>;
   ordersPromise: Promise<UserOrdersData>;
   transactionsPromise: Promise<UserTransactionsData>;
 };
 
+const DASHBOARD_STOCK_SYMBOL_LIMIT = 64;
+
 function getSearchParamValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] ?? null : value ?? null;
+}
+
+function withDevTiming<T>(label: string, load: () => Promise<T>): Promise<T> {
+  const dev = process.env.NODE_ENV === 'development';
+  const start = dev ? performance.now() : 0;
+  return load()
+    .then((result) => {
+      if (dev) {
+        console.debug(`[dashboard-loader] ${label}: ${(performance.now() - start).toFixed(0)}ms`);
+      }
+      return result;
+    })
+    .catch((error) => {
+      if (dev) {
+        console.debug(`[dashboard-loader] ${label} failed after ${(performance.now() - start).toFixed(0)}ms`);
+      }
+      throw error;
+    });
 }
 
 function createDashboardRequestLoaders({
@@ -79,13 +95,13 @@ function createDashboardRequestLoaders({
   userId: string | null;
 }): DashboardRequestLoaders {
   return {
-    dashboardPromise: getDashboardData(),
-    stocksPromise: getStocksOverviewData(locale, messages),
-    liveAnalyticsPromise: getDashboardMarketAnalyticsData(),
-    investPromise: getInvestOverviewData(locale, messages),
-    watchlistPromise: userId ? getUserWatchlist(userId) : Promise.resolve([]),
-    ordersPromise: userId ? listSimulatedOrdersForUser(userId) : Promise.resolve([]),
-    transactionsPromise: userId ? listSimulationTransactionsForUser(userId) : Promise.resolve([]),
+    dashboardPromise: withDevTiming('dashboard-read-model', () => getDashboardData()),
+    stocksPromise: withDevTiming('stocks-overview', () =>
+      getStocksOverviewData(locale, messages, { symbolLimit: DASHBOARD_STOCK_SYMBOL_LIMIT })),
+    liveAnalyticsPromise: withDevTiming('market-analytics', () => getDashboardMarketAnalyticsData()),
+    watchlistPromise: withDevTiming('watchlist', () => (userId ? getUserWatchlist(userId) : Promise.resolve([]))),
+    ordersPromise: withDevTiming('orders', () => (userId ? listSimulatedOrdersForUser(userId) : Promise.resolve([]))),
+    transactionsPromise: withDevTiming('transactions', () => (userId ? listSimulationTransactionsForUser(userId) : Promise.resolve([]))),
   };
 }
 
@@ -325,38 +341,28 @@ async function DashboardMarketOverviewSection({
 
 async function DashboardWatchlistSection({
   stocksPromise,
-  investPromise,
   watchlistPromise,
-  locale,
   messages,
 }: {
   stocksPromise: Promise<StocksData>;
-  investPromise: Promise<InvestData>;
   watchlistPromise: Promise<UserWatchlistData>;
-  locale: Awaited<ReturnType<typeof getRequestLocale>>;
   messages: AppMessages;
 }) {
-  const [stocks, invest, watchlist] = await Promise.all([stocksPromise, investPromise, watchlistPromise]);
+  const [stocks, watchlist] = await Promise.all([stocksPromise, watchlistPromise]);
   const watchlistCards = watchlist
     .map((item) => {
-      const featuredAsset = invest.featuredAssets.find((asset) => asset.assetId === item.assetId);
-
-      if (featuredAsset) {
-        return {
-          key: featuredAsset.assetId,
-          eyebrow: featuredAsset.assetClass,
-          title: featuredAsset.name,
-          summary: featuredAsset.riskSummary,
-          symbol: featuredAsset.symbol,
-          priceLabel: formatUsdPrice(featuredAsset.price, locale, messages.common.unavailable),
-          freshnessLabel: formatFreshnessLabel(featuredAsset.lastUpdatedAt, locale, messages.common.unavailable),
-        };
-      }
-
       const trackedAsset = stocks.trackedStocks.find((asset) => asset.symbol === item.symbol);
 
       if (!trackedAsset) {
-        return null;
+        return {
+          key: item.assetId,
+          eyebrow: 'asset',
+          title: item.symbol,
+          summary: 'Saved from your personalized dashboard preset.',
+          symbol: item.symbol,
+          priceLabel: messages.common.unavailable,
+          freshnessLabel: messages.common.unavailable,
+        };
       }
 
       return {
@@ -568,7 +574,7 @@ async function DashboardTablesSection({
         />
         <AnalyticsTable
           title="Live stock snapshot"
-          subtitle="Real provider-backed stock quotes loaded directly into the main interface."
+          subtitle="Real provider-backed stock quote preview loaded directly into the main interface."
           columns={localizedStockSnapshotColumns}
           rows={stockRows}
           emptyMessage={stocks.emptyStateMessage ?? 'No live stock rows are available yet.'}
@@ -768,9 +774,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         >
           <DashboardWatchlistSection
             stocksPromise={loaders.stocksPromise}
-            investPromise={loaders.investPromise}
             watchlistPromise={loaders.watchlistPromise}
-            locale={locale}
             messages={messages}
           />
         </Suspense>
