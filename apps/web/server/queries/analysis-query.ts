@@ -19,6 +19,8 @@ export type AnalysisReadModel = {
 const ANALYSIS_CACHE_TTL_MS = 60_000;
 const ANALYSIS_CACHE_ERROR_TTL_MS = 10_000;
 const ANALYSIS_READ_TYPE = 'dashboard-market-analysis-v1';
+const ANALYSIS_SYMBOL_LIMIT = 48;
+const ANALYSIS_PRIORITY_SYMBOLS = ['SPY', 'QQQ', 'VTI', 'IWM', 'TLT', 'BINANCE:BTCUSDT', 'BINANCE:ETHUSDT'];
 
 type AnalysisCacheEntry = { data: AnalysisReadModel; cachedAt: number; expiresAt: number };
 const analysisCache = new Map<string, AnalysisCacheEntry>();
@@ -33,7 +35,16 @@ function toAssetId(symbol: string) {
 
 function buildAnalysisCacheKey(provider: string, symbols: string[]) {
   const normalizedSymbols = [...new Set(symbols.map(toNormalizedSymbol).filter(Boolean))].sort();
-  return `read=${ANALYSIS_READ_TYPE}|provider=${provider}|symbols=${normalizedSymbols.join(',')}`;
+  return `read=${ANALYSIS_READ_TYPE}|provider=${provider}|assetKind=stock,etf,crypto,index|historyRange=1d|symbolLimit=${ANALYSIS_SYMBOL_LIMIT}|symbols=${normalizedSymbols.join(',')}`;
+}
+
+function prioritizeSymbols(symbols: string[]) {
+  const normalized = [...new Set(symbols.map(toNormalizedSymbol).filter(Boolean))];
+  const bySymbol = new Set(normalized);
+  const prioritized = ANALYSIS_PRIORITY_SYMBOLS.filter((symbol) => bySymbol.has(symbol));
+  const prioritizedSet = new Set(prioritized);
+  const remaining = normalized.filter((symbol) => !prioritizedSet.has(symbol));
+  return [...prioritized, ...remaining].slice(0, ANALYSIS_SYMBOL_LIMIT);
 }
 
 function getFreshCacheEntry(key: string): AnalysisCacheEntry | null {
@@ -65,7 +76,7 @@ export async function getAnalysisReadModel(): Promise<AnalysisReadModel> {
   const t0 = dev ? performance.now() : 0;
 
   const env = getProviderEnv();
-  const symbols = getMarketSymbols(env.MARKET_DATA_PROVIDER);
+  const symbols = prioritizeSymbols(getMarketSymbols(env.MARKET_DATA_PROVIDER));
   const cacheKey = buildAnalysisCacheKey(env.MARKET_DATA_PROVIDER, symbols);
   const cachedEntry = getFreshCacheEntry(cacheKey);
 

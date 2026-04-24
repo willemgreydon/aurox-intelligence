@@ -23,10 +23,49 @@ import type { Locale } from '@repo/api-contracts';
 
 export const dynamic = 'force-dynamic';
 
-// Deduplicates getInvestOverviewData across all async Server Components in one render.
-// React's cache() resets per-request, so this is safe and request-scoped.
-// Cross-request caching is handled by the module-level 60s TTL in invest-query.ts.
-const getInvestData = cache(getInvestOverviewData);
+const INVEST_PRIMARY_QUOTE_LIMIT = 64;
+const INVEST_DEFERRED_QUOTE_LIMIT = 96;
+const INVEST_DEFERRED_HISTORY_LIMIT = 40;
+const INVEST_PRIORITY_SYMBOLS = ['SPY', 'QQQ', 'VTI', 'TLT', 'BINANCE:BTCUSDT', 'BINANCE:ETHUSDT'];
+
+function withDevTiming<T>(label: string, load: () => Promise<T>): Promise<T> {
+  const dev = process.env.NODE_ENV === 'development';
+  const start = dev ? performance.now() : 0;
+  return load()
+    .then((result) => {
+      if (dev) {
+        console.debug(`[invest-loader] ${label}: ${(performance.now() - start).toFixed(0)}ms`);
+      }
+      return result;
+    })
+    .catch((error) => {
+      if (dev) {
+        console.debug(`[invest-loader] ${label} failed after ${(performance.now() - start).toFixed(0)}ms`);
+      }
+      throw error;
+    });
+}
+
+const getInvestCriticalData = cache((locale: Locale, messages: AppMessages) =>
+  withDevTiming('critical-overview', () =>
+    getInvestOverviewData(locale, messages, {
+      quoteSymbolLimit: INVEST_PRIMARY_QUOTE_LIMIT,
+      includeHistory: false,
+      preferredSymbols: INVEST_PRIORITY_SYMBOLS,
+      pageContext: 'invest-critical',
+    })),
+);
+
+const getInvestDeferredData = cache((locale: Locale, messages: AppMessages) =>
+  withDevTiming('deferred-overview', () =>
+    getInvestOverviewData(locale, messages, {
+      quoteSymbolLimit: INVEST_DEFERRED_QUOTE_LIMIT,
+      includeHistory: true,
+      historySymbolLimit: INVEST_DEFERRED_HISTORY_LIMIT,
+      preferredSymbols: INVEST_PRIORITY_SYMBOLS,
+      pageContext: 'invest-deferred',
+    })),
+);
 
 // ── Simulation stats (stream independently) ──────────────────────────────────
 
@@ -74,8 +113,8 @@ function SimulationStatsPlaceholder({ unavailableLabel }: { unavailableLabel: st
 
 // ── Streaming: Data health card ───────────────────────────────────────────────
 
-async function InvestDataHealthSection({ locale, messages }: { locale: Locale; messages: AppMessages }) {
-  const invest = await getInvestData(locale, messages);
+async function InvestDataHealthSection({ criticalDataPromise }: { criticalDataPromise: Promise<Awaited<ReturnType<typeof getInvestCriticalData>>> }) {
+  const invest = await criticalDataPromise;
   return (
     <Card className="analytics-card">
       <div className="analytics-card__header">
@@ -139,15 +178,13 @@ function InvestDataHealthSkeleton() {
 // ── Streaming: Recommendations ────────────────────────────────────────────────
 
 async function RecommendationsSection({
-  locale,
-  messages,
   viewMode,
+  criticalDataPromise,
 }: {
-  locale: Locale;
-  messages: AppMessages;
   viewMode: MarketViewMode;
+  criticalDataPromise: Promise<Awaited<ReturnType<typeof getInvestCriticalData>>>;
 }) {
-  const invest = await getInvestData(locale, messages);
+  const invest = await criticalDataPromise;
   const recommendations = invest.recommendations;
   const sparklineBySymbol = invest.sparklineBySymbol;
 
@@ -228,8 +265,12 @@ function RecommendationsSkeleton({ viewMode }: { viewMode: MarketViewMode }) {
 
 // ── Streaming: Market ranking ─────────────────────────────────────────────────
 
-async function MarketRankingSection({ locale, messages }: { locale: Locale; messages: AppMessages }) {
-  const invest = await getInvestData(locale, messages);
+async function MarketRankingSection({
+  deferredDataPromise,
+}: {
+  deferredDataPromise: Promise<Awaited<ReturnType<typeof getInvestDeferredData>>>;
+}) {
+  const invest = await deferredDataPromise;
 
   if (invest.rankedAssets.length === 0) {
     return (
@@ -266,14 +307,16 @@ async function StockUniverseSection({
   viewMode,
   isAuthenticated,
   watchlist,
+  deferredDataPromise,
 }: {
   locale: Locale;
   messages: AppMessages;
   viewMode: MarketViewMode;
   isAuthenticated: boolean;
   watchlist: Array<{ assetId: string }>;
+  deferredDataPromise: Promise<Awaited<ReturnType<typeof getInvestDeferredData>>>;
 }) {
-  const invest = await getInvestData(locale, messages);
+  const invest = await deferredDataPromise;
   const stockGroup = invest.groupedAssets.find((g) => g.assetClass === 'stock');
   const stocks = stockGroup?.items ?? [];
   const sparklineBySymbol = invest.sparklineBySymbol;
@@ -396,9 +439,11 @@ export default async function InvestPage({
   // Auth is fast — await it so watchlist and auth-gated sections render immediately.
   const auth = await getOptionalCurrentSession();
   // Watchlist is awaited here so the hero meta and stat strip show the count without waiting
-  // for invest data. getInvestData is NOT awaited — it is deferred to the async Server
-  // Components below. React cache() deduplicates the call across all four of them.
+  // for market read models. Critical and deferred invest data are requested once and streamed
+  // through Suspense boundaries below.
   const watchlist = auth ? await getUserWatchlist(auth.user.id) : [];
+  const criticalDataPromise = getInvestCriticalData(locale, messages);
+  const deferredDataPromise = getInvestDeferredData(locale, messages);
 
   return (
     <>
@@ -437,7 +482,7 @@ export default async function InvestPage({
       {/* ── Data freshness (streams in) ───────────────────────────────────── */}
       <Section className="dashboard-section">
         <Suspense fallback={<InvestDataHealthSkeleton />}>
-          <InvestDataHealthSection locale={locale} messages={messages} />
+          <InvestDataHealthSection criticalDataPromise={criticalDataPromise} />
         </Suspense>
       </Section>
 
@@ -502,7 +547,7 @@ export default async function InvestPage({
           <MarketViewToggle basePath="/invest" view={viewMode} />
         </header>
         <Suspense fallback={<RecommendationsSkeleton viewMode={viewMode} />}>
-          <RecommendationsSection locale={locale} messages={messages} viewMode={viewMode} />
+          <RecommendationsSection viewMode={viewMode} criticalDataPromise={criticalDataPromise} />
         </Suspense>
       </Section>
 
@@ -519,7 +564,7 @@ export default async function InvestPage({
           </div>
         </header>
         <Suspense fallback={<MarketRankingSkeleton />}>
-          <MarketRankingSection locale={locale} messages={messages} />
+          <MarketRankingSection deferredDataPromise={deferredDataPromise} />
         </Suspense>
       </Section>
 
@@ -541,6 +586,7 @@ export default async function InvestPage({
             viewMode={viewMode}
             isAuthenticated={Boolean(auth)}
             watchlist={watchlist}
+            deferredDataPromise={deferredDataPromise}
           />
         </Suspense>
       </Section>

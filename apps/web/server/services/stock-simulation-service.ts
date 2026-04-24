@@ -16,12 +16,56 @@ import {
   type PersistedMarketHistoryBar,
   type PersistedMarketQuoteSnapshot,
 } from '@repo/db';
-import { fetchMarketHistory, fetchMarketSnapshot } from '@repo/providers';
+import { fetchMarketHistory, fetchMarketSnapshot, getProviderEnv } from '@repo/providers';
 import { getOptionalCurrentSession, requireCurrentSession } from '../auth/session';
 import { buildSimulationActivityLanes, type SimulationActivityLane } from './simulation-activity-lanes';
 
 const QUOTE_STALE_MS = 15 * 60 * 1000;
 const HISTORY_STALE_MS = 18 * 60 * 60 * 1000;
+const QUOTE_CACHE_TTL_MS = 45 * 1000;
+const HISTORY_SERIES_CACHE_TTL_MS = 10 * 60 * 1000;
+const PROVIDER_ERROR_CACHE_TTL_MS = 10 * 1000;
+
+type CacheEntry<T> = {
+  value: T;
+  expiresAt: number;
+};
+
+const quoteSnapshotCache = new Map<string, CacheEntry<PersistedMarketQuoteSnapshot[]>>();
+const quoteSnapshotInFlight = new Map<string, Promise<PersistedMarketQuoteSnapshot[]>>();
+const historySeriesCache = new Map<string, CacheEntry<Record<string, number[]>>>();
+const historySeriesInFlight = new Map<string, Promise<Record<string, number[]>>>();
+
+function getFreshCacheValue<T>(cache: Map<string, CacheEntry<T>>, key: string): T | null {
+  const entry = cache.get(key);
+
+  if (!entry) {
+    return null;
+  }
+
+  if (Date.now() >= entry.expiresAt) {
+    cache.delete(key);
+    return null;
+  }
+
+  return entry.value;
+}
+
+function setCacheValue<T>(cache: Map<string, CacheEntry<T>>, key: string, value: T, ttlMs: number) {
+  cache.set(key, {
+    value,
+    expiresAt: Date.now() + ttlMs,
+  });
+}
+
+function buildQuoteCacheKey(symbols: string[]) {
+  const provider = getProviderEnv().MARKET_DATA_PROVIDER;
+  return `provider=${provider}|assetKind=stock,etf,crypto|symbols=${symbols.join(',')}`;
+}
+
+function buildHistorySeriesCacheKey(symbols: string[], limit: number) {
+  return `interval=1d|range=${limit}|symbols=${symbols.join(',')}`;
+}
 
 function isFreshEnough(timestamp: string | null | undefined, maxAgeMs: number) {
   if (!timestamp) {
@@ -77,20 +121,44 @@ export async function loadMiniHistorySeries(
     return {};
   }
 
-  const rowsBySymbol = await getMarketHistoryBarsBySymbols(normalized, limit);
-  const seriesBySymbol: Record<string, number[]> = {};
-
-  for (const symbol of normalized) {
-    const bars = normalizeHistoryBars(rowsBySymbol[symbol] ?? []);
-    const closes = bars
-      .map((bar) => bar.close)
-      .filter((value) => Number.isFinite(value))
-      .slice(-limit);
-
-    seriesBySymbol[symbol] = closes;
+  const cacheKey = buildHistorySeriesCacheKey(normalized, limit);
+  const cached = getFreshCacheValue(historySeriesCache, cacheKey);
+  if (cached) {
+    return cached;
   }
 
-  return seriesBySymbol;
+  const inFlight = historySeriesInFlight.get(cacheKey);
+  if (inFlight) {
+    return inFlight;
+  }
+
+  const loader = (async () => {
+    try {
+      const rowsBySymbol = await getMarketHistoryBarsBySymbols(normalized, limit);
+      const seriesBySymbol: Record<string, number[]> = {};
+
+      for (const symbol of normalized) {
+        const bars = normalizeHistoryBars(rowsBySymbol[symbol] ?? []);
+        const closes = bars
+          .map((bar) => bar.close)
+          .filter((value) => Number.isFinite(value))
+          .slice(-limit);
+
+        seriesBySymbol[symbol] = closes;
+      }
+
+      setCacheValue(historySeriesCache, cacheKey, seriesBySymbol, HISTORY_SERIES_CACHE_TTL_MS);
+      return seriesBySymbol;
+    } catch {
+      setCacheValue(historySeriesCache, cacheKey, {}, PROVIDER_ERROR_CACHE_TTL_MS);
+      return {};
+    } finally {
+      historySeriesInFlight.delete(cacheKey);
+    }
+  })();
+
+  historySeriesInFlight.set(cacheKey, loader);
+  return loader;
 }
 
 export async function loadQuoteSnapshots(
@@ -103,51 +171,83 @@ export async function loadQuoteSnapshots(
     return [];
   }
 
-  const cachedSnapshots = await getLatestMarketQuoteSnapshots(normalized);
-  const cachedBySymbol = new Map(cachedSnapshots.map((snapshot) => [snapshot.symbol, snapshot]));
-  const staleOrMissingSymbols = normalized.filter((symbol) => !isFreshEnough(cachedBySymbol.get(symbol)?.observedAt ?? null, QUOTE_STALE_MS));
-
-  if (staleOrMissingSymbols.length === 0) {
-    return normalized.flatMap((symbol) => (cachedBySymbol.get(symbol) ? [cachedBySymbol.get(symbol)!] : []));
+  const cacheKey = buildQuoteCacheKey(normalized);
+  const cached = getFreshCacheValue(quoteSnapshotCache, cacheKey);
+  if (cached) {
+    return normalized.flatMap((symbol) => (cached.find((item) => item.symbol === symbol) ? [cached.find((item) => item.symbol === symbol)!] : []));
   }
 
-  // Use the pre-built map when the caller already has the catalog, avoiding a duplicate DB round-trip.
-  const assetIdBySymbol = knownAssetIdBySymbol ?? new Map((await listCatalogAssets()).map((asset) => [asset.symbol, asset.assetId]));
+  const inFlight = quoteSnapshotInFlight.get(cacheKey);
+  if (inFlight) {
+    return inFlight;
+  }
 
-  try {
-    const fetchedSnapshots = await fetchMarketSnapshot({
-      symbols: staleOrMissingSymbols,
-    });
+  const loader = (async () => {
+    const cachedSnapshots = await getLatestMarketQuoteSnapshots(normalized);
+    const cachedBySymbol = new Map(cachedSnapshots.map((snapshot) => [snapshot.symbol, snapshot]));
+    const staleOrMissingSymbols = normalized.filter((symbol) => !isFreshEnough(cachedBySymbol.get(symbol)?.observedAt ?? null, QUOTE_STALE_MS));
 
-    await upsertMarketQuoteSnapshots(
-      fetchedSnapshots.map((snapshot) => ({
-        symbol: snapshot.symbol,
-        assetId: assetIdBySymbol.get(snapshot.symbol) ?? null,
-        price: snapshot.price ?? null,
-        change: snapshot.change ?? null,
-        changePercent: snapshot.changePercent ?? null,
-        source: snapshot.source,
-        observedAt: snapshot.timestamp ?? null,
-      })),
-    );
-
-    for (const snapshot of fetchedSnapshots) {
-      cachedBySymbol.set(snapshot.symbol, {
-        symbol: snapshot.symbol,
-        assetId: assetIdBySymbol.get(snapshot.symbol) ?? null,
-        price: snapshot.price ?? null,
-        change: snapshot.change ?? null,
-        changePercent: snapshot.changePercent ?? null,
-        source: snapshot.source,
-        observedAt: snapshot.timestamp ?? null,
-        fetchedAt: new Date().toISOString(),
-      });
+    if (staleOrMissingSymbols.length === 0) {
+      const snapshots = normalized.flatMap((symbol) => (cachedBySymbol.get(symbol) ? [cachedBySymbol.get(symbol)!] : []));
+      setCacheValue(
+        quoteSnapshotCache,
+        cacheKey,
+        snapshots,
+        snapshots.length > 0 ? QUOTE_CACHE_TTL_MS : PROVIDER_ERROR_CACHE_TTL_MS,
+      );
+      return snapshots;
     }
-  } catch {
-    // Gracefully keep cached data when the live provider path is unavailable.
-  }
 
-  return normalized.flatMap((symbol) => (cachedBySymbol.get(symbol) ? [cachedBySymbol.get(symbol)!] : []));
+    // Use the pre-built map when the caller already has the catalog, avoiding a duplicate DB round-trip.
+    const assetIdBySymbol = knownAssetIdBySymbol ?? new Map((await listCatalogAssets()).map((asset) => [asset.symbol, asset.assetId]));
+
+    try {
+      const fetchedSnapshots = await fetchMarketSnapshot({
+        symbols: staleOrMissingSymbols,
+      });
+
+      await upsertMarketQuoteSnapshots(
+        fetchedSnapshots.map((snapshot) => ({
+          symbol: snapshot.symbol,
+          assetId: assetIdBySymbol.get(snapshot.symbol) ?? null,
+          price: snapshot.price ?? null,
+          change: snapshot.change ?? null,
+          changePercent: snapshot.changePercent ?? null,
+          source: snapshot.source,
+          observedAt: snapshot.timestamp ?? null,
+        })),
+      );
+
+      for (const snapshot of fetchedSnapshots) {
+        cachedBySymbol.set(snapshot.symbol, {
+          symbol: snapshot.symbol,
+          assetId: assetIdBySymbol.get(snapshot.symbol) ?? null,
+          price: snapshot.price ?? null,
+          change: snapshot.change ?? null,
+          changePercent: snapshot.changePercent ?? null,
+          source: snapshot.source,
+          observedAt: snapshot.timestamp ?? null,
+          fetchedAt: new Date().toISOString(),
+        });
+      }
+    } catch {
+      // Gracefully keep cached data when the live provider path is unavailable.
+    }
+
+    const snapshots = normalized.flatMap((symbol) => (cachedBySymbol.get(symbol) ? [cachedBySymbol.get(symbol)!] : []));
+    setCacheValue(
+      quoteSnapshotCache,
+      cacheKey,
+      snapshots,
+      snapshots.length > 0 ? QUOTE_CACHE_TTL_MS : PROVIDER_ERROR_CACHE_TTL_MS,
+    );
+    return snapshots;
+  })().finally(() => {
+    quoteSnapshotInFlight.delete(cacheKey);
+  });
+
+  quoteSnapshotInFlight.set(cacheKey, loader);
+  return loader;
 }
 
 export async function loadHistoryBars(symbol: string): Promise<PersistedMarketHistoryBar[]> {

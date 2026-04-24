@@ -55,7 +55,7 @@ type UserTransactionsData = Awaited<ReturnType<typeof listSimulationTransactions
 type DashboardRequestLoaders = {
   dashboardPromise: Promise<DashboardData>;
   stocksPromise: Promise<StocksData>;
-  liveAnalyticsPromise: Promise<LiveAnalyticsData>;
+  liveAnalyticsPromise: () => Promise<LiveAnalyticsData>;
   watchlistPromise: Promise<UserWatchlistData>;
   ordersPromise: Promise<UserOrdersData>;
   transactionsPromise: Promise<UserTransactionsData>;
@@ -94,11 +94,17 @@ function createDashboardRequestLoaders({
   messages: AppMessages;
   userId: string | null;
 }): DashboardRequestLoaders {
+  let liveAnalyticsPromise: Promise<LiveAnalyticsData> | null = null;
   return {
     dashboardPromise: withDevTiming('dashboard-read-model', () => getDashboardData()),
     stocksPromise: withDevTiming('stocks-overview', () =>
-      getStocksOverviewData(locale, messages, { symbolLimit: DASHBOARD_STOCK_SYMBOL_LIMIT })),
-    liveAnalyticsPromise: withDevTiming('market-analytics', () => getDashboardMarketAnalyticsData()),
+      getStocksOverviewData(locale, messages, { symbolLimit: DASHBOARD_STOCK_SYMBOL_LIMIT, pageContext: 'dashboard-preview' })),
+    liveAnalyticsPromise: () => {
+      if (!liveAnalyticsPromise) {
+        liveAnalyticsPromise = withDevTiming('market-analytics', () => getDashboardMarketAnalyticsData());
+      }
+      return liveAnalyticsPromise;
+    },
     watchlistPromise: withDevTiming('watchlist', () => (userId ? getUserWatchlist(userId) : Promise.resolve([]))),
     ordersPromise: withDevTiming('orders', () => (userId ? listSimulatedOrdersForUser(userId) : Promise.resolve([]))),
     transactionsPromise: withDevTiming('transactions', () => (userId ? listSimulationTransactionsForUser(userId) : Promise.resolve([]))),
@@ -169,15 +175,16 @@ async function DashboardMarketOverviewSection({
 }: {
   dashboardPromise: Promise<DashboardData>;
   stocksPromise: Promise<StocksData>;
-  liveAnalyticsPromise: Promise<LiveAnalyticsData>;
+  liveAnalyticsPromise: () => Promise<LiveAnalyticsData>;
   chartType: ReturnType<typeof resolveChartType>;
   timePeriod: ReturnType<typeof resolveTimePeriod>;
   messages: AppMessages;
 }) {
+  const liveAnalyticsDataPromise = chartType === 'trend' || chartType === 'stock' ? liveAnalyticsPromise() : Promise.resolve(null);
   const [dashboard, stocks, liveAnalytics] = await Promise.all([
     dashboardPromise,
     stocksPromise,
-    liveAnalyticsPromise,
+    liveAnalyticsDataPromise,
   ]);
   const moveCounts = countDirectionalMoves(stocks.trackedStocks.map((item) => item.changePercent));
   const liveMoverBars = buildComparisonBars(
@@ -243,7 +250,7 @@ async function DashboardMarketOverviewSection({
           <LineTrendPanel
             title="Market trend and confidence envelope"
             subtitle="Provider-backed line trend pairing a live primary series, benchmark reference, and simple confidence band."
-            points={liveAnalytics.trendSeries}
+            points={liveAnalytics?.trendSeries ?? []}
             rail={
               <div className="side-metrics">
                 <div className="side-metrics__item">
@@ -326,7 +333,7 @@ async function DashboardMarketOverviewSection({
                 title="Live stocks are loaded into the dashboard"
                 body={stocks.insights[0]}
               />
-            ) : liveAnalytics.notes[0] ? (
+            ) : liveAnalytics?.notes[0] ? (
               <InsightCallout
                 title="Market data observation"
                 body={liveAnalytics.notes[0]}
@@ -485,9 +492,9 @@ async function DashboardForecastOverviewSection({
 async function DashboardPerformanceAnalyticsSection({
   liveAnalyticsPromise,
 }: {
-  liveAnalyticsPromise: Promise<LiveAnalyticsData>;
+  liveAnalyticsPromise: () => Promise<LiveAnalyticsData>;
 }) {
-  const liveAnalytics = await liveAnalyticsPromise;
+  const liveAnalytics = await liveAnalyticsPromise();
   return (
     <Section className="dashboard-section dashboard-section--tinted">
       <div className="analytics-two-grid">

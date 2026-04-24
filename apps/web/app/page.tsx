@@ -1,11 +1,7 @@
 import { getStocksOverviewData } from '../server/services/stocks-service';
 import { getMarketGraphData } from '../server/services/market-graph-service';
 import { HeroSection } from '../components/sections/hero-section';
-import { LaneOverviewSection } from '../components/sections/lane-overview-section';
-import { CapabilitiesSection } from '../components/sections/capabilities-section';
-import { ModulesSection } from '../components/sections/modules-section';
-import { ExplainabilitySection } from '../components/sections/explainability-section';
-import { SystemStatusSection } from '../components/sections/system-status-section';
+import { HomeFancySections } from '../components/sections/home-fancy-sections';
 import { getMessages } from '../lib/i18n/messages';
 import { getRequestLocale } from '../server/i18n/locale';
 
@@ -74,11 +70,16 @@ export default async function HomePage() {
           },
         }}
       />
-      <LaneOverviewSection labels={messages.homeSections.lanes} />
-      <CapabilitiesSection labels={messages.homeSections.capabilities} />
-      <ModulesSection labels={messages.homeSections.modules} />
-      <ExplainabilitySection labels={messages.homeSections.explainability} />
-      <SystemStatusSection labels={messages.homeSections.systemStatus} />
+      <HomeFancySections
+        stocks={stocks}
+        marketGraph={marketGraph}
+        labels={{
+          lanes: messages.homeSections.lanes,
+          capabilities: messages.homeSections.capabilities,
+          modules: messages.homeSections.modules,
+        }}
+        common={{ unavailable: messages.common.unavailable }}
+      />
     </>
   );
 }

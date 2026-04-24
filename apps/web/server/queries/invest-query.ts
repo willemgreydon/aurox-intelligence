@@ -1,6 +1,7 @@
 import { getLinkedInvestmentAccounts, listCatalogAssets, type CatalogAsset } from '@repo/db';
-import { getSparkasseGeorgeConnectionCapability, type ProviderMarketObservation } from '@repo/providers';
+import { getProviderEnv, getSparkasseGeorgeConnectionCapability, type ProviderMarketObservation } from '@repo/providers';
 import type { ConnectedInvestmentAccount } from '@repo/api-contracts';
+import { unstable_cache } from 'next/cache';
 import { loadMiniHistorySeries, loadQuoteSnapshots } from '../services/stock-simulation-service';
 
 export type InvestReadModel = {
@@ -13,33 +14,137 @@ export type InvestReadModel = {
   bankConnections: ReturnType<typeof getSparkasseGeorgeConnectionCapability>[];
 };
 
-// Module-level TTL cache for shared (non-user-specific) market data.
-// Safe: watchlist, auth, and simulation stats are fetched outside this function.
-// Error paths use a shorter TTL so the provider is retried soon on degraded state.
 const INVEST_CACHE_TTL_MS = 60_000;
 const INVEST_CACHE_ERROR_TTL_MS = 10_000;
-const MAX_HISTORY_SYMBOLS = 40;
+const DEFAULT_HISTORY_SYMBOL_LIMIT = 40;
+const INVEST_READ_TYPE = 'invest-read-model-v2';
+
+export type InvestReadModelOptions = {
+  quoteSymbolLimit?: number;
+  historySymbolLimit?: number;
+  includeHistory?: boolean;
+  preferredSymbols?: string[];
+  pageContext?: string;
+};
+
+type ResolvedInvestReadModelOptions = {
+  quoteSymbolLimit: number | null;
+  historySymbolLimit: number;
+  includeHistory: boolean;
+  preferredSymbols: string[];
+  pageContext: string;
+};
 
 type InvestCacheEntry = { data: InvestReadModel; cachedAt: number; ttlMs: number };
-let _cache: InvestCacheEntry | null = null;
+const investReadCache = new Map<string, InvestCacheEntry>();
 
-function isCacheFresh(): boolean {
-  return _cache !== null && Date.now() - _cache.cachedAt < _cache.ttlMs;
+const loadCatalogAssets = unstable_cache(
+  async () => listCatalogAssets(),
+  ['invest-catalog-assets-v1'],
+  { revalidate: 300 },
+);
+
+const loadLinkedAccounts = unstable_cache(
+  async () => getLinkedInvestmentAccounts(),
+  ['invest-linked-accounts-v1'],
+  { revalidate: 30 },
+);
+
+function resolveOptions(options: InvestReadModelOptions): ResolvedInvestReadModelOptions {
+  return {
+    quoteSymbolLimit:
+      typeof options.quoteSymbolLimit === 'number' && Number.isFinite(options.quoteSymbolLimit) && options.quoteSymbolLimit > 0
+        ? Math.floor(options.quoteSymbolLimit)
+        : null,
+    historySymbolLimit:
+      typeof options.historySymbolLimit === 'number' && Number.isFinite(options.historySymbolLimit) && options.historySymbolLimit > 0
+        ? Math.floor(options.historySymbolLimit)
+        : DEFAULT_HISTORY_SYMBOL_LIMIT,
+    includeHistory: options.includeHistory ?? true,
+    preferredSymbols: [...new Set((options.preferredSymbols ?? []).map((symbol) => symbol.trim().toUpperCase()).filter(Boolean))],
+    pageContext: options.pageContext?.trim() || 'invest',
+  };
 }
 
-export async function getInvestReadModel(): Promise<InvestReadModel> {
-  if (isCacheFresh()) {
-    return _cache!.data;
+function prioritizeAssets(assets: CatalogAsset[], preferredSymbols: string[]) {
+  if (preferredSymbols.length === 0) {
+    return assets;
   }
 
+  const bySymbol = new Map(assets.map((asset) => [asset.symbol, asset]));
+  const prioritized = preferredSymbols
+    .map((symbol) => bySymbol.get(symbol))
+    .filter((asset): asset is CatalogAsset => Boolean(asset));
+  const prioritizedSymbols = new Set(prioritized.map((asset) => asset.symbol));
+  const remaining = assets.filter((asset) => !prioritizedSymbols.has(asset.symbol));
+
+  return [...prioritized, ...remaining];
+}
+
+function buildInvestCacheKey(provider: string, assets: CatalogAsset[], options: ResolvedInvestReadModelOptions) {
+  const symbols = assets.map((asset) => asset.symbol).sort();
+  return [
+    `read=${INVEST_READ_TYPE}`,
+    `provider=${provider}`,
+    `context=${options.pageContext}`,
+    `assetKind=stock,etf,crypto`,
+    `quoteLimit=${options.quoteSymbolLimit ?? 'all'}`,
+    `historyRange=30`,
+    `historyLimit=${options.includeHistory ? options.historySymbolLimit : 0}`,
+    `symbols=${symbols.join(',')}`,
+  ].join('|');
+}
+
+function getFreshCacheEntry(key: string): InvestReadModel | null {
+  const entry = investReadCache.get(key);
+  if (!entry) {
+    return null;
+  }
+
+  if (Date.now() - entry.cachedAt >= entry.ttlMs) {
+    investReadCache.delete(key);
+    return null;
+  }
+
+  return entry.data;
+}
+
+function setCacheEntry(key: string, data: InvestReadModel) {
+  investReadCache.set(key, {
+    data,
+    cachedAt: Date.now(),
+    ttlMs: data.providerError ? INVEST_CACHE_ERROR_TTL_MS : INVEST_CACHE_TTL_MS,
+  });
+}
+
+export async function getInvestReadModel(options: InvestReadModelOptions = {}): Promise<InvestReadModel> {
+  const resolvedOptions = resolveOptions(options);
   const dev = process.env.NODE_ENV === 'development';
   const t0 = dev ? performance.now() : 0;
+  const provider = getProviderEnv().MARKET_DATA_PROVIDER;
 
-  const [assets, linkedAccounts] = await Promise.all([listCatalogAssets(), getLinkedInvestmentAccounts()]);
+  const [catalogAssets, linkedAccounts] = await Promise.all([loadCatalogAssets(), loadLinkedAccounts()]);
+  const prioritizedAssets = prioritizeAssets(catalogAssets, resolvedOptions.preferredSymbols);
+  const assets =
+    resolvedOptions.quoteSymbolLimit === null
+      ? prioritizedAssets
+      : prioritizedAssets.slice(0, resolvedOptions.quoteSymbolLimit);
+  const cacheKey = buildInvestCacheKey(provider, assets, resolvedOptions);
+  const cached = getFreshCacheEntry(cacheKey);
+  if (cached) {
+    if (dev) {
+      console.debug(`[invest-query] cache hit context=${resolvedOptions.pageContext} symbols=${assets.length}: ${(performance.now() - t0).toFixed(0)}ms`);
+    }
+    return cached;
+  }
+
   const bankConnections = [getSparkasseGeorgeConnectionCapability()];
   const assetIdBySymbol: ReadonlyMap<string, string> = new Map(assets.map((asset) => [asset.symbol, asset.assetId]));
 
-  if (dev) console.debug(`[invest-query] catalog+accounts: ${(performance.now() - t0).toFixed(0)}ms`);
+  if (dev) {
+    console.debug(`[invest-query] cache miss context=${resolvedOptions.pageContext} symbols=${assets.length}/${catalogAssets.length}`);
+    console.debug(`[invest-query] catalog+accounts: ${(performance.now() - t0).toFixed(0)}ms`);
+  }
 
   let result: InvestReadModel;
 
@@ -54,7 +159,9 @@ export async function getInvestReadModel(): Promise<InvestReadModel> {
       .map((item) => item.symbol);
 
     // Cap history fetch to avoid oversized DB window-function queries on large catalogs.
-    const historySymbols = symbolsWithQuotes.slice(0, MAX_HISTORY_SYMBOLS);
+    const historySymbols = resolvedOptions.includeHistory
+      ? symbolsWithQuotes.slice(0, resolvedOptions.historySymbolLimit)
+      : [];
     const t2 = dev ? performance.now() : 0;
     const historySeriesBySymbol =
       historySymbols.length > 0
@@ -103,6 +210,6 @@ export async function getInvestReadModel(): Promise<InvestReadModel> {
 
   if (dev) console.debug(`[invest-query] total: ${(performance.now() - t0).toFixed(0)}ms`);
 
-  _cache = { data: result, cachedAt: Date.now(), ttlMs: result.providerError ? INVEST_CACHE_ERROR_TTL_MS : INVEST_CACHE_TTL_MS };
+  setCacheEntry(cacheKey, result);
   return result;
 }
