@@ -1,16 +1,59 @@
-﻿# Aurox Intelligence
+# Aurox Intelligence
 
-Aurox Intelligence is a production-oriented TypeScript monorepo for financial intelligence and simulation-first multi-asset investing.
+Aurox Intelligence is a simulation-first financial intelligence platform built as a TypeScript monorepo.
 
-## What It Does
+This repository combines:
+- market and macro data ingestion adapters
+- typed contracts and repository-backed read models
+- explainable signals and forecasting modules
+- a deterministic simulation trading engine
+- workstation-style web and worker runtimes
 
-- provides provider-backed market data surfaces
-- derives explainable analytics signals and forecast context
-- runs persisted simulation trading for stocks, ETFs, and crypto
-- exposes workstation-grade invest interfaces with typed server-driven read models
+This is not a generic CRUD app. Treat every change as if real capital could be impacted by downstream execution logic.
 
-## Product Surfaces
+---
 
+## Table of Contents
+
+- [System Purpose](#system-purpose)
+- [Current Product Surfaces](#current-product-surfaces)
+- [Monorepo Structure](#monorepo-structure)
+- [Non-Negotiable Architecture Boundaries](#non-negotiable-architecture-boundaries)
+- [Read and Write Patterns](#read-and-write-patterns)
+- [Prerequisites](#prerequisites)
+- [Quick Start](#quick-start)
+- [Environment Variables](#environment-variables)
+- [Development Commands](#development-commands)
+- [Testing and Validation Workflow](#testing-and-validation-workflow)
+- [Simulation and Execution Safety](#simulation-and-execution-safety)
+- [Performance and Debugging Tips](#performance-and-debugging-tips)
+- [Docs Map](#docs-map)
+- [Known Baseline Issue](#known-baseline-issue)
+- [Contribution Checklist](#contribution-checklist)
+- [Troubleshooting](#troubleshooting)
+
+---
+
+## System Purpose
+
+Aurox Intelligence is designed to:
+- aggregate provider-backed market context
+- compute deterministic signals and forecast context
+- run auditable simulation trading across stocks, ETFs, and crypto
+- expose route-driven, typed read models for workstation UI flows
+
+Safety and correctness take priority over convenience:
+1. Safety
+2. Correctness
+3. Determinism
+4. Observability
+5. Performance
+
+---
+
+## Current Product Surfaces
+
+Web routes include:
 - `/dashboard`
 - `/market`
 - `/stocks`, `/stocks/[symbol]`
@@ -23,37 +66,68 @@ Aurox Intelligence is a production-oriented TypeScript monorepo for financial in
 - `/invest/orders`
 - `/invest/live-readiness`
 - `/invest/stocks`, `/invest/etfs`, `/invest/crypto`
+- `/admin`, `/admin/monitoring`
 
-## Architecture Rules
+---
 
-Aurox enforces strict monorepo boundaries.
-
-- provider logic stays in `packages/providers`
-- DB access stays in `packages/db`
-- contracts stay in `packages/api-contracts`
-- signals stay pure in `packages/signals`
-- forecasts stay pure in `packages/forecasting`
-- route orchestration and rendering stay in `apps/web`
-
-Canonical web read flow:
-
-`Query -> Mapper -> Service -> Route -> UI`
-
-## Monorepo Layout
+## Monorepo Structure
 
 ```text
 apps/
-  web/
+  web/                         # Next.js App Router UI + server orchestration
+  worker/                      # Background worker runtime
+
 packages/
-  agents/
-  ai-market-intelligence/
-  api-contracts/
-  db/
-  forecasting/
-  observability/
-  providers/
-  signals/
+  api-contracts/               # Zod schemas and shared contracts
+  db/                          # SQL repositories, migrations, read models
+  providers/                   # External data provider adapters
+  signals/                     # Pure signal logic (no I/O)
+  forecasting/                 # Pure forecast logic (no I/O)
+  agents/                      # Execution and orchestration workflows
+  ai-market-intelligence/      # Explainable market intelligence helpers
+  observability/               # Logging/telemetry scaffolding
+  design-tokens/               # Shared tokens/CSS themes
 ```
+
+---
+
+## Non-Negotiable Architecture Boundaries
+
+- `packages/providers` owns all external provider calls.
+- `packages/db` is the only SQL/persistence boundary.
+- `packages/api-contracts` is the contract source of truth.
+- `packages/signals` and `packages/forecasting` stay pure.
+- `apps/web` orchestrates routes/services/mappers/UI only.
+
+Forbidden:
+- provider calls in UI components
+- direct SQL in routes/components
+- duplicated contract schemas in app layer
+- execution or risk logic in presentation components
+
+---
+
+## Read and Write Patterns
+
+Canonical read path:
+
+`Query -> Mapper -> Service -> Route -> UI`
+
+Canonical write path:
+
+`UI -> Server Action -> Zod Validation -> Domain Service -> Repository Transaction -> Revalidation`
+
+Keep these seams explicit when adding or changing features.
+
+---
+
+## Prerequisites
+
+- Node.js `20+` recommended
+- `pnpm` (repo uses `pnpm@10`)
+- PostgreSQL for full repository-backed behavior
+
+---
 
 ## Quick Start
 
@@ -69,7 +143,13 @@ pnpm install
 cp .env.example .env
 ```
 
-3. Apply migrations
+Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+3. Run DB migrations
 
 ```bash
 node packages/db/scripts/migrate.mjs
@@ -81,31 +161,116 @@ node packages/db/scripts/migrate.mjs
 pnpm dev
 ```
 
-## Key Commands
+5. Open the app
+
+- `http://localhost:3000`
+
+---
+
+## Environment Variables
+
+See `.env.example` for complete list. Key groups:
+
+- Core app/runtime:
+  - `NODE_ENV`
+  - `APP_BASE_URL`
+  - `NEXT_PUBLIC_APP_URL`
+  - `AUTH_SECRET`
+- Database:
+  - `DATABASE_URL`
+  - `DATABASE_URL_UNPOOLED`
+  - `DIRECT_URL`
+- Providers:
+  - `MARKET_DATA_PROVIDER`
+  - `MARKET_HISTORY_FALLBACK_PROVIDERS`
+  - `MARKET_QUOTE_FALLBACK_PROVIDERS`
+  - Provider API keys (`POLYGON_API_KEY`, `FINNHUB_API_KEY`, etc.)
+- Broker execution safety:
+  - `BROKER_EXECUTION_PROVIDER` (defaults to `simulation`)
+  - `BROKER_DRY_RUN`
+  - `BROKER_SANDBOX_MODE`
+  - `BROKER_ALLOWED_LIVE_MODE_IDS`
+
+Important:
+- Never commit secrets or `.env` files.
+- Keep simulation defaults unless live readiness is explicitly approved.
+
+---
+
+## Development Commands
+
+Root:
 
 ```bash
 pnpm dev
 pnpm build
 pnpm typecheck
 pnpm test
+pnpm lint
+pnpm clean
 ```
 
-Targeted examples:
+Targeted:
+
+```bash
+pnpm dev:web
+pnpm build:web
+pnpm typecheck:web
+
+pnpm dev:worker
+pnpm build:worker
+pnpm typecheck:worker
+```
+
+Package-level examples:
 
 ```bash
 pnpm --filter @repo/api-contracts typecheck
 pnpm --filter @repo/db typecheck
+pnpm --filter @repo/providers test
 ```
 
-## Simulation Safety Model
+---
 
-Current execution is simulation-first:
-- no default live broker execution
-- deterministic accounting and persistence
-- lane and tradability enforcement
-- auditable order and transaction history
+## Testing and Validation Workflow
 
-Simulation core tables:
+When changing code, prefer smallest meaningful validation first.
+
+Typical flow:
+1. Run targeted package checks for touched areas.
+2. Run `pnpm build:web` for route/UI/server changes.
+3. Escalate to broader checks only when needed.
+
+Suggested minimums by change type:
+- Contracts changed:
+  - `pnpm --filter @repo/api-contracts typecheck`
+- DB/repository changed:
+  - `node packages/db/scripts/migrate.mjs`
+  - `pnpm --filter @repo/db typecheck`
+- Provider logic changed:
+  - `pnpm --filter @repo/providers typecheck`
+  - `pnpm --filter @repo/providers test`
+- Dashboard/web route changed:
+  - `pnpm build:web`
+
+---
+
+## Simulation and Execution Safety
+
+Simulation is the default execution mode.
+
+Key expectations:
+- deterministic accounting and order lifecycle
+- transaction and snapshot auditability
+- explicit risk and policy gates before any execution
+- safe fallback behavior when provider or data paths degrade
+
+Do not:
+- bypass risk checks
+- fake provider data
+- enable autonomous live execution without readiness gates
+
+Simulation persistence tables include:
 - `app.simulation_accounts`
 - `app.simulation_portfolios`
 - `app.simulation_positions`
@@ -113,8 +278,27 @@ Simulation core tables:
 - `app.simulation_transactions`
 - `app.simulation_snapshots`
 
-## Documentation Map
+---
 
+## Performance and Debugging Tips
+
+- Prefer targeted query/service timings in development (`NODE_ENV=development`).
+- Avoid adding expensive calls to broad routes (`/dashboard`) unless needed for initial shell.
+- Use streaming boundaries and request-scoped dedupe for heavy sections.
+- Cache only non-user-specific data globally; keep user-specific reads request-scoped.
+- Watch `.next/dev/logs/next-development.log` for route timing and warning context.
+
+For bottleneck analysis on dashboard-like pages:
+1. instrument loader/query/service timing
+2. identify dominant path (provider breadth, DB read model, history)
+3. apply one focused optimization
+4. re-measure and compare
+
+---
+
+## Docs Map
+
+Primary entry points:
 - [System Docs Master](./DOCUMENTATION.md)
 - [Current State Summary](./CURRENT_STATE_SUMMARY.md)
 - [Architecture Overview](./docs/architecture/overview.md)
@@ -122,8 +306,75 @@ Simulation core tables:
 - [Architecture Best Practices](./docs/architecture/best-practices.md)
 - [Simulation Test Plan](./docs/simulation-test-plan.md)
 
-Domain docs in `docs/` cover execution, risk, portfolio construction, reporting, taxonomy, ETF/crypto structure, AI usage, and anomaly detection.
+Domain docs:
+- [Finance System Overview](./docs/finance-system-overview.md)
+- [Signal Framework](./docs/signal-framework.md)
+- [Risk Management](./docs/risk-management.md)
+- [Execution Layer](./docs/execution-layer.md)
+- [Portfolio Construction](./docs/portfolio-construction.md)
+- [Reporting Framework](./docs/reporting-framework.md)
+- [Broker Infrastructure](./docs/broker-infrastructure.md)
+- [AI in Finance](./docs/ai-in-finance.md)
 
-## Current Known Baseline Issue
+Live microtrading docs:
+- [Overview](./docs/live-microtrading/overview.md)
+- [Readiness Checklist](./docs/live-microtrading/readiness-checklist.md)
+- [Risk Policy and Guards](./docs/live-microtrading/risk-policy-and-guards.md)
+- [Incident Response and Kill Switch](./docs/live-microtrading/incident-response-and-kill-switch.md)
 
-There is an existing unrelated `apps/web` auth test typing issue in `server/auth/service.test.ts` that can fail full web typecheck. Core modified packages (`api-contracts`, `db`) should still be validated independently when changing domain logic.
+---
+
+## Known Baseline Issue
+
+There is an existing unrelated `apps/web` auth test typing issue in:
+
+- `apps/web/server/auth/service.test.ts`
+
+This can fail full web typecheck in some runs. Treat it as baseline unless your change directly touches auth typing behavior.
+
+---
+
+## Contribution Checklist
+
+Before opening a PR:
+- confirm boundaries are preserved (`providers`, `db`, `api-contracts`, etc.)
+- keep changes scoped and reversible
+- run targeted validation commands
+- include any migration/risk implications in notes
+- call out residual risks and follow-up tasks
+
+PR summary should include:
+- what changed
+- why it changed
+- commands run
+- known unrelated failures
+- rollback approach (if relevant)
+
+---
+
+## Troubleshooting
+
+### EPERM / sandbox / path errors when running scripts
+
+If command execution fails with filesystem permission errors, rerun outside restrictive sandbox or from a shell with proper workspace permissions.
+
+### Port already in use (Next dev)
+
+If you see "another next dev server is already running":
+- stop the existing process or choose another port
+- on Windows: `taskkill /PID <pid> /F`
+
+### Slow dashboard route
+
+Start by measuring loaders in development logs, then optimize the single slowest path. Typical hotspots:
+- broad quote universe fetches
+- expensive provider history reads
+- DB read model cold path latency
+
+### Favicon/logo not updating
+
+Browser favicon caches aggressively:
+- hard refresh
+- clear site data
+- verify file in `apps/web/public/` and metadata icon config
+
