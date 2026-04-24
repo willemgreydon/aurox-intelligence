@@ -159,6 +159,9 @@ importers:
       '@repo/api-contracts':
         specifier: workspace:*
         version: link:../api-contracts
+      '@repo/signals':
+        specifier: workspace:*
+        version: link:../signals
     devDependencies:
       rimraf:
         specifier: ^6.0.1
