@@ -527,9 +527,9 @@ export default async function InvestPage({
           />
           <InvestmentCapabilityCard
             title="ETFs and crypto"
-            description="Supported in research surfaces and manual multi-asset simulation lanes."
-            statusLabel="Supported"
-            statusTone="success"
+            description="Browse and research surfaces are available. Stock simulation is active. ETF and crypto simulation readiness is prepared but not confirmed active end-to-end."
+            statusLabel="Limited"
+            statusTone="warning"
           />
         </div>
       </Section>

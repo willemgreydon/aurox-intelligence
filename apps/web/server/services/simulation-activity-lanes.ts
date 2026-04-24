@@ -83,7 +83,7 @@ export function buildSimulationActivityLanes(workspace: Awaited<ReturnType<typeo
       availableCapital: roundCurrency(Math.max(0, manualCapitalLimit - manualAllocatedCapital)),
       activePositions: workspace.positions.length,
       recentOrders: manualRecentOrders,
-      note: 'Live in simulation for stock execution with lane-tagged order context.',
+      note: 'Manual stock simulation is active. Stock orders are executed with deterministic accounting, auditable history, and lane-tagged order context.',
     },
     {
       id: 'manual-multi',
@@ -95,7 +95,7 @@ export function buildSimulationActivityLanes(workspace: Awaited<ReturnType<typeo
       availableCapital: diversifiedCapitalLimit,
       activePositions: 0,
       recentOrders: laneOrderCount.manualMultiAsset,
-      note: 'Stock-ready now. ETF and crypto execution remain planned.',
+      note: 'Manual lane prepared for cross-asset simulation workflows. Stock simulation works now. ETF and crypto execution remain browse-only unless explicitly enabled by implementation.',
     },
     {
       id: 'ai-assist',
@@ -107,7 +107,7 @@ export function buildSimulationActivityLanes(workspace: Awaited<ReturnType<typeo
       availableCapital: roundCurrency(workspace.summary.initialCashBalance * 0.15),
       activePositions: 0,
       recentOrders: laneOrderCount.aiCopilot,
-      note: 'Planned. No autonomous order execution is enabled.',
+      note: 'Planned only. Assistant-guided paper trading with human confirmation at every step. No autonomous order execution is enabled.',
     },
     {
       id: 'signal-follow',
@@ -119,7 +119,7 @@ export function buildSimulationActivityLanes(workspace: Awaited<ReturnType<typeo
       availableCapital: roundCurrency(workspace.summary.initialCashBalance * 0.07),
       activePositions: 0,
       recentOrders: laneOrderCount.signalFollow,
-      note: 'Planned strategy bucket for signal packs.',
+      note: 'Planned only. Strategy bucket that mirrors selected internal signal packs in simulation. Requires strategy controls and signal pack rollout before activation.',
     },
     {
       id: 'agent-sandbox',
@@ -131,7 +131,7 @@ export function buildSimulationActivityLanes(workspace: Awaited<ReturnType<typeo
       availableCapital: roundCurrency(workspace.summary.initialCashBalance * 0.03),
       activePositions: 0,
       recentOrders: laneOrderCount.agentSandbox,
-      note: 'Planned lane for future AI/broker-agent simulation flows.',
+      note: 'Planned only. Future agentic simulation lane for broker-like orchestration research. Simulation safety boundary remains enforced. No real execution.',
     },
   ];
 }

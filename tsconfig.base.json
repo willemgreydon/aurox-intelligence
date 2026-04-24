@@ -25,6 +25,7 @@
       "@repo/design-tokens/css/light": ["packages/design-tokens/src/light.css"],
       "@repo/design-tokens/css/dark": ["packages/design-tokens/src/dark.css"],
       "@repo/forecasting": ["packages/forecasting/src/index.ts"],
+      "@repo/ingestion": ["packages/ingestion/src/index.ts"],
       "@repo/observability": ["packages/observability/src/index.ts"],
       "@repo/providers": ["packages/providers/src/index.ts"],
       "@repo/signals": ["packages/signals/src/index.ts"]

@@ -26,6 +26,8 @@ import {
 } from '../../../server/lib/quote-display';
 import { getSimulationWorkstationStateForCurrentUser } from '../../../server/services/simulation-workstation-service';
 import { loadMiniHistorySeries } from '../../../server/services/stock-simulation-service';
+import { checkAiSimulationAgentAvailability } from '../../../server/services/ai-simulation-agent-service';
+import { AiSimulationAgentPanel } from '../../../components/invest/ai-simulation-agent-panel';
 
 export const dynamic = 'force-dynamic';
 
@@ -203,6 +205,7 @@ export default async function SimulationPage({
     ]),
   ];
   const sparklineBySymbol = await loadMiniHistorySeries(sparklineSymbols, 24);
+  const aiAgentAvailability = checkAiSimulationAgentAvailability();
 
   if (!portfolio) {
     return (
@@ -593,13 +596,33 @@ export default async function SimulationPage({
         </div>
       </Section>
 
+      <Section className="dashboard-section">
+        <header className="dashboard-section-heading">
+          <div>
+            <div className="section__eyebrow">AI tools — experimental</div>
+            <h2 className="dashboard-section-heading__title">AI Simulation Broker Agent</h2>
+            <p className="dashboard-section-heading__description">
+              OpenAI-powered simulation agent that analyzes your portfolio and proposes simulated
+              trades. Simulation-only. No real money. All proposals pass existing risk guards before
+              execution.
+            </p>
+          </div>
+        </header>
+        <AiSimulationAgentPanel
+          isAvailable={aiAgentAvailability.available}
+          unavailableReason={
+            aiAgentAvailability.available ? undefined : aiAgentAvailability.reason
+          }
+        />
+      </Section>
+
       <Section className="dashboard-section dashboard-section--tinted">
         <header className="dashboard-section-heading">
           <div>
             <div className="section__eyebrow">{messages.simulation.assetUniverse}</div>
             <h2 className="dashboard-section-heading__title">Tradable simulation universe</h2>
             <p className="dashboard-section-heading__description">
-              Simulation trading now covers stocks, ETFs, and crypto. Live execution remains separately gated by broker readiness and policy controls.
+              Stock simulation is active. ETF and crypto assets are catalogued for simulation readiness. Live execution remains separately gated by broker readiness and policy controls.
             </p>
           </div>
         </header>

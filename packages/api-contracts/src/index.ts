@@ -13,3 +13,4 @@ export * from './signals/signals';
 export * from './simulation/simulation';
 export * from './stocks/stocks';
 export * from './workspace/preferences';
+export * from './ai-agent/ai-simulation-agent';
