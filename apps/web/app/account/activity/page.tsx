@@ -41,9 +41,9 @@ export default async function AccountActivityPage() {
 
       <Section className="dashboard-section">
         <div className="analytics-strip">
-          <CompactStatCard label="Portfolio value" value={formatUsdPrice(overview.summary.portfolioValue, locale, messages.common.unavailable)} detail="Current market value of active simulation positions." />
+          <CompactStatCard label="Portfolio value" value={formatUsdPrice(overview.summary.portfolioValue, locale, messages.common.unavailable)} valueTone={overview.summary.portfolioValue > 0 ? 'positive' : overview.summary.portfolioValue < 0 ? 'negative' : 'neutral'} detail="Current market value of active simulation positions." />
           <CompactStatCard label="Available cash" value={formatUsdPrice(overview.summary.availableCash, locale, messages.common.unavailable)} detail="Cash available for new simulation orders." />
-          <CompactStatCard label="Invested capital" value={formatUsdPrice(overview.summary.investedCapital, locale, messages.common.unavailable)} detail="Capital allocated into currently active positions." />
+          <CompactStatCard label="Invested capital" value={formatUsdPrice(overview.summary.investedCapital, locale, messages.common.unavailable)} valueTone={overview.summary.investedCapital > 0 ? 'positive' : overview.summary.investedCapital < 0 ? 'negative' : 'neutral'} detail="Capital allocated into currently active positions." />
           <CompactStatCard label="Active investments" value={String(overview.summary.activeInvestmentCount)} detail="Open simulation positions currently running." />
           <CompactStatCard label="Recent orders" value={String(overview.recentOrders.length)} detail="Most recent order events in the simulation journal." />
           <CompactStatCard label="Active mode" value={activeLane?.label ?? 'Not configured'} detail="Primary active lane for manual simulation activity." />

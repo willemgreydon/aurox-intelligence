@@ -4,13 +4,16 @@ import { MarketGraphSection } from '../../components/charts/market-graph-section
 import { getMessages } from '../../lib/i18n/messages';
 import { getRequestLocale } from '../../server/i18n/locale';
 import { getMarketGraphData } from '../../server/services/market-graph-service';
+import { perfLog, perfNow } from '../../server/lib/perf';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 30;
 
 export default async function MarketPage() {
+  const pageStart = perfNow();
   const locale = await getRequestLocale();
   const messages = getMessages(locale);
   const graph = await getMarketGraphData();
+  perfLog('page:/market total', pageStart);
 
   return (
     <>

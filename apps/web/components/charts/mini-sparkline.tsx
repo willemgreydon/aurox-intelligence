@@ -2,6 +2,8 @@ type MiniSparklineProps = {
   points: number[] | null | undefined;
   label: string;
   trend?: 'up' | 'down' | 'flat';
+  signalScore?: number;
+  showMovingAverage?: boolean;
 };
 
 function clamp(value: number, min: number, max: number) {
@@ -70,12 +72,36 @@ export function MiniSparkline({ points, label, trend }: MiniSparklineProps) {
   const height = 34;
   const linePath = buildLinePath(normalized, width, height);
   const areaPath = buildAreaPath(normalized, width, height);
+  const movingAveragePath = (() => {
+    if (normalized.length < 3) {
+      return '';
+    }
+    const maWindow = Math.min(5, normalized.length);
+    const averages = normalized.map((_, index) => {
+      const start = Math.max(0, index - maWindow + 1);
+      const segment = normalized.slice(start, index + 1);
+      const sum = segment.reduce((acc, value) => acc + value, 0);
+      return sum / Math.max(1, segment.length);
+    });
+    return buildLinePath(averages, width, height);
+  })();
+  const lastPoint = normalized.at(-1);
+  const min = Math.min(...normalized);
+  const max = Math.max(...normalized);
+  const range = Math.max(1, max - min);
+  const markerY =
+    typeof lastPoint === 'number'
+      ? height - ((lastPoint - min) / range) * height
+      : height;
+  const markerX = width;
 
   return (
     <div className={`mini-sparkline mini-sparkline--${resolvedTrend}`}>
-      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${label} mini trend`}>
+      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${label} mini trend with last price marker`}>
         <path d={areaPath} className="mini-sparkline__area" />
         <path d={linePath} className="mini-sparkline__line" />
+        {movingAveragePath ? <path d={movingAveragePath} className="mini-sparkline__ma" /> : null}
+        <circle cx={markerX} cy={clamp(markerY, 0, height)} r="2" className="mini-sparkline__marker" />
       </svg>
     </div>
   );

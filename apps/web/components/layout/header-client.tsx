@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Image from 'next/image';
 import Link from 'next/link';
@@ -29,6 +29,10 @@ type HeaderClientProps = {
     updatedAt: string;
   } | null;
   navGroups: NavGroup[];
+  portfolioSnapshot: {
+    portfolioValue: number;
+    investedCapital: number;
+  } | null;
 };
 
 function isActivePath(pathname: string, href: string) {
@@ -39,7 +43,16 @@ function isActivePath(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function HeaderClient({ locale, messages, ticker, auth, navGroups }: HeaderClientProps) {
+function formatCompactUsd(value: number) {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  }).format(value);
+}
+
+export function HeaderClient({ locale, messages, ticker, auth, navGroups, portfolioSnapshot }: HeaderClientProps) {
   const pathname = usePathname();
   const headerRef = useRef<HTMLElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -175,6 +188,22 @@ export function HeaderClient({ locale, messages, ticker, auth, navGroups }: Head
 
             <div className="site-header__actions">
               <div className="site-nav__meta site-nav__meta--desktop">
+                {auth && portfolioSnapshot ? (
+                  <div className="nav-portfolio-mini" aria-label="Portfolio summary">
+                    <span className="nav-portfolio-mini__item">
+                      <span className="nav-portfolio-mini__label">Portfolio</span>
+                      <strong className="nav-portfolio-mini__value">
+                        {formatCompactUsd(portfolioSnapshot.portfolioValue)}
+                      </strong>
+                    </span>
+                    <span className="nav-portfolio-mini__item">
+                      <span className="nav-portfolio-mini__label">Invested</span>
+                      <strong className="nav-portfolio-mini__value">
+                        {formatCompactUsd(portfolioSnapshot.investedCapital)}
+                      </strong>
+                    </span>
+                  </div>
+                ) : null}
                 <LocaleSwitcher locale={locale} label={messages.shell.language} compact />
                 <ThemeToggle />
                 {auth ? (
@@ -285,7 +314,15 @@ export function HeaderClient({ locale, messages, ticker, auth, navGroups }: Head
                   </div>
                   <div className="nav-metric-strip__item">
                     <span className="nav-metric-strip__label">Portfolio</span>
-                    <span className="nav-metric-strip__value nav-metric-strip__value--muted">—</span>
+                    <span className="nav-metric-strip__value">
+                      {portfolioSnapshot ? formatCompactUsd(portfolioSnapshot.portfolioValue) : '—'}
+                    </span>
+                  </div>
+                  <div className="nav-metric-strip__item">
+                    <span className="nav-metric-strip__label">Invested</span>
+                    <span className="nav-metric-strip__value">
+                      {portfolioSnapshot ? formatCompactUsd(portfolioSnapshot.investedCapital) : '—'}
+                    </span>
                   </div>
                   <div className="nav-metric-strip__item">
                     <span className="nav-metric-strip__label">Simulation</span>
@@ -369,3 +406,4 @@ export function HeaderClient({ locale, messages, ticker, auth, navGroups }: Head
     </>
   );
 }
+

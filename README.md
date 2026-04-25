@@ -56,17 +56,25 @@ Safety and correctness take priority over convenience:
 Web routes include:
 - `/dashboard`
 - `/market`
+- `/markets/rankings`
 - `/stocks`, `/stocks/[symbol]`
 - `/fx`, `/fx/[pair]`
 - `/signals`
 - `/forecasts`
+- `/portfolio`
 - `/invest`
+- `/invest/overview`
 - `/invest/simulation`
 - `/invest/portfolio`
 - `/invest/orders`
 - `/invest/live-readiness`
+- `/invest/accounts`
+- `/invest/broker-health`
+- `/invest/broker-modes`
 - `/invest/stocks`, `/invest/etfs`, `/invest/crypto`
 - `/admin`, `/admin/monitoring`
+- `/account`, `/account/profile`, `/account/settings`, `/account/activity`
+- `/login`, `/signup`
 
 ---
 
@@ -80,6 +88,7 @@ apps/
 packages/
   api-contracts/               # Zod schemas and shared contracts
   db/                          # SQL repositories, migrations, read models
+  ingestion/                   # Canonicalization + ingestion lifecycle
   providers/                   # External data provider adapters
   signals/                     # Pure signal logic (no I/O)
   forecasting/                 # Pure forecast logic (no I/O)
@@ -227,6 +236,7 @@ Package-level examples:
 ```bash
 pnpm --filter @repo/api-contracts typecheck
 pnpm --filter @repo/db typecheck
+pnpm --filter @repo/ingestion typecheck
 pnpm --filter @repo/providers test
 ```
 
@@ -326,11 +336,15 @@ Live microtrading docs:
 
 ## Known Baseline Issue
 
-There is an existing unrelated `apps/web` auth test typing issue in:
+As of `2026-04-25`, `pnpm --filter @repo/web typecheck` currently fails with existing issues in:
 
+- `apps/web/components/signals/signal-score-badge.tsx`
 - `apps/web/server/auth/service.test.ts`
+- `packages/agents/src/execution/execution-mode-registry.ts`
 
-This can fail full web typecheck in some runs. Treat it as baseline unless your change directly touches auth typing behavior.
+Treat these as baseline unless your change directly touches those areas. Verified passing on the same date:
+- `pnpm --filter @repo/api-contracts typecheck`
+- `pnpm --filter @repo/db typecheck`
 
 ---
 
@@ -377,4 +391,3 @@ Browser favicon caches aggressively:
 - hard refresh
 - clear site data
 - verify file in `apps/web/public/` and metadata icon config
-

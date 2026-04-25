@@ -24,6 +24,21 @@ export type CatalogAsset = InvestmentUniverseAsset & {
   isTradable: boolean;
 };
 
+export type UpsertMarketAssetInput = {
+  assetId?: string;
+  symbol: string;
+  name: string;
+  assetClass: 'stock' | 'etf' | 'crypto' | 'fx' | 'index';
+  category: string;
+  geography: string | null;
+  sector: string | null;
+  thesis: string;
+  riskSummary: string;
+  actionAvailability: ActionAvailability;
+  isSimulated: boolean;
+  isTradable: boolean;
+};
+
 function isMissingMarketAssetsError(error: unknown) {
   if (typeof error !== 'object' || error === null || !('code' in error)) {
     return false;
@@ -31,6 +46,80 @@ function isMissingMarketAssetsError(error: unknown) {
 
   const databaseError = error as { code?: string };
   return databaseError.code === '42P01' || databaseError.code === '42703';
+}
+
+function buildMarketAssetId(symbol: string, assetClass: UpsertMarketAssetInput['assetClass']) {
+  return `${assetClass}-${symbol.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+}
+
+export async function upsertMarketAssets(inputs: UpsertMarketAssetInput[]): Promise<void> {
+  if (inputs.length === 0) {
+    return;
+  }
+
+  const client = createDatabaseClient();
+  if (!client.isConfigured) {
+    return;
+  }
+
+  for (const input of inputs) {
+    const symbol = input.symbol.trim().toUpperCase();
+
+    if (!symbol) {
+      continue;
+    }
+
+    const assetId = input.assetId?.trim() || buildMarketAssetId(symbol, input.assetClass);
+
+    await client.execute(
+      `
+        insert into ${marketAssetsTable} (
+          asset_id,
+          symbol,
+          name,
+          asset_class,
+          category,
+          geography,
+          sector,
+          thesis,
+          risk_summary,
+          action_availability,
+          is_simulated,
+          is_tradable
+        ) values (
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
+        )
+        on conflict (symbol) do update
+        set
+          asset_id = excluded.asset_id,
+          name = excluded.name,
+          asset_class = excluded.asset_class,
+          category = excluded.category,
+          geography = excluded.geography,
+          sector = excluded.sector,
+          thesis = excluded.thesis,
+          risk_summary = excluded.risk_summary,
+          action_availability = excluded.action_availability,
+          is_simulated = excluded.is_simulated,
+          is_tradable = excluded.is_tradable,
+          updated_at = now()
+      `,
+      [
+        assetId,
+        symbol,
+        input.name,
+        input.assetClass,
+        input.category,
+        input.geography,
+        input.sector,
+        input.thesis,
+        input.riskSummary,
+        input.actionAvailability,
+        input.isSimulated,
+        input.isTradable,
+      ],
+    );
+  }
 }
 
 export function isAssetSimulationTradable(

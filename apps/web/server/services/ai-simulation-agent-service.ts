@@ -5,13 +5,26 @@ import type {
 } from '@repo/api-contracts';
 import { runAiSimulationAgent } from '@repo/agents';
 import {
+  getPreferredSimulationSessionForUser,
   getSimulationWorkspaceIfExists,
   getLatestMarketQuoteSnapshot,
+  getTodayAiSimulationOrderNotionalForUser,
+  getUserWatchlist,
+  insertSimulationAgentDecision,
+  linkSimulationAgentDecisionToOrder,
 } from '@repo/db';
+import { createHash } from 'node:crypto';
 import { hasOpenAiApiKey } from '../env/ai-agent-env';
 import { callOpenAiSimulationAgent } from '../lib/ai/openai-client';
 import { executeTradeForUser } from './trade-execution-service';
 import { getBrokerModeConfig } from '../config/broker-mode-registry';
+import { getInvestReadModel } from '../queries/invest-query';
+import { mapInvestOverview } from '../mappers/invest-mapper';
+import {
+  evaluateAiDailyNotionalCap,
+  mapRankedAssetsForAgent,
+  type AiDailyNotionalCapDecision,
+} from './ai-simulation-agent-guardrails';
 
 export type AiSimulationAgentServiceInput = {
   userId: string;
@@ -25,6 +38,10 @@ export type AiSimulationAgentServiceInput = {
 export type AiSimulationAgentAvailability =
   | { available: false; reason: string }
   | { available: true };
+
+const AI_SIMULATION_STRATEGY_TAG = 'ai_simulation_agent_v1';
+const AI_RANKED_QUOTE_SYMBOL_LIMIT = 40;
+const AI_RANKED_HISTORY_SYMBOL_LIMIT = 40;
 
 export function checkAiSimulationAgentAvailability(): AiSimulationAgentAvailability {
   if (!hasOpenAiApiKey()) {
@@ -60,6 +77,7 @@ function buildUnavailableResult(
     requestedAt,
     processedAt: new Date().toISOString(),
     agentVersion: 'v1',
+    decisionAuditId: null,
     autonomyMode: input.autonomyMode,
     capSettings: {
       maxNotionalPerTrade: input.maxNotionalPerTrade,
@@ -69,6 +87,78 @@ function buildUnavailableResult(
     tradeSubmitted: false,
     tradeError: null,
   };
+}
+
+function buildRankedSnapshotHash(rankedAssets: AiSimulationAgentRequest['rankedAssets']): string | null {
+  if (rankedAssets.length === 0) {
+    return null;
+  }
+
+  const payload = JSON.stringify(
+    rankedAssets.map((asset) => ({
+      symbol: asset.symbol,
+      assetKind: asset.assetKind,
+      recommendation: asset.recommendation,
+      score: asset.score,
+      confidence: asset.confidence,
+      explanation: asset.explanation,
+      riskSummary: asset.riskSummary,
+      signalSummary: asset.signalSummary,
+    })),
+  );
+
+  return createHash('sha256').update(payload).digest('hex');
+}
+
+async function enforceAiDailyNotionalCapForUser(input: {
+  userId: string;
+  proposedNotional: number;
+  maxDailyNotional: number;
+  laneId?: string | null;
+}): Promise<AiDailyNotionalCapDecision> {
+  try {
+    const usedToday = await getTodayAiSimulationOrderNotionalForUser(
+      input.userId,
+      AI_SIMULATION_STRATEGY_TAG,
+      input.laneId ?? null,
+    );
+    return evaluateAiDailyNotionalCap({
+      usedToday,
+      proposedNotional: input.proposedNotional,
+      maxDailyNotional: input.maxDailyNotional,
+    });
+  } catch {
+    return {
+      allowed: false,
+      reason:
+        'Daily notional cap check failed because AI order usage could not be loaded safely.',
+      usedToday: 0,
+      remaining: 0,
+    };
+  }
+}
+
+async function loadRankedAssetsForAgentContext(
+  userId: string,
+  openPositionSymbols: string[],
+): Promise<AiSimulationAgentRequest['rankedAssets']> {
+  try {
+    const watchlist = await getUserWatchlist(userId);
+    const preferredSymbols = [
+      ...new Set([...openPositionSymbols, ...watchlist.map((item) => item.symbol)]),
+    ];
+    const readModel = await getInvestReadModel({
+      quoteSymbolLimit: AI_RANKED_QUOTE_SYMBOL_LIMIT,
+      includeHistory: true,
+      historySymbolLimit: AI_RANKED_HISTORY_SYMBOL_LIMIT,
+      preferredSymbols,
+      pageContext: 'ai-simulation-agent',
+    });
+    const overview = mapInvestOverview(readModel);
+    return mapRankedAssetsForAgent(overview.rankedAssets);
+  } catch {
+    return [];
+  }
 }
 
 export async function runAiSimulationAgentForUser(
@@ -94,9 +184,10 @@ export async function runAiSimulationAgentForUser(
       unrealizedPnl: p.unrealizedPnl,
     })) ?? [];
 
-  // Ranked assets: in v1, not yet wired to @repo/ai-market-intelligence.
-  // Future slice will inject real ranked assets here.
-  const rankedAssets: AiSimulationAgentRequest['rankedAssets'] = [];
+  const rankedAssets = await loadRankedAssetsForAgentContext(
+    input.userId,
+    openPositions.map((position) => position.symbol),
+  );
 
   let marketFreshnessNote = 'No market data available — agent will default to HOLD.';
   const firstSymbol = openPositions[0]?.symbol;
@@ -136,6 +227,33 @@ export async function runAiSimulationAgentForUser(
   }
 
   const decision = agentResult.value;
+  const session = await getPreferredSimulationSessionForUser(input.userId, null).catch(() => null);
+  const decisionAudit = await insertSimulationAgentDecision({
+    userId: input.userId,
+    accountId: workspace?.summary.accountId ?? null,
+    portfolioId: workspace?.summary.portfolioId ?? null,
+    sessionId: session?.id ?? null,
+    laneId: session?.laneId ?? null,
+    mode: input.autonomyMode,
+    action: decision.action,
+    symbol: decision.symbol,
+    assetClass: decision.assetClass,
+    confidence: decision.confidence,
+    proposedNotional: decision.proposedOrder?.notional ?? decision.notional ?? null,
+    maxNotionalPerTrade: input.maxNotionalPerTrade,
+    maxDailyNotional: input.maxDailyNotional,
+    rankedSnapshotHash: buildRankedSnapshotHash(agentRequest.rankedAssets),
+    decisionJson: {
+      decision,
+      capSettings: agentRequest.capSettings,
+      generatedAt: agentRequest.generatedAt,
+      marketFreshnessNote: agentRequest.marketFreshnessNote,
+      rankedAssetCount: agentRequest.rankedAssets.length,
+    },
+    rejectedReason: decision.rejectedReason,
+  }).catch(() => null);
+
+  const decisionAuditId = decisionAudit?.id ?? null;
   let tradeSubmitted = false;
   let tradeError: string | null = null;
 
@@ -151,28 +269,52 @@ export async function runAiSimulationAgentForUser(
     if (config === null || config.executionTarget !== 'simulation') {
       tradeError = 'Autonomous execution rejected: invalid or non-simulation mode config.';
     } else {
-      const tradeResult = await executeTradeForUser(
-        {
-          accountId: input.userId,
-          modeId: decision.proposedOrder.modeId,
-          source: 'ai_autonomous',
-          symbol: decision.proposedOrder.symbol,
-          assetKind: decision.proposedOrder.assetClass,
-          side: decision.proposedOrder.side,
-          sizingMode: 'notional',
-          notional: decision.proposedOrder.notional,
-          thesis: decision.reasoning,
-          confidence: decision.confidence,
-          strategyTag: 'ai_simulation_agent_v1',
-        },
-        config,
-        input.userId,
-      );
+      const dailyCapCheck = await enforceAiDailyNotionalCapForUser({
+        userId: input.userId,
+        proposedNotional: decision.proposedOrder.notional,
+        maxDailyNotional: input.maxDailyNotional,
+        laneId: session?.laneId ?? null,
+      });
 
-      if (tradeResult.ok) {
-        tradeSubmitted = true;
+      if (!dailyCapCheck.allowed) {
+        tradeError = dailyCapCheck.reason;
       } else {
-        tradeError = tradeResult.error;
+        const tradeResult = await executeTradeForUser(
+          {
+            accountId: input.userId,
+            modeId: decision.proposedOrder.modeId,
+            source: 'ai_autonomous',
+            symbol: decision.proposedOrder.symbol,
+            assetKind: decision.proposedOrder.assetClass,
+            side: decision.proposedOrder.side,
+            sizingMode: 'notional',
+            notional: decision.proposedOrder.notional,
+            thesis: decision.reasoning,
+            confidence: decision.confidence,
+            strategyTag: AI_SIMULATION_STRATEGY_TAG,
+          },
+          config,
+          input.userId,
+        );
+
+        if (tradeResult.ok) {
+          tradeSubmitted = true;
+          if (decisionAuditId) {
+            await linkSimulationAgentDecisionToOrder({
+              decisionId: decisionAuditId,
+              simulationOrderId: tradeResult.value.order.orderId,
+              userId: input.userId,
+              linkType: 'autonomous_submission',
+              accountId: workspace?.summary.accountId ?? null,
+              portfolioId: workspace?.summary.portfolioId ?? null,
+              sessionId: session?.id ?? null,
+              laneId: session?.laneId ?? null,
+              notional: decision.proposedOrder.notional,
+            }).catch(() => undefined);
+          }
+        } else {
+          tradeError = tradeResult.error;
+        }
       }
     }
   }
@@ -182,6 +324,7 @@ export async function runAiSimulationAgentForUser(
     requestedAt,
     processedAt: new Date().toISOString(),
     agentVersion: 'v1',
+    decisionAuditId,
     autonomyMode: input.autonomyMode,
     capSettings: agentRequest.capSettings,
     tradeSubmitted,
@@ -194,7 +337,10 @@ export async function confirmAiSimulationTrade(
   proposedOrder: AiSimulationProposedOrder,
   reasoning: string,
   confidence: number,
+  maxDailyNotional?: number | null,
+  decisionAuditId?: string | null,
 ): Promise<{ ok: boolean; error?: string }> {
+  const session = await getPreferredSimulationSessionForUser(userId, null).catch(() => null);
   const config = getBrokerModeConfig(proposedOrder.modeId);
 
   if (config === null) {
@@ -203,6 +349,19 @@ export async function confirmAiSimulationTrade(
 
   if (config.executionTarget !== 'simulation') {
     return { ok: false, error: 'Confirmation rejected: execution target is not simulation.' };
+  }
+
+  if (typeof maxDailyNotional === 'number') {
+    const dailyCapCheck = await enforceAiDailyNotionalCapForUser({
+      userId,
+      proposedNotional: proposedOrder.notional,
+      maxDailyNotional,
+      laneId: session?.laneId ?? null,
+    });
+
+    if (!dailyCapCheck.allowed) {
+      return { ok: false, error: dailyCapCheck.reason };
+    }
   }
 
   const result = await executeTradeForUser(
@@ -217,13 +376,28 @@ export async function confirmAiSimulationTrade(
       notional: proposedOrder.notional,
       thesis: reasoning,
       confidence,
-      strategyTag: 'ai_simulation_agent_v1',
+      strategyTag: AI_SIMULATION_STRATEGY_TAG,
     },
     config,
     userId,
   );
 
   if (result.ok) {
+    if (decisionAuditId) {
+      const workspace = await getSimulationWorkspaceIfExists(userId).catch(() => null);
+      await linkSimulationAgentDecisionToOrder({
+        decisionId: decisionAuditId,
+        simulationOrderId: result.value.order.orderId,
+        userId,
+        linkType: 'human_confirmation',
+        accountId: workspace?.summary.accountId ?? null,
+        portfolioId: workspace?.summary.portfolioId ?? null,
+        sessionId: session?.id ?? null,
+        laneId: session?.laneId ?? null,
+        notional: proposedOrder.notional,
+      }).catch(() => undefined);
+    }
+
     return { ok: true };
   }
 

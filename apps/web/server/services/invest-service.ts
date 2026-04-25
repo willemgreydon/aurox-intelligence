@@ -1,16 +1,29 @@
 import type { Locale } from '@repo/api-contracts';
 import type { AppMessages } from '../../lib/i18n/messages';
 import { mapInvestOverview, mapInvestOverviewViewModel, type InvestOverviewViewModel } from '../mappers/invest-mapper';
-import { getInvestReadModel, type InvestReadModelOptions } from '../queries/invest-query';
+import { perfLog, perfNow } from '../lib/perf';
+import { getInvestReadModelCached, type InvestReadModelOptions } from '../queries/invest-query';
 
 export async function getInvestOverviewData(
   locale: Locale = 'en',
   messages?: AppMessages,
   options: InvestReadModelOptions = {},
 ): Promise<InvestOverviewViewModel> {
-  const readModel = await getInvestReadModel(options);
+  const t0 = perfNow();
+  const readModel = await getInvestReadModelCached(
+    typeof options.quoteSymbolLimit === 'number' ? options.quoteSymbolLimit : null,
+    typeof options.historySymbolLimit === 'number' ? options.historySymbolLimit : null,
+    options.includeHistory ?? true,
+    (options.preferredSymbols ?? []).join(','),
+    options.pageContext?.trim() || 'invest',
+    options.assetClassFilter ?? null,
+    typeof options.page === 'number' ? options.page : null,
+    typeof options.pageSize === 'number' ? options.pageSize : null,
+  );
+  perfLog('invest-service:query', t0);
+  const tMapper = perfNow();
   const snapshot = mapInvestOverview(readModel);
-  return mapInvestOverviewViewModel(
+  const viewModel = mapInvestOverviewViewModel(
     snapshot,
     locale,
     messages,
@@ -25,4 +38,7 @@ export async function getInvestOverviewData(
     readModel.hasNextPage,
     readModel.hasPreviousPage,
   );
+  perfLog('invest-service:mapper', tMapper);
+  perfLog('invest-service:total', t0);
+  return viewModel;
 }

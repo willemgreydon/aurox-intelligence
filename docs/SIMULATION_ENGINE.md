@@ -195,6 +195,15 @@ Simulation activity is organized into sessions:
   AND `observationStatus` is not `error` or `degraded`
 - The workstation derives `isReadOnly` from session state — all trade actions check this
 
+### AI Simulation Agent v1.1 guardrails
+
+- Ranked intelligence context is injected from the existing invest ranking pipeline and capped
+  before prompt construction.
+- Daily fictive notional caps are enforced server-side before autonomous or confirmed
+  AI-sourced simulation submissions.
+- If daily usage cannot be determined safely, AI execution is rejected (fail closed).
+- Read-only sessions disable AI simulation execution in both UI controls and server actions.
+
 ---
 
 ## 11. Asset Scope and Lane Enforcement

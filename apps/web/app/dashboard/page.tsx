@@ -32,6 +32,7 @@ import { getDashboardMarketAnalyticsData } from '../../server/services/dashboard
 import { getStocksOverviewData } from '../../server/services/stocks-service';
 import { getWorkspacePreferences } from '../../server/services/workspace-service';
 import { getRequestLocale } from '../../server/i18n/locale';
+import { getMarketQueryInitialLimit } from '../../server/lib/market-runtime-config';
 
 type StockSnapshotRow = {
   symbol: string;
@@ -61,7 +62,7 @@ type DashboardRequestLoaders = {
   transactionsPromise: Promise<UserTransactionsData>;
 };
 
-const DASHBOARD_STOCK_SYMBOL_LIMIT = 64;
+const DASHBOARD_STOCK_SYMBOL_LIMIT = getMarketQueryInitialLimit();
 
 function getSearchParamValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] ?? null : value ?? null;
@@ -73,13 +74,13 @@ function withDevTiming<T>(label: string, load: () => Promise<T>): Promise<T> {
   return load()
     .then((result) => {
       if (dev) {
-        console.debug(`[dashboard-loader] ${label}: ${(performance.now() - start).toFixed(0)}ms`);
+        console.debug(`[perf] dashboard-loader:${label} ${(performance.now() - start).toFixed(0)}ms`);
       }
       return result;
     })
     .catch((error) => {
       if (dev) {
-        console.debug(`[dashboard-loader] ${label} failed after ${(performance.now() - start).toFixed(0)}ms`);
+        console.debug(`[perf] dashboard-loader:${label}:error ${(performance.now() - start).toFixed(0)}ms`);
       }
       throw error;
     });

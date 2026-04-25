@@ -60,6 +60,7 @@ export const aiSimulationRankedAssetContextSchema = z.object({
   score: z.number().min(-1).max(1),
   confidence: z.number().min(0).max(1),
   recommendation: z.string(),
+  explanation: z.string(),
   signalSummary: z.string(),
   riskSummary: z.string(),
 });
@@ -86,6 +87,7 @@ export const aiSimulationAgentResultSchema = z.object({
   requestedAt: z.string(),
   processedAt: z.string(),
   agentVersion: z.literal('v1'),
+  decisionAuditId: z.string().nullable().optional(),
   autonomyMode: aiSimulationAutonomyModeSchema,
   capSettings: aiSimulationCapSettingsSchema,
   tradeSubmitted: z.boolean(),

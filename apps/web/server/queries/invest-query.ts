@@ -2,7 +2,13 @@ import { getLinkedInvestmentAccounts, listCatalogAssets, type CatalogAsset } fro
 import { getProviderEnv, getSparkasseGeorgeConnectionCapability, type ProviderMarketObservation } from '@repo/providers';
 import type { ConnectedInvestmentAccount } from '@repo/api-contracts';
 import { unstable_cache } from 'next/cache';
-import { loadMiniHistorySeries, loadQuoteSnapshots } from '../services/stock-simulation-service';
+import { cache } from 'react';
+import { hashSymbols } from '../lib/cache-key';
+import { perfLog, perfNow } from '../lib/perf';
+import {
+  loadMiniHistorySeriesRequestScoped,
+  loadQuoteSnapshots,
+} from '../services/stock-simulation-service';
 
 export type InvestReadModel = {
   provider: string;
@@ -121,7 +127,8 @@ function buildInvestCacheKey(provider: string, assets: CatalogAsset[], options: 
     `pageSize=${options.pageSize ?? 'all'}`,
     `historyRange=30`,
     `historyLimit=${options.includeHistory ? options.historySymbolLimit : 0}`,
-    `symbols=${symbols.join(',')}`,
+    `symbolHash=${hashSymbols(symbols)}`,
+    `symbolCount=${symbols.length}`,
   ].join('|');
 }
 
@@ -149,11 +156,12 @@ function setCacheEntry(key: string, data: InvestReadModel) {
 
 export async function getInvestReadModel(options: InvestReadModelOptions = {}): Promise<InvestReadModel> {
   const resolvedOptions = resolveOptions(options);
-  const dev = process.env.NODE_ENV === 'development';
-  const t0 = dev ? performance.now() : 0;
+  const t0 = perfNow();
   const provider = getProviderEnv().MARKET_DATA_PROVIDER;
 
+  const tDb = perfNow();
   const [catalogAssets, linkedAccounts] = await Promise.all([loadCatalogAssets(), loadLinkedAccounts()]);
+  perfLog('invest-query:db-read-models', tDb);
   const scopedCatalogAssets =
     resolvedOptions.assetClassFilter === null
       ? catalogAssets
@@ -179,27 +187,22 @@ export async function getInvestReadModel(options: InvestReadModelOptions = {}): 
   const cacheKey = buildInvestCacheKey(provider, assets, resolvedOptions);
   const cached = getFreshCacheEntry(cacheKey);
   if (cached) {
-    if (dev) {
-      console.debug(`[invest-query] cache hit context=${resolvedOptions.pageContext} symbols=${assets.length}: ${(performance.now() - t0).toFixed(0)}ms`);
-    }
+    perfLog(`invest-query:cache-hit context=${resolvedOptions.pageContext} symbols=${assets.length}`, t0);
     return cached;
   }
 
   const bankConnections = [getSparkasseGeorgeConnectionCapability()];
   const assetIdBySymbol: ReadonlyMap<string, string> = new Map(assets.map((asset) => [asset.symbol, asset.assetId]));
 
-  if (dev) {
-    console.debug(`[invest-query] cache miss context=${resolvedOptions.pageContext} symbols=${assets.length}/${scopedCatalogAssets.length}`);
-    console.debug(`[invest-query] catalog+accounts: ${(performance.now() - t0).toFixed(0)}ms`);
-  }
+  perfLog(`invest-query:cache-miss context=${resolvedOptions.pageContext} symbols=${assets.length}/${scopedCatalogAssets.length}`, t0);
 
   let result: InvestReadModel;
 
   try {
     const symbols = assets.map((item) => item.symbol);
-    const t1 = dev ? performance.now() : 0;
+    const t1 = perfNow();
     const quotes = await loadQuoteSnapshots(symbols, assetIdBySymbol);
-    if (dev) console.debug(`[invest-query] quotes (${symbols.length}): ${(performance.now() - t1).toFixed(0)}ms`);
+    perfLog(`invest-query:provider-fetch symbols=${symbols.length}`, t1);
 
     const symbolsWithQuotes = quotes
       .filter((item) => typeof item.price === 'number')
@@ -209,12 +212,13 @@ export async function getInvestReadModel(options: InvestReadModelOptions = {}): 
     const historySymbols = resolvedOptions.includeHistory
       ? symbolsWithQuotes.slice(0, resolvedOptions.historySymbolLimit)
       : [];
-    const t2 = dev ? performance.now() : 0;
+    const t2 = perfNow();
+    const historyKey = historySymbols.join(',');
     const historySeriesBySymbol =
       historySymbols.length > 0
-        ? await loadMiniHistorySeries(historySymbols, 30).catch(() => ({}))
+        ? await loadMiniHistorySeriesRequestScoped(historyKey, 30).catch(() => ({}))
         : {};
-    if (dev) console.debug(`[invest-query] history (${historySymbols.length}): ${(performance.now() - t2).toFixed(0)}ms`);
+    perfLog(`invest-query:history-fetch symbols=${historySymbols.length}`, t2);
 
     const quoteBySymbol = new Map(quotes.map((item) => [item.symbol, item]));
 
@@ -265,8 +269,31 @@ export async function getInvestReadModel(options: InvestReadModelOptions = {}): 
     };
   }
 
-  if (dev) console.debug(`[invest-query] total: ${(performance.now() - t0).toFixed(0)}ms`);
+  perfLog('invest-query:total', t0);
 
   setCacheEntry(cacheKey, result);
   return result;
 }
+
+export const getInvestReadModelCached = cache(
+  async (
+    quoteSymbolLimit: number | null,
+    historySymbolLimit: number | null,
+    includeHistory: boolean,
+    preferredSymbolsKey: string,
+    pageContext: string,
+    assetClassFilter: CatalogAsset['assetClass'] | null,
+    page: number | null,
+    pageSize: number | null,
+  ): Promise<InvestReadModel> =>
+    getInvestReadModel({
+      ...(typeof quoteSymbolLimit === 'number' ? { quoteSymbolLimit } : {}),
+      ...(typeof historySymbolLimit === 'number' ? { historySymbolLimit } : {}),
+      includeHistory,
+      preferredSymbols: preferredSymbolsKey ? preferredSymbolsKey.split(',') : [],
+      pageContext,
+      ...(assetClassFilter ? { assetClassFilter } : {}),
+      ...(typeof page === 'number' ? { page } : {}),
+      ...(typeof pageSize === 'number' ? { pageSize } : {}),
+    }),
+);

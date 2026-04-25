@@ -7,11 +7,16 @@ import { CompactStatCard } from '../../../../components/stats/compact-stat-card'
 import { Section } from '../../../../components/ui/section';
 import { Card } from '../../../../components/ui/card';
 import { SimulatedOrderForm, WatchlistToggleForm } from '../../../../components/invest/simulation-action-form';
+import { SignalSummary } from '../../../../components/signals/signal-summary';
+import { TradeRiskOverlay } from '../../../../components/invest/trade-risk-overlay';
 import { getMessages } from '../../../../lib/i18n/messages';
 import { formatDateTimeLabel, formatShortDateLabel } from '../../../../lib/formatters';
 import { getRequestLocale } from '../../../../server/i18n/locale';
 import { formatFreshnessLabel, formatPercentChange, formatUsdPrice, getQuoteTimestamp } from '../../../../server/lib/quote-display';
+import { getOptionalCurrentSession } from '../../../../server/auth/session';
 import { getInvestableAssetDetailPageData } from '../../../../server/services/stock-simulation-service';
+import { getSimulationSessionTradingContextForUser } from '../../../../server/services/simulation-workstation-service';
+import { deriveAssetDecisionIntelligence } from '../../../../server/services/decision-intelligence-service';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,6 +37,57 @@ export default async function EtfDetailPage({ params }: EtfDetailPageProps) {
   if (!asset) {
     notFound();
   }
+  const decision = deriveAssetDecisionIntelligence({
+    symbol: asset.asset.symbol,
+    assetClass: 'etf',
+    history: asset.history.map((point) => point.close),
+    latestPrice: asset.quote?.price ?? null,
+    dayMovePercent: asset.quote?.changePercent ?? null,
+    quantity: asset.position?.quantity ?? 1,
+    portfolioValue: asset.position?.marketValue ? Math.max(asset.position.marketValue * 4, 10000) : 100000,
+    existingExposure: asset.position?.marketValue ?? 0,
+  });
+
+  const auth = await getOptionalCurrentSession();
+  const sessionContext = auth
+    ? await getSimulationSessionTradingContextForUser(auth.user.id).catch(() => null)
+    : null;
+  const isSimulationTradable =
+    asset.asset.isSimulated &&
+    asset.asset.isTradable &&
+    asset.asset.actionAvailability !== 'unavailable';
+  const isQuoteFresh =
+    quoteTimestamp !== null &&
+    Number.isFinite(new Date(quoteTimestamp).getTime()) &&
+    Date.now() - new Date(quoteTimestamp).getTime() <= 15 * 60 * 1000;
+  const disabledReason = (() => {
+    if (!isSimulationTradable) {
+      return 'Simulation trading for this asset is not active yet.';
+    }
+
+    if (!sessionContext || !sessionContext.sessionId) {
+      return 'Start the manual multi-asset simulation lane to place ETF simulation orders.';
+    }
+
+    if (sessionContext.isReadOnly) {
+      return sessionContext.statusMessage;
+    }
+
+    if (sessionContext.laneId !== 'manual_multi_asset_lane') {
+      return 'Switch to the manual multi-asset lane to simulate ETF orders.';
+    }
+
+    if (sessionContext.assetScope !== 'multi-asset' && sessionContext.assetScope !== 'etf') {
+      return `The active session is scoped to ${sessionContext.assetScope?.toUpperCase() ?? 'another asset class'} assets.`;
+    }
+
+    if (!isQuoteFresh) {
+      return `Fresh ETF quote required for ${asset.asset.symbol} before simulation execution.`;
+    }
+
+    return undefined;
+  })();
+  const tradingDisabled = Boolean(disabledReason);
 
   return (
     <>
@@ -60,6 +116,8 @@ export default async function EtfDetailPage({ params }: EtfDetailPageProps) {
         <div className="analytics-strip">
           <CompactStatCard label={messages.common.currentQuote} value={formatUsdPrice(asset.quote?.price ?? null, locale, messages.common.unavailable)} detail="Latest cached or live quote available for this ETF." />
           <CompactStatCard label={messages.common.dailyMove} value={formatPercentChange(asset.quote?.changePercent ?? null, messages.common.partial)} detail="Current day-over-day move from the most recent quote." />
+          <CompactStatCard label="Signal" value={`${decision.signal.label} (${decision.signal.score.toFixed(2)})`} detail={`Confidence ${(decision.signal.confidence * 100).toFixed(0)}%`} />
+          <CompactStatCard label="Risk" value={decision.risk.label} detail={`Exposure impact ${decision.risk.exposureImpactPercent.toFixed(2)}%`} />
           <CompactStatCard label="Tradability" value={asset.asset.isTradable ? 'Paper tradable' : 'Browse only'} detail="ETF simulation is supported in manual multi-asset lanes." />
           <CompactStatCard label="Position" value={asset.position ? `${asset.position.quantity.toFixed(4)} units` : 'No holding'} detail="Current holding context for the signed-in simulation account." />
         </div>
@@ -110,6 +168,14 @@ export default async function EtfDetailPage({ params }: EtfDetailPageProps) {
               <div className="analytics-card__body">
                 <p>{asset.asset.thesis}</p>
                 <p>{asset.asset.riskSummary}</p>
+                <SignalSummary
+                  score={decision.signal.score}
+                  label={decision.signal.label}
+                  confidence={decision.signal.confidence}
+                  explanation={decision.signal.explanation}
+                  indicators={decision.signal.contributingIndicators}
+                  visualState={decision.signal.visualState}
+                />
               </div>
               <div className="analytics-card__action-grid">
                 <WatchlistToggleForm
@@ -119,8 +185,8 @@ export default async function EtfDetailPage({ params }: EtfDetailPageProps) {
                   active={asset.isWatched}
                   label={asset.isWatched ? messages.dashboard.removeFromWatchlist : messages.dashboard.addToWatchlist}
                 />
-                <SimulatedOrderForm assetId={asset.asset.assetId} symbol={asset.asset.symbol} assetClass="etf" side="buy" strategyLaneId="manual_multi_asset_lane" label={messages.dashboard.buySimulated} showQuantityInput quantityLabel={messages.simulation.quantity} />
-                <SimulatedOrderForm assetId={asset.asset.assetId} symbol={asset.asset.symbol} assetClass="etf" side="sell" strategyLaneId="manual_multi_asset_lane" label={messages.dashboard.sellSimulated} showQuantityInput quantityLabel={messages.simulation.quantity} />
+                <SimulatedOrderForm assetId={asset.asset.assetId} symbol={asset.asset.symbol} assetClass="etf" side="buy" strategyLaneId="manual_multi_asset_lane" simulationSessionId={sessionContext?.sessionId ?? undefined} label={messages.dashboard.buySimulated} showQuantityInput quantityLabel={messages.simulation.quantity} disabled={tradingDisabled} disabledReason={disabledReason} />
+                <SimulatedOrderForm assetId={asset.asset.assetId} symbol={asset.asset.symbol} assetClass="etf" side="sell" strategyLaneId="manual_multi_asset_lane" simulationSessionId={sessionContext?.sessionId ?? undefined} label={messages.dashboard.sellSimulated} showQuantityInput quantityLabel={messages.simulation.quantity} disabled={tradingDisabled} disabledReason={disabledReason} />
               </div>
             </Card>
             <DetailSlotCard
@@ -132,6 +198,16 @@ export default async function EtfDetailPage({ params }: EtfDetailPageProps) {
                 `Geography: ${asset.asset.geography ?? 'Unavailable'}`,
                 `Quote source: ${asset.quote?.source ?? messages.common.unavailable}`,
               ]}
+            />
+            <TradeRiskOverlay
+              maxPositionSizeSuggestion={Math.max(asset.position?.marketValue ?? 0, 5000)}
+              estimatedVolatility={Math.max(0.001, decision.risk.exposureImpactPercent / 100)}
+              drawdownWarning={decision.risk.drawdownWarning}
+              liquidityWarning={decision.risk.liquidityWarning}
+              stopLossSuggestion={decision.risk.stopLossSuggestion}
+              exposureImpactPercent={decision.risk.exposureImpactPercent}
+              concentrationWarning={decision.risk.concentrationWarning}
+              riskLevel={decision.risk.label}
             />
           </div>
         </div>

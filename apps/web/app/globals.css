@@ -698,11 +698,40 @@ code,
 .theme-toggle__icon {
   width: 1.5rem;
   text-align: center;
+  font-size: 1rem;
+  line-height: 1;
 }
 
 .theme-toggle__label {
   color: var(--text-secondary);
   font-size: var(--font-size-sm);
+}
+
+.nav-portfolio-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-right: var(--space-1);
+}
+
+.nav-portfolio-mini__item {
+  display: grid;
+  gap: 0.12rem;
+  text-align: right;
+}
+
+.nav-portfolio-mini__label {
+  color: var(--text-tertiary);
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.nav-portfolio-mini__value {
+  color: var(--text-primary);
+  font-family: var(--font-family-mono);
+  font-size: 0.72rem;
+  font-weight: var(--font-weight-semibold);
 }
 
 .mobile-nav-shell {
@@ -2700,6 +2729,18 @@ code,
   line-height: 1;
 }
 
+.analytics-stat__value--positive {
+  color: var(--status-success-text);
+}
+
+.analytics-stat__value--negative {
+  color: var(--status-danger-text);
+}
+
+.analytics-stat__value--neutral {
+  color: var(--text-primary);
+}
+
 .analytics-stat__detail {
   font-size: var(--font-size-sm);
 }
@@ -4522,7 +4563,7 @@ code,
 /* Overlay account/portfolio metric strip (mobile menu + future nav surfaces) */
 .nav-metric-strip {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--space-2);
   padding: var(--space-3);
   margin-bottom: var(--space-4);
@@ -5096,6 +5137,38 @@ code,
   opacity: 0.2;
 }
 
+.mini-sparkline__ma {
+  fill: none;
+  stroke: color-mix(in srgb, var(--text-primary) 72%, white 28%);
+  stroke-width: 1.2;
+  stroke-dasharray: 2.4 2;
+  opacity: 0.95;
+}
+
+.mini-sparkline__vol-band {
+  fill: none;
+  stroke: color-mix(in srgb, var(--text-tertiary) 65%, transparent);
+  stroke-width: 0.9;
+  opacity: 0.65;
+}
+
+.mini-sparkline__signal-marker {
+  stroke: color-mix(in srgb, var(--surface-base) 88%, black 12%);
+  stroke-width: 0.7;
+}
+
+.mini-sparkline__signal-marker--bullish {
+  fill: var(--status-success-text);
+}
+
+.mini-sparkline__signal-marker--bearish {
+  fill: var(--status-danger-text);
+}
+
+.mini-sparkline__signal-marker--neutral {
+  fill: var(--status-info-text);
+}
+
 .mini-sparkline--up .mini-sparkline__line {
   stroke: var(--status-success-text);
 }
@@ -5166,6 +5239,58 @@ code,
 
 .market-card__actions {
   grid-template-columns: repeat(auto-fit, minmax(9.2rem, 1fr));
+}
+
+.signal-score-meter {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.signal-score-meter__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
+.signal-score-meter__row strong {
+  color: var(--text-primary);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+}
+
+.signal-score-meter__track {
+  height: 0.42rem;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--surface-raised) 88%, var(--border-subtle));
+  overflow: hidden;
+}
+
+.signal-score-meter__score-fill,
+.signal-score-meter__confidence-fill {
+  height: 100%;
+  border-radius: inherit;
+}
+
+.signal-score-meter__confidence-fill {
+  background: color-mix(in srgb, var(--text-primary) 82%, var(--text-accent));
+}
+
+.signal-score-meter--bullish .signal-score-meter__score-fill {
+  background: var(--status-success-text);
+}
+
+.signal-score-meter--bearish .signal-score-meter__score-fill {
+  background: var(--status-danger-text);
+}
+
+.signal-score-meter--neutral .signal-score-meter__score-fill {
+  background: var(--status-info-text);
+}
+
+.signal-score-meter--insufficient .signal-score-meter__score-fill {
+  background: var(--status-warning-text);
 }
 
 .market-list {

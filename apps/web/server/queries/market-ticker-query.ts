@@ -1,6 +1,8 @@
 import {
   type ProviderMarketObservation,
 } from '@repo/providers';
+import { unstable_cache } from 'next/cache';
+import { perfLog, perfNow } from '../lib/perf';
 import { loadQuoteSnapshots } from '../services/stock-simulation-service';
 
 const tickerUniverse = [
@@ -22,11 +24,17 @@ export type MarketTickerReadModel = {
   sourceSummary: string;
 };
 
+const loadTickerQuotes = unstable_cache(
+  async () => loadQuoteSnapshots(tickerUniverse.map((item) => item.symbol)),
+  ['market-ticker-quotes-v1'],
+  { revalidate: 20 },
+);
+
 export async function getMarketTickerReadModel(): Promise<MarketTickerReadModel> {
-  const symbols = tickerUniverse.map((item) => item.symbol);
+  const t0 = perfNow();
 
   try {
-    const quotes = await loadQuoteSnapshots(symbols);
+    const quotes = await loadTickerQuotes();
     const observations: ProviderMarketObservation[] = quotes.flatMap((item) =>
       typeof item.price === 'number'
         ? [{
@@ -63,5 +71,7 @@ export async function getMarketTickerReadModel(): Promise<MarketTickerReadModel>
       fallbackProvider: null,
       sourceSummary: 'Ticker snapshot is currently unavailable from cache and live provider refresh.',
     };
+  } finally {
+    perfLog('market-ticker-query:total', t0);
   }
 }

@@ -1,5 +1,6 @@
 import type { Locale } from '@repo/api-contracts';
 import { getMarketTickerData } from '../../server/services/market-ticker-service';
+import { getSimulationOverviewDataForUser } from '../../server/services/stock-simulation-service';
 import type { NavGroup } from './site-nav';
 import { getOptionalCurrentSession } from '../../server/auth/session';
 import type { AppMessages } from '../../lib/i18n/messages';
@@ -15,6 +16,14 @@ export async function Header({ locale, messages }: HeaderProps) {
     getMarketTickerData(locale, messages),
     getOptionalCurrentSession(),
   ]);
+  const portfolioSnapshot = auth
+    ? await getSimulationOverviewDataForUser(auth.user.id)
+      .then((overview) => ({
+        portfolioValue: overview.summary.portfolioValue,
+        investedCapital: overview.summary.investedCapital,
+      }))
+      .catch(() => null)
+    : null;
   const navGroups: NavGroup[] = [
     {
       id: 'markets',
@@ -75,6 +84,7 @@ export async function Header({ locale, messages }: HeaderProps) {
           : null
       }
       navGroups={navGroups}
+      portfolioSnapshot={portfolioSnapshot}
     />
   );
 }

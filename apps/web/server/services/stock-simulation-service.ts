@@ -1,5 +1,6 @@
 'use server';
 
+import { cache } from 'react';
 import {
   getCatalogAssetBySymbol,
   getMarketHistoryBarsBySymbols,
@@ -18,13 +19,20 @@ import {
 } from '@repo/db';
 import { fetchMarketHistory, fetchMarketSnapshot, getProviderEnv } from '@repo/providers';
 import { getOptionalCurrentSession, requireCurrentSession } from '../auth/session';
+import { hashSymbols } from '../lib/cache-key';
+import {
+  getMarketCatalogCacheTtlMs,
+  getMarketHistoryCacheTtlMs,
+  getMarketSnapshotCacheTtlMs,
+} from '../lib/market-runtime-config';
+import { perfLog, perfNow } from '../lib/perf';
 import { buildSimulationActivityLanes, type SimulationActivityLane } from './simulation-activity-lanes';
 
-const QUOTE_STALE_MS = 15 * 60 * 1000;
+const SIMULATION_QUOTE_MAX_AGE_MS = 15 * 60 * 1000;
+const QUOTE_STALE_MS = SIMULATION_QUOTE_MAX_AGE_MS;
 const HISTORY_STALE_MS = 18 * 60 * 60 * 1000;
-const QUOTE_CACHE_TTL_MS = 45 * 1000;
-const HISTORY_SERIES_CACHE_TTL_MS = 10 * 60 * 1000;
 const PROVIDER_ERROR_CACHE_TTL_MS = 10 * 1000;
+const CATALOG_SYMBOL_CACHE_ERROR_TTL_MS = 30 * 1000;
 
 type CacheEntry<T> = {
   value: T;
@@ -35,6 +43,7 @@ const quoteSnapshotCache = new Map<string, CacheEntry<PersistedMarketQuoteSnapsh
 const quoteSnapshotInFlight = new Map<string, Promise<PersistedMarketQuoteSnapshot[]>>();
 const historySeriesCache = new Map<string, CacheEntry<Record<string, number[]>>>();
 const historySeriesInFlight = new Map<string, Promise<Record<string, number[]>>>();
+const catalogAssetIdBySymbolCache = new Map<string, CacheEntry<Map<string, string>>>();
 
 function getFreshCacheValue<T>(cache: Map<string, CacheEntry<T>>, key: string): T | null {
   const entry = cache.get(key);
@@ -60,13 +69,14 @@ function setCacheValue<T>(cache: Map<string, CacheEntry<T>>, key: string, value:
 
 function buildQuoteCacheKey(symbols: string[]) {
   const provider = getProviderEnv().MARKET_DATA_PROVIDER;
-  const normalizedSymbols = [...symbols].sort();
-  return `provider=${provider}|assetKind=stock,etf,crypto|symbols=${normalizedSymbols.join(',')}`;
+  const normalizedSymbols = [...new Set(symbols.map((symbol) => symbol.trim().toUpperCase()).filter(Boolean))];
+  return `provider=${provider}|assetKind=stock,etf,crypto|symbolHash=${hashSymbols(normalizedSymbols)}|count=${normalizedSymbols.length}`;
 }
 
 function buildHistorySeriesCacheKey(symbols: string[], limit: number) {
-  const normalizedSymbols = [...symbols].sort();
-  return `interval=1d|range=${limit}|symbols=${normalizedSymbols.join(',')}`;
+  const provider = getProviderEnv().MARKET_DATA_PROVIDER;
+  const normalizedSymbols = [...new Set(symbols.map((symbol) => symbol.trim().toUpperCase()).filter(Boolean))];
+  return `provider=${provider}|interval=1d|range=${limit}|symbolHash=${hashSymbols(normalizedSymbols)}|count=${normalizedSymbols.length}`;
 }
 
 function isFreshEnough(timestamp: string | null | undefined, maxAgeMs: number) {
@@ -117,6 +127,7 @@ export async function loadMiniHistorySeries(
   symbols: string[],
   limit = 24,
 ): Promise<Record<string, number[]>> {
+  const t0 = perfNow();
   const normalized = [...new Set(symbols.map((symbol) => symbol.trim().toUpperCase()).filter(Boolean))];
 
   if (normalized.length === 0 || limit <= 0) {
@@ -136,7 +147,9 @@ export async function loadMiniHistorySeries(
 
   const loader = (async () => {
     try {
+      const tDb = perfNow();
       const rowsBySymbol = await getMarketHistoryBarsBySymbols(normalized, limit);
+      perfLog(`mini-history:db-fetch symbols=${normalized.length} range=${limit}`, tDb);
       const seriesBySymbol: Record<string, number[]> = {};
 
       for (const symbol of normalized) {
@@ -149,10 +162,12 @@ export async function loadMiniHistorySeries(
         seriesBySymbol[symbol] = closes;
       }
 
-      setCacheValue(historySeriesCache, cacheKey, seriesBySymbol, HISTORY_SERIES_CACHE_TTL_MS);
+      setCacheValue(historySeriesCache, cacheKey, seriesBySymbol, getMarketHistoryCacheTtlMs());
+      perfLog(`mini-history:total symbols=${normalized.length}`, t0);
       return seriesBySymbol;
     } catch {
       setCacheValue(historySeriesCache, cacheKey, {}, PROVIDER_ERROR_CACHE_TTL_MS);
+      perfLog(`mini-history:total-error symbols=${normalized.length}`, t0);
       return {};
     } finally {
       historySeriesInFlight.delete(cacheKey);
@@ -163,10 +178,34 @@ export async function loadMiniHistorySeries(
   return loader;
 }
 
+function isFreshQuoteTimestampForSimulation(timestamp: string | null | undefined) {
+  return isFreshEnough(timestamp, SIMULATION_QUOTE_MAX_AGE_MS);
+}
+
+async function getCatalogAssetIdBySymbolMap() {
+  const cacheKey = `provider=${getProviderEnv().MARKET_DATA_PROVIDER}|catalog-map-v1`;
+  const cached = getFreshCacheValue(catalogAssetIdBySymbolCache, cacheKey);
+
+  if (cached) {
+    return cached;
+  }
+
+  try {
+    const map = new Map((await listCatalogAssets()).map((asset) => [asset.symbol, asset.assetId]));
+    setCacheValue(catalogAssetIdBySymbolCache, cacheKey, map, getMarketCatalogCacheTtlMs());
+    return map;
+  } catch {
+    const map = new Map<string, string>();
+    setCacheValue(catalogAssetIdBySymbolCache, cacheKey, map, CATALOG_SYMBOL_CACHE_ERROR_TTL_MS);
+    return map;
+  }
+}
+
 export async function loadQuoteSnapshots(
   symbols: string[],
   knownAssetIdBySymbol?: ReadonlyMap<string, string>,
 ): Promise<PersistedMarketQuoteSnapshot[]> {
+  const t0 = perfNow();
   const normalized = [...new Set(symbols.map((symbol) => symbol.trim().toUpperCase()).filter(Boolean))];
 
   if (normalized.length === 0) {
@@ -176,7 +215,9 @@ export async function loadQuoteSnapshots(
   const cacheKey = buildQuoteCacheKey(normalized);
   const cached = getFreshCacheValue(quoteSnapshotCache, cacheKey);
   if (cached) {
-    return normalized.flatMap((symbol) => (cached.find((item) => item.symbol === symbol) ? [cached.find((item) => item.symbol === symbol)!] : []));
+    const cachedBySymbol = new Map(cached.map((item) => [item.symbol, item]));
+    perfLog(`quote-snapshots:cache-hit symbols=${normalized.length}`, t0);
+    return normalized.flatMap((symbol) => (cachedBySymbol.get(symbol) ? [cachedBySymbol.get(symbol)!] : []));
   }
 
   const inFlight = quoteSnapshotInFlight.get(cacheKey);
@@ -185,9 +226,15 @@ export async function loadQuoteSnapshots(
   }
 
   const loader = (async () => {
+    const tDb = perfNow();
     const cachedSnapshots = await getLatestMarketQuoteSnapshots(normalized);
+    perfLog(`quote-snapshots:db-read symbols=${normalized.length}`, tDb);
     const cachedBySymbol = new Map(cachedSnapshots.map((snapshot) => [snapshot.symbol, snapshot]));
-    const staleOrMissingSymbols = normalized.filter((symbol) => !isFreshEnough(cachedBySymbol.get(symbol)?.observedAt ?? null, QUOTE_STALE_MS));
+    const staleOrMissingSymbols = normalized.filter((symbol) => {
+      const snapshot = cachedBySymbol.get(symbol);
+      const freshnessTimestamp = snapshot?.observedAt ?? snapshot?.fetchedAt ?? null;
+      return !isFreshEnough(freshnessTimestamp, QUOTE_STALE_MS);
+    });
 
     if (staleOrMissingSymbols.length === 0) {
       const snapshots = normalized.flatMap((symbol) => (cachedBySymbol.get(symbol) ? [cachedBySymbol.get(symbol)!] : []));
@@ -195,18 +242,21 @@ export async function loadQuoteSnapshots(
         quoteSnapshotCache,
         cacheKey,
         snapshots,
-        snapshots.length > 0 ? QUOTE_CACHE_TTL_MS : PROVIDER_ERROR_CACHE_TTL_MS,
+        snapshots.length > 0 ? getMarketSnapshotCacheTtlMs() : PROVIDER_ERROR_CACHE_TTL_MS,
       );
+      perfLog(`quote-snapshots:total symbols=${normalized.length}`, t0);
       return snapshots;
     }
 
     // Use the pre-built map when the caller already has the catalog, avoiding a duplicate DB round-trip.
-    const assetIdBySymbol = knownAssetIdBySymbol ?? new Map((await listCatalogAssets()).map((asset) => [asset.symbol, asset.assetId]));
+    const assetIdBySymbol = knownAssetIdBySymbol ?? await getCatalogAssetIdBySymbolMap();
 
     try {
+      const tProvider = perfNow();
       const fetchedSnapshots = await fetchMarketSnapshot({
         symbols: staleOrMissingSymbols,
       });
+      perfLog(`quote-snapshots:provider-fetch symbols=${staleOrMissingSymbols.length}`, tProvider);
 
       await upsertMarketQuoteSnapshots(
         fetchedSnapshots.map((snapshot) => ({
@@ -241,8 +291,9 @@ export async function loadQuoteSnapshots(
       quoteSnapshotCache,
       cacheKey,
       snapshots,
-      snapshots.length > 0 ? QUOTE_CACHE_TTL_MS : PROVIDER_ERROR_CACHE_TTL_MS,
+      snapshots.length > 0 ? getMarketSnapshotCacheTtlMs() : PROVIDER_ERROR_CACHE_TTL_MS,
     );
+    perfLog(`quote-snapshots:total symbols=${normalized.length}`, t0);
     return snapshots;
   })().finally(() => {
     quoteSnapshotInFlight.delete(cacheKey);
@@ -253,6 +304,7 @@ export async function loadQuoteSnapshots(
 }
 
 export async function loadHistoryBars(symbol: string): Promise<PersistedMarketHistoryBar[]> {
+  const t0 = perfNow();
   const normalized = symbol.trim().toUpperCase();
 
   if (!normalized) {
@@ -263,6 +315,7 @@ export async function loadHistoryBars(symbol: string): Promise<PersistedMarketHi
   const lastBarTimestamp = cachedBars.at(-1)?.timestamp ?? null;
 
   if (cachedBars.length >= 20 && isFreshEnough(lastBarTimestamp, HISTORY_STALE_MS)) {
+    perfLog(`history-bars:cache-hit symbol=${normalized}`, t0);
     return cachedBars;
   }
 
@@ -300,14 +353,26 @@ export async function loadHistoryBars(symbol: string): Promise<PersistedMarketHi
         })),
       );
 
+      perfLog(`history-bars:provider-refresh symbol=${normalized}`, t0);
       return normalizedHistory;
     }
   } catch {
     // Gracefully fall back to cached history.
   }
 
+  perfLog(`history-bars:stale-fallback symbol=${normalized}`, t0);
   return cachedBars;
 }
+
+export const loadMiniHistorySeriesRequestScoped = cache(
+  async (symbolsKey: string, limit = 24): Promise<Record<string, number[]>> =>
+    loadMiniHistorySeries(symbolsKey ? symbolsKey.split(',') : [], limit),
+);
+
+export const loadQuoteSnapshotsRequestScoped = cache(
+  async (symbolsKey: string): Promise<PersistedMarketQuoteSnapshot[]> =>
+    loadQuoteSnapshots(symbolsKey ? symbolsKey.split(',') : []),
+);
 
 export type StockCatalogPageData = {
   query: string;

@@ -26,6 +26,7 @@ const baseRequest: AiSimulationAgentRequest = {
       score: 0.7,
       confidence: 0.8,
       recommendation: 'buy',
+      explanation: 'Momentum and trend model both support upside continuation.',
       signalSummary: 'Strong upward momentum.',
       riskSummary: 'Moderate risk.',
     },

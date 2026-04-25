@@ -3,7 +3,6 @@ import {
   insertCryptoGlobalMetrics,
   listCatalogAssets,
   replaceMarketHistoryBars,
-  seedFallbackMarketAssets,
   updateSimulationObservationHealth,
   upsertMarketAssetProfiles,
   upsertMarketAssets,
@@ -198,8 +197,6 @@ function buildMetadataTargets(trackedSymbols: string[]) {
 }
 
 export async function ingestMarketDataJob() {
-  await seedFallbackMarketAssets();
-
   const initialCatalog = await listCatalogAssets();
   const initialCatalogSymbols = initialCatalog.map((asset) => normalizeMarketSymbol(asset.symbol));
   const trackedSymbols = buildTrackedSymbols(initialCatalogSymbols);

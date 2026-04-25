@@ -1,7 +1,10 @@
-import type { ReactNode } from 'react';
+﻿import type { ReactNode } from 'react';
 import { StatusBadge } from '../ui/status-badge';
-import { MiniSparkline } from '../charts/mini-sparkline';
+import { MiniIndicatorChart } from '../charts/mini-indicator-chart';
 import { cn } from '../../lib/utils';
+import { SignalScoreBadge } from '../signals/signal-score-badge';
+import type { SignalScoreLabel, SignalVisualState } from '../signals/signal-score-types';
+import type { MiniIndicatorChartModel } from '../../lib/charts/mini-indicator-model';
 
 type MarketAssetRowProps = {
   symbol: string;
@@ -15,6 +18,15 @@ type MarketAssetRowProps = {
   insightStance: 'positive' | 'negative' | 'neutral';
   sparkline?: number[];
   actions?: ReactNode;
+  signal?: {
+    score: number;
+    label: SignalScoreLabel;
+    confidence: number;
+    visualState?: SignalVisualState;
+    explanation?: string;
+  };
+  riskLabel?: 'Low' | 'Medium' | 'High' | 'Extreme';
+  miniChartModel?: MiniIndicatorChartModel;
 };
 
 function mapTone(value: MarketAssetRowProps['actionAvailability']) {
@@ -51,13 +63,30 @@ export function MarketAssetRow(props: MarketAssetRowProps) {
         {props.changeLabel}
       </div>
       <div className="market-row__chart">
-        <MiniSparkline points={props.sparkline} label={`${props.symbol} trend`} />
+        <MiniIndicatorChart
+          points={props.sparkline}
+          label={`${props.symbol} trend`}
+          signalScore={props.signal?.score}
+          model={props.miniChartModel}
+        />
       </div>
       <div className="market-row__freshness">{props.freshnessLabel}</div>
       <div className="market-row__status">
         <StatusBadge tone={mapTone(props.actionAvailability)}>{props.actionAvailability}</StatusBadge>
       </div>
       <div className="market-row__thesis">{props.thesis}</div>
+      <div className="market-row__meta">
+        {props.signal ? (
+          <SignalScoreBadge
+            score={props.signal.score}
+            label={props.signal.label}
+            confidence={props.signal.confidence}
+            visualState={props.signal.visualState}
+          />
+        ) : null}
+        {props.riskLabel ? <span>Risk: {props.riskLabel}</span> : null}
+        {props.signal?.explanation ? <span>{props.signal.explanation}</span> : null}
+      </div>
       <div className="market-row__actions">{props.actions}</div>
     </article>
   );

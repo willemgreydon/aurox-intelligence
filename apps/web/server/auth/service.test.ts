@@ -51,7 +51,7 @@ describe('auth service', () => {
         },
         {},
       ),
-    ).rejects.toMatchObject<AuthenticationError>({
+    ).rejects.toMatchObject({
       code: 'invalid_credentials',
     });
   });

@@ -10,9 +10,16 @@ import type { AiSimulationAgentResult } from '@repo/api-contracts';
 type Props = {
   isAvailable: boolean;
   unavailableReason?: string;
+  isReadOnly: boolean;
+  readOnlyReason?: string;
 };
 
-export function AiSimulationAgentPanel({ isAvailable, unavailableReason }: Props) {
+export function AiSimulationAgentPanel({
+  isAvailable,
+  unavailableReason,
+  isReadOnly,
+  readOnlyReason,
+}: Props) {
   const [isPending, startTransition] = useTransition();
   const [isConfirming, startConfirming] = useTransition();
   const [lastResult, setLastResult] = useState<AiSimulationAgentResult | null>(null);
@@ -92,6 +99,21 @@ export function AiSimulationAgentPanel({ isAvailable, unavailableReason }: Props
 
       {isAvailable && (
         <div className="analytics-card__body" style={{ display: 'grid', gap: '1rem' }}>
+          {isReadOnly && (
+            <div
+              style={{
+                padding: '0.625rem 0.875rem',
+                background: 'rgba(220,38,38,0.08)',
+                border: '1px solid rgba(220,38,38,0.4)',
+                borderRadius: '6px',
+                fontSize: '0.8125rem',
+              }}
+            >
+              AI simulation agent is disabled because this simulation session is read-only.
+              {readOnlyReason ? ` ${readOnlyReason}` : ''}
+            </div>
+          )}
+
           <div
             style={{
               padding: '0.625rem 0.875rem',
@@ -173,15 +195,15 @@ export function AiSimulationAgentPanel({ isAvailable, unavailableReason }: Props
 
             <button
               type="submit"
-              disabled={isPending}
+              disabled={isPending || isReadOnly}
               style={{
                 padding: '0.5rem 1rem',
                 borderRadius: '6px',
                 background: 'var(--color-primary, #2563eb)',
                 color: '#fff',
                 border: 'none',
-                cursor: isPending ? 'not-allowed' : 'pointer',
-                opacity: isPending ? 0.7 : 1,
+                cursor: isPending || isReadOnly ? 'not-allowed' : 'pointer',
+                opacity: isPending || isReadOnly ? 0.7 : 1,
                 fontSize: '0.875rem',
                 fontWeight: 600,
                 alignSelf: 'start',
@@ -291,17 +313,27 @@ export function AiSimulationAgentPanel({ isAvailable, unavailableReason }: Props
                     name="confidence"
                     value={decision.confidence.toString()}
                   />
+                  <input
+                    type="hidden"
+                    name="decisionAuditId"
+                    value={lastResult?.decisionAuditId ?? ''}
+                  />
+                  <input
+                    type="hidden"
+                    name="maxDailyNotional"
+                    value={(lastResult?.capSettings.maxDailyNotional ?? 0).toString()}
+                  />
                   <button
                     type="submit"
-                    disabled={isConfirming}
+                    disabled={isConfirming || isReadOnly}
                     style={{
                       padding: '0.5rem 1rem',
                       borderRadius: '6px',
                       background: 'var(--color-primary, #2563eb)',
                       color: '#fff',
                       border: 'none',
-                      cursor: isConfirming ? 'not-allowed' : 'pointer',
-                      opacity: isConfirming ? 0.7 : 1,
+                      cursor: isConfirming || isReadOnly ? 'not-allowed' : 'pointer',
+                      opacity: isConfirming || isReadOnly ? 0.7 : 1,
                       fontSize: '0.875rem',
                       fontWeight: 600,
                     }}

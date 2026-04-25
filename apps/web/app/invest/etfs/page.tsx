@@ -13,7 +13,8 @@ import { getRequestLocale } from '../../../server/i18n/locale';
 import { formatFreshnessLabel, formatPercentChange, formatUsdPrice } from '../../../server/lib/quote-display';
 import { getMarketGraphData } from '../../../server/services/market-graph-service';
 import { getInvestOverviewData } from '../../../server/services/invest-service';
-import { loadMiniHistorySeries } from '../../../server/services/stock-simulation-service';
+import { getSimulationSessionTradingContextForUser } from '../../../server/services/simulation-workstation-service';
+import { perfLog, perfNow } from '../../../server/lib/perf';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +23,7 @@ export default async function InvestEtfsPage({
 }: {
   searchParams?: Promise<{ view?: string; page?: string }>;
 }) {
+  const pageStart = perfNow();
   const locale = await getRequestLocale();
   const messages = getMessages(locale);
   const params = searchParams ? await searchParams : {};
@@ -35,7 +37,8 @@ export default async function InvestEtfsPage({
       assetClassFilter: 'etf',
       page,
       pageSize,
-      includeHistory: false,
+      includeHistory: true,
+      historySymbolLimit: Math.max(24, pageSize),
       pageContext: 'invest-etfs-page',
     }),
     getMarketGraphData({
@@ -45,10 +48,13 @@ export default async function InvestEtfsPage({
     }),
     getOptionalCurrentSession(),
   ]);
+  perfLog('page:/invest/etfs loaders', pageStart);
   const group = invest.groupedAssets.find((item) => item.assetClass === 'etf');
   const items = group?.items ?? [];
   const watchlist = auth ? await getUserWatchlist(auth.user.id) : [];
-  const sparklineBySymbol = await loadMiniHistorySeries(items.map((item) => item.symbol), 24);
+  const sessionContext = auth
+    ? await getSimulationSessionTradingContextForUser(auth.user.id).catch(() => null)
+    : null;
   const totalPages = Math.max(1, Math.ceil(invest.pagination.totalItems / invest.pagination.pageSize));
   const previousPageHref = `/invest/etfs?${new URLSearchParams({
     ...(viewMode === 'list' ? { view: 'list' } : {}),
@@ -58,6 +64,40 @@ export default async function InvestEtfsPage({
     ...(viewMode === 'list' ? { view: 'list' } : {}),
     page: String(invest.pagination.page + 1),
   }).toString()}`;
+  perfLog('page:/invest/etfs total', pageStart);
+
+  function getTradeDisabledReason(item: (typeof items)[number]) {
+    if (!item.isSimulated || item.actionAvailability === 'unavailable') {
+      return 'Simulation trading for this asset is not active yet.';
+    }
+
+    if (!sessionContext || !sessionContext.sessionId) {
+      return 'Start the manual multi-asset simulation lane to place ETF simulation orders.';
+    }
+
+    if (sessionContext.isReadOnly) {
+      return sessionContext.statusMessage;
+    }
+
+    if (sessionContext.laneId !== 'manual_multi_asset_lane') {
+      return 'Switch to the manual multi-asset lane to simulate ETF orders.';
+    }
+
+    if (sessionContext.assetScope !== 'multi-asset' && sessionContext.assetScope !== 'etf') {
+      return `The active session is scoped to ${sessionContext.assetScope?.toUpperCase() ?? 'another asset class'} assets.`;
+    }
+
+    if (!item.lastUpdatedAt) {
+      return `Fresh ETF quote required for ${item.symbol} before simulation execution.`;
+    }
+
+    const quoteTime = new Date(item.lastUpdatedAt).getTime();
+    if (!Number.isFinite(quoteTime) || Date.now() - quoteTime > 15 * 60 * 1000) {
+      return `Fresh ETF quote required for ${item.symbol} before simulation execution.`;
+    }
+
+    return undefined;
+  }
 
   return (
     <>
@@ -96,7 +136,37 @@ export default async function InvestEtfsPage({
         </header>
         <div className={viewMode === 'grid' ? 'analytics-two-grid' : 'market-list'}>
           {items.map((item) => (
-            viewMode === 'grid' ? (
+            (() => {
+              const tradeDisabledReason = getTradeDisabledReason(item);
+              const decision = invest.decisionBySymbol[item.symbol] ?? {
+                signal: {
+                  score: 0,
+                  label: 'Neutral' as const,
+                  visualState: 'insufficient-data' as const,
+                  confidence: 0,
+                  explanation: 'Insufficient history for signal derivation.',
+                  contributingIndicators: [],
+                },
+                recommendation: {
+                  value: 'Watch' as const,
+                  confidence: 0,
+                  rationale: [],
+                  riskWarnings: [],
+                  horizon: 'swing' as const,
+                  mode: 'deterministic' as const,
+                },
+                risk: {
+                  label: 'Medium' as const,
+                  exposureImpactPercent: 0,
+                  stopLossSuggestion: 0,
+                  drawdownWarning: null,
+                  liquidityWarning: null,
+                  concentrationWarning: null,
+                },
+              };
+              const miniChartModel = invest.miniChartModelBySymbol[item.symbol];
+              const sparkline = invest.sparklineBySymbol[item.symbol] ?? [];
+              return viewMode === 'grid' ? (
               <InvestableAssetCard
                 key={item.assetId}
                 href={`/invest/etfs/${encodeURIComponent(item.symbol)}`}
@@ -110,7 +180,17 @@ export default async function InvestEtfsPage({
                 actionAvailability={item.actionAvailability}
                 insightStance={item.insightStance}
                 riskSummary={item.riskSummary}
-                sparkline={sparklineBySymbol[item.symbol] ?? []}
+                riskLabel={decision.risk.label}
+                sparkline={sparkline}
+                miniChartModel={miniChartModel}
+                signal={{
+                  score: decision.signal.score,
+                  label: decision.signal.label,
+                  confidence: decision.signal.confidence,
+                  explanation: decision.signal.explanation,
+                  indicators: decision.signal.contributingIndicators,
+                  visualState: decision.signal.visualState,
+                }}
                 actions={(
                   <QuickTradeActions
                     detailHref={`/invest/etfs/${encodeURIComponent(item.symbol)}`}
@@ -120,6 +200,9 @@ export default async function InvestEtfsPage({
                     assetClass="etf"
                     isAuthenticated={Boolean(auth)}
                     strategyLaneId="manual_multi_asset_lane"
+                    simulationSessionId={sessionContext?.sessionId ?? undefined}
+                    disabled={Boolean(tradeDisabledReason)}
+                    disabledReason={tradeDisabledReason}
                     showWatchlist
                     isWatched={watchlist.some((entry) => entry.assetId === item.assetId)}
                     watchlistLabelAdd={messages.dashboard.addToWatchlist}
@@ -139,7 +222,16 @@ export default async function InvestEtfsPage({
                 freshnessLabel={formatFreshnessLabel(item.lastUpdatedAt, locale, messages.common.unavailable)}
                 actionAvailability={item.actionAvailability}
                 insightStance={item.insightStance}
-                sparkline={sparklineBySymbol[item.symbol] ?? []}
+                sparkline={sparkline}
+                miniChartModel={miniChartModel}
+                signal={{
+                  score: decision.signal.score,
+                  label: decision.signal.label,
+                  confidence: decision.signal.confidence,
+                  visualState: decision.signal.visualState,
+                  explanation: decision.signal.explanation,
+                }}
+                riskLabel={decision.risk.label}
                 actions={(
                   <div className="market-row__action-grid">
                     <QuickTradeActions
@@ -150,6 +242,9 @@ export default async function InvestEtfsPage({
                       assetClass="etf"
                       isAuthenticated={Boolean(auth)}
                       strategyLaneId="manual_multi_asset_lane"
+                      simulationSessionId={sessionContext?.sessionId ?? undefined}
+                      disabled={Boolean(tradeDisabledReason)}
+                      disabledReason={tradeDisabledReason}
                       showWatchlist
                       isWatched={watchlist.some((entry) => entry.assetId === item.assetId)}
                       watchlistLabelAdd={messages.dashboard.addToWatchlist}
@@ -158,7 +253,8 @@ export default async function InvestEtfsPage({
                   </div>
                 )}
               />
-            )
+            );
+            })()
           ))}
         </div>
         {invest.pagination.totalItems > invest.pagination.pageSize ? (

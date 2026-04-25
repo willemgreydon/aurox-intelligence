@@ -10,6 +10,10 @@ import { getFreshnessState, getLatestTimestamp } from '../lib/market-data';
 import { mapOptionalTimestamp, mapRouteStatusLabel, mapRouteStatusTone } from './route-presentation';
 import { getMessages, type AppMessages } from '../../lib/i18n/messages';
 import { formatFreshnessLabel, formatPercentChange, formatUsdPrice } from '../lib/quote-display';
+import { deriveAssetDecisionIntelligence, type AssetDecisionIntelligence } from '../services/decision-intelligence-service';
+import { deriveMiniIndicatorChartModel } from '../lib/mini-indicator-model';
+import type { MiniIndicatorChartModel } from '../../lib/charts/mini-indicator-model';
+import { perfLog, perfNow } from '../lib/perf';
 
 export type DataHealthViewModel = {
   provider: string;
@@ -33,6 +37,8 @@ export type InvestOverviewViewModel = InvestOverview & {
     hasNextPage: boolean;
     hasPreviousPage: boolean;
   };
+  decisionBySymbol: Record<string, AssetDecisionIntelligence>;
+  miniChartModelBySymbol: Record<string, MiniIndicatorChartModel>;
   featuredAssets: Array<
     InvestOverview['featuredAssets'][number] & {
       priceLabel: string;
@@ -54,6 +60,7 @@ export type InvestOverviewViewModel = InvestOverview & {
 };
 
 export function mapInvestOverview(readModel: InvestReadModel): InvestOverview {
+  const t0 = perfNow();
   const lastUpdatedAt = getLatestTimestamp(readModel.observations);
   const freshnessState = getFreshnessState(lastUpdatedAt);
   const sourceSummary = readModel.providerError
@@ -124,6 +131,7 @@ export function mapInvestOverview(readModel: InvestReadModel): InvestOverview {
     insightConfidence: insight.confidence,
   }));
   const rankedAssets = rankAssets(rankingInputs);
+  perfLog('invest-mapper:overview-core', t0);
 
   return {
     title: 'Investment workspace',
@@ -206,6 +214,7 @@ export function mapInvestOverviewViewModel(
   hasNextPage: boolean = false,
   hasPreviousPage: boolean = false,
 ): InvestOverviewViewModel {
+  const t0 = perfNow();
   const sparklineBySymbol: Record<string, number[]> = {};
   for (const [symbol, series] of Object.entries(historySeriesBySymbol)) {
     sparklineBySymbol[symbol] = series.slice(-24);
@@ -219,6 +228,25 @@ export function mapInvestOverviewViewModel(
     freshnessLabel: mapFreshnessLabel(snapshot.freshnessState),
     freshnessTone: mapFreshnessTone(snapshot.freshnessState),
   };
+
+  const decisionBySymbol: Record<string, AssetDecisionIntelligence> = {};
+  const miniChartModelBySymbol: Record<string, MiniIndicatorChartModel> = {};
+  for (const group of snapshot.groupedAssets) {
+    for (const item of group.items) {
+      decisionBySymbol[item.symbol] = deriveAssetDecisionIntelligence({
+        symbol: item.symbol,
+        assetClass: item.assetClass,
+        history: historySeriesBySymbol[item.symbol] ?? [],
+        latestPrice: item.price,
+        dayMovePercent: item.changePercent,
+      });
+      miniChartModelBySymbol[item.symbol] = deriveMiniIndicatorChartModel(
+        historySeriesBySymbol[item.symbol] ?? [],
+        decisionBySymbol[item.symbol]?.signal.score,
+      );
+    }
+  }
+  perfLog('invest-mapper:decision+charts', t0);
 
   return {
     ...snapshot,
@@ -234,6 +262,8 @@ export function mapInvestOverviewViewModel(
       hasNextPage,
       hasPreviousPage,
     },
+    decisionBySymbol,
+    miniChartModelBySymbol,
     featuredAssets: snapshot.featuredAssets.map((item) => ({
       ...item,
       priceLabel: formatUsdPrice(item.price, locale, messages.common.unavailable),

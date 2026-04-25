@@ -1,19 +1,28 @@
 import { getStocksOverviewData } from '../server/services/stocks-service';
 import { getMarketGraphData } from '../server/services/market-graph-service';
+import { getSimulationOverviewDataForUser } from '../server/services/stock-simulation-service';
+import { getOptionalCurrentSession } from '../server/auth/session';
 import { HeroSection } from '../components/sections/hero-section';
 import { HomeFancySections } from '../components/sections/home-fancy-sections';
 import { getMessages } from '../lib/i18n/messages';
 import { getRequestLocale } from '../server/i18n/locale';
+import { perfLog, perfNow } from '../server/lib/perf';
 
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
+  const pageStart = perfNow();
   const locale = await getRequestLocale();
   const messages = getMessages(locale);
-  const [stocks, marketGraph] = await Promise.all([
+  const [stocks, marketGraph, auth] = await Promise.all([
     getStocksOverviewData(locale, messages),
     getMarketGraphData(),
+    getOptionalCurrentSession(),
   ]);
+  const portfolioOverview = auth
+    ? await getSimulationOverviewDataForUser(auth.user.id).catch(() => null)
+    : null;
+  perfLog('page:/ total', pageStart);
 
   return (
     <>
@@ -73,6 +82,12 @@ export default async function HomePage() {
       <HomeFancySections
         stocks={stocks}
         marketGraph={marketGraph}
+        portfolioSnapshot={portfolioOverview ? {
+          portfolioValue: portfolioOverview.summary.portfolioValue,
+          investedCapital: portfolioOverview.summary.investedCapital,
+          unrealizedPnl: portfolioOverview.summary.unrealizedPnl,
+          realizedPnl: portfolioOverview.summary.realizedPnl,
+        } : null}
         labels={{
           lanes: messages.homeSections.lanes,
           capabilities: messages.homeSections.capabilities,

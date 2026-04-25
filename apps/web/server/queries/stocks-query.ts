@@ -2,6 +2,10 @@ import type { ProviderMarketObservation } from '@repo/providers';
 import { getProviderEnv } from '@repo/providers';
 import { getDashboardReadModel, getInvestmentUniverse, type DashboardOperationalReadModel, type InvestmentUniverseAsset } from '@repo/db';
 import { unstable_cache } from 'next/cache';
+import { cache } from 'react';
+import { hashSymbols } from '../lib/cache-key';
+import { getMarketQueryInitialLimit } from '../lib/market-runtime-config';
+import { perfLog, perfNow } from '../lib/perf';
 import { loadQuoteSnapshots } from '../services/stock-simulation-service';
 
 export type StocksReadModel = {
@@ -45,7 +49,7 @@ function resolveOptions(options: StocksReadModelOptions): Required<StocksReadMod
     symbolLimit:
       typeof options.symbolLimit === 'number' && Number.isFinite(options.symbolLimit) && options.symbolLimit > 0
         ? Math.floor(options.symbolLimit)
-        : 64,
+        : getMarketQueryInitialLimit(),
     pageContext: options.pageContext?.trim() || 'stocks',
   };
 }
@@ -55,6 +59,7 @@ function buildStocksCacheKey(provider: string, metadata: InvestmentUniverseAsset
   return [
     `read=${STOCKS_READ_TYPE}`,
     `provider=${provider}`,
+    `symbolsHash=${hashSymbols(symbols)}`,
     'assetKind=stock,etf',
     `limit=${options.symbolLimit}`,
     `context=${options.pageContext}`,
@@ -85,38 +90,30 @@ function setStocksCache(key: string, data: StocksReadModel) {
 }
 
 export async function getStocksReadModel(options: StocksReadModelOptions = {}): Promise<StocksReadModel> {
-  const dev = process.env.NODE_ENV === 'development';
-  const t0 = dev ? performance.now() : 0;
+  const t0 = perfNow();
   const resolvedOptions = resolveOptions(options);
   const provider = getProviderEnv().MARKET_DATA_PROVIDER;
+  const tDb = perfNow();
   const [dashboard, investmentUniverse] = await Promise.all([loadDashboardReadModel(), loadInvestmentUniverse()]);
+  perfLog('stocks-query:db-read-models', tDb);
   const allStockMetadata = investmentUniverse.filter((item) => item.assetClass === 'stock' || item.assetClass === 'etf');
   const stockMetadata = allStockMetadata.slice(0, resolvedOptions.symbolLimit);
   const cacheKey = buildStocksCacheKey(provider, stockMetadata, resolvedOptions);
   const cached = getFreshStocksCache(cacheKey);
   if (cached) {
-    if (dev) {
-      console.debug(`[stocks-query] cache hit (${stockMetadata.length}/${allStockMetadata.length}): ${(performance.now() - t0).toFixed(0)}ms`);
-    }
+    perfLog(`stocks-query:cache-hit context=${resolvedOptions.pageContext} symbols=${stockMetadata.length}/${allStockMetadata.length}`, t0);
     return cached;
   }
 
-  if (dev) {
-    console.debug(
-      `[stocks-query] cache miss context=${resolvedOptions.pageContext} limit=${resolvedOptions.symbolLimit} symbols=${stockMetadata.length}/${allStockMetadata.length}`,
-    );
-    console.debug(
-      `[stocks-query] dashboard+universe (${stockMetadata.length}/${allStockMetadata.length}): ${(performance.now() - t0).toFixed(0)}ms`,
-    );
-  }
+  perfLog(
+    `stocks-query:cache-miss context=${resolvedOptions.pageContext} limit=${resolvedOptions.symbolLimit} symbols=${stockMetadata.length}/${allStockMetadata.length}`,
+    t0,
+  );
 
   try {
-    const t1 = dev ? performance.now() : 0;
+    const t1 = perfNow();
     const observations = await loadQuoteSnapshots(stockMetadata.map((item) => item.symbol));
-    if (dev) {
-      console.debug(`[stocks-query] quote-snapshots (${stockMetadata.length}): ${(performance.now() - t1).toFixed(0)}ms`);
-      console.debug(`[stocks-query] total: ${(performance.now() - t0).toFixed(0)}ms`);
-    }
+    perfLog(`stocks-query:provider-fetch symbols=${stockMetadata.length}`, t1);
 
     const result: StocksReadModel = {
       provider: observations[0]?.source ?? 'cache',
@@ -139,6 +136,7 @@ export async function getStocksReadModel(options: StocksReadModelOptions = {}): 
       stockMetadata,
     };
     setStocksCache(cacheKey, result);
+    perfLog('stocks-query:total', t0);
     return result;
   } catch (error) {
     const result: StocksReadModel = {
@@ -149,6 +147,15 @@ export async function getStocksReadModel(options: StocksReadModelOptions = {}): 
       stockMetadata,
     };
     setStocksCache(cacheKey, result);
+    perfLog('stocks-query:total-error', t0);
     return result;
   }
 }
+
+export const getStocksReadModelCached = cache(
+  async (symbolLimit: number | null, pageContext: string): Promise<StocksReadModel> =>
+    getStocksReadModel({
+      ...(typeof symbolLimit === 'number' ? { symbolLimit } : {}),
+      pageContext,
+    }),
+);

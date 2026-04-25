@@ -7,11 +7,14 @@ import { CompactStatCard } from '../../../components/stats/compact-stat-card';
 import { Section } from '../../../components/ui/section';
 import { Card } from '../../../components/ui/card';
 import { SimulatedOrderForm, WatchlistToggleForm } from '../../../components/invest/simulation-action-form';
+import { SignalSummary } from '../../../components/signals/signal-summary';
+import { TradeRiskOverlay } from '../../../components/invest/trade-risk-overlay';
 import { getMessages } from '../../../lib/i18n/messages';
 import { formatDateTimeLabel, formatShortDateLabel } from '../../../lib/formatters';
 import { getRequestLocale } from '../../../server/i18n/locale';
 import { formatFreshnessLabel, formatPercentChange, formatUsdPrice, getQuoteTimestamp } from '../../../server/lib/quote-display';
 import { getStockDetailPageData } from '../../../server/services/stock-simulation-service';
+import { deriveAssetDecisionIntelligence } from '../../../server/services/decision-intelligence-service';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,6 +35,16 @@ export default async function StockDetailPage({ params }: StockDetailPageProps) 
   if (!stock) {
     notFound();
   }
+  const decision = deriveAssetDecisionIntelligence({
+    symbol: stock.asset.symbol,
+    assetClass: 'stock',
+    history: stock.history.map((point) => point.close),
+    latestPrice: stock.quote?.price ?? null,
+    dayMovePercent: stock.quote?.changePercent ?? null,
+    quantity: stock.position?.quantity ?? 1,
+    portfolioValue: stock.position?.marketValue ? Math.max(stock.position.marketValue * 4, 10000) : 100000,
+    existingExposure: stock.position?.marketValue ?? 0,
+  });
 
   return (
     <>
@@ -60,6 +73,8 @@ export default async function StockDetailPage({ params }: StockDetailPageProps) 
         <div className="analytics-strip">
           <CompactStatCard label={messages.common.currentQuote} value={formatUsdPrice(stock.quote?.price ?? null, locale, messages.common.unavailable)} detail="Latest cached or live quote available for this stock." />
           <CompactStatCard label={messages.common.dailyMove} value={formatPercentChange(stock.quote?.changePercent ?? null, messages.common.partial)} detail="Current day-over-day move from the most recent quote." />
+          <CompactStatCard label="Signal" value={`${decision.signal.label} (${decision.signal.score.toFixed(2)})`} detail={`Confidence ${(decision.signal.confidence * 100).toFixed(0)}%`} />
+          <CompactStatCard label="Risk" value={decision.risk.label} detail={`Exposure impact ${decision.risk.exposureImpactPercent.toFixed(2)}%`} />
           <CompactStatCard label="Tradability" value={stock.asset.isTradable ? 'Paper tradable' : 'Browse only'} detail="This launch supports simulation trading for stocks only." />
           <CompactStatCard label="Position" value={stock.position ? `${stock.position.quantity.toFixed(4)} shares` : 'No holding'} detail="Current holding context for the signed-in simulation account." />
         </div>
@@ -110,6 +125,14 @@ export default async function StockDetailPage({ params }: StockDetailPageProps) 
               <div className="analytics-card__body">
                 <p>{stock.asset.thesis}</p>
                 <p>{stock.asset.riskSummary}</p>
+                <SignalSummary
+                  score={decision.signal.score}
+                  label={decision.signal.label}
+                  confidence={decision.signal.confidence}
+                  explanation={decision.signal.explanation}
+                  indicators={decision.signal.contributingIndicators}
+                  visualState={decision.signal.visualState}
+                />
                 {stock.position ? (
                   <p>
                     Current holding: {stock.position.quantity.toFixed(4)} shares at an average cost of {formatUsdPrice(stock.position.averageCost, locale, messages.common.unavailable)}.
@@ -140,6 +163,16 @@ export default async function StockDetailPage({ params }: StockDetailPageProps) 
                 `Geography: ${stock.asset.geography ?? 'Unavailable'}`,
                 `Quote source: ${stock.quote?.source ?? messages.common.unavailable}`,
               ]}
+            />
+            <TradeRiskOverlay
+              maxPositionSizeSuggestion={Math.max(stock.position?.marketValue ?? 0, 5000)}
+              estimatedVolatility={Math.max(0.001, decision.risk.exposureImpactPercent / 100)}
+              drawdownWarning={decision.risk.drawdownWarning}
+              liquidityWarning={decision.risk.liquidityWarning}
+              stopLossSuggestion={decision.risk.stopLossSuggestion}
+              exposureImpactPercent={decision.risk.exposureImpactPercent}
+              concentrationWarning={decision.risk.concentrationWarning}
+              riskLevel={decision.risk.label}
             />
           </div>
         </div>

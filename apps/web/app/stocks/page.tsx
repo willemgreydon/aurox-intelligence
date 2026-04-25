@@ -16,6 +16,9 @@ import { getRequestLocale } from '../../server/i18n/locale';
 import { formatPercentChange, formatUsdPrice, formatFreshnessLabel, getQuoteTimestamp } from '../../server/lib/quote-display';
 import { getMarketGraphData } from '../../server/services/market-graph-service';
 import { getStockCatalogPageData, loadMiniHistorySeries } from '../../server/services/stock-simulation-service';
+import { deriveAssetDecisionIntelligence } from '../../server/services/decision-intelligence-service';
+import { deriveMiniIndicatorChartModel } from '../../server/lib/mini-indicator-model';
+import { perfLog, perfNow } from '../../server/lib/perf';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,6 +31,7 @@ type StocksPageProps = {
 };
 
 export default async function StocksPage({ searchParams }: StocksPageProps) {
+  const pageStart = perfNow();
   const locale = await getRequestLocale();
   const messages = getMessages(locale);
   const params = searchParams ? await searchParams : {};
@@ -46,7 +50,9 @@ export default async function StocksPage({ searchParams }: StocksPageProps) {
     }),
     getOptionalCurrentSession(),
   ]);
+  perfLog('page:/stocks loaders', pageStart);
   const sparklineBySymbol = await loadMiniHistorySeries(stocks.stocks.map((entry) => entry.asset.symbol), 24);
+  perfLog('page:/stocks mini-history', pageStart);
   const pricedStocks = stocks.stocks.filter((entry) => typeof entry.quote?.price === 'number');
   const latestObservedAt =
     stocks.stocks
@@ -69,6 +75,8 @@ export default async function StocksPage({ searchParams }: StocksPageProps) {
     ...(viewMode === 'list' ? { view: 'list' } : {}),
     page: String(stocks.page + 1),
   }).toString()}`;
+
+  perfLog('page:/stocks total', pageStart);
 
   return (
     <>
@@ -148,8 +156,21 @@ export default async function StocksPage({ searchParams }: StocksPageProps) {
         </header>
         <div className={viewMode === 'grid' ? 'analytics-two-grid' : 'market-list'}>
           {stocks.stocks.length > 0 ? (
-            stocks.stocks.map((entry) => (
-              viewMode === 'grid' ? (
+            stocks.stocks.map((entry) => {
+              const decision = deriveAssetDecisionIntelligence({
+                symbol: entry.asset.symbol,
+                assetClass: 'stock',
+                history: sparklineBySymbol[entry.asset.symbol] ?? [],
+                latestPrice: entry.quote?.price ?? null,
+                dayMovePercent: entry.quote?.changePercent ?? null,
+                quantity: entry.position?.quantity ?? 1,
+                portfolioValue: 100000,
+              });
+              const miniChartModel = deriveMiniIndicatorChartModel(
+                sparklineBySymbol[entry.asset.symbol] ?? [],
+                decision.signal.score,
+              );
+              return viewMode === 'grid' ? (
                 <InvestableAssetCard
                   key={entry.asset.assetId}
                   href={`/stocks/${entry.asset.symbol}`}
@@ -165,7 +186,17 @@ export default async function StocksPage({ searchParams }: StocksPageProps) {
                   riskSummary={entry.position
                     ? `Held ${entry.position.quantity.toFixed(4)} shares · Market value ${formatUsdPrice(entry.position.marketValue, locale, messages.common.unavailable)}`
                     : entry.asset.riskSummary}
+                  riskLabel={decision.risk.label}
                   sparkline={sparklineBySymbol[entry.asset.symbol] ?? []}
+                  miniChartModel={miniChartModel}
+                  signal={{
+                    score: decision.signal.score,
+                    label: decision.signal.label,
+                    confidence: decision.signal.confidence,
+                    explanation: decision.signal.explanation,
+                    indicators: decision.signal.contributingIndicators,
+                    visualState: decision.signal.visualState,
+                  }}
                   actions={(
                     <QuickTradeActions
                       detailHref={`/stocks/${entry.asset.symbol}`}
@@ -194,6 +225,15 @@ export default async function StocksPage({ searchParams }: StocksPageProps) {
                   actionAvailability={entry.asset.actionAvailability}
                   insightStance={entry.quote?.changePercent && entry.quote.changePercent < 0 ? 'negative' : entry.quote?.changePercent && entry.quote.changePercent > 0 ? 'positive' : 'neutral'}
                   sparkline={sparklineBySymbol[entry.asset.symbol] ?? []}
+                  miniChartModel={miniChartModel}
+                  signal={{
+                    score: decision.signal.score,
+                    label: decision.signal.label,
+                    confidence: decision.signal.confidence,
+                    visualState: decision.signal.visualState,
+                    explanation: decision.signal.explanation,
+                  }}
+                  riskLabel={decision.risk.label}
                   actions={(
                     <div className="market-row__action-grid">
                       <QuickTradeActions
@@ -211,8 +251,8 @@ export default async function StocksPage({ searchParams }: StocksPageProps) {
                     </div>
                   )}
                 />
-              )
-            ))
+              );
+            })
           ) : (
             <StatePanel
               title="No matching stocks"
@@ -248,3 +288,4 @@ export default async function StocksPage({ searchParams }: StocksPageProps) {
     </>
   );
 }
+

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-export const localeSchema = z.enum(['en', 'de', 'fr']);
+export const localeSchema = z.enum(['en', 'de', 'fr', 'es', 'it', 'pt', 'nl', 'zh', 'ja', 'ko', 'ar', 'hi']);
 export const chartTypeSchema = z.enum(['bar', 'donut', 'comparison', 'trend', 'stock']);
 export const timePeriodSchema = z.enum(['1s', '3s', '5s', '10s', '1m', '1h', '1d', '1w', '1mo', '1y', '2y', '5y']);
 export const dashboardModuleIdSchema = z.enum([

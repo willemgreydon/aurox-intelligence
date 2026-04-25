@@ -10,6 +10,7 @@ import {
 } from '../services/ai-simulation-agent-service';
 import type { AiSimulationAgentResult, AiSimulationProposedOrder } from '@repo/api-contracts';
 import { aiSimulationProposedOrderSchema } from '@repo/api-contracts';
+import { assertSimulationSessionAllowsTradingForCurrentUser } from '../services/simulation-workstation-service';
 
 const runAgentInputSchema = z.object({
   autonomyMode: z.enum(['suggest_only', 'human_confirmed', 'autonomous_simulation']),
@@ -38,6 +39,18 @@ export async function runAiSimulationAgentAction(
     return { ok: false, error: 'Invalid agent configuration input.' };
   }
 
+  try {
+    await assertSimulationSessionAllowsTradingForCurrentUser();
+  } catch (error) {
+    return {
+      ok: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : 'AI simulation agent is disabled because this simulation session is read-only.',
+    };
+  }
+
   const result = await runAiSimulationAgentForUser({
     userId: auth.user.id,
     autonomyMode: parsed.data.autonomyMode,
@@ -54,6 +67,15 @@ const confirmTradeInputSchema = z.object({
   proposedOrderJson: z.string().min(1),
   reasoning: z.string().min(1).max(500),
   confidence: z.coerce.number().min(0).max(1),
+  maxDailyNotional: z.coerce.number().positive().max(500_000).optional(),
+  decisionAuditId: z.preprocess(
+    (value) => {
+      if (typeof value !== 'string') return value;
+      const trimmed = value.trim();
+      return trimmed.length === 0 ? undefined : trimmed;
+    },
+    z.string().uuid().optional(),
+  ),
 });
 
 export type ConfirmAiSimulationTradeActionResult =
@@ -68,6 +90,18 @@ export async function confirmAiSimulationTradeAction(
   const parsed = confirmTradeInputSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
     return { ok: false, error: 'Invalid confirmation input.' };
+  }
+
+  try {
+    await assertSimulationSessionAllowsTradingForCurrentUser();
+  } catch (error) {
+    return {
+      ok: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : 'AI simulation agent is disabled because this simulation session is read-only.',
+    };
   }
 
   let proposedOrder: AiSimulationProposedOrder;
@@ -88,6 +122,8 @@ export async function confirmAiSimulationTradeAction(
     proposedOrder,
     parsed.data.reasoning,
     parsed.data.confidence,
+    parsed.data.maxDailyNotional ?? null,
+    parsed.data.decisionAuditId ?? null,
   );
 
   if (result.ok) {

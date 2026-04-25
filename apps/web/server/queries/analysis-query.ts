@@ -1,12 +1,26 @@
-import { getDashboardReadModel, type DashboardOperationalReadModel } from '@repo/db';
-import { fetchMarketHistory, fetchMarketSnapshot, getMarketSymbols, getProviderEnv } from '@repo/providers';
+import { getDashboardReadModel, getMarketHistoryBarsBySymbols, type DashboardOperationalReadModel } from '@repo/db';
+import { getMarketSymbols, getProviderEnv, type ProviderMarketObservation } from '@repo/providers';
+import { cache } from 'react';
+import { hashSymbols } from '../lib/cache-key';
+import { perfLog, perfNow } from '../lib/perf';
+import { loadQuoteSnapshotsRequestScoped } from '../services/stock-simulation-service';
+import type { PersistedMarketHistoryBar } from '@repo/db';
 
 export type AssetAnalysisReadModel = {
   assetId: string;
   symbol: string;
   assetClass: 'stock';
-  observation: Awaited<ReturnType<typeof fetchMarketSnapshot>>[number] | null;
-  history: Awaited<ReturnType<typeof fetchMarketHistory>>;
+  observation: ProviderMarketObservation | null;
+  history: Array<{
+    symbol: string;
+    timestamp: string;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    volume?: number | null;
+    source?: string;
+  }>;
 };
 
 export type AnalysisReadModel = {
@@ -20,6 +34,7 @@ const ANALYSIS_CACHE_TTL_MS = 60_000;
 const ANALYSIS_CACHE_ERROR_TTL_MS = 10_000;
 const ANALYSIS_READ_TYPE = 'dashboard-market-analysis-v1';
 const ANALYSIS_SYMBOL_LIMIT = 48;
+const ANALYSIS_HISTORY_LIMIT = 90;
 const ANALYSIS_PRIORITY_SYMBOLS = ['SPY', 'QQQ', 'VTI', 'IWM', 'TLT', 'BINANCE:BTCUSDT', 'BINANCE:ETHUSDT'];
 
 type AnalysisCacheEntry = { data: AnalysisReadModel; cachedAt: number; expiresAt: number };
@@ -34,8 +49,8 @@ function toAssetId(symbol: string) {
 }
 
 function buildAnalysisCacheKey(provider: string, symbols: string[]) {
-  const normalizedSymbols = [...new Set(symbols.map(toNormalizedSymbol).filter(Boolean))].sort();
-  return `read=${ANALYSIS_READ_TYPE}|provider=${provider}|assetKind=stock,etf,crypto,index|historyRange=1d|symbolLimit=${ANALYSIS_SYMBOL_LIMIT}|symbols=${normalizedSymbols.join(',')}`;
+  const normalizedSymbols = [...new Set(symbols.map(toNormalizedSymbol).filter(Boolean))];
+  return `read=${ANALYSIS_READ_TYPE}|provider=${provider}|assetKind=stock,etf,crypto,index|historyRange=1d|historyLimit=${ANALYSIS_HISTORY_LIMIT}|symbolLimit=${ANALYSIS_SYMBOL_LIMIT}|symbolHash=${hashSymbols(normalizedSymbols)}|count=${normalizedSymbols.length}`;
 }
 
 function prioritizeSymbols(symbols: string[]) {
@@ -72,8 +87,7 @@ function cacheAnalysisResult(key: string, data: AnalysisReadModel) {
 }
 
 export async function getAnalysisReadModel(): Promise<AnalysisReadModel> {
-  const dev = process.env.NODE_ENV === 'development';
-  const t0 = dev ? performance.now() : 0;
+  const t0 = perfNow();
 
   const env = getProviderEnv();
   const symbols = prioritizeSymbols(getMarketSymbols(env.MARKET_DATA_PROVIDER));
@@ -81,80 +95,77 @@ export async function getAnalysisReadModel(): Promise<AnalysisReadModel> {
   const cachedEntry = getFreshCacheEntry(cacheKey);
 
   if (cachedEntry) {
-    if (dev) {
-      console.debug(`[analysis-query] cache hit (${symbols.length} symbols): ${(performance.now() - t0).toFixed(0)}ms`);
-    }
+    perfLog(`analysis-query:cache-hit symbols=${symbols.length}`, t0);
     return cachedEntry.data;
   }
 
-  if (dev) {
-    console.debug(`[analysis-query] cache miss (${symbols.length} symbols)`);
-  }
+  perfLog(`analysis-query:cache-miss symbols=${symbols.length}`, t0);
 
+  const tDb = perfNow();
   const dashboard = await getDashboardReadModel();
+  perfLog('analysis-query:dashboard-fetch', tDb);
 
-  if (dev) {
-    console.debug(`[analysis-query] dashboard+symbols (${symbols.length}): ${(performance.now() - t0).toFixed(0)}ms`);
-  }
+  const symbolsKey = symbols.join(',');
+  const tProvider = perfNow();
+  const [snapshots, historyBySymbol] = await Promise.all([
+    loadQuoteSnapshotsRequestScoped(symbolsKey),
+    getMarketHistoryBarsBySymbols(symbols, ANALYSIS_HISTORY_LIMIT).catch(
+      () => ({} as Record<string, PersistedMarketHistoryBar[]>),
+    ),
+  ]);
+  perfLog(`analysis-query:provider-fetch symbols=${symbols.length}`, tProvider);
 
-  const t1 = dev ? performance.now() : 0;
-  const assets = await Promise.all(
-    symbols.map(async (symbol) => {
-      try {
-        const [snapshotResult, history] = await Promise.all([
-          fetchMarketSnapshot({
-            provider: env.MARKET_DATA_PROVIDER,
-            symbols: [symbol],
-          }),
-          fetchMarketHistory({
-            provider: env.MARKET_DATA_PROVIDER,
-            symbol,
-          }),
-        ]);
-        const [observation] = snapshotResult;
-
-        return {
-          assetId: toAssetId(symbol),
-          symbol: toAssetId(symbol),
-          assetClass: 'stock' as const,
-          observation: observation ?? null,
-          history,
-          error: null as string | null,
-        };
-      } catch (error) {
-        return {
-          assetId: toAssetId(symbol),
-          symbol: toAssetId(symbol),
-          assetClass: 'stock' as const,
-          observation: null,
-          history: [],
-          error: error instanceof Error ? error.message : `Unable to fetch analysis data for ${symbol}.`,
-        };
+  const observationBySymbol = new Map(
+    snapshots.flatMap((snapshot) => {
+      if (typeof snapshot.price !== 'number') {
+        return [];
       }
+
+      const observation: ProviderMarketObservation = {
+        symbol: snapshot.symbol,
+        assetKind: 'stock',
+        price: snapshot.price,
+        timestamp: snapshot.observedAt ?? snapshot.fetchedAt,
+        source: snapshot.source as ProviderMarketObservation['source'],
+        currency: 'USD',
+        ...(typeof snapshot.change === 'number' ? { change: snapshot.change } : {}),
+        ...(typeof snapshot.changePercent === 'number' ? { changePercent: snapshot.changePercent } : {}),
+      };
+      return [[snapshot.symbol, observation] as const];
     }),
   );
 
-  if (dev) {
-    console.debug(`[analysis-query] provider fetch (${symbols.length} symbols): ${(performance.now() - t1).toFixed(0)}ms`);
-    console.debug(`[analysis-query] total: ${(performance.now() - t0).toFixed(0)}ms`);
+  let providerError: string | null = null;
+  if (snapshots.length === 0) {
+    providerError = 'Live analysis snapshots are currently unavailable.';
   }
 
   const result: AnalysisReadModel = {
     provider: env.MARKET_DATA_PROVIDER,
-    providerError: assets.find((asset) => asset.error)?.error ?? null,
+    providerError,
     dashboard,
-    assets: assets.map(({ error: _error, ...asset }) => asset),
+    assets: symbols.map((symbol) => ({
+      assetId: toAssetId(symbol),
+      symbol: toAssetId(symbol),
+      assetClass: 'stock',
+      observation: observationBySymbol.get(symbol) ?? null,
+      history: (historyBySymbol[symbol] ?? []).map((bar) => ({
+        symbol: bar.symbol,
+        timestamp: bar.timestamp,
+        open: bar.open,
+        high: bar.high,
+        low: bar.low,
+        close: bar.close,
+        volume: bar.volume ?? null,
+        source: bar.source,
+      })),
+    })),
   };
 
   cacheAnalysisResult(cacheKey, result);
-
-  if (dev) {
-    const entry = analysisCache.get(cacheKey);
-    if (entry) {
-      const ttlMsRemaining = Math.max(0, entry.expiresAt - Date.now());
-      console.debug(`[analysis-query] cache store ttl=${ttlMsRemaining}ms error=${String(Boolean(result.providerError))}`);
-    }
-  }
+  perfLog('analysis-query:total', t0);
 
   return result;
 }
+
+export const getAnalysisReadModelCached = cache(async () => getAnalysisReadModel());

@@ -11,7 +11,7 @@ import { getOptionalCurrentSession } from '../../../server/auth/session';
 import { getRequestLocale } from '../../../server/i18n/locale';
 import { formatFreshnessLabel, formatPercentChange, formatUsdPrice } from '../../../server/lib/quote-display';
 import { getInvestOverviewData } from '../../../server/services/invest-service';
-import { loadMiniHistorySeries } from '../../../server/services/stock-simulation-service';
+import { perfLog, perfNow } from '../../../server/lib/perf';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +20,7 @@ export default async function InvestStocksPage({
 }: {
   searchParams?: Promise<{ view?: string; page?: string }>;
 }) {
+  const pageStart = perfNow();
   const locale = await getRequestLocale();
   const messages = getMessages(locale);
   const params = searchParams ? await searchParams : {};
@@ -33,15 +34,16 @@ export default async function InvestStocksPage({
       assetClassFilter: 'stock',
       page,
       pageSize,
-      includeHistory: false,
+      includeHistory: true,
+      historySymbolLimit: Math.max(24, pageSize),
       pageContext: 'invest-stocks-page',
     }),
     getOptionalCurrentSession(),
   ]);
+  perfLog('page:/invest/stocks loaders', pageStart);
   const group = invest.groupedAssets.find((item) => item.assetClass === 'stock');
   const items = group?.items ?? [];
   const watchlist = auth ? await getUserWatchlist(auth.user.id) : [];
-  const sparklineBySymbol = await loadMiniHistorySeries(items.map((item) => item.symbol), 24);
   const totalPages = Math.max(1, Math.ceil(invest.pagination.totalItems / invest.pagination.pageSize));
   const previousPageHref = `/invest/stocks?${new URLSearchParams({
     ...(viewMode === 'list' ? { view: 'list' } : {}),
@@ -51,6 +53,7 @@ export default async function InvestStocksPage({
     ...(viewMode === 'list' ? { view: 'list' } : {}),
     page: String(invest.pagination.page + 1),
   }).toString()}`;
+  perfLog('page:/invest/stocks total', pageStart);
 
   return (
     <>
@@ -87,7 +90,37 @@ export default async function InvestStocksPage({
         </header>
         <div className={viewMode === 'grid' ? 'analytics-three-grid' : 'market-list'}>
           {items.map((item) => (
-            viewMode === 'grid' ? (
+            (() => {
+              const resolvedDecision = invest.decisionBySymbol[item.symbol] ?? {
+                signal: {
+                  score: 0,
+                  label: 'Neutral' as const,
+                  visualState: 'insufficient-data' as const,
+                  confidence: 0,
+                  explanation: 'Insufficient history for signal derivation.',
+                  contributingIndicators: [],
+                },
+                recommendation: {
+                  value: 'Watch' as const,
+                  confidence: 0,
+                  rationale: [],
+                  riskWarnings: [],
+                  horizon: 'swing' as const,
+                  mode: 'deterministic' as const,
+                },
+                risk: {
+                  label: 'Medium' as const,
+                  exposureImpactPercent: 0,
+                  stopLossSuggestion: 0,
+                  drawdownWarning: null,
+                  liquidityWarning: null,
+                  concentrationWarning: null,
+                },
+              };
+              const miniChartModel = invest.miniChartModelBySymbol[item.symbol];
+              const sparkline = invest.sparklineBySymbol[item.symbol] ?? [];
+
+              return viewMode === 'grid' ? (
               <InvestableAssetCard
                 key={item.assetId}
                 href={`/stocks/${item.symbol}`}
@@ -101,7 +134,17 @@ export default async function InvestStocksPage({
                 actionAvailability={item.actionAvailability}
                 insightStance={item.insightStance}
                 riskSummary={item.riskSummary}
-                sparkline={sparklineBySymbol[item.symbol] ?? []}
+                riskLabel={resolvedDecision.risk.label}
+                sparkline={sparkline}
+                miniChartModel={miniChartModel}
+                signal={{
+                  score: resolvedDecision.signal.score,
+                  label: resolvedDecision.signal.label,
+                  confidence: resolvedDecision.signal.confidence,
+                  explanation: resolvedDecision.signal.explanation,
+                  indicators: resolvedDecision.signal.contributingIndicators,
+                  visualState: resolvedDecision.signal.visualState,
+                }}
                 actions={(
                   <QuickTradeActions
                     detailHref={`/stocks/${item.symbol}`}
@@ -129,7 +172,16 @@ export default async function InvestStocksPage({
                 freshnessLabel={formatFreshnessLabel(item.lastUpdatedAt, locale, messages.common.unavailable)}
                 actionAvailability={item.actionAvailability}
                 insightStance={item.insightStance}
-                sparkline={sparklineBySymbol[item.symbol] ?? []}
+                sparkline={sparkline}
+                miniChartModel={miniChartModel}
+                riskLabel={resolvedDecision.risk.label}
+                signal={{
+                  score: resolvedDecision.signal.score,
+                  label: resolvedDecision.signal.label,
+                  confidence: resolvedDecision.signal.confidence,
+                  visualState: resolvedDecision.signal.visualState,
+                  explanation: resolvedDecision.signal.explanation,
+                }}
                 actions={(
                   <div className="market-row__action-grid">
                     <QuickTradeActions
@@ -147,7 +199,8 @@ export default async function InvestStocksPage({
                   </div>
                 )}
               />
-            )
+            );
+            })()
           ))}
         </div>
         {invest.pagination.totalItems > invest.pagination.pageSize ? (

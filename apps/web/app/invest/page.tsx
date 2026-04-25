@@ -342,6 +342,7 @@ async function StockUniverseSection({
     <div className={viewMode === 'grid' ? 'analytics-two-grid' : 'market-list'}>
       {stocks.map((item) => {
         const isWatched = watchlist.some((w) => w.assetId === item.assetId);
+        const decision = invest.decisionBySymbol[item.symbol];
 
         return viewMode === 'grid' ? (
           <InvestableAssetCard
@@ -361,7 +362,16 @@ async function StockUniverseSection({
             actionAvailability={item.actionAvailability}
             insightStance={item.insightStance}
             riskSummary={item.riskSummary}
+            riskLabel={decision?.risk.label}
             sparkline={sparklineBySymbol[item.symbol] ?? []}
+            signal={decision ? {
+              score: decision.signal.score,
+              label: decision.signal.label,
+              confidence: decision.signal.confidence,
+              explanation: decision.signal.explanation,
+              indicators: decision.signal.contributingIndicators,
+              visualState: decision.signal.visualState,
+            } : undefined}
             actions={
               <QuickTradeActions
                 detailHref={`/stocks/${item.symbol}`}
@@ -390,6 +400,14 @@ async function StockUniverseSection({
             actionAvailability={item.actionAvailability}
             insightStance={item.insightStance}
             sparkline={sparklineBySymbol[item.symbol] ?? []}
+            signal={decision ? {
+              score: decision.signal.score,
+              label: decision.signal.label,
+              confidence: decision.signal.confidence,
+              visualState: decision.signal.visualState,
+              explanation: decision.signal.explanation,
+            } : undefined}
+            riskLabel={decision?.risk.label}
             actions={
               <div className="market-row__action-grid">
                 <QuickTradeActions
@@ -527,9 +545,9 @@ export default async function InvestPage({
           />
           <InvestmentCapabilityCard
             title="ETFs and crypto"
-            description="Browse and research surfaces are available. Stock simulation is active. ETF and crypto simulation readiness is prepared but not confirmed active end-to-end."
-            statusLabel="Limited"
-            statusTone="warning"
+            description="Browse, research, and guarded simulation execution are supported for ETFs and crypto in the manual multi-asset lane with fictive cash only."
+            statusLabel="Supported"
+            statusTone="success"
           />
         </div>
       </Section>

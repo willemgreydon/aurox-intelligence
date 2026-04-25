@@ -1,5 +1,5 @@
-import { getAnalysisReadModel, type AnalysisReadModel } from './analysis-query';
+import { getAnalysisReadModelCached, type AnalysisReadModel } from './analysis-query';
 
 export async function getDashboardMarketReadModel(): Promise<AnalysisReadModel> {
-  return getAnalysisReadModel();
+  return getAnalysisReadModelCached();
 }

@@ -52,6 +52,14 @@ export type SimulationWorkstationState = {
   statusMessage: string;
 };
 
+export type SimulationSessionTradingContext = {
+  sessionId: string | null;
+  laneId: SimulationLaneId | null;
+  assetScope: SimulationAssetScope | null;
+  isReadOnly: boolean;
+  statusMessage: string;
+};
+
 const laneModeByLaneId: Record<SimulationLaneId, SimulationLaneMode> = {
   manual_stock_lane: 'manual',
   manual_multi_asset_lane: 'manual',
@@ -250,4 +258,17 @@ export async function assertSimulationSessionAllowsTradingForCurrentUser(session
   }
 
   return session;
+}
+
+export async function getSimulationSessionTradingContextForUser(userId: string): Promise<SimulationSessionTradingContext> {
+  const session = await getPreferredSimulationSessionForUser(userId, null);
+  const status = deriveWorkstationStatus(session);
+
+  return {
+    sessionId: session?.id ?? null,
+    laneId: session?.laneId ?? null,
+    assetScope: session?.assetScope ?? null,
+    isReadOnly: status.isReadOnly,
+    statusMessage: status.statusMessage,
+  };
 }

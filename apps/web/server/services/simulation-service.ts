@@ -9,6 +9,8 @@ import {
 import { requireCurrentSession } from '../auth/session';
 import { loadQuoteSnapshots } from './stock-simulation-service';
 
+const SIMULATION_QUOTE_MAX_AGE_MS = 15 * 60 * 1000;
+
 type SimulationWorkspaceViewModel = Awaited<ReturnType<typeof getSimulationWorkspace>> & {
   investableAssets: Array<{
     assetId: string;
@@ -39,6 +41,19 @@ function formatUsd(value: number) {
 
 function formatQuantity(value: number) {
   return value.toFixed(4);
+}
+
+function isFreshQuoteTimestampForSimulation(timestamp: string | null | undefined) {
+  if (!timestamp) {
+    return false;
+  }
+
+  const parsed = new Date(timestamp).getTime();
+  if (!Number.isFinite(parsed)) {
+    return false;
+  }
+
+  return Date.now() - parsed <= SIMULATION_QUOTE_MAX_AGE_MS;
 }
 
 export async function getSimulationWorkspaceData(): Promise<SimulationWorkspaceViewModel> {
@@ -158,6 +173,11 @@ export async function executeSimulationOrderForCurrentUser(input: {
 
   if (typeof observation?.price !== 'number' || !Number.isFinite(observation.price) || observation.price <= 0) {
     throw new Error(`Unable to price ${asset.symbol} for simulation right now.`);
+  }
+
+  const quoteTimestamp = observation.observedAt ?? observation.fetchedAt ?? null;
+  if (!isFreshQuoteTimestampForSimulation(quoteTimestamp)) {
+    throw new Error(`Unable to execute ${asset.symbol} safely: a fresh quote is required for simulation trading.`);
   }
 
   const grossAmount = roundCurrency(input.quantity * observation.price);

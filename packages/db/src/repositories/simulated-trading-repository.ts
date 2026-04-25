@@ -30,6 +30,9 @@ const positionsTable = 'app.simulation_positions';
 const ordersTable = 'app.simulation_orders';
 const transactionsTable = 'app.simulation_transactions';
 const snapshotsTable = 'app.simulation_snapshots';
+const simulationAgentDecisionsTable = 'app.simulation_agent_decisions';
+const simulationAgentOrderLinksTable = 'app.simulation_agent_order_links';
+const DEFAULT_AI_SIMULATION_STRATEGY_TAG = 'ai_simulation_agent_v1';
 
 type AccountRow = {
   accountId: string;
@@ -100,6 +103,41 @@ type SnapshotRow = {
   realizedPnl: number | string;
   positionCount: number;
   takenAt: string | Date;
+};
+
+type SimulationAgentDecisionRow = {
+  id: string;
+};
+
+export type InsertSimulationAgentDecisionInput = {
+  userId: string;
+  accountId?: string | null;
+  portfolioId?: string | null;
+  sessionId?: string | null;
+  laneId?: string | null;
+  mode: 'suggest_only' | 'human_confirmed' | 'autonomous_simulation';
+  action: 'HOLD' | 'PROPOSE_BUY' | 'PROPOSE_SELL' | 'SIMULATED_BUY_REQUEST' | 'SIMULATED_SELL_REQUEST';
+  symbol?: string | null;
+  assetClass?: 'stock' | 'etf' | 'crypto' | null;
+  confidence?: number | null;
+  proposedNotional?: number | null;
+  maxNotionalPerTrade?: number | null;
+  maxDailyNotional?: number | null;
+  rankedSnapshotHash?: string | null;
+  decisionJson: Record<string, unknown>;
+  rejectedReason?: string | null;
+};
+
+export type LinkSimulationAgentDecisionToOrderInput = {
+  decisionId: string;
+  simulationOrderId: string;
+  userId: string;
+  linkType?: 'autonomous_submission' | 'human_confirmation';
+  accountId?: string | null;
+  portfolioId?: string | null;
+  sessionId?: string | null;
+  laneId?: string | null;
+  notional: number;
 };
 
 function assertDatabaseConfigured(client: DatabaseClient) {
@@ -488,6 +526,273 @@ export async function listSimulatedOrdersForUser(userId: string): Promise<Simula
   );
 
   return rows.map(mapOrder);
+}
+
+export async function insertSimulationAgentDecision(
+  input: InsertSimulationAgentDecisionInput,
+): Promise<{ id: string }> {
+  const client = createDatabaseClient();
+  assertDatabaseConfigured(client);
+
+  const [row] = await client.query<SimulationAgentDecisionRow>(
+    `
+      insert into ${simulationAgentDecisionsTable} (
+        id,
+        user_id,
+        account_id,
+        portfolio_id,
+        session_id,
+        lane_id,
+        mode,
+        action,
+        symbol,
+        asset_class,
+        confidence,
+        proposed_notional,
+        max_notional_per_trade,
+        max_daily_notional,
+        ranked_snapshot_hash,
+        decision_json,
+        rejected_reason,
+        decision_payload,
+        decision_action,
+        autonomy_mode
+      )
+      values (
+        gen_random_uuid(),
+        $1::uuid,
+        $2::uuid,
+        $3::uuid,
+        $4::uuid,
+        $5,
+        $6,
+        $7,
+        $8,
+        $9,
+        $10,
+        $11,
+        $12,
+        $13,
+        $14,
+        $15::jsonb,
+        $16,
+        $15::jsonb,
+        $7,
+        $6
+      )
+      returning id
+    `,
+    [
+      input.userId,
+      input.accountId ?? null,
+      input.portfolioId ?? null,
+      input.sessionId ?? null,
+      input.laneId ?? null,
+      input.mode,
+      input.action,
+      input.symbol ?? null,
+      input.assetClass ?? null,
+      input.confidence ?? null,
+      input.proposedNotional ?? null,
+      input.maxNotionalPerTrade ?? null,
+      input.maxDailyNotional ?? null,
+      input.rankedSnapshotHash ?? null,
+      JSON.stringify(input.decisionJson),
+      input.rejectedReason ?? null,
+    ],
+  );
+
+  if (!row?.id) {
+    throw new Error('Failed to persist simulation agent decision audit row.');
+  }
+
+  return { id: row.id };
+}
+
+export async function linkSimulationAgentDecisionToOrder(
+  input: LinkSimulationAgentDecisionToOrderInput,
+): Promise<void> {
+  const client = createDatabaseClient();
+  assertDatabaseConfigured(client);
+
+  const [decision] = await client.query<{
+    sessionId: string | null;
+    laneId: string | null;
+    accountId: string | null;
+    portfolioId: string | null;
+  }>(
+    `
+      select
+        session_id as "sessionId",
+        lane_id as "laneId",
+        account_id as "accountId",
+        portfolio_id as "portfolioId"
+      from ${simulationAgentDecisionsTable}
+      where id = $1
+      limit 1
+    `,
+    [input.decisionId],
+  );
+
+  await client.execute(
+    `
+      insert into ${simulationAgentOrderLinksTable} (
+        id,
+        decision_id,
+        simulation_order_id,
+        order_id,
+        link_type,
+        user_id,
+        account_id,
+        portfolio_id,
+        session_id,
+        lane_id,
+        notional
+      )
+      values (
+        gen_random_uuid(),
+        $1,
+        $2,
+        $2,
+        $9,
+        $3,
+        $4::uuid,
+        $5::uuid,
+        $6::uuid,
+        $7,
+        $8
+      )
+      on conflict do nothing
+    `,
+    [
+      input.decisionId,
+      input.simulationOrderId,
+      input.userId,
+      input.accountId ?? decision?.accountId ?? null,
+      input.portfolioId ?? decision?.portfolioId ?? null,
+      input.sessionId ?? decision?.sessionId ?? null,
+      input.laneId ?? decision?.laneId ?? null,
+      input.notional,
+      input.linkType ?? 'autonomous_submission',
+    ],
+  );
+}
+
+function getUtcDayStartIso(reference: Date = new Date()): string {
+  return new Date(
+    Date.UTC(reference.getUTCFullYear(), reference.getUTCMonth(), reference.getUTCDate()),
+  ).toISOString();
+}
+
+async function queryTodayAiNotionalFromOrderLinks(input: {
+  client: DatabaseClient;
+  userId: string;
+  laneId: string | null;
+  since: string;
+}): Promise<{ notional: number; rowCount: number }> {
+  const laneFilterSql = input.laneId ? 'and lane_id = $3' : '';
+  const params = input.laneId
+    ? [input.userId, input.since, input.laneId]
+    : [input.userId, input.since];
+
+  const [row] = await input.client.query<{ notional: number | string; rowCount: number }>(
+    `
+      select
+        coalesce(sum(notional), 0) as notional,
+        count(*)::int as "rowCount"
+      from ${simulationAgentOrderLinksTable}
+      where user_id = $1
+        and created_at >= $2
+        ${laneFilterSql}
+    `,
+    params,
+  );
+
+  return {
+    notional: roundCurrency(toNumber(row?.notional)),
+    rowCount: row?.rowCount ?? 0,
+  };
+}
+
+async function queryTodayAiNotionalFromNotes(input: {
+  client: DatabaseClient;
+  accountId: string;
+  laneId: string | null;
+  strategyTag: string;
+  since: string;
+}): Promise<number> {
+  const strategyPattern = `%[strategy:${input.strategyTag.trim()}]%`;
+  const autonomousPattern = '%[source:ai_autonomous]%';
+  const suggestedPattern = '%[source:ai_suggested]%';
+
+  const [row] = await input.client.query<{ grossAmount: number | string }>(
+    `
+      select
+        coalesce(sum(gross_amount), 0) as "grossAmount"
+      from ${ordersTable}
+      where account_id = $1
+        and created_at >= $2
+        and notes like $3
+        and (notes like $4 or notes like $5)
+        and ($6::text is null or notes ilike ('%lane=' || $6 || '%'))
+    `,
+    [input.accountId, input.since, strategyPattern, autonomousPattern, suggestedPattern, input.laneId],
+  );
+
+  return roundCurrency(toNumber(row?.grossAmount));
+}
+
+export async function getTodayAiSimulationOrderNotionalForUser(
+  userId: string,
+  strategyTag: string = DEFAULT_AI_SIMULATION_STRATEGY_TAG,
+  laneId: string | null = null,
+): Promise<number> {
+  const client = createDatabaseClient();
+  assertDatabaseConfigured(client);
+
+  const account = await ensureSimulationAccount(client, userId);
+  const since = getUtcDayStartIso();
+
+  try {
+    const structured = await queryTodayAiNotionalFromOrderLinks({
+      client,
+      userId,
+      laneId,
+      since,
+    });
+
+    if (structured.rowCount > 0) {
+      return structured.notional;
+    }
+
+    // Transition fallback: pre-metadata rows are still encoded in notes.
+    return queryTodayAiNotionalFromNotes({
+      client,
+      accountId: account.accountId,
+      laneId,
+      strategyTag,
+      since,
+    });
+  } catch (structuredError) {
+    try {
+      return await queryTodayAiNotionalFromNotes({
+        client,
+        accountId: account.accountId,
+        laneId,
+        strategyTag,
+        since,
+      });
+    } catch (fallbackError) {
+      throw new Error(
+        `Unable to determine AI simulation daily notional usage safely. ` +
+          `Structured query failed: ${
+            structuredError instanceof Error ? structuredError.message : String(structuredError)
+          }. Fallback query failed: ${
+            fallbackError instanceof Error ? fallbackError.message : String(fallbackError)
+          }.`,
+      );
+    }
+  }
 }
 
 export async function listSimulationTransactionsForUser(userId: string): Promise<SimulationTransaction[]> {

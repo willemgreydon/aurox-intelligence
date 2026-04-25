@@ -4,10 +4,17 @@ import type { getMarketGraphData } from '../../server/services/market-graph-serv
 import { Card } from '../ui/card';
 import { Section } from '../ui/section';
 import { StatusBadge } from '../ui/status-badge';
+import { CompactStatCard } from '../stats/compact-stat-card';
 
 type HomeFancySectionsProps = {
   stocks: StocksOverviewViewModel;
   marketGraph: Awaited<ReturnType<typeof getMarketGraphData>>;
+  portfolioSnapshot: {
+    portfolioValue: number;
+    investedCapital: number;
+    unrealizedPnl: number;
+    realizedPnl: number;
+  } | null;
   labels: {
     lanes: {
       eyebrow: string;
@@ -95,13 +102,51 @@ function toSparklinePath(values: number[]): string {
     .join(' ');
 }
 
-export function HomeFancySections({ stocks, marketGraph, labels, common }: HomeFancySectionsProps) {
+export function HomeFancySections({ stocks, marketGraph, portfolioSnapshot, labels, common }: HomeFancySectionsProps) {
   const movers = [...marketGraph.assets]
     .sort((left, right) => (right.snapshot?.changePercent ?? -Infinity) - (left.snapshot?.changePercent ?? -Infinity))
     .slice(0, 6);
 
   return (
     <>
+      {portfolioSnapshot ? (
+        <Section className="home-fancy home-fancy--portfolio">
+          <header className="home-fancy__header">
+            <div className="section__eyebrow">Portfolio metrics</div>
+            <h2 className="section__title">Simulation portfolio pulse</h2>
+            <p className="section__description">
+              Live snapshot of your simulated portfolio value and deployed capital.
+            </p>
+          </header>
+          <div className="analytics-strip">
+            <CompactStatCard
+              label="Portfolio value"
+              value={`$${portfolioSnapshot.portfolioValue.toFixed(2)}`}
+              valueTone={portfolioSnapshot.portfolioValue > 0 ? 'positive' : portfolioSnapshot.portfolioValue < 0 ? 'negative' : 'neutral'}
+              detail="Current market value of active simulated positions."
+            />
+            <CompactStatCard
+              label="Invested capital"
+              value={`$${portfolioSnapshot.investedCapital.toFixed(2)}`}
+              valueTone={portfolioSnapshot.investedCapital > 0 ? 'positive' : portfolioSnapshot.investedCapital < 0 ? 'negative' : 'neutral'}
+              detail="Capital currently allocated across open positions."
+            />
+            <CompactStatCard
+              label="Unrealized P&L"
+              value={`${portfolioSnapshot.unrealizedPnl >= 0 ? '+' : ''}$${Math.abs(portfolioSnapshot.unrealizedPnl).toFixed(2)}`}
+              valueTone={portfolioSnapshot.unrealizedPnl > 0 ? 'positive' : portfolioSnapshot.unrealizedPnl < 0 ? 'negative' : 'neutral'}
+              detail="Mark-to-market gain/loss on currently open positions."
+            />
+            <CompactStatCard
+              label="Realized P&L"
+              value={`${portfolioSnapshot.realizedPnl >= 0 ? '+' : ''}$${Math.abs(portfolioSnapshot.realizedPnl).toFixed(2)}`}
+              valueTone={portfolioSnapshot.realizedPnl > 0 ? 'positive' : portfolioSnapshot.realizedPnl < 0 ? 'negative' : 'neutral'}
+              detail="Locked-in gain/loss from completed simulated trades."
+            />
+          </div>
+        </Section>
+      ) : null}
+
       <Section className="home-fancy home-fancy--pulse section section--tinted">
         <header className="home-fancy__header">
           <div className="section__eyebrow">Live pulse</div>
@@ -114,7 +159,9 @@ export function HomeFancySections({ stocks, marketGraph, labels, common }: HomeF
         <div className="home-fancy-pulse-grid">
           {movers.map((asset) => {
             const tone = toTone(asset.snapshot?.changePercent ?? null);
-            const sparklinePath = toSparklinePath(asset.history.slice(-20).map((point) => point.close));
+            const sparklinePath = toSparklinePath(
+              asset.history.slice(-20).map((point: { close: number }) => point.close),
+            );
 
             return (
               <Card key={asset.assetId} className={`home-pulse-card home-pulse-card--${tone}`}>
@@ -221,4 +268,3 @@ export function HomeFancySections({ stocks, marketGraph, labels, common }: HomeF
     </>
   );
 }
-

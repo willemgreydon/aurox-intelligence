@@ -2,7 +2,7 @@ import { WorkstationPageHeader } from '../../components/asset/workstation-page-h
 import { InsightCallout } from '../../components/analytics/insight-callout';
 import { AnalysisToolbar } from '../../components/filters/analysis-toolbar';
 import { SignalBreakdownPanel } from '../../components/signals/signal-breakdown-panel';
-import { SignalSnapshotCard } from '../../components/signals/signal-snapshot-card';
+import { SignalScoreCard } from '../../components/signals/signal-score-card';
 import { AnalyticsTable } from '../../components/tables/analytics-table';
 import { Section } from '../../components/ui/section';
 import type { TableColumn } from '../../lib/dashboard/analytics-fixtures';
@@ -68,13 +68,34 @@ export default async function SignalsPage() {
       <Section className="dashboard-section">
         {leadSignal ? (
           <div className="analytics-two-grid">
-            <SignalSnapshotCard
+            <SignalScoreCard
               title={leadSignal.assetName}
-              score={leadSignal.scoreLabel}
-              direction={leadSignal.interpretation === 'bullish' ? 'up' : leadSignal.interpretation === 'bearish' ? 'down' : 'flat'}
-              tone={leadSignal.interpretation === 'bullish' ? 'positive' : leadSignal.interpretation === 'bearish' ? 'negative' : 'neutral'}
-              description={leadSignal.notes[0] ?? 'Composite signal derived from provider-backed price history.'}
-              confidence={Math.round(leadSignal.confidenceScore * 100)}
+              signal={{
+                score: leadSignal.score,
+                confidence: leadSignal.confidenceScore,
+                explanation: leadSignal.notes[0] ?? 'Composite signal derived from provider-backed price history.',
+                label:
+                  leadSignal.score <= -0.65
+                    ? 'Strong Bearish'
+                    : leadSignal.score <= -0.2
+                      ? 'Bearish'
+                      : leadSignal.score >= 0.65
+                        ? 'Strong Bullish'
+                        : leadSignal.score >= 0.2
+                          ? 'Bullish'
+                          : 'Neutral',
+                visualState:
+                  leadSignal.interpretation === 'bullish'
+                    ? 'bullish'
+                    : leadSignal.interpretation === 'bearish'
+                      ? 'bearish'
+                      : 'neutral',
+              }}
+              indicators={[
+                `MA spread ${leadSignal.scoreBreakdown.movingAverageContrib.toFixed(3)}`,
+                `Momentum ${leadSignal.scoreBreakdown.momentumContrib.toFixed(3)}`,
+                `Trend ${leadSignal.scoreBreakdown.trendContrib.toFixed(3)}`,
+              ]}
             />
             <SignalBreakdownPanel
               title={`${leadSignal.assetName} breakdown`}

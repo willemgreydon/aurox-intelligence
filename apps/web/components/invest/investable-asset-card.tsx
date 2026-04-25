@@ -1,9 +1,12 @@
-import type { ReactNode } from 'react';
+﻿import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { StatusBadge } from '../ui/status-badge';
 import { Card } from '../ui/card';
 import { cn } from '../../lib/utils';
-import { MiniSparkline } from '../charts/mini-sparkline';
+import { MiniIndicatorChart } from '../charts/mini-indicator-chart';
+import { SignalSummary } from '../signals/signal-summary';
+import type { SignalScoreLabel, SignalVisualState } from '../signals/signal-score-types';
+import type { MiniIndicatorChartModel } from '../../lib/charts/mini-indicator-model';
 
 type InvestableAssetCardProps = {
   href: string;
@@ -19,6 +22,16 @@ type InvestableAssetCardProps = {
   sparkline?: number[];
   categoryLabel?: string;
   actions?: ReactNode;
+  signal?: {
+    score: number;
+    label: SignalScoreLabel;
+    confidence: number;
+    explanation: string;
+    indicators: string[];
+    visualState?: SignalVisualState;
+  };
+  riskLabel?: 'Low' | 'Medium' | 'High' | 'Extreme';
+  miniChartModel?: MiniIndicatorChartModel;
 };
 
 function mapTone(value: InvestableAssetCardProps['actionAvailability']) {
@@ -64,16 +77,31 @@ export function InvestableAssetCard(props: InvestableAssetCardProps) {
           </div>
         </div>
         <div className="market-card__chart">
-          <MiniSparkline points={props.sparkline} label={`${props.symbol} trend`} />
+          <MiniIndicatorChart
+            points={props.sparkline}
+            label={`${props.symbol} trend`}
+            signalScore={props.signal?.score}
+            model={props.miniChartModel}
+          />
         </div>
       </div>
       <div className="analytics-card__body">
         <p>{props.thesis}</p>
-        <p>{props.riskSummary}</p>
+        <p>{props.riskSummary}{props.riskLabel ? ` | Risk: ${props.riskLabel}` : ''}</p>
         <p>Freshness: {props.freshnessLabel}</p>
+        {props.signal ? (
+          <SignalSummary
+            score={props.signal.score}
+            label={props.signal.label}
+            confidence={props.signal.confidence}
+            explanation={props.signal.explanation}
+            indicators={props.signal.indicators}
+            visualState={props.signal.visualState}
+          />
+        ) : null}
         <div className="analytics-card__action-grid market-card__actions">
-          <Link href={props.href} className="button button--secondary">
-            Open asset
+          <Link href={props.href} className="button button--primary">
+            View details
           </Link>
           {props.actions}
         </div>

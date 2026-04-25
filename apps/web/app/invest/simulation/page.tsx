@@ -333,9 +333,9 @@ export default async function SimulationPage({
           <CompactStatCard label={messages.simulation.cashBalance} value={formatUsdPrice(portfolio.summary.cashBalance, locale, messages.common.unavailable)} detail="Total cash in the simulation account before reserve allocation." />
           <CompactStatCard label="Available cash" value={formatUsdPrice(portfolio.summary.availableCash, locale, messages.common.unavailable)} detail="Cash currently available for new simulated orders." />
           <CompactStatCard label="Reserved cash" value={formatUsdPrice(portfolio.summary.reservedCash, locale, messages.common.unavailable)} detail="Reserved lane capital (currently 0 in this release)." />
-          <CompactStatCard label="Invested capital" value={formatUsdPrice(portfolio.summary.investedCapital, locale, messages.common.unavailable)} detail="Cost basis of all currently active simulated positions." />
-          <CompactStatCard label="Total equity" value={formatUsdPrice(portfolio.summary.equityValue, locale, messages.common.unavailable)} detail="Cash plus the current market value of all open stock positions." />
-          <CompactStatCard label={messages.simulation.portfolioValue} value={formatUsdPrice(portfolio.summary.portfolioValue, locale, messages.common.unavailable)} detail="Current market value of open stock positions." />
+          <CompactStatCard label="Invested capital" value={formatUsdPrice(portfolio.summary.investedCapital, locale, messages.common.unavailable)} valueTone={portfolio.summary.investedCapital > 0 ? 'positive' : portfolio.summary.investedCapital < 0 ? 'negative' : 'neutral'} detail="Cost basis of all currently active simulated positions." />
+          <CompactStatCard label="Total equity" value={formatUsdPrice(portfolio.summary.equityValue, locale, messages.common.unavailable)} detail="Cash plus the current market value of all open simulated positions." />
+          <CompactStatCard label={messages.simulation.portfolioValue} value={formatUsdPrice(portfolio.summary.portfolioValue, locale, messages.common.unavailable)} valueTone={portfolio.summary.portfolioValue > 0 ? 'positive' : portfolio.summary.portfolioValue < 0 ? 'negative' : 'neutral'} detail="Current market value of open simulated positions." />
           <CompactStatCard label="Active investments" value={String(portfolio.summary.activeInvestmentCount)} detail="Open simulated positions currently running." />
           <CompactStatCard label="Closed investments" value={String(portfolio.summary.closedInvestmentCount)} detail="Previously open positions now fully closed." />
           <CompactStatCard label={messages.simulation.unrealizedPnl} value={formatSignedCurrency(portfolio.summary.unrealizedPnl, locale)} detail="Open-position gain or loss versus average cost." />
@@ -401,7 +401,7 @@ export default async function SimulationPage({
                   : '0.00%',
               unrealizedPnl: formatSignedCurrency(position.unrealizedPnl, locale),
             }))}
-            emptyMessage="No stock positions are open yet. Use the stock list below to start your paper portfolio."
+            emptyMessage="No positions are open yet. Use the tradable universe below to start your paper portfolio."
             rowDetailsLabel={messages.table.rowDetails}
           />
           <AnalyticsTable
@@ -613,6 +613,8 @@ export default async function SimulationPage({
           unavailableReason={
             aiAgentAvailability.available ? undefined : aiAgentAvailability.reason
           }
+          isReadOnly={workstation.isReadOnly}
+          readOnlyReason={workstation.isReadOnly ? workstation.statusMessage : undefined}
         />
       </Section>
 
@@ -622,7 +624,7 @@ export default async function SimulationPage({
             <div className="section__eyebrow">{messages.simulation.assetUniverse}</div>
             <h2 className="dashboard-section-heading__title">Tradable simulation universe</h2>
             <p className="dashboard-section-heading__description">
-              Stock simulation is active. ETF and crypto assets are catalogued for simulation readiness. Live execution remains separately gated by broker readiness and policy controls.
+              Manual multi-asset lane supports simulated stocks, ETFs, and crypto with fictive cash only. Live execution remains separately gated by broker readiness and policy controls.
             </p>
           </div>
         </header>

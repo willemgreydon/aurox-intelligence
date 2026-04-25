@@ -15,6 +15,7 @@ import { MarketViewToggle } from '../../../components/invest/market-view-toggle'
 import { InvestableAssetCard } from '../../../components/invest/investable-asset-card';
 import { MarketAssetRow } from '../../../components/invest/market-asset-row';
 import { QuickTradeActions } from '../../../components/invest/quick-trade-actions';
+import { deriveAssetDecisionIntelligence } from '../../../server/services/decision-intelligence-service';
 
 export const dynamic = 'force-dynamic';
 
@@ -263,7 +264,19 @@ export default async function PortfolioPage({
           </header>
           <div className={portfolio.filters.view === 'grid' ? 'analytics-two-grid' : 'market-list'}>
             {portfolio.openPositions.map((position) => (
-              portfolio.filters.view === 'grid' ? (
+              (() => {
+                const decision = deriveAssetDecisionIntelligence({
+                  symbol: position.symbol,
+                  assetClass: position.assetClass,
+                  history: position.sparkline ?? [],
+                  latestPrice: position.marketPrice,
+                  dayMovePercent: null,
+                  portfolioValue: summary?.equityValue ?? 100000,
+                  quantity: position.quantity,
+                  existingExposure: position.marketValue,
+                });
+
+                return portfolio.filters.view === 'grid' ? (
                 <InvestableAssetCard
                   key={position.id}
                   href={getAssetDetailHref(position.symbol, position.assetClass)}
@@ -277,7 +290,16 @@ export default async function PortfolioPage({
                   actionAvailability="simulated"
                   insightStance={position.unrealizedPnl > 0 ? 'positive' : position.unrealizedPnl < 0 ? 'negative' : 'neutral'}
                   riskSummary={`Avg ${formatUsdPrice(position.averageCost, locale, '-')} · Market value ${formatUsdPrice(position.marketValue, locale, '-')}`}
+                  riskLabel={decision.risk.label}
                   sparkline={position.sparkline}
+                  signal={{
+                    score: decision.signal.score,
+                    label: decision.signal.label,
+                    confidence: decision.signal.confidence,
+                    explanation: decision.signal.explanation,
+                    indicators: decision.signal.contributingIndicators,
+                    visualState: decision.signal.visualState,
+                  }}
                   actions={(
                     <QuickTradeActions
                       detailHref={getAssetDetailHref(position.symbol, position.assetClass)}
@@ -307,6 +329,14 @@ export default async function PortfolioPage({
                   actionAvailability="simulated"
                   insightStance={position.unrealizedPnl > 0 ? 'positive' : position.unrealizedPnl < 0 ? 'negative' : 'neutral'}
                   sparkline={position.sparkline}
+                  riskLabel={decision.risk.label}
+                  signal={{
+                    score: decision.signal.score,
+                    label: decision.signal.label,
+                    confidence: decision.signal.confidence,
+                    visualState: decision.signal.visualState,
+                    explanation: decision.signal.explanation,
+                  }}
                   actions={(
                     <div className="market-row__action-grid">
                       <QuickTradeActions
@@ -325,7 +355,8 @@ export default async function PortfolioPage({
                     </div>
                   )}
                 />
-              )
+              );
+              })()
             ))}
           </div>
         </Section>

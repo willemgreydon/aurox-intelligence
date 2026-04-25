@@ -87,6 +87,7 @@ function buildUserMessage(request: AiSimulationAgentRequest): string {
     for (const asset of request.rankedAssets.slice(0, 5)) {
       lines.push(
         `- ${asset.symbol} (${asset.assetKind}): score=${asset.score.toFixed(2)}, confidence=${asset.confidence.toFixed(2)}, recommendation=${asset.recommendation}`,
+        `  Explanation: ${asset.explanation}`,
         `  Signal: ${asset.signalSummary}`,
         `  Risk: ${asset.riskSummary}`,
       );
