@@ -1,15 +1,16 @@
-# Aurox Intelligence
+<p align="center">
+  <img src="docs/screenshots/logo.png" alt="Aurox Intelligence" width="120" />
+</p>
 
-Aurox Intelligence is a simulation-first financial intelligence platform built as a TypeScript monorepo.
+<h1 align="center">Aurox Intelligence</h1>
 
-This repository combines:
-- market and macro data ingestion adapters
-- typed contracts and repository-backed read models
-- explainable signals and forecasting modules
-- a deterministic simulation trading engine
-- workstation-style web and worker runtimes
+<p align="center">
+  Simulation-first financial intelligence platform — market data · explainable signals · deterministic simulation trading
+</p>
 
-This is not a generic CRUD app. Treat every change as if real capital could be impacted by downstream execution logic.
+<p align="center">
+  <img src="docs/screenshots/screenshot-chart-candlestick.png" alt="Aurox Intelligence — candlestick chart with moving average overlay" width="900" />
+</p>
 
 ---
 
@@ -53,6 +54,10 @@ Safety and correctness take priority over convenience:
 
 ## Current Product Surfaces
 
+<p align="center">
+  <img src="docs/screenshots/screenshot-momentum-radar.png" alt="Momentum radar and top movers — live price feed with mini sparklines" width="900" />
+</p>
+
 Web routes include:
 - `/dashboard`
 - `/market`
@@ -78,6 +83,16 @@ Web routes include:
 
 ---
 
+## Simulation and Lane Configuration
+
+<p align="center">
+  <img src="docs/screenshots/screenshot-simulation-lanes.png" alt="Simulation lane configuration — capital limits, asset scope, micro-trading ratio" width="900" />
+</p>
+
+Simulation is the default execution target. Lanes define capital limits, asset scope, and execution policy per strategy. Live execution is gated behind a readiness check.
+
+---
+
 ## Monorepo Structure
 
 ```text
@@ -97,6 +112,34 @@ packages/
   observability/               # Logging/telemetry scaffolding
   design-tokens/               # Shared tokens/CSS themes
 ```
+
+---
+
+## Knowledge Architecture
+
+Aurox is backed by a structured knowledge base that maps financial domains, signal frameworks, and system architecture into a connected graph. The knowledge engine powers explainability across signals, recommendations, and risk decisions.
+
+<p align="center">
+  <img src="docs/screenshots/screenshot-knowledge-graph-overview.png" alt="Aurox knowledge graph — system domains and architecture nodes" width="900" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/screenshot-knowledge-graph-detailed.png" alt="Aurox knowledge graph — detailed view with ingestion, forecasting, and agent nodes" width="900" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/screenshot-finance-domains.png" alt="Aurox finance domain graph — risk management, signal framework, execution layer, portfolio construction" width="900" />
+</p>
+
+---
+
+## Localization
+
+The platform is localized across multiple languages. All financial UI labels, risk copy, and signal explanations are translation-ready.
+
+<p align="center">
+  <img src="docs/screenshots/screenshot-home-localized.png" alt="Aurox Intelligence — Chinese localization of the home screen and portfolio metrics" width="900" />
+</p>
 
 ---
 
