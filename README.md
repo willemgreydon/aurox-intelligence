@@ -120,15 +120,15 @@ packages/
 Aurox is backed by a structured knowledge base that maps financial domains, signal frameworks, and system architecture into a connected graph. The knowledge engine powers explainability across signals, recommendations, and risk decisions.
 
 <p align="center">
-  <img src="docs/screenshots/screenshot-knowledge-graph-overview.png" alt="Aurox knowledge graph — system domains and architecture nodes" width="900" />
+  <img src="docs/screenshots/screenshot-knowledge-graph-overview.jpg" alt="Aurox knowledge graph — system domains and architecture nodes" width="900" />
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/screenshot-knowledge-graph-detailed.png" alt="Aurox knowledge graph — detailed view with ingestion, forecasting, and agent nodes" width="900" />
+  <img src="docs/screenshots/screenshot-knowledge-graph-detailed.jpg" alt="Aurox knowledge graph — detailed view with ingestion, forecasting, and agent nodes" width="900" />
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/screenshot-finance-domains.png" alt="Aurox finance domain graph — risk management, signal framework, execution layer, portfolio construction" width="900" />
+  <img src="docs/screenshots/screenshot-finance-domains.jpg" alt="Aurox finance domain graph — risk management, signal framework, execution layer, portfolio construction" width="900" />
 </p>
 
 ---
