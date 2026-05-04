@@ -22,6 +22,7 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
+    "@repo/api-contracts": "workspace:*",
     "zod": "^4.1.5"
   },
   "devDependencies": {

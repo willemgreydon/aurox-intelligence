@@ -47,12 +47,13 @@
     "COINBASE_API_BASE_URL",
     "COINBASE_ALLOWED_PRODUCT_IDS",
     "COINBASE_JWT_EXPIRES_IN_SEC",
+    "OPENAI_API_KEY",
     "ENABLE_EXPERIMENTAL_COREPACK"
   ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**"]
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
     },
     "dev": {
       "cache": false,
