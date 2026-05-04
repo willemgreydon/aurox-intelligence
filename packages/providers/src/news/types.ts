@@ -6,6 +6,7 @@ export type FetchNewsInput = {
   toIso: string;
   timeoutMs?: number;
   maxItemsPerSymbol?: number;
+  forceMock?: boolean;
 };
 
 export type FetchNewsOutput = {

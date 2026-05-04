@@ -59,6 +59,7 @@ export default async function HomePage() {
   const portfolioOverview = portfolioResult.value;
   const news = newsResult.value;
   const dbDegraded = stocksResult.degraded || marketGraphResult.degraded || portfolioResult.degraded || newsResult.degraded;
+  const marketNewsEnabled = process.env.NEXT_PUBLIC_ENABLE_MARKET_NEWS !== 'false';
   perfLog('page:/ total', pageStart);
 
   return (
@@ -137,11 +138,13 @@ export default async function HomePage() {
         }}
         common={{ unavailable: messages.common.unavailable }}
       />
-      <section className="dashboard-section home-news-section">
-        <div className="shell-container home-news-section__inner">
-          <NewsStreamWidget news={news} />
-        </div>
-      </section>
+      {marketNewsEnabled ? (
+        <section className="dashboard-section home-news-section">
+          <div className="shell-container home-news-section__inner">
+            <NewsStreamWidget news={news} />
+          </div>
+        </section>
+      ) : null}
     </>
   );
 }

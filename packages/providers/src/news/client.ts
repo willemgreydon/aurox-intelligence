@@ -205,7 +205,7 @@ export async function fetchNewsStream(input: FetchNewsInput): Promise<NewsStream
 
   const providers: NewsProvider[] = [new FinnhubNewsProvider(), new PolygonNewsProvider()];
   const active = providers.filter((provider) => provider.isConfigured());
-  const runner = active.length > 0 ? active : [new MockNewsProvider()];
+  const runner = input.forceMock ? [new MockNewsProvider()] : (active.length > 0 ? active : [new MockNewsProvider()]);
   const results = await Promise.all(runner.map((provider) => provider.fetchNews({ ...input, symbols: normalizedSymbols })));
   const items = dedupeNews(results.flatMap((result) => result.items));
   const providerHealth = results.map((result) => result.providerStatus);

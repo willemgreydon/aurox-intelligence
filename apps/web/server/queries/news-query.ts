@@ -97,8 +97,9 @@ async function fetchRssNews(): Promise<NewsStreamResponse> {
       const xml = await response.text();
       const parsed = parseRssItems(xml).slice(0, perSource);
       for (const entry of parsed) {
+        const stableId = encodeURIComponent(entry.url).slice(-28);
         items.push({
-          id: `rss:${source.id}:${Buffer.from(entry.url).toString('base64').slice(0, 24)}`,
+          id: `rss:${source.id}:${stableId}`,
           symbol: source.category === 'crypto' ? 'CRYPTO' : 'MARKET',
           title: entry.title,
           summary: entry.summary || '',
