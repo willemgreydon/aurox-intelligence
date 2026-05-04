@@ -23,7 +23,6 @@ type QuickTradeActionsProps = {
   watchlistLabelAdd?: string;
   watchlistLabelRemove?: string;
   reviewRiskHref?: string;
-  liveTradingEnabled?: boolean;
 };
 
 export function QuickTradeActions({
@@ -41,7 +40,6 @@ export function QuickTradeActions({
   watchlistLabelAdd = 'Add to watchlist',
   watchlistLabelRemove = 'Remove from watchlist',
   reviewRiskHref = '/invest/live-readiness',
-  liveTradingEnabled = false,
 }: QuickTradeActionsProps) {
   const simulationHref = `/invest/simulation?symbol=${encodeURIComponent(symbol)}&assetClass=${encodeURIComponent(assetClass)}&lane=${encodeURIComponent(strategyLaneId)}`;
 
@@ -63,21 +61,28 @@ export function QuickTradeActions({
 
   return (
     <>
-      <Link href={detailHref} className="button button--primary">
-        {detailLabel}
-      </Link>
-      <Link href={simulationHref} className="button button--secondary" aria-disabled={disabled} title={disabledReason}>
-        Simulate trade
-      </Link>
+      {disabled ? (
+        <button type="button" className="button button--secondary" disabled title={disabledReason}>
+          Simulate trade
+        </button>
+      ) : (
+        <Link href={simulationHref} className="button button--secondary" title={disabledReason}>
+          Simulate trade
+        </Link>
+      )}
+      {/* Live trading is permanently gated — this button never submits or navigates */}
       <button
         type="button"
-        className="button button--secondary"
-        disabled={!liveTradingEnabled}
-        title={liveTradingEnabled ? 'Live execution controls' : 'Live trading is disabled until readiness gates are satisfied.'}
-        aria-label={liveTradingEnabled ? 'Open live trading controls' : 'Live trading disabled until readiness gates are satisfied'}
+        className="button button--secondary button--locked"
+        disabled
+        aria-disabled="true"
+        aria-describedby="live-trade-locked-reason"
       >
-        {liveTradingEnabled ? 'Live trade' : 'Live trade locked'}
+        Live trade locked
       </button>
+      <span id="live-trade-locked-reason" className="sr-only">
+        Live trading is disabled until all readiness gates are satisfied.
+      </span>
       <Link href={reviewRiskHref} className="button button--secondary">
         Review risk
       </Link>

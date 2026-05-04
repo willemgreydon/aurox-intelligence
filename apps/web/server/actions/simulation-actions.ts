@@ -1,7 +1,7 @@
 'use server';
 
 import { resetSimulationAccount, getUserWatchlist, toggleWatchlistItem } from '@repo/db';
-import type { SimulationAssetClass, SimulationLaneId } from '@repo/api-contracts';
+import type { SimulationAssetClass, SimulationLaneId, SimulationOrderErrorCode } from '@repo/api-contracts';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -55,6 +55,43 @@ const startSimulationSessionInputSchema = z.object({
   microAllocationPercent: z.coerce.number().min(0).max(100),
   returnTo: z.enum(['/invest', '/invest/simulation']).default('/invest/simulation'),
 });
+
+type MappedOrderError = { message: string; code: SimulationOrderErrorCode };
+
+function mapSimulationOrderError(raw: string, symbol: string): MappedOrderError {
+  if (raw.includes('Insufficient fictive cash')) {
+    return { code: 'INSUFFICIENT_CASH', message: 'Insufficient simulation cash balance for this order.' };
+  }
+  if (raw.includes('Insufficient position quantity')) {
+    return { code: 'INSUFFICIENT_POSITION', message: `No open ${symbol} position is available to sell, or position size is too small.` };
+  }
+  if (raw.includes('Order quantity must be greater than zero')) {
+    return { code: 'ZERO_QUANTITY', message: 'Order quantity must be greater than zero.' };
+  }
+  if (raw.includes('Position metadata mismatch')) {
+    return { code: 'POSITION_STATE_CHANGED', message: 'Position state has changed. Please refresh the page and try again.' };
+  }
+  if (raw.includes('No active simulation session')) {
+    return { code: 'NO_ACTIVE_SESSION', message: 'No active simulation session. Start or resume a session before trading.' };
+  }
+  if (raw.includes('Simulation database is currently unavailable')) {
+    return { code: 'INTERNAL_ERROR', message: 'Simulation database is currently unavailable.' };
+  }
+  if (raw.includes('price') || raw.includes('quote') || raw.includes('market data')) {
+    return { code: 'MARKET_DATA_UNAVAILABLE', message: 'Market price data is temporarily unavailable. Please try again shortly.' };
+  }
+  if (
+    raw.includes('inconsistent types') ||
+    raw.includes('postgres') ||
+    raw.includes('syntax error') ||
+    raw.includes('violates') ||
+    raw.includes('duplicate key') ||
+    raw.includes('ERROR:')
+  ) {
+    return { code: 'INTERNAL_ERROR', message: 'An internal error occurred while processing the simulation order. Please try again.' };
+  }
+  return { code: 'INTERNAL_ERROR', message: raw };
+}
 
 function laneSupportsAssetClass(laneId: SimulationLaneId, assetClass: SimulationAssetClass) {
   if (laneId === 'manual_stock_lane') {
@@ -162,20 +199,36 @@ export async function createSimulatedOrderAction(_: FormState, formData: FormDat
     return formStateFromZodError(parsed.error);
   }
 
+  if (parsed.data.side === 'sell' && parsed.data.quantity <= 0) {
+    return errorFormState(
+      `No open ${parsed.data.symbol} position is available to sell.`,
+      {},
+      'NO_POSITION_TO_SELL',
+    );
+  }
+
   let order;
   try {
     const simulationSession = await assertSimulationSessionAllowsTradingForCurrentUser(parsed.data.simulationSessionId);
 
     if (simulationSession.laneId !== parsed.data.strategyLaneId) {
-      return errorFormState(`This order was prepared for ${parsed.data.strategyLaneId}, but the active simulation lane is ${simulationSession.laneId}. Refresh the workstation and submit again.`);
+      return errorFormState(
+        `This order was prepared for ${parsed.data.strategyLaneId}, but the active simulation lane is ${simulationSession.laneId}. Refresh the workstation and submit again.`,
+        {},
+        'LANE_MISMATCH',
+      );
     }
 
     if (!laneSupportsAssetClass(simulationSession.laneId, parsed.data.assetClass)) {
-      return errorFormState(buildUnsupportedLaneMessage(simulationSession.laneId, parsed.data.assetClass));
+      return errorFormState(buildUnsupportedLaneMessage(simulationSession.laneId, parsed.data.assetClass), {}, 'UNSUPPORTED_ASSET_CLASS');
     }
 
     if (simulationSession.assetScope !== 'multi-asset' && simulationSession.assetScope !== parsed.data.assetClass) {
-      return errorFormState(`The active session is scoped to ${simulationSession.assetScope.toUpperCase()} assets. Switch to a matching or multi-asset session before placing this order.`);
+      return errorFormState(
+        `The active session is scoped to ${simulationSession.assetScope.toUpperCase()} assets. Switch to a matching or multi-asset session before placing this order.`,
+        {},
+        'SCOPE_MISMATCH',
+      );
     }
 
     order = await executeSimulationOrderForCurrentUser({
@@ -190,7 +243,9 @@ export async function createSimulatedOrderAction(_: FormState, formData: FormDat
       idempotencyKey: parsed.data.idempotencyKey,
     });
   } catch (error) {
-    return errorFormState(error instanceof Error ? error.message : messages.simulation.orderRecorded);
+    const raw = error instanceof Error ? error.message : String(error);
+    const { message, code } = mapSimulationOrderError(raw, parsed.data.symbol);
+    return errorFormState(message, {}, code);
   }
 
   revalidatePath('/dashboard');

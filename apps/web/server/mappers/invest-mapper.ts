@@ -3,6 +3,7 @@ import {
   deriveInvestmentRecommendation,
   deriveMarketInsight,
   rankAssets,
+  deriveNewsImpactExplanation,
   type AssetRankingInput,
 } from '@repo/ai-market-intelligence';
 import type { InvestReadModel } from '../queries/invest-query';
@@ -103,8 +104,9 @@ export function mapInvestOverview(readModel: InvestReadModel): InvestOverview {
   }));
 
   const recommendations = enriched
-    .map(({ asset, observation, insight, assetFreshness }) =>
-      deriveInvestmentRecommendation({
+    .map(({ asset, observation, insight, assetFreshness }) => {
+      const newsImpact = deriveNewsImpactExplanation(asset.symbol, readModel.newsStream.items);
+      const recommendation = deriveInvestmentRecommendation({
         assetId: asset.assetId,
         assetName: asset.name,
         symbol: asset.symbol,
@@ -114,9 +116,22 @@ export function mapInvestOverview(readModel: InvestReadModel): InvestOverview {
         freshnessState: assetFreshness,
         sourceSummary,
         actionAvailability: asset.actionAvailability,
-        riskSummary: asset.riskSummary,
-      }),
-    )
+        riskSummary:
+          newsImpact.riskFlag === 'HIGH' || newsImpact.riskFlag === 'CRITICAL'
+            ? `${asset.riskSummary} News risk detected. Execution requires manual review.`
+            : asset.riskSummary,
+      });
+      return {
+        ...recommendation,
+        newsImpactScore: newsImpact.score,
+        newsRiskFlag: newsImpact.riskFlag,
+        executionReviewRequired: newsImpact.riskFlag === 'HIGH' || newsImpact.riskFlag === 'CRITICAL',
+        reasons: [
+          ...recommendation.reasons,
+          `News impact score ${(newsImpact.score * 100).toFixed(0)}% (${newsImpact.riskFlag}).`,
+        ],
+      };
+    })
     .sort((left, right) => right.confidence - left.confidence)
     .slice(0, 4);
 

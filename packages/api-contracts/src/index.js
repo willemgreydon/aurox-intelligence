@@ -9,6 +9,7 @@ export * from './ingestion/ingestion-run';
 export * from './intelligence/market-intelligence';
 export * from './invest/invest';
 export * from './market/market';
+export * from './news/news';
 export * from './signals/signals';
 export * from './simulation/simulation';
 export * from './stocks/stocks';

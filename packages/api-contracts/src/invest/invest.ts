@@ -36,6 +36,9 @@ export const investmentRecommendationSchema = z.object({
   reasons: z.array(z.string()),
   riskNotice: z.string(),
   isPersonalized: z.boolean(),
+  newsImpactScore: z.number().min(0).max(1).default(0.5),
+  newsRiskFlag: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']).default('LOW'),
+  executionReviewRequired: z.boolean().default(false),
 });
 
 export const connectedInvestmentAccountSchema = z.object({

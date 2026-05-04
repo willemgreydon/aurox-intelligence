@@ -5,6 +5,7 @@ export {
   mapRankingRecommendation,
   computeRankingConfidence,
 } from './ranking-engine';
+export { deriveNewsImpactExplanation } from './news/news-impact';
 export type {
   AssetRankingInput,
   CompositeScoreComponents,
@@ -234,5 +235,8 @@ export function deriveInvestmentRecommendation(input: RecommendationInput): Inve
     ],
     riskNotice: input.riskSummary,
     isPersonalized: false,
+    newsImpactScore: 0.5,
+    newsRiskFlag: 'LOW',
+    executionReviewRequired: false,
   };
 }

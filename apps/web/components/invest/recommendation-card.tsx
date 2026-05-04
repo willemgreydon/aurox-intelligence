@@ -9,6 +9,7 @@ type RecommendationCardProps = {
   summary: string;
   reasons: string[];
   sparkline?: number[];
+  newsRiskFlag?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 };
 
 function mapTone(action: RecommendationCardProps['action']) {
@@ -27,7 +28,7 @@ function mapTone(action: RecommendationCardProps['action']) {
   return 'info' as const;
 }
 
-export function RecommendationCard({ symbol, action, confidence, summary, reasons, sparkline }: RecommendationCardProps) {
+export function RecommendationCard({ symbol, action, confidence, summary, reasons, sparkline, newsRiskFlag }: RecommendationCardProps) {
   return (
     <Card className="analytics-card market-card">
       <div className="analytics-card__header">
@@ -43,6 +44,11 @@ export function RecommendationCard({ symbol, action, confidence, summary, reason
       </div>
       <div className="analytics-card__body">
         <p>Confidence: {(confidence * 100).toFixed(0)}%</p>
+        {newsRiskFlag === 'HIGH' || newsRiskFlag === 'CRITICAL' ? (
+          <p className="simulation-form__meta simulation-form__meta--warning">
+            News risk detected. Execution requires manual review.
+          </p>
+        ) : null}
         <ul className="detail-slot-card__list">
           {reasons.map((reason) => (
             <li key={reason}>{reason}</li>

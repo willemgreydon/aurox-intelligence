@@ -32,3 +32,19 @@ export const adminMonitoringSchema = z.object({
     warnings: z.array(adminWarningSchema),
     notes: z.array(z.string()),
 });
+export const monitoredProviderConfigSchema = z.object({
+    id: z.string(),
+    providerKey: z.string(),
+    providerName: z.string(),
+    category: z.enum(['MARKET_DATA', 'NEWS', 'MACRO', 'AI', 'BROKER', 'DATABASE', 'OBSERVABILITY']),
+    enabled: z.boolean(),
+    monitorHealth: z.boolean(),
+    monitorLatency: z.boolean(),
+    monitorQuota: z.boolean(),
+    monitorErrors: z.boolean(),
+    displayInDashboard: z.boolean(),
+    alertThresholdMs: z.number().int().positive().optional(),
+    failureThreshold: z.number().int().positive().optional(),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+});

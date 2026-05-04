@@ -1224,9 +1224,9 @@ export async function executeSimulationOrder(input: SimulationExecutionInput): P
         `
           update ${positionsTable}
           set
-            quantity = $2,
-            realized_pnl = coalesce(realized_pnl, 0) + $3,
-            closed_at = case when $2 = 0 then $4 else null end,
+            quantity = $2::numeric,
+            realized_pnl = coalesce(realized_pnl, 0) + $3::numeric,
+            closed_at = case when $2::numeric = 0 then $4 else null end,
             updated_at = $4
           where id = $1
         `,
@@ -1238,8 +1238,8 @@ export async function executeSimulationOrder(input: SimulationExecutionInput): P
       `
         update ${accountsTable}
         set
-          cash_balance = $2,
-          realized_pnl = realized_pnl + $3,
+          cash_balance = $2::numeric,
+          realized_pnl = realized_pnl + $3::numeric,
           updated_at = $4
         where id = $1
       `,

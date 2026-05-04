@@ -5,6 +5,7 @@ import { hashSymbols } from '../lib/cache-key';
 import { perfLog, perfNow } from '../lib/perf';
 import { loadQuoteSnapshotsRequestScoped } from '../services/stock-simulation-service';
 import type { PersistedMarketHistoryBar } from '@repo/db';
+import { withDbReadFallback } from '../lib/db-runtime';
 
 export type AssetAnalysisReadModel = {
   assetId: string;
@@ -102,7 +103,17 @@ export async function getAnalysisReadModel(): Promise<AnalysisReadModel> {
   perfLog(`analysis-query:cache-miss symbols=${symbols.length}`, t0);
 
   const tDb = perfNow();
-  const dashboard = await getDashboardReadModel();
+  const dashboard = (await withDbReadFallback('analysis-query:getDashboardReadModel', {
+    dataSource: { configured: false, mode: 'stub' as const },
+    assetCount: 0,
+    latestObservationAt: null,
+    latestForecastAt: null,
+    latestIngestionCompletedAt: null,
+    latestSuccessfulSyncAt: null,
+    forecasts: [],
+    ingestionRuns: [],
+    providerSyncs: [],
+  }, () => getDashboardReadModel())).value;
   perfLog('analysis-query:dashboard-fetch', tDb);
 
   const symbolsKey = symbols.join(',');

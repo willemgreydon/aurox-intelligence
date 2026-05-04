@@ -31,6 +31,7 @@ export async function Header({ locale, messages }: HeaderProps) {
       items: [
         { href: '/market', label: messages.shell.nav.marketOverview, icon: 'MR' },
         { href: '/stocks', label: messages.shell.nav.stocks, icon: 'ST' },
+        { href: '/news', label: messages.shell.nav.newsStream, icon: 'NW' },
         { href: '/fx', label: messages.shell.nav.fx, icon: 'FX' },
       ],
     },

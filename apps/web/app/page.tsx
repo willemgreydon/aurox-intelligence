@@ -4,28 +4,70 @@ import { getSimulationOverviewDataForUser } from '../server/services/stock-simul
 import { getOptionalCurrentSession } from '../server/auth/session';
 import { HeroSection } from '../components/sections/hero-section';
 import { HomeFancySections } from '../components/sections/home-fancy-sections';
+import { NewsStreamWidget } from '../components/news/news-stream-widget';
 import { getMessages } from '../lib/i18n/messages';
 import { getRequestLocale } from '../server/i18n/locale';
 import { perfLog, perfNow } from '../server/lib/perf';
+import { withDbReadFallback } from '../server/lib/db-runtime';
+import type { StocksOverviewViewModel } from '../server/mappers/stocks-mapper';
+import { getNewsStreamData } from '../server/services/news-service';
 
 export const dynamic = 'force-dynamic';
+
+function buildFallbackStocks(messages: ReturnType<typeof getMessages>): StocksOverviewViewModel {
+  return {
+    title: 'Stocks Workstation',
+    description: 'Fallback stock snapshot.',
+    status: 'attention',
+    freshnessState: 'stale',
+    lastUpdated: null,
+    freshnessSummary: 'Local fallback mode',
+    sourceSummary: 'Database unavailable.',
+    metrics: [{ id: 'provider', label: 'Provider state', value: 'FALLBACK', detail: 'Database unavailable.', status: 'attention', statusLabel: 'Attention', statusTone: 'warning' }],
+    marketSnapshot: { advancers: 0, decliners: 0, unchanged: 0, averageMovePercent: null, strongestSymbol: null, weakestSymbol: null },
+    trackedStocks: [],
+    topMovers: [],
+    sectorViews: [],
+    forecastPreview: [],
+    latestInsight: null,
+    insights: [],
+    emptyStateMessage: messages.common.unavailable,
+    statusLabel: 'Attention',
+    statusTone: 'warning',
+    lastUpdatedLabel: messages.common.unavailable,
+    freshnessLabel: messages.common.unavailable,
+  } satisfies StocksOverviewViewModel;
+}
 
 export default async function HomePage() {
   const pageStart = perfNow();
   const locale = await getRequestLocale();
   const messages = getMessages(locale);
-  const [stocks, marketGraph, auth] = await Promise.all([
-    getStocksOverviewData(locale, messages),
-    getMarketGraphData(),
+  const [stocksResult, marketGraphResult, newsResult, auth] = await Promise.all([
+    withDbReadFallback('home:stocks-overview', buildFallbackStocks(messages), () =>
+      getStocksOverviewData(locale, messages),
+    ),
+    withDbReadFallback('home:market-graph', { provider: 'cache', assets: [] }, () => getMarketGraphData()),
+    withDbReadFallback('home:news-stream', { items: [], providerHealth: [], updatedAt: new Date().toISOString(), degraded: true, message: 'Database unavailable — showing local fallback data.' }, () => getNewsStreamData()),
     getOptionalCurrentSession(),
   ]);
-  const portfolioOverview = auth
-    ? await getSimulationOverviewDataForUser(auth.user.id).catch(() => null)
-    : null;
+  const portfolioResult = auth
+    ? await withDbReadFallback('home:simulation-overview', null, () => getSimulationOverviewDataForUser(auth.user.id))
+    : { value: null, degraded: false, reason: null as string | null };
+  const stocks = stocksResult.value;
+  const marketGraph = marketGraphResult.value;
+  const portfolioOverview = portfolioResult.value;
+  const news = newsResult.value;
+  const dbDegraded = stocksResult.degraded || marketGraphResult.degraded || portfolioResult.degraded || newsResult.degraded;
   perfLog('page:/ total', pageStart);
 
   return (
     <>
+      {dbDegraded ? (
+        <div className="section" style={{ paddingTop: '0.75rem', paddingBottom: '0.5rem' }}>
+          <p className="pill">Database unavailable — showing local fallback data.</p>
+        </div>
+      ) : null}
       <HeroSection
         stocks={stocks}
         marketGraph={marketGraph}
@@ -95,6 +137,9 @@ export default async function HomePage() {
         }}
         common={{ unavailable: messages.common.unavailable }}
       />
+      <div className="section">
+        <NewsStreamWidget news={news} />
+      </div>
     </>
   );
 }

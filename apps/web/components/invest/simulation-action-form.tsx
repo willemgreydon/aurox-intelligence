@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useMemo, useState } from 'react';
 import { useFormStatus } from 'react-dom';
-import { emptyFormState, type OrderResult } from '../../server/auth/forms';
+import { emptyFormState, type FormState, type OrderResult } from '../../server/auth/forms';
 import {
   createSimulatedOrderAction,
   resetSimulationAccountAction,
@@ -123,9 +123,11 @@ export function SimulatedOrderForm({
     return parsed;
   }, [quantityValue]);
 
+  const hasNoPositionToSell = side === 'sell' && (currentHeldQuantity ?? 0) <= 0;
+
   const effectiveDisabledReason = disabled
     ? disabledReason
-    : side === 'sell' && (currentHeldQuantity ?? 0) <= 0
+    : hasNoPositionToSell
       ? `No open ${symbol} position is available to sell.`
       : undefined;
 
@@ -185,8 +187,31 @@ export function SimulatedOrderForm({
         <input type="hidden" name="quantity" value={String(quantity)} />
       )}
 
-      <ActionButton className="button button--secondary simulation-form__button" label={label} disabled={disabled} />
+      <ActionButton className="button button--secondary simulation-form__button" label={label} disabled={disabled || hasNoPositionToSell} />
 
+      <SimulationFormFeedback
+        messageId={messageId}
+        effectiveDisabledReason={effectiveDisabledReason}
+        fillDetail={fillDetail}
+        state={state}
+      />
+    </form>
+  );
+}
+
+function SimulationFormFeedback({
+  messageId,
+  effectiveDisabledReason,
+  fillDetail,
+  state,
+}: {
+  messageId: string;
+  effectiveDisabledReason: string | undefined;
+  fillDetail: string | null;
+  state: FormState;
+}) {
+  return (
+    <>
       {effectiveDisabledReason ? (
         <p className="simulation-form__meta simulation-form__meta--warning" aria-live="polite">
           {effectiveDisabledReason}
@@ -194,15 +219,19 @@ export function SimulatedOrderForm({
       ) : null}
 
       {fillDetail ? (
-        <p id={messageId} className="simulation-form__meta simulation-form__meta--success" aria-live="polite">
+        <p id={messageId} className="simulation-form__meta simulation-form__meta--success" role="status" aria-live="polite">
           {fillDetail}
         </p>
-      ) : state.message ? (
-        <p id={messageId} className={`simulation-form__meta simulation-form__meta--${state.status}`} aria-live="polite">
+      ) : state.status === 'error' && state.message ? (
+        <p id={messageId} className="simulation-form__meta simulation-form__meta--error" role="alert" aria-live="assertive">
+          {state.message}
+        </p>
+      ) : state.status === 'success' && state.message && !fillDetail ? (
+        <p id={messageId} className="simulation-form__meta simulation-form__meta--success" role="status" aria-live="polite">
           {state.message}
         </p>
       ) : null}
-    </form>
+    </>
   );
 }
 

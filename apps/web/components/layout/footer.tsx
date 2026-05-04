@@ -17,6 +17,7 @@ function buildFooterGroups(messages: AppMessages): FooterLinkGroup[] {
       links: [
         { label: messages.shell.nav.marketOverview, href: '/market' },
         { label: messages.footer.stocksLink, href: '/stocks' },
+        { label: messages.footer.newsLink, href: '/news' },
         { label: messages.footer.fxLink, href: '/fx' },
         { label: messages.footer.signalsLink, href: '/signals' },
         { label: messages.footer.forecastsLink, href: '/forecasts' },

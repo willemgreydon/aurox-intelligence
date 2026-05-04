@@ -1,6 +1,7 @@
-﻿import type { CatalogAsset } from '@repo/db';
+import type { CatalogAsset } from '@repo/db';
 import { getSimulationWorkstationStateForCurrentUser } from '../services/simulation-workstation-service';
 import { loadMiniHistorySeries } from '../services/stock-simulation-service';
+import { withDbReadFallback } from '../lib/db-runtime';
 
 export type PortfolioReadModel = {
   workstation: Awaited<ReturnType<typeof getSimulationWorkstationStateForCurrentUser>>;
@@ -10,7 +11,22 @@ export type PortfolioReadModel = {
 };
 
 export async function getPortfolioReadModel(): Promise<PortfolioReadModel> {
-  const workstation = await getSimulationWorkstationStateForCurrentUser({ sessionId: null });
+  const workstation = (await withDbReadFallback(
+    'portfolio-query:getSimulationWorkstationStateForCurrentUser',
+    {
+      session: null,
+      workspace: null,
+      activityLanes: [],
+      tradableAssets: [],
+      watchlist: [],
+      equityCurve: [],
+      positionsByAssetClass: [],
+      isReadOnly: true,
+      workstationStatus: 'degraded' as const,
+      statusMessage: 'Database unavailable.',
+    },
+    () => getSimulationWorkstationStateForCurrentUser({ sessionId: null }),
+  )).value;
 
   const symbols = [
     ...new Set([
@@ -21,9 +37,9 @@ export async function getPortfolioReadModel(): Promise<PortfolioReadModel> {
     ]),
   ];
 
-  const [sparklineBySymbol] = await Promise.all([
+  const sparklineBySymbol = (await withDbReadFallback('portfolio-query:loadMiniHistorySeries', {}, () =>
     loadMiniHistorySeries(symbols, 24),
-  ]);
+  )).value;
 
   const assetBySymbol = new Map<string, CatalogAsset>();
   for (const entry of workstation.tradableAssets) {
@@ -40,4 +56,3 @@ export async function getPortfolioReadModel(): Promise<PortfolioReadModel> {
     watchedAssetIds: new Set(workstation.tradableAssets.filter((entry) => entry.isWatched).map((entry) => entry.asset.assetId)),
   };
 }
-

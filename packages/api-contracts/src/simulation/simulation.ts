@@ -179,6 +179,23 @@ export const simulationSessionSchema = z.object({
   lastOpenedAt: z.string().nullable(),
 });
 
+export const simulationOrderErrorCodeSchema = z.enum([
+  'INSUFFICIENT_CASH',
+  'INSUFFICIENT_POSITION',
+  'NO_POSITION_TO_SELL',
+  'ZERO_QUANTITY',
+  'MARKET_DATA_UNAVAILABLE',
+  'NO_ACTIVE_SESSION',
+  'POSITION_STATE_CHANGED',
+  'LANE_MISMATCH',
+  'UNSUPPORTED_ASSET_CLASS',
+  'SCOPE_MISMATCH',
+  'VALIDATION_ERROR',
+  'INTERNAL_ERROR',
+]);
+
+export type SimulationOrderErrorCode = z.infer<typeof simulationOrderErrorCodeSchema>;
+
 export type SimulationAssetClass = z.infer<typeof simulationAssetClassSchema>;
 export type SimulationOrderSide = z.infer<typeof simulationOrderSideSchema>;
 export type SimulationOrderStatus = z.infer<typeof simulationOrderStatusSchema>;

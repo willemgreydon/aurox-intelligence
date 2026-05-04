@@ -1,4 +1,5 @@
 import type { ZodError } from 'zod';
+import type { SimulationOrderErrorCode } from '@repo/api-contracts';
 
 export type OrderResult = {
   orderId: string;
@@ -15,6 +16,7 @@ export type FormState = {
   message: string | null;
   fieldErrors: Record<string, string>;
   orderResult?: OrderResult;
+  errorCode?: SimulationOrderErrorCode;
 };
 
 export const emptyFormState: FormState = {
@@ -41,11 +43,16 @@ export function formStateFromZodError(error: ZodError) {
   };
 }
 
-export function errorFormState(message: string, fieldErrors: Record<string, string> = {}) {
+export function errorFormState(
+  message: string,
+  fieldErrors: Record<string, string> = {},
+  errorCode?: SimulationOrderErrorCode,
+): FormState {
   return {
     status: 'error' as const,
     message,
     fieldErrors,
+    ...(errorCode !== undefined ? { errorCode } : {}),
   };
 }
 

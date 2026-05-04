@@ -1,4 +1,5 @@
 export { rankAssets, computeCompositeScore, computeRiskPenalty, mapRankingRecommendation, computeRankingConfidence, } from './ranking-engine';
+export { deriveNewsImpactExplanation } from './news/news-impact';
 function clamp(value, min, max) {
     return Math.min(max, Math.max(min, value));
 }
@@ -164,5 +165,8 @@ export function deriveInvestmentRecommendation(input) {
         ],
         riskNotice: input.riskSummary,
         isPersonalized: false,
+        newsImpactScore: 0.5,
+        newsRiskFlag: 'LOW',
+        executionReviewRequired: false,
     };
 }

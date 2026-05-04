@@ -8,6 +8,7 @@ import {
 } from '@repo/db';
 import { requireCurrentSession } from '../auth/session';
 import { loadQuoteSnapshots } from './stock-simulation-service';
+import { isPrismaDbEnabled } from '../lib/db-runtime';
 
 const SIMULATION_QUOTE_MAX_AGE_MS = 15 * 60 * 1000;
 
@@ -128,6 +129,10 @@ export async function executeSimulationOrderForCurrentUser(input: {
   notes?: string;
   idempotencyKey?: string;
 }) {
+  if (!isPrismaDbEnabled()) {
+    throw new Error('Simulation database is currently unavailable.');
+  }
+
   const session = await requireCurrentSession('/invest/simulation');
   const normalizedSymbol = input.symbol.trim().toUpperCase();
   const asset = await getCatalogAssetBySymbol(normalizedSymbol);

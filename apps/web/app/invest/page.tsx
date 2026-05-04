@@ -217,6 +217,7 @@ async function RecommendationsSection({
             summary={item.summary}
             reasons={item.reasons}
             sparkline={sparklineBySymbol[item.symbol] ?? []}
+            newsRiskFlag={item.newsRiskFlag}
           />
         ) : (
           <MarketAssetRow
@@ -320,6 +321,7 @@ async function StockUniverseSection({
   const stockGroup = invest.groupedAssets.find((g) => g.assetClass === 'stock');
   const stocks = stockGroup?.items ?? [];
   const sparklineBySymbol = invest.sparklineBySymbol;
+  const recommendationBySymbol = new Map(invest.recommendations.map((item) => [item.symbol, item]));
 
   if (stocks.length === 0) {
     return (
@@ -343,6 +345,8 @@ async function StockUniverseSection({
       {stocks.map((item) => {
         const isWatched = watchlist.some((w) => w.assetId === item.assetId);
         const decision = invest.decisionBySymbol[item.symbol];
+        const recommendation = recommendationBySymbol.get(item.symbol);
+        const hasNewsRisk = recommendation?.newsRiskFlag === 'HIGH' || recommendation?.newsRiskFlag === 'CRITICAL';
 
         return viewMode === 'grid' ? (
           <InvestableAssetCard
@@ -384,6 +388,8 @@ async function StockUniverseSection({
                 isWatched={isWatched}
                 watchlistLabelAdd={messages.dashboard.addToWatchlist}
                 watchlistLabelRemove={messages.dashboard.removeFromWatchlist}
+                disabled={hasNewsRisk}
+                disabledReason={hasNewsRisk ? 'News risk detected - execution requires manual review.' : undefined}
               />
             }
           />
@@ -421,6 +427,8 @@ async function StockUniverseSection({
                   isWatched={isWatched}
                   watchlistLabelAdd={messages.dashboard.addToWatchlist}
                   watchlistLabelRemove={messages.dashboard.removeFromWatchlist}
+                  disabled={hasNewsRisk}
+                  disabledReason={hasNewsRisk ? 'News risk detected - execution requires manual review.' : undefined}
                 />
               </div>
             }

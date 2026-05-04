@@ -1,5 +1,7 @@
 import { fetchMarketSnapshot, getProviderEnv, type MarketDataProvider } from '@repo/providers';
-import { getDashboardReadModel, type DashboardOperationalReadModel } from '@repo/db';
+import { fetchNewsStream } from '@repo/providers';
+import { getDashboardReadModel, listProviderMonitorConfigs, type DashboardOperationalReadModel } from '@repo/db';
+import type { MonitoredProviderConfig } from '@repo/api-contracts';
 
 export type ProviderCheck = {
   id: string;
@@ -12,6 +14,7 @@ export type ProviderCheck = {
   status: 'nominal' | 'attention' | 'degraded';
   detail: string;
   lastChecked: string | null;
+  latencyMs?: number | null;
 };
 
 export type AdminReadModel = {
@@ -70,8 +73,24 @@ async function runProviderCheck(
   provider: MarketDataProvider,
   configured: boolean,
   activeProvider: MarketDataProvider,
+  monitorConfig: MonitoredProviderConfig | null,
 ): Promise<ProviderCheck> {
   const meta = PROVIDER_REGISTRY[provider];
+  if (monitorConfig && (!monitorConfig.enabled || !monitorConfig.monitorHealth)) {
+    return {
+      id: provider,
+      name: provider,
+      displayName: meta.displayName,
+      category: meta.category,
+      capabilities: meta.capabilities,
+      configured,
+      isActiveProvider: provider === activeProvider,
+      status: 'attention',
+      detail: monitorConfig.enabled ? 'Health monitoring is disabled by admin configuration.' : 'Disabled by admin monitor configuration.',
+      lastChecked: null,
+      latencyMs: null,
+    };
+  }
 
   if (!configured) {
     return {
@@ -89,10 +108,12 @@ async function runProviderCheck(
   }
 
   try {
+    const startedAt = new Date().toISOString();
     const result = await fetchMarketSnapshot({
       provider,
       symbols: meta.testSymbols,
     });
+    const latencyMs = Date.now() - new Date(startedAt).getTime();
 
     return {
       id: provider,
@@ -107,6 +128,7 @@ async function runProviderCheck(
         ? `Connectivity confirmed. Returned ${result.length} observation(s) for test symbol.`
         : `${meta.displayName} responded but returned no observations for the test symbol.`,
       lastChecked: new Date().toISOString(),
+      latencyMs,
     };
   } catch (error) {
     return {
@@ -120,27 +142,83 @@ async function runProviderCheck(
       status: 'degraded',
       detail: error instanceof Error ? error.message : `${meta.displayName} check failed.`,
       lastChecked: new Date().toISOString(),
+      latencyMs: null,
     };
   }
+}
+
+async function runNewsProviderCheck(providerKey: 'finnhub-news' | 'polygon-news', monitorConfig: MonitoredProviderConfig | null): Promise<ProviderCheck> {
+  if (monitorConfig && (!monitorConfig.enabled || !monitorConfig.monitorHealth)) {
+    return {
+      id: providerKey,
+      name: providerKey,
+      displayName: providerKey === 'finnhub-news' ? 'Finnhub News' : 'Polygon News',
+      category: 'secondary-market-data',
+      capabilities: ['News'],
+      configured: true,
+      isActiveProvider: false,
+      status: 'attention',
+      detail: monitorConfig.enabled ? 'Health monitoring is disabled by admin configuration.' : 'Disabled by admin monitor configuration.',
+      lastChecked: null,
+      latencyMs: null,
+    };
+  }
+  const t0 = Date.now();
+  const result = await fetchNewsStream({
+    symbols: ['AAPL'],
+    fromIso: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+    toIso: new Date().toISOString(),
+    timeoutMs: 1500,
+    maxItemsPerSymbol: 1,
+  });
+  const status = result.providerHealth.find((item) => item.provider === (providerKey === 'finnhub-news' ? 'finnhub' : 'polygon'));
+  return {
+    id: providerKey,
+    name: providerKey,
+    displayName: providerKey === 'finnhub-news' ? 'Finnhub News' : 'Polygon News',
+    category: 'secondary-market-data',
+    capabilities: ['News'],
+    configured: true,
+    isActiveProvider: false,
+    status: status?.health === 'healthy' ? 'nominal' : status?.health === 'disabled' ? 'attention' : 'degraded',
+    detail: status?.detail ?? 'No status available.',
+    lastChecked: new Date().toISOString(),
+    latencyMs: Date.now() - t0,
+  };
+}
+
+export function shouldDisplayProviderCheck(
+  check: ProviderCheck,
+  configByKey: ReadonlyMap<string, MonitoredProviderConfig>,
+) {
+  const config = configByKey.get(check.id);
+  if (!config) return true;
+  return config.enabled && config.displayInDashboard;
 }
 
 export async function getAdminReadModel(): Promise<AdminReadModel> {
   const env = getProviderEnv();
   const dashboard = await getDashboardReadModel();
   const activeProvider = env.MARKET_DATA_PROVIDER;
+  const monitorConfigs = await listProviderMonitorConfigs();
+  const configByKey = new Map(monitorConfigs.map((config) => [config.providerKey, config]));
 
   const providerChecks = await Promise.all([
-    runProviderCheck('polygon', Boolean(env.POLYGON_API_KEY), activeProvider),
-    runProviderCheck('twelve-data', Boolean(env.TWELVE_DATA_API_KEY), activeProvider),
-    runProviderCheck('tiingo', Boolean(env.TIINGO_API_KEY), activeProvider),
-    runProviderCheck('coingecko', Boolean(env.COINGECKO_API_KEY), activeProvider),
-    runProviderCheck('finnhub', Boolean(env.FINNHUB_API_KEY), activeProvider),
-    runProviderCheck('eodhd', Boolean(env.EODHD_API_KEY), activeProvider),
+    runProviderCheck('polygon', Boolean(env.POLYGON_API_KEY), activeProvider, configByKey.get('polygon') ?? null),
+    runProviderCheck('twelve-data', Boolean(env.TWELVE_DATA_API_KEY), activeProvider, configByKey.get('twelve-data') ?? null),
+    runProviderCheck('tiingo', Boolean(env.TIINGO_API_KEY), activeProvider, configByKey.get('tiingo') ?? null),
+    runProviderCheck('coingecko', Boolean(env.COINGECKO_API_KEY), activeProvider, configByKey.get('coingecko') ?? null),
+    runProviderCheck('finnhub', Boolean(env.FINNHUB_API_KEY), activeProvider, configByKey.get('finnhub') ?? null),
+    runProviderCheck('eodhd', Boolean(env.EODHD_API_KEY), activeProvider, configByKey.get('eodhd') ?? null),
+    runNewsProviderCheck('finnhub-news', configByKey.get('finnhub-news') ?? null),
+    runNewsProviderCheck('polygon-news', configByKey.get('polygon-news') ?? null),
   ]);
+
+  const filteredProviderChecks = providerChecks.filter((check) => shouldDisplayProviderCheck(check, configByKey));
 
   return {
     dashboard,
     activeProvider,
-    providerChecks,
+    providerChecks: filteredProviderChecks,
   };
 }

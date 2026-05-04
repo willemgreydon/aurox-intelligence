@@ -80,6 +80,7 @@ export default async function AdminMonitoringPage() {
           actions={[
             { href: '/admin', label: 'Back to admin' },
             { href: '/dashboard', label: 'Open dashboard' },
+            { href: '/admin/monitoring/providers', label: 'Provider settings' },
           ]}
         />
       </Section>

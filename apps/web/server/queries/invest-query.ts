@@ -3,12 +3,14 @@ import { getProviderEnv, getSparkasseGeorgeConnectionCapability, type ProviderMa
 import type { ConnectedInvestmentAccount } from '@repo/api-contracts';
 import { unstable_cache } from 'next/cache';
 import { cache } from 'react';
+import type { NewsStreamResponse } from '@repo/api-contracts';
 import { hashSymbols } from '../lib/cache-key';
 import { perfLog, perfNow } from '../lib/perf';
 import {
   loadMiniHistorySeriesRequestScoped,
   loadQuoteSnapshots,
 } from '../services/stock-simulation-service';
+import { getNewsReadModel } from './news-query';
 
 export type InvestReadModel = {
   provider: string;
@@ -23,6 +25,7 @@ export type InvestReadModel = {
   historySeriesBySymbol: Record<string, number[]>;
   linkedAccounts: ConnectedInvestmentAccount[];
   bankConnections: ReturnType<typeof getSparkasseGeorgeConnectionCapability>[];
+  newsStream: NewsStreamResponse;
 };
 
 const INVEST_CACHE_TTL_MS = 60_000;
@@ -160,7 +163,7 @@ export async function getInvestReadModel(options: InvestReadModelOptions = {}): 
   const provider = getProviderEnv().MARKET_DATA_PROVIDER;
 
   const tDb = perfNow();
-  const [catalogAssets, linkedAccounts] = await Promise.all([loadCatalogAssets(), loadLinkedAccounts()]);
+  const [catalogAssets, linkedAccounts, newsStream] = await Promise.all([loadCatalogAssets(), loadLinkedAccounts(), getNewsReadModel()]);
   perfLog('invest-query:db-read-models', tDb);
   const scopedCatalogAssets =
     resolvedOptions.assetClassFilter === null
@@ -251,6 +254,7 @@ export async function getInvestReadModel(options: InvestReadModelOptions = {}): 
       historySeriesBySymbol,
       linkedAccounts,
       bankConnections,
+      newsStream,
     };
   } catch (error) {
     result = {
@@ -266,6 +270,7 @@ export async function getInvestReadModel(options: InvestReadModelOptions = {}): 
       historySeriesBySymbol: {},
       linkedAccounts,
       bankConnections,
+      newsStream,
     };
   }
 

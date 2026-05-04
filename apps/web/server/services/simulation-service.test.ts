@@ -58,6 +58,7 @@ function mockHappyPath(assetClass: 'stock' | 'etf' | 'crypto') {
 describe('executeSimulationOrderForCurrentUser', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubEnv('ENABLE_PRISMA_DB', 'true');
   });
 
   it('executes ETF buy orders in simulation mode', async () => {
@@ -220,5 +221,19 @@ describe('executeSimulationOrderForCurrentUser', () => {
         sessionAssetScope: 'stock',
       }),
     ).rejects.toThrow('active session only allows STOCK orders');
+  });
+
+  it('returns clean unavailable error when simulation DB is disabled', async () => {
+    vi.stubEnv('ENABLE_PRISMA_DB', 'false');
+
+    await expect(
+      executeSimulationOrderForCurrentUser({
+        assetId: 'etf-1',
+        symbol: 'SPY',
+        assetClass: 'etf',
+        side: 'buy',
+        quantity: 1,
+      }),
+    ).rejects.toThrow('Simulation database is currently unavailable.');
   });
 });
