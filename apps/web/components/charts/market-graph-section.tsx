@@ -6,15 +6,28 @@ type MarketGraphSectionProps = {
   graph: Awaited<ReturnType<typeof getMarketGraphData>>;
   messages: AppMessages;
   className?: string;
+  trackedSymbols?: string[];
+  newsItems?: Array<{
+    id: string;
+    title: string;
+    url: string | null;
+    source: string | null;
+    summary: string | null;
+    publishedAt: string;
+    symbol: string | null;
+    tickers?: string[];
+  }>;
 };
 
-export function MarketGraphSection({ graph, messages, className }: MarketGraphSectionProps) {
+export function MarketGraphSection({ graph, messages, className, trackedSymbols = [], newsItems = [] }: MarketGraphSectionProps) {
   const sectionClassName = className ? `market-graph-section ${className}` : 'market-graph-section';
 
   return (
     <section className={sectionClassName}>
       <MarketGraphWorkspace
         assets={graph.assets}
+        trackedSymbols={trackedSymbols}
+        newsItems={newsItems}
         labels={{
           timeframe: messages.marketGraph.timeframe,
           graphType: messages.marketGraph.graphType,

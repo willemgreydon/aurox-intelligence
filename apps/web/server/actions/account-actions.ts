@@ -1,7 +1,6 @@
 'use server';
 
 import {
-  normalizeTrackedSymbolsInput,
   passwordChangeInputSchema,
   preferencesUpdateInputSchema,
   profileUpdateInputSchema,
@@ -24,6 +23,7 @@ import { errorFormState, type FormState, formStateFromZodError, successFormState
 import { hashPassword, verifyPassword } from '../auth/password';
 import { requireCurrentSession } from '../auth/session';
 import { generateOpaqueToken } from '../auth/session-token';
+import { normalizeTrackedSymbols, validateTrackedSymbols, validateWorkspacePreferences } from '../../lib/workspace-preferences';
 
 async function establishReplacementSession(userId: string) {
   const headerList = await headers();
@@ -118,16 +118,37 @@ export async function changePasswordAction(_: FormState, formData: FormData): Pr
 
 export async function updateWorkspacePreferencesAction(_: FormState, formData: FormData): Promise<FormState> {
   const auth = await requireCurrentSession('/account/settings');
+  const capitalLimit = Number(formData.get('brokerModeCapitalLimitUsd'));
+  const microTradeAllocation = Number(formData.get('microTradeAllocationPercent'));
+  const trackedSymbolsResult = validateTrackedSymbols(
+    normalizeTrackedSymbols(String(formData.get('trackedSymbols') ?? '')),
+  );
+
+  if (!trackedSymbolsResult.isValid) {
+    return errorFormState('Please correct the highlighted fields.', {
+      trackedSymbols: 'Add at least one valid symbol (for example: AAPL, SPY, BINANCE:BTCUSDT).',
+    });
+  }
+
+  const numericValidation = validateWorkspacePreferences({
+    brokerModeCapitalLimitUsd: capitalLimit,
+    microTradeAllocationPercent: microTradeAllocation,
+  });
+
+  if (!numericValidation.isValid) {
+    return errorFormState('Please correct the highlighted fields.', numericValidation.fieldErrors);
+  }
+
   const parsed = preferencesUpdateInputSchema.safeParse({
     locale: formData.get('locale'),
     defaultChartType: formData.get('defaultChartType'),
     defaultTimePeriod: formData.get('defaultTimePeriod'),
-    trackedSymbols: normalizeTrackedSymbolsInput(String(formData.get('trackedSymbols') ?? '')),
+    trackedSymbols: trackedSymbolsResult.normalized,
     visibleModules: formData.getAll('visibleModules'),
     simulationPreferences: {
       preferredBrokerMode: formData.get('preferredBrokerMode'),
-      brokerModeCapitalLimitUsd: Number(formData.get('brokerModeCapitalLimitUsd') ?? 0),
-      microTradeAllocationPercent: Number(formData.get('microTradeAllocationPercent') ?? 0),
+      brokerModeCapitalLimitUsd: capitalLimit,
+      microTradeAllocationPercent: microTradeAllocation,
       defaultAssetScope: formData.get('defaultAssetScope'),
     },
     activityPreferences: {
@@ -156,5 +177,8 @@ export async function updateWorkspacePreferencesAction(_: FormState, formData: F
   revalidatePath('/stocks');
   revalidatePath('/fx');
   revalidatePath('/invest');
+  revalidatePath('/');
+  revalidatePath('/market');
+  revalidatePath('/news');
   return successFormState('Workspace preferences saved.');
 }

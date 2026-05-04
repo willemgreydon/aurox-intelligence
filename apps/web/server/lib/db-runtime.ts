@@ -1,4 +1,4 @@
-const DEFAULT_DB_READ_TIMEOUT_MS = 2_000;
+const DEFAULT_DB_READ_TIMEOUT_MS = 8_000;
 
 export type DbGuardResult<T> = {
   value: T;
@@ -16,7 +16,7 @@ export function isPrismaDbEnabled(): boolean {
 
 export function getDbReadTimeoutMs(): number {
   const raw = Number(process.env.DB_READ_TIMEOUT_MS ?? DEFAULT_DB_READ_TIMEOUT_MS);
-  if (!Number.isFinite(raw) || raw < 250) {
+  if (!Number.isFinite(raw) || raw < 1_000) {
     return DEFAULT_DB_READ_TIMEOUT_MS;
   }
   return Math.floor(raw);

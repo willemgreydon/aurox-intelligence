@@ -4,7 +4,9 @@ import { MarketGraphSection } from '../../components/charts/market-graph-section
 import { getMessages } from '../../lib/i18n/messages';
 import { getRequestLocale } from '../../server/i18n/locale';
 import { getMarketGraphData } from '../../server/services/market-graph-service';
+import { getNewsStreamData } from '../../server/services/news-service';
 import { perfLog, perfNow } from '../../server/lib/perf';
+import { getWorkspaceTrackedSymbols } from '../../server/services/workspace-service';
 
 export const revalidate = 30;
 
@@ -12,12 +14,18 @@ export default async function MarketPage() {
   const pageStart = perfNow();
   const locale = await getRequestLocale();
   const messages = getMessages(locale);
-  const graph = await getMarketGraphData();
+  const preferredSymbols = await getWorkspaceTrackedSymbols(20);
+  const [graph, news] = await Promise.all([
+    getMarketGraphData({
+      ...(preferredSymbols.length > 0 ? { preferredSymbols } : {}),
+    }),
+    getNewsStreamData().catch(() => ({ items: [] as never[] })),
+  ]);
   perfLog('page:/market total', pageStart);
 
   return (
     <>
-      <MarketGraphSection graph={graph} messages={messages} />
+      <MarketGraphSection graph={graph} messages={messages} trackedSymbols={preferredSymbols} newsItems={news.items} />
 
       <Section className="dashboard-section dashboard-section--hero">
         <WorkstationPageHeader

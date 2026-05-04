@@ -31,8 +31,8 @@ export function WorkstationPageHeader({
   actionsLabel = 'Destinations',
 }: WorkstationPageHeaderProps) {
   return (
-    <header className="dashboard-page-header surface surface--accent">
-      <div className="surface__inner dashboard-page-header__inner">
+    <header className="dashboard-page-header">
+      <div className="dashboard-page-header__inner">
         <div className="dashboard-page-header__content">
           <div className="section__eyebrow">{eyebrow}</div>
           <div className="dashboard-page-header__headline">

@@ -6,6 +6,8 @@ import { SignalScoreCard } from '../../components/signals/signal-score-card';
 import { AnalyticsTable } from '../../components/tables/analytics-table';
 import { Section } from '../../components/ui/section';
 import type { TableColumn } from '../../lib/dashboard/analytics-fixtures';
+import { getMessages } from '../../lib/i18n/messages';
+import { getRequestLocale } from '../../server/i18n/locale';
 import { getSignalsPageData } from '../../server/services/analysis-service';
 
 export const dynamic = 'force-dynamic';
@@ -27,13 +29,14 @@ const signalColumns: Array<TableColumn<SignalRow>> = [
 ];
 
 export default async function SignalsPage() {
-  const data = await getSignalsPageData();
+  const [data, locale] = await Promise.all([getSignalsPageData(), getRequestLocale()]);
+  const messages = getMessages(locale);
   const signalRows = data.signals.map((signal) => ({
     asset: signal.assetName,
     interpretation: signal.interpretationLabel,
     score: signal.scoreLabel,
     price: signal.latestPriceLabel,
-    updated: signal.notes[1] ?? 'Unavailable',
+    updated: signal.notes[1] ?? messages.common.unavailable,
   }));
   const leadSignal = data.signals[0];
 
@@ -41,27 +44,27 @@ export default async function SignalsPage() {
     <>
       <Section className="dashboard-section dashboard-section--hero">
         <WorkstationPageHeader
-          eyebrow="Signals"
+          eyebrow={messages.shell.nav.signals}
           title={data.overview.title}
           description={data.overview.description}
           summary={data.overview.summary}
           statusLabel={data.overview.statusLabel}
           statusTone={data.overview.statusTone}
           meta={[
-            { label: 'Last updated', value: data.overview.lastUpdatedLabel },
+            { label: messages.common.lastUpdated, value: data.overview.lastUpdatedLabel },
             { label: 'Tracked signals', value: String(data.signals.length) },
           ]}
           actions={[
-            { href: '/dashboard', label: 'Open dashboard' },
-            { href: '/forecasts', label: 'View forecasts' },
+            { href: '/dashboard', label: messages.home.openDashboard },
+            { href: '/forecasts', label: `View ${messages.shell.nav.forecasts.toLowerCase()}` },
           ]}
         />
       </Section>
 
       <Section className="dashboard-section">
         <AnalysisToolbar
-          title="Provider-backed technical signal review"
-          subtitle="Signal outputs are derived from live tracked stock histories using the pure signals package and exposed through the server query layer."
+          title="Provider-backed signal review"
+          subtitle="Signal outputs are deterministic features derived from tracked market history and surfaced with transparent component breakdowns."
         />
       </Section>
 
@@ -110,7 +113,7 @@ export default async function SignalsPage() {
             />
           </div>
         ) : (
-          <div className="table-panel__empty">No tracked assets currently have enough history to derive signals.</div>
+          <div className="table-panel__empty">No tracked assets currently have sufficient history to derive signals.</div>
         )}
       </Section>
 
@@ -125,7 +128,7 @@ export default async function SignalsPage() {
           />
           <InsightCallout
             title="Signals stay truthful"
-            body="These signals are derived from provider-backed stock history and simple pure-package indicators, not fabricated model outputs."
+            body="Signals are calculated from observable provider data and pure indicator logic with no opaque model-side fabrication."
           />
         </div>
       </Section>

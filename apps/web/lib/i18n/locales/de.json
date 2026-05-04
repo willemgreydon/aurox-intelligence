@@ -2,11 +2,11 @@
   "shell": {
     "brandSubtitle": "Finanz-Signalplattform",
     "nav": {
-      "markets": "Maerkte",
+      "markets": "Märkte",
       "analytics": "Analysen",
       "invest": "Investieren",
       "ops": "Betrieb",
-      "marketOverview": "Marktueberblick",
+      "marketOverview": "Marktüberblick",
       "stocks": "Aktien",
       "newsStream": "News-Stream",
       "dashboard": "Dashboard",
@@ -18,7 +18,7 @@
       "investEtfs": "ETF Lane",
       "investCrypto": "Krypto Lane",
       "investAccounts": "Konten",
-      "monitoring": "Ueberwachung"
+      "monitoring": "Überwachung"
     },
     "auth": {
       "login": "Anmelden",
@@ -33,16 +33,16 @@
     "marketPulse": "Marktpuls",
     "theme": "Design",
     "language": "Sprache",
-    "menuLabel": "Menue",
-    "mobileMenuDescription": "Maerkte, Analysen, Simulation und Kontosteuerung in einer mobilen Oberflaeche.",
-    "openMenu": "Navigation oeffnen",
-    "closeMenu": "Navigation schliessen",
-    "closeOverlay": "Menue schliessen",
-    "closeNavigation": "Navigation schliessen"
+    "menuLabel": "Menü",
+    "mobileMenuDescription": "Märkte, Analysen, Simulation und Kontosteuerung in einer mobilen Oberfläche.",
+    "openMenu": "Navigation öffnen",
+    "closeMenu": "Navigation schließen",
+    "closeOverlay": "Menü schließen",
+    "closeNavigation": "Navigation schließen"
   },
   "status": {
     "attention": "Achtung",
-    "degraded": "Beeintraechtigt"
+    "degraded": "Beeinträchtigt"
   },
   "common": {
     "home": "Start"

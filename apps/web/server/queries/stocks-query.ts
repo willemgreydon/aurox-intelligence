@@ -19,6 +19,7 @@ export type StocksReadModel = {
 export type StocksReadModelOptions = {
   symbolLimit?: number;
   pageContext?: string;
+  preferredSymbols?: string[];
 };
 
 const STOCKS_CACHE_TTL_MS = 60_000;
@@ -51,6 +52,7 @@ function resolveOptions(options: StocksReadModelOptions): Required<StocksReadMod
         ? Math.floor(options.symbolLimit)
         : getMarketQueryInitialLimit(),
     pageContext: options.pageContext?.trim() || 'stocks',
+    preferredSymbols: [...new Set((options.preferredSymbols ?? []).map((symbol) => symbol.trim().toUpperCase()).filter(Boolean))],
   };
 }
 
@@ -63,8 +65,25 @@ function buildStocksCacheKey(provider: string, metadata: InvestmentUniverseAsset
     'assetKind=stock,etf',
     `limit=${options.symbolLimit}`,
     `context=${options.pageContext}`,
+    `preferred=${options.preferredSymbols.join(',')}`,
     `symbols=${symbols.join(',')}`,
   ].join('|');
+}
+
+function prioritizeStockMetadata(
+  metadata: InvestmentUniverseAsset[],
+  preferredSymbols: string[],
+): InvestmentUniverseAsset[] {
+  if (preferredSymbols.length === 0) {
+    return metadata;
+  }
+
+  const bySymbol = new Map(metadata.map((item) => [item.symbol.toUpperCase(), item]));
+  const prioritized = preferredSymbols
+    .map((symbol) => bySymbol.get(symbol))
+    .filter((item): item is InvestmentUniverseAsset => Boolean(item));
+  const remaining = metadata.filter((item) => !preferredSymbols.includes(item.symbol.toUpperCase()));
+  return [...prioritized, ...remaining];
 }
 
 function getFreshStocksCache(key: string): StocksReadModel | null {
@@ -96,7 +115,10 @@ export async function getStocksReadModel(options: StocksReadModelOptions = {}): 
   const tDb = perfNow();
   const [dashboard, investmentUniverse] = await Promise.all([loadDashboardReadModel(), loadInvestmentUniverse()]);
   perfLog('stocks-query:db-read-models', tDb);
-  const allStockMetadata = investmentUniverse.filter((item) => item.assetClass === 'stock' || item.assetClass === 'etf');
+  const allStockMetadata = prioritizeStockMetadata(
+    investmentUniverse.filter((item) => item.assetClass === 'stock' || item.assetClass === 'etf'),
+    resolvedOptions.preferredSymbols,
+  );
   const stockMetadata = allStockMetadata.slice(0, resolvedOptions.symbolLimit);
   const cacheKey = buildStocksCacheKey(provider, stockMetadata, resolvedOptions);
   const cached = getFreshStocksCache(cacheKey);
@@ -153,9 +175,10 @@ export async function getStocksReadModel(options: StocksReadModelOptions = {}): 
 }
 
 export const getStocksReadModelCached = cache(
-  async (symbolLimit: number | null, pageContext: string): Promise<StocksReadModel> =>
+  async (symbolLimit: number | null, pageContext: string, preferredSymbolsKey: string): Promise<StocksReadModel> =>
     getStocksReadModel({
       ...(typeof symbolLimit === 'number' ? { symbolLimit } : {}),
       pageContext,
+      ...(preferredSymbolsKey ? { preferredSymbols: preferredSymbolsKey.split(',') } : {}),
     }),
 );

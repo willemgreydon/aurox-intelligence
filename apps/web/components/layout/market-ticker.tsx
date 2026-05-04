@@ -9,7 +9,11 @@ type MarketTickerProps = {
   };
 };
 
+type MarketTickerDisplayItem = MarketTickerViewModel['items'][number];
+
 export function MarketTicker({ ticker, labels }: MarketTickerProps) {
+  const displayItems: MarketTickerDisplayItem[] = ticker.items;
+
   if (ticker.items.length === 0) {
     return (
       <div className="market-ticker market-ticker--empty" aria-label={labels.emptyAria}>
@@ -33,8 +37,8 @@ export function MarketTicker({ ticker, labels }: MarketTickerProps) {
 
       <div className="market-ticker__track">
         <div className="market-ticker__marquee">
-          {[...ticker.items, ...ticker.items].map((item, index) => (
-            <div key={`${item.symbol}-${index}`} className="market-ticker__item" title={item.source ?? undefined}>
+          {displayItems.map((item) => (
+            <div key={item.symbol} className="market-ticker__item" title={item.source ?? undefined}>
               <span className="market-ticker__symbol">{item.label}</span>
               <span className="market-ticker__price">{item.priceLabel}</span>
               <span

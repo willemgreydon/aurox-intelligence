@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import type { NewsItem, NewsStreamResponse } from '@repo/api-contracts';
-import { Card } from '../ui/card';
+import { decodeHtmlEntities } from '../../lib/text/decode-html-entities';
 
 type NewsStreamWidgetProps = {
   news: NewsStreamResponse;
@@ -77,6 +77,18 @@ function buildColumns(items: NewsItem[], selectedTab: FeedTab): Array<{ source: 
   return combined;
 }
 
+function truncateText(value: string, maxLength: number): string {
+  if (value.length <= maxLength) return value;
+  return `${value.slice(0, Math.max(0, maxLength - 1)).trimEnd()}…`;
+}
+
+function normalizeHeadline(title: string, symbol: string): string {
+  const decoded = decodeHtmlEntities(title).replace(/\s+/g, ' ').trim();
+  if (!symbol) return decoded;
+  const escaped = symbol.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return decoded.replace(new RegExp(`^${escaped}\\s*[:\\-–—|]\\s*`, 'i'), '').trim();
+}
+
 export function NewsStreamWidget({ news, title = 'Market News' }: NewsStreamWidgetProps) {
   const [tabId, setTabId] = useState<FeedTab['id']>('core');
   const selectedTab: FeedTab = FEED_TABS.find((tab) => tab.id === tabId) ?? FEED_TABS[0]!;
@@ -84,8 +96,8 @@ export function NewsStreamWidget({ news, title = 'Market News' }: NewsStreamWidg
   const columns = useMemo(() => buildColumns(news.items ?? [], selectedTab), [news.items, selectedTab.id]);
 
   return (
-    <Card className="analytics-card home-news-card">
-      <div className="analytics-card__header">
+    <section className="home-news-card">
+      <div className="home-news-card__header">
         <div>
           <div className="section__eyebrow">Markets & Data</div>
           <h3>{title}</h3>
@@ -95,7 +107,7 @@ export function NewsStreamWidget({ news, title = 'Market News' }: NewsStreamWidg
           {news.degraded ? 'Degraded' : 'Live'}
         </span>
       </div>
-      <div className="analytics-card__body">
+      <div className="home-news-card__body">
         <div className="home-news-tabs" role="tablist" aria-label="News source groups">
           {FEED_TABS.map((tab) => (
             <button
@@ -122,20 +134,31 @@ export function NewsStreamWidget({ news, title = 'Market News' }: NewsStreamWidg
                   <ul className="home-news-source__list">
                     {column.items.map((item) => (
                       <li key={item.id || `${column.source}-${item.url || item.title}`}>
-                        {item.url ? (
-                          <a href={item.url} target="_blank" rel="noreferrer noopener">
-                            <strong>{item.symbol || item.tickers?.[0] || 'N/A'}</strong>
-                            {item.title || 'Untitled headline'}
-                          </a>
-                        ) : (
-                          <span className="home-news-source__text">
-                            <strong>{item.symbol || item.tickers?.[0] || 'N/A'}</strong>
-                            {item.title || 'Untitled headline'}
-                          </span>
-                        )}
-                        {item.publishedAt ? (
-                          <span className="home-news-source__meta">{new Date(item.publishedAt).toLocaleString('en-US')}</span>
-                        ) : null}
+                        {(() => {
+                          const symbol = item.symbol || item.tickers?.[0] || 'N/A';
+                          const headline = truncateText(normalizeHeadline(item.title || 'Untitled headline', symbol), 120);
+                          const summary = truncateText(decodeHtmlEntities(item.summary || '').replace(/\s+/g, ' ').trim(), 150);
+                          return (
+                            <>
+                              {item.url ? (
+                                <a href={item.url} target="_blank" rel="noreferrer noopener">
+                                  <span className="home-news-source__symbol">{symbol}</span>
+                                  <span className="home-news-source__headline">{headline}</span>
+                                  {summary ? <span className="home-news-source__summary">{summary}</span> : null}
+                                </a>
+                              ) : (
+                                <span className="home-news-source__text">
+                                  <span className="home-news-source__symbol">{symbol}</span>
+                                  <span className="home-news-source__headline">{headline}</span>
+                                  {summary ? <span className="home-news-source__summary">{summary}</span> : null}
+                                </span>
+                              )}
+                              {item.publishedAt ? (
+                                <span className="home-news-source__meta">{new Date(item.publishedAt).toLocaleString('en-US')}</span>
+                              ) : null}
+                            </>
+                          );
+                        })()}
                       </li>
                     ))}
                   </ul>
@@ -149,9 +172,9 @@ export function NewsStreamWidget({ news, title = 'Market News' }: NewsStreamWidg
           <p>{news.message || 'No news items available.'}</p>
         )}
       </div>
-      <div className="analytics-card__action-grid">
+      <div className="home-news-card__actions">
         <Link href="/news" className="button button--secondary">Open News Stream</Link>
       </div>
-    </Card>
+    </section>
   );
 }

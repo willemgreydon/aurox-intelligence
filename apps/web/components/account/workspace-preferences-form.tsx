@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  normalizeTrackedSymbolsInput,
   type BrokerAssetScope,
   type BrokerMode,
   type ChartType,
@@ -9,12 +8,13 @@ import {
   type DashboardPreset,
   type TimePeriod,
 } from '@repo/api-contracts';
-import { useActionState } from 'react';
+import { useActionState, useMemo, useState } from 'react';
 import { availableChartTypes, availableDashboardModules, availableTimePeriods } from '../../lib/workspace';
 import { localeLabels, supportedLocales } from '../../lib/i18n/locale-options';
 import { emptyFormState } from '../../server/auth/forms';
 import { updateWorkspacePreferencesAction } from '../../server/actions/account-actions';
 import { FormSubmitButton } from '../auth/form-submit-button';
+import { normalizeTrackedSymbols, validateTrackedSymbols } from '../../lib/workspace-preferences';
 
 type WorkspacePreferencesFormProps = {
   preset: DashboardPreset;
@@ -65,7 +65,12 @@ export function WorkspacePreferencesForm({ preset, labels }: WorkspacePreference
   const [state, formAction] = useActionState(updateWorkspacePreferencesAction, emptyFormState);
   const trackedSymbolsFieldId = 'trackedSymbols';
   const trackedSymbolsHintId = `${trackedSymbolsFieldId}-hint`;
-  const normalizedTrackedSymbols = normalizeTrackedSymbolsInput(preset.trackedSymbols.join(', ')).join(', ');
+  const normalizedTrackedSymbols = normalizeTrackedSymbols(preset.trackedSymbols.join(', ')).join(', ');
+  const [trackedSymbolsInput, setTrackedSymbolsInput] = useState(normalizedTrackedSymbols);
+  const trackedSymbolsValidation = useMemo(
+    () => validateTrackedSymbols(normalizeTrackedSymbols(trackedSymbolsInput)),
+    [trackedSymbolsInput],
+  );
 
   return (
     <form action={formAction} className="account-form">
@@ -119,7 +124,8 @@ export function WorkspacePreferencesForm({ preset, labels }: WorkspacePreference
           <input
             id={trackedSymbolsFieldId}
             name={trackedSymbolsFieldId}
-            defaultValue={normalizedTrackedSymbols}
+            value={trackedSymbolsInput}
+            onChange={(event) => setTrackedSymbolsInput(event.target.value)}
             placeholder="AAPL, MSFT, NVDA, SPY (max 12)"
             autoCapitalize="characters"
             autoComplete="off"
@@ -129,6 +135,20 @@ export function WorkspacePreferencesForm({ preset, labels }: WorkspacePreference
           {state.fieldErrors.trackedSymbols ? <span className="form-field__error">{state.fieldErrors.trackedSymbols}</span> : null}
           <span className="form-field__hint" id={trackedSymbolsHintId}>
             {labels.trackedSymbolsHint} Use comma-separated symbols. We trim spaces, uppercase entries, and remove duplicates.
+          </span>
+          <span className="form-field__hint">
+            Normalized: {trackedSymbolsValidation.normalized.join(', ') || 'None'} ({trackedSymbolsValidation.message})
+          </span>
+          {!trackedSymbolsValidation.isValid ? (
+            <span className="form-field__error">Add at least one valid symbol before saving.</span>
+          ) : null}
+          {trackedSymbolsValidation.invalid.length > 0 ? (
+            <span className="form-field__error">
+              Ignored invalid symbols: {trackedSymbolsValidation.invalid.join(', ')}
+            </span>
+          ) : null}
+          <span className="form-field__hint">
+            Allowed examples: AAPL, MSFT, NVDA, SPY, BINANCE:BTCUSDT
           </span>
         </label>
       </div>
@@ -185,6 +205,9 @@ export function WorkspacePreferencesForm({ preset, labels }: WorkspacePreference
               step={100}
               defaultValue={preset.simulationPreferences.brokerModeCapitalLimitUsd}
             />
+            {state.fieldErrors.brokerModeCapitalLimitUsd ? (
+              <span className="form-field__error">{state.fieldErrors.brokerModeCapitalLimitUsd}</span>
+            ) : null}
           </label>
 
           <label className="form-field">
@@ -197,6 +220,9 @@ export function WorkspacePreferencesForm({ preset, labels }: WorkspacePreference
               step={1}
               defaultValue={preset.simulationPreferences.microTradeAllocationPercent}
             />
+            {state.fieldErrors.microTradeAllocationPercent ? (
+              <span className="form-field__error">{state.fieldErrors.microTradeAllocationPercent}</span>
+            ) : null}
           </label>
         </div>
       </fieldset>
@@ -223,7 +249,12 @@ export function WorkspacePreferencesForm({ preset, labels }: WorkspacePreference
         </div>
       </fieldset>
 
-      <FormSubmitButton label={labels.save} pendingLabel={`${labels.save}...`} className="account-form__submit" />
+      <FormSubmitButton
+        label={labels.save}
+        pendingLabel={`${labels.save}...`}
+        className="account-form__submit"
+        disabled={!trackedSymbolsValidation.isValid}
+      />
     </form>
   );
 }

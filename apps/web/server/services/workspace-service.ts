@@ -17,3 +17,12 @@ export async function getWorkspacePreferences(): Promise<{ userId: string | null
     preset: await getUserDashboardPreset(session.user.id),
   };
 }
+
+export async function getWorkspaceTrackedSymbols(limit = 24): Promise<string[]> {
+  const { preset } = await getWorkspacePreferences();
+  if (!preset) {
+    return [];
+  }
+
+  return [...new Set(preset.trackedSymbols.map((symbol) => symbol.trim().toUpperCase()).filter(Boolean))].slice(0, limit);
+}

@@ -5,12 +5,15 @@ import { AnalysisToolbar } from '../../components/filters/analysis-toolbar';
 import { HorizonComparisonBlock } from '../../components/forecasting/horizon-comparison-block';
 import { ScenarioCard } from '../../components/forecasting/scenario-card';
 import { Section } from '../../components/ui/section';
+import { getMessages } from '../../lib/i18n/messages';
+import { getRequestLocale } from '../../server/i18n/locale';
 import { getForecastsPageData } from '../../server/services/analysis-service';
 
 export const dynamic = 'force-dynamic';
 
 export default async function ForecastsPage() {
-  const data = await getForecastsPageData();
+  const [data, locale] = await Promise.all([getForecastsPageData(), getRequestLocale()]);
+  const messages = getMessages(locale);
   const lead = data.forecasts[0];
   const horizonItems = lead
     ? [
@@ -27,27 +30,27 @@ export default async function ForecastsPage() {
     <>
       <Section className="dashboard-section dashboard-section--hero">
         <WorkstationPageHeader
-          eyebrow="Forecasts"
+          eyebrow={messages.shell.nav.forecasts}
           title={data.overview.title}
           description={data.overview.description}
           summary={data.overview.summary}
           statusLabel={data.overview.statusLabel}
           statusTone={data.overview.statusTone}
           meta={[
-            { label: 'Last updated', value: data.overview.lastUpdatedLabel },
+            { label: messages.common.lastUpdated, value: data.overview.lastUpdatedLabel },
             { label: 'Tracked forecasts', value: String(data.forecasts.length) },
           ]}
           actions={[
-            { href: '/signals', label: 'View signals' },
-            { href: '/dashboard', label: 'Open dashboard' },
+            { href: '/signals', label: `View ${messages.shell.nav.signals.toLowerCase()}` },
+            { href: '/dashboard', label: messages.home.openDashboard },
           ]}
         />
       </Section>
 
       <Section className="dashboard-section">
         <AnalysisToolbar
-          title="Explainable v1 forecasts"
-          subtitle="Forecast outputs are built from live-derived signal snapshots and remain transparent about their current calibration level."
+          title="Explainable forecast stack"
+          subtitle="Forecast outputs are deterministic, signal-driven, and explicitly transparent about calibration maturity and risk assumptions."
         />
       </Section>
 
@@ -68,7 +71,7 @@ export default async function ForecastsPage() {
             ))}
           </div>
         ) : (
-          <div className="table-panel__empty">No tracked assets currently have enough history to derive forecasts.</div>
+          <div className="table-panel__empty">No tracked assets currently have sufficient history to derive forecasts.</div>
         )}
       </Section>
 
@@ -91,8 +94,8 @@ export default async function ForecastsPage() {
                 items={horizonItems}
               />
               <InsightCallout
-                title="Forecasts are first-pass but real"
-                body="This v1 surface exposes explainable, signal-driven forecast summaries without pretending the scenario engine is fully calibrated yet."
+                title="Forecasts remain explainable by design"
+                body="Each forecast is derived from observable signal inputs and disclosed with confidence and scenario weights, so interpretation stays auditable."
               />
             </div>
           </div>

@@ -1,4 +1,4 @@
-import { getInvestmentUniverse, getUserWatchlist, getSimulationWorkspace, listCatalogAssets } from '@repo/db';
+import { getInvestmentUniverse, getUserDashboardPreset, getUserWatchlist, getSimulationWorkspace, listCatalogAssets } from '@repo/db';
 import {
   fetchNewsStream,
   getHistoryPrioritySymbols,
@@ -143,11 +143,12 @@ async function fetchRssNews(): Promise<NewsStreamResponse> {
 
 async function loadUniverseSymbols() {
   const session = await getOptionalCurrentSession();
-  const [investmentUniverse, catalogAssets, watchlist, workspace] = await Promise.all([
+  const [investmentUniverse, catalogAssets, watchlist, workspace, preset] = await Promise.all([
     withDbReadFallback('news:investment-universe', [], () => getInvestmentUniverse()),
     withDbReadFallback('news:catalog-assets', [], () => listCatalogAssets()),
     session ? withDbReadFallback('news:watchlist', [], () => getUserWatchlist(session.user.id)) : Promise.resolve({ value: [], degraded: false, reason: null }),
     session ? withDbReadFallback('news:simulation-workspace', null, () => getSimulationWorkspace(session.user.id)) : Promise.resolve({ value: null, degraded: false, reason: null }),
+    session ? withDbReadFallback('news:dashboard-preset', null, () => getUserDashboardPreset(session.user.id)) : Promise.resolve({ value: null, degraded: false, reason: null }),
   ]);
 
   const symbols = new Set<string>();
@@ -155,6 +156,7 @@ async function loadUniverseSymbols() {
   for (const item of catalogAssets.value) symbols.add(normalizeSymbol(item.symbol));
   for (const item of watchlist.value) symbols.add(normalizeSymbol(item.symbol));
   for (const item of workspace.value?.positions ?? []) symbols.add(normalizeSymbol(item.symbol));
+  for (const symbol of preset.value?.trackedSymbols ?? []) symbols.add(normalizeSymbol(symbol));
   for (const symbol of getMarketSymbols()) symbols.add(normalizeSymbol(symbol));
   for (const symbol of getSimulationSymbols()) symbols.add(normalizeSymbol(symbol));
   for (const symbol of getLiveCandidateSymbols()) symbols.add(normalizeSymbol(symbol));

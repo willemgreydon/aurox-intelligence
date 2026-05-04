@@ -19,6 +19,7 @@ import { getStockCatalogPageData, loadMiniHistorySeries } from '../../server/ser
 import { deriveAssetDecisionIntelligence } from '../../server/services/decision-intelligence-service';
 import { deriveMiniIndicatorChartModel } from '../../server/lib/mini-indicator-model';
 import { perfLog, perfNow } from '../../server/lib/perf';
+import { getWorkspaceTrackedSymbols } from '../../server/services/workspace-service';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,11 +42,12 @@ export default async function StocksPage({ searchParams }: StocksPageProps) {
     ? Math.floor(Number(params?.page))
     : 1;
   const pageSize = viewMode === 'list' ? 24 : 18;
+  const preferredSymbols = await getWorkspaceTrackedSymbols(12);
   const [stocks, graph, auth] = await Promise.all([
     getStockCatalogPageData(query, { page, pageSize }),
     getMarketGraphData({
       assetClass: 'stock',
-      preferredSymbols: ['AAPL', 'MSFT', 'NVDA', 'AMZN', 'GOOGL'],
+      preferredSymbols: preferredSymbols.length > 0 ? preferredSymbols : ['AAPL', 'MSFT', 'NVDA', 'AMZN', 'GOOGL'],
       limit: 14,
     }),
     getOptionalCurrentSession(),

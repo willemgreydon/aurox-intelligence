@@ -5,6 +5,28 @@ import type { FetchNewsInput, FetchNewsOutput, NewsProvider } from './types';
 const DEFAULT_NEWS_TIMEOUT_MS = 2_500;
 const DEFAULT_SYMBOL_CONCURRENCY = 5;
 
+function decodeHtmlEntities(value: string | null | undefined): string {
+  if (!value) return '';
+  return value
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#x27;/g, "'")
+    .replace(/&#39;/g, "'")
+    .replace(/&#x2018;/g, '‘')
+    .replace(/&#x2019;/g, '’')
+    .replace(/&#x201c;/gi, '“')
+    .replace(/&#x201d;/gi, '”')
+    .replace(/&#x2014;/g, '—')
+    .replace(/&#x2013;/g, '–')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>');
+}
+
+function cleanNewsText(value: unknown, fallback: string): string {
+  const base = typeof value === 'string' && value.trim().length > 0 ? value : fallback;
+  return decodeHtmlEntities(base).replace(/\s+/g, ' ').trim();
+}
+
 function normalizeSymbol(symbol: string) {
   return symbol.trim().toUpperCase();
 }
@@ -79,10 +101,10 @@ class FinnhubNewsProvider implements NewsProvider {
         return payload.slice(0, input.maxItemsPerSymbol ?? 5).map((item, index): NewsItem => ({
           id: `finnhub:${symbol}:${String(item.id ?? index)}`,
           symbol,
-          title: String(item.headline ?? 'Untitled'),
-          summary: String(item.summary ?? ''),
+          title: cleanNewsText(item.headline, 'Untitled'),
+          summary: cleanNewsText(item.summary, ''),
           url: String(item.url ?? ''),
-          source: String(item.source ?? 'Finnhub'),
+          source: cleanNewsText(item.source, 'Finnhub'),
           publishedAt: typeof item.datetime === 'number' ? new Date(item.datetime * 1000).toISOString() : toIso(item.datetime),
           provider: 'finnhub',
           language: String(item.lang ?? 'en'),
@@ -128,10 +150,10 @@ class PolygonNewsProvider implements NewsProvider {
         return {
           id: `polygon:${String(item.id ?? index)}`,
           symbol,
-          title: String(item.title ?? 'Untitled'),
-          summary: String(item.description ?? ''),
+          title: cleanNewsText(item.title, 'Untitled'),
+          summary: cleanNewsText(item.description, ''),
           url: String(item.article_url ?? ''),
-          source: String(item.publisher && typeof item.publisher === 'object' && 'name' in item.publisher ? item.publisher.name : 'Polygon'),
+          source: cleanNewsText(item.publisher && typeof item.publisher === 'object' && 'name' in item.publisher ? item.publisher.name : 'Polygon', 'Polygon'),
           publishedAt: toIso(item.published_utc),
           provider: 'polygon',
           language: String(item.language ?? 'en'),

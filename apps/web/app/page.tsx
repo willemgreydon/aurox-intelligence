@@ -11,6 +11,7 @@ import { perfLog, perfNow } from '../server/lib/perf';
 import { withDbReadFallback } from '../server/lib/db-runtime';
 import type { StocksOverviewViewModel } from '../server/mappers/stocks-mapper';
 import { getNewsStreamData } from '../server/services/news-service';
+import { getWorkspaceTrackedSymbols } from '../server/services/workspace-service';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,11 +44,16 @@ export default async function HomePage() {
   const pageStart = perfNow();
   const locale = await getRequestLocale();
   const messages = getMessages(locale);
+  const preferredSymbols = await getWorkspaceTrackedSymbols(16);
   const [stocksResult, marketGraphResult, newsResult, auth] = await Promise.all([
     withDbReadFallback('home:stocks-overview', buildFallbackStocks(messages), () =>
-      getStocksOverviewData(locale, messages),
+      getStocksOverviewData(locale, messages, {
+        ...(preferredSymbols.length > 0 ? { preferredSymbols } : {}),
+      }),
     ),
-    withDbReadFallback('home:market-graph', { provider: 'cache', assets: [] }, () => getMarketGraphData()),
+    withDbReadFallback('home:market-graph', { provider: 'cache', assets: [] }, () => getMarketGraphData({
+      ...(preferredSymbols.length > 0 ? { preferredSymbols } : {}),
+    })),
     withDbReadFallback('home:news-stream', { items: [], providerHealth: [], updatedAt: new Date().toISOString(), degraded: true, message: 'Database unavailable — showing local fallback data.' }, () => getNewsStreamData()),
     getOptionalCurrentSession(),
   ]);
@@ -65,13 +71,17 @@ export default async function HomePage() {
   return (
     <>
       {dbDegraded ? (
-        <div className="section" style={{ paddingTop: '0.75rem', paddingBottom: '0.5rem' }}>
-          <p className="pill">Database unavailable — showing local fallback data.</p>
+        <div className="section home-db-fallback">
+          <div className="shell-container home-db-fallback__inner">
+            <p className="pill">Database unavailable - showing local fallback data.</p>
+          </div>
         </div>
       ) : null}
       <HeroSection
         stocks={stocks}
         marketGraph={marketGraph}
+        trackedSymbols={preferredSymbols}
+        newsItems={news.items}
         labels={{
           eyebrow: messages.home.heroEyebrow,
           title: messages.home.heroTitle,

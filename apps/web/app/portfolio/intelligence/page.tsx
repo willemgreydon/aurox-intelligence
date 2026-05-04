@@ -13,6 +13,7 @@ import type {
 import type { BrokerDecision } from '@repo/agents';
 
 export const dynamic = 'force-dynamic';
+const MAX_VISIBLE_PORTFOLIO_ROWS = 25;
 
 //  Formatters 
 
@@ -166,8 +167,12 @@ function RegimePanel({ regime }: { regime: RegimeAwareness }) {
 
 function RankingTable({ ranking }: { ranking: AssetRanking[] }) {
   if (ranking.length === 0) return <p className="text-muted">No ranking data available.</p>;
+  const visibleRanking = ranking.slice(0, MAX_VISIBLE_PORTFOLIO_ROWS);
   return (
     <div style={{ overflowX: 'auto' }}>
+      <p className="text-muted" style={{ marginBottom: '0.5rem' }}>
+        Showing top {MAX_VISIBLE_PORTFOLIO_ROWS} of {ranking.length} assets.
+      </p>
       <table className="data-table" style={{ width: '100%' }}>
         <thead>
           <tr>
@@ -183,7 +188,7 @@ function RankingTable({ ranking }: { ranking: AssetRanking[] }) {
           </tr>
         </thead>
         <tbody>
-          {ranking.map((r) => (
+          {visibleRanking.map((r) => (
             <tr key={r.symbol}>
               <td className="tabular-nums" style={{ textAlign: 'right', color: 'var(--color-muted-foreground)', fontVariantNumeric: 'tabular-nums' }}>{r.rank}</td>
               <td style={{ fontWeight: 600 }}>{r.symbol}</td>
@@ -206,8 +211,12 @@ function RankingTable({ ranking }: { ranking: AssetRanking[] }) {
 
 function AllocationMatrix({ allocations }: { allocations: PortfolioAllocation[] }) {
   if (allocations.length === 0) return <p className="text-muted">No allocations computed.</p>;
+  const visibleAllocations = allocations.slice(0, MAX_VISIBLE_PORTFOLIO_ROWS);
   return (
     <div style={{ overflowX: 'auto' }}>
+      <p className="text-muted" style={{ marginBottom: '0.5rem' }}>
+        Showing top {MAX_VISIBLE_PORTFOLIO_ROWS} of {allocations.length} assets.
+      </p>
       <table className="data-table" style={{ width: '100%' }}>
         <thead>
           <tr>
@@ -222,7 +231,7 @@ function AllocationMatrix({ allocations }: { allocations: PortfolioAllocation[] 
           </tr>
         </thead>
         <tbody>
-          {allocations.map((alloc) => {
+          {visibleAllocations.map((alloc) => {
             const deltaTone = toneForDelta(alloc.deltaWeight);
             return (
               <tr key={alloc.symbol}>
@@ -279,8 +288,12 @@ function FactorDecompositionPanel({ allocations }: { allocations: PortfolioAlloc
 
 function RiskOverlayPanel({ allocations }: { allocations: PortfolioAllocation[] }) {
   if (allocations.length === 0) return <p className="text-muted">No risk data available.</p>;
+  const visibleAllocations = allocations.slice(0, MAX_VISIBLE_PORTFOLIO_ROWS);
   return (
     <div style={{ overflowX: 'auto' }}>
+      <p className="text-muted" style={{ marginBottom: '0.5rem' }}>
+        Showing top {MAX_VISIBLE_PORTFOLIO_ROWS} of {allocations.length} assets.
+      </p>
       <table className="data-table" style={{ width: '100%' }}>
         <thead>
           <tr>
@@ -295,7 +308,7 @@ function RiskOverlayPanel({ allocations }: { allocations: PortfolioAllocation[] 
           </tr>
         </thead>
         <tbody>
-          {allocations.map((alloc) => {
+          {visibleAllocations.map((alloc) => {
             const ro = alloc.riskOverlay;
             const dominantRisks = ro.explanation.slice(0, 2);
             return (

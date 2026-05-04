@@ -5,6 +5,7 @@ import { getNewsStreamData } from '../../server/services/news-service';
 import { getRequestLocale } from '../../server/i18n/locale';
 import { getMessages } from '../../lib/i18n/messages';
 import { formatDateTimeLabel } from '../../lib/formatters';
+import { decodeHtmlEntities } from '../../lib/text/decode-html-entities';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,9 +42,19 @@ export default async function NewsPage() {
                 <span className="status-pill status-pill--info">{formatDateTimeLabel(item.publishedAt, locale, messages.common.unavailable)}</span>
               </div>
               <div className="analytics-card__body">
-                <p><strong>{item.title}</strong></p>
-                <p>{item.summary || 'No summary available.'}</p>
-                <p>Sentiment: {typeof item.sentimentScore === 'number' ? item.sentimentScore.toFixed(2) : 'n/a'} | Impact: {typeof item.impactScore === 'number' ? item.impactScore.toFixed(2) : 'n/a'}</p>
+                <p><strong>{decodeHtmlEntities(item.title)}</strong></p>
+                <p>{decodeHtmlEntities(item.summary || '').trim() || 'No summary available.'}</p>
+                <div className="news-score-row">
+                  {typeof item.sentimentScore === 'number' ? (
+                    <span className="status-pill status-pill--info">Sentiment {item.sentimentScore.toFixed(2)}</span>
+                  ) : null}
+                  {typeof item.impactScore === 'number' ? (
+                    <span className="status-pill status-pill--warning">Impact {item.impactScore.toFixed(2)}</span>
+                  ) : null}
+                  {typeof item.sentimentScore !== 'number' && typeof item.impactScore !== 'number' ? (
+                    <span className="status-pill status-pill--neutral">Signals pending</span>
+                  ) : null}
+                </div>
                 <a href={item.url} target="_blank" rel="noreferrer">Read source</a>
               </div>
             </Card>

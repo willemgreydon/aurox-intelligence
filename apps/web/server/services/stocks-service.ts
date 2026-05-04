@@ -23,6 +23,7 @@ export async function getStocksOverviewData(
   const readModel = await getStocksReadModelCached(
     typeof options?.symbolLimit === 'number' ? options.symbolLimit : null,
     options?.pageContext?.trim() || 'stocks',
+    options?.preferredSymbols?.join(',') ?? '',
   );
   perfLog('stocks-service:query', t0);
   const tMapper = perfNow();

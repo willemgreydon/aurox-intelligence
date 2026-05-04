@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { StocksOverviewViewModel } from '../../server/mappers/stocks-mapper';
 import type { getMarketGraphData } from '../../server/services/market-graph-service';
+import type { NewsItem } from '@repo/api-contracts';
 import { Card } from '../ui/card';
 import { Section } from '../ui/section';
 import { StatusBadge } from '../ui/status-badge';
@@ -9,6 +10,8 @@ import { MarketGraphWorkspace } from '../charts/market-graph-workspace';
 type HeroSectionProps = {
   stocks: StocksOverviewViewModel;
   marketGraph: Awaited<ReturnType<typeof getMarketGraphData>>;
+  trackedSymbols?: string[];
+  newsItems?: NewsItem[];
   labels: {
     eyebrow: string;
     title: string;
@@ -60,7 +63,7 @@ type HeroSectionProps = {
   };
 };
 
-export function HeroSection({ stocks, marketGraph, labels }: HeroSectionProps) {
+export function HeroSection({ stocks, marketGraph, labels, trackedSymbols = [], newsItems = [] }: HeroSectionProps) {
   const positiveBreadth = stocks.trackedStocks.length > 0 ? Math.round((stocks.trackedStocks.filter((item) => (item.changePercent ?? 0) > 0).length / stocks.trackedStocks.length) * 100) : 0;
   const featuredMove = stocks.topMovers[0];
   const metrics = [
@@ -113,6 +116,8 @@ export function HeroSection({ stocks, marketGraph, labels }: HeroSectionProps) {
             <MarketGraphWorkspace
               variant="spotlight"
               assets={marketGraph.assets}
+              trackedSymbols={trackedSymbols}
+              newsItems={newsItems}
               labels={{
                 timeframe: labels.graphLabels.timeframe,
                 graphType: labels.graphLabels.graphType,
