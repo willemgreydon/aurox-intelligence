@@ -137,9 +137,11 @@ export default async function HomePage() {
         }}
         common={{ unavailable: messages.common.unavailable }}
       />
-      <div className="section">
-        <NewsStreamWidget news={news} />
-      </div>
+      <section className="dashboard-section home-news-section">
+        <div className="shell-container home-news-section__inner">
+          <NewsStreamWidget news={news} />
+        </div>
+      </section>
     </>
   );
 }

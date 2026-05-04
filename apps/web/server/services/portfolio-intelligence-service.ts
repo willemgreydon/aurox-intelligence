@@ -147,7 +147,7 @@ export async function getPortfolioIntelligenceViewModel(): Promise<PortfolioInte
         cashBalance,
         portfolioValue,
         openPositionCount: brokerPositions.length,
-        newsRiskFlag: (systemState.assetStates.find((s) => s.symbol === trade.symbol)?.newsImpact.riskFlag ?? 'LOW') as 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL',
+        newsRiskFlag: (systemState.assetStates.find((s) => s.symbol === trade.symbol)?.newsImpact?.riskFlag ?? 'LOW') as 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL',
         liquidityScore: trade.symbol.includes('ETH') || trade.symbol.includes('BTC') ? 0.7 : 0.85,
         signalConfidence: recsForEngine.find((r) => r.symbol === trade.symbol)?.recommendation.confidence ?? 1,
         providerDegraded: systemState.degraded,
@@ -178,3 +178,4 @@ export async function getPortfolioIntelligenceViewModel(): Promise<PortfolioInte
     simulationOnlyNotice: SIMULATION_ONLY_NOTICE,
   };
 }
+
