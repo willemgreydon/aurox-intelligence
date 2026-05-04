@@ -30,6 +30,7 @@ export async function Header({ locale, messages }: HeaderProps) {
       label: messages.shell.nav.markets,
       items: [
         { href: '/market', label: messages.shell.nav.marketOverview, icon: 'MR' },
+        { href: '/markets/intelligence', label: 'Intelligence', icon: 'MI' },
         { href: '/stocks', label: messages.shell.nav.stocks, icon: 'ST' },
         { href: '/news', label: messages.shell.nav.newsStream, icon: 'NW' },
         { href: '/fx', label: messages.shell.nav.fx, icon: 'FX' },
@@ -54,6 +55,7 @@ export async function Header({ locale, messages }: HeaderProps) {
         { href: '/invest/etfs', label: messages.shell.nav.investEtfs, icon: 'ET' },
         { href: '/invest/crypto', label: messages.shell.nav.investCrypto, icon: 'CR' },
         { href: '/invest/accounts', label: messages.shell.nav.investAccounts, icon: 'AC' },
+        { href: '/portfolio/intelligence', label: 'Portfolio Intelligence', icon: 'PI' },
       ],
     },
     {

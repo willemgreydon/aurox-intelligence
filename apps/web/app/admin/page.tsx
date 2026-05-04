@@ -34,6 +34,7 @@ export default async function AdminPage() {
           ]}
           actions={[
             { href: '/admin/monitoring', label: 'Open monitoring' },
+            { href: '/admin/live-readiness', label: 'Live readiness' },
             { href: '/dashboard', label: 'Open dashboard' },
           ]}
         />

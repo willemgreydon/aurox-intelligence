@@ -1,3 +1,4 @@
+export * from './portfolio/portfolio-intelligence-engine';
 export {
   rankAssets,
   computeCompositeScore,
@@ -6,6 +7,17 @@ export {
   computeRankingConfidence,
 } from './ranking-engine';
 export { deriveNewsImpactExplanation } from './news/news-impact';
+export { orchestrateSystemState } from './orchestration/system-orchestrator';
+export type { SystemState, AssetState, AssetOrchestrationInput } from './orchestration/system-orchestrator';
+export { computeRecommendation } from './recommendation/recommendation-engine';
+export { buildRecommendationExplanation } from './recommendation/recommendation-explainer';
+export type {
+  Recommendation,
+  RecommendationAction,
+  RecommendationHorizon,
+  RecommendationRiskLevel,
+  EngineRecommendationInput,
+} from './recommendation/recommendation-engine';
 export type {
   AssetRankingInput,
   CompositeScoreComponents,

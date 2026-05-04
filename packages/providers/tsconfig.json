@@ -5,6 +5,9 @@
     "outDir": "dist",
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": false,
     "baseUrl": ".",
     "paths": {
       "@repo/api-contracts": ["../api-contracts/dist/index.d.ts"]

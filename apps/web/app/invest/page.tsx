@@ -13,6 +13,7 @@ import { QuickTradeActions } from '../../components/invest/quick-trade-actions';
 import { RecommendationCard } from '../../components/invest/recommendation-card';
 import { BrokerModeLaunchpad } from '../../components/invest/broker-mode-launchpad';
 import { RankedAssetsPanel } from '../../components/invest/ranked-assets-panel';
+import { LiveReadinessWidget } from '../../components/broker/live-readiness-widget';
 import { getMessages, type AppMessages } from '../../lib/i18n/messages';
 import { getOptionalCurrentSession } from '../../server/auth/session';
 import { getRequestLocale } from '../../server/i18n/locale';
@@ -218,6 +219,7 @@ async function RecommendationsSection({
             reasons={item.reasons}
             sparkline={sparklineBySymbol[item.symbol] ?? []}
             newsRiskFlag={item.newsRiskFlag}
+            riskLevel={invest.decisionBySymbol[item.symbol]?.risk.label}
           />
         ) : (
           <MarketAssetRow
@@ -620,6 +622,10 @@ export default async function InvestPage({
       {/* ── Bank/safety (renders immediately — static content) ────────────── */}
       <Section className="dashboard-section dashboard-section--tinted">
         <div className="analytics-two-grid">
+          <LiveReadinessWidget
+            status="WARNING"
+            whyLocked="Live execution is policy-locked. Complete readiness checks before any unlock request."
+          />
           <Card className="analytics-card">
             <div className="analytics-card__header">
               <div>

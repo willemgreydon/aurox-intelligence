@@ -2,7 +2,17 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "rootDir": "src",
-    "outDir": "dist"
+    "outDir": "dist",
+    "baseUrl": ".",
+    "paths": {
+      "@repo/api-contracts": ["../../packages/api-contracts/dist/index.d.ts"],
+      "@repo/ai-market-intelligence": ["../../packages/ai-market-intelligence/dist/index.d.ts"],
+      "@repo/db": ["../../packages/db/dist/index.d.ts"],
+      "@repo/forecasting": ["../../packages/forecasting/dist/index.d.ts"],
+      "@repo/observability": ["../../packages/observability/dist/index.d.ts"],
+      "@repo/providers": ["../../packages/providers/dist/index.d.ts"],
+      "@repo/signals": ["../../packages/signals/dist/index.d.ts"]
+    }
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist"]

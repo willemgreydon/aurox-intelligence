@@ -169,8 +169,9 @@ export default async function PortfolioRoutePage() {
 
       <Section className="dashboard-section">
         <div className="analytics-card__action-grid">
-          <Link href="/invest/portfolio" className="button button--primary">Open full portfolio workstation</Link>
-          <Link href="/invest/simulation" className="button button--secondary">Open simulation workstation</Link>
+          <Link href="/portfolio/intelligence" className="button button--primary">Portfolio intelligence</Link>
+          <Link href="/invest/portfolio" className="button button--secondary">Full portfolio workstation</Link>
+          <Link href="/invest/simulation" className="button button--secondary">Simulation workstation</Link>
         </div>
       </Section>
     </>

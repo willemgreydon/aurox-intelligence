@@ -36,3 +36,5 @@ export * from './broker/stock-broker-adapter';
 export * from './broker/broker-registry';
 export * from './autonomous/agent-capability-types';
 export * from './autonomous/agent-dry-run-workflow';
+export * from './broker/broker-abstraction';
+export * from './broker/broker-intelligence';

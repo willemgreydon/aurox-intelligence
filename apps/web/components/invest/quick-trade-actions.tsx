@@ -70,16 +70,13 @@ export function QuickTradeActions({
           Simulate trade
         </Link>
       )}
-      {/* Live trading is permanently gated — this button never submits or navigates */}
-      <button
-        type="button"
+      <Link
+        href="/admin/live-readiness"
         className="button button--secondary button--locked"
-        disabled
-        aria-disabled="true"
         aria-describedby="live-trade-locked-reason"
       >
         Live trade locked
-      </button>
+      </Link>
       <span id="live-trade-locked-reason" className="sr-only">
         Live trading is disabled until all readiness gates are satisfied.
       </span>
