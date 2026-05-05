@@ -243,6 +243,7 @@ export function MarketGraphWorkspace({
   const [viewportOffset, setViewportOffset] = useState(0);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [hoverState, setHoverState] = useState<HoverState | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const canvasRef = useRef<HTMLDivElement | null>(null);
 
@@ -809,68 +810,86 @@ export function MarketGraphWorkspace({
         ) : null}
       </div>
       <aside className="broker-observer" aria-label="Broker observation workspace">
-        <section className="broker-observer__panel">
-          <div className="broker-observer__eyebrow">Broker Observation Workspace</div>
-          <h3>Simulation cockpit</h3>
-          <p>Monitoring lanes, watchlist, market moves, and news context. Execution remains simulation-only.</p>
-        </section>
+        <button
+          type="button"
+          className="broker-observer__mobile-toggle"
+          aria-expanded={sidebarOpen}
+          aria-controls="broker-observer-content"
+          onClick={() => setSidebarOpen((v) => !v)}
+        >
+          <span>Market sidebar</span>
+          <span className="broker-observer__mobile-toggle-icon" aria-hidden="true">
+            {sidebarOpen ? '▲' : '▼'}
+          </span>
+        </button>
 
-        <section className="broker-observer__panel">
-          <h4>Broker lanes monitor</h4>
-          <ul className="broker-observer__list">
-            {laneStatuses.map((lane) => (
-              <li key={lane.label} className="broker-observer__row">
-                <span>{lane.label}</span>
-                <span className={`status-pill status-pill--${lane.status === 'active' ? 'success' : lane.status === 'degraded' ? 'warning' : lane.status === 'simulation' ? 'info' : 'neutral'}`}>
-                  {lane.status}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
+        <div
+          id="broker-observer-content"
+          className={`broker-observer__collapsible${sidebarOpen ? ' broker-observer__collapsible--open' : ''}`}
+        >
+          <section className="broker-observer__panel">
+            <div className="broker-observer__eyebrow">Broker Observation Workspace</div>
+            <h3>Simulation cockpit</h3>
+            <p>Monitoring lanes, watchlist, market moves, and news context. Execution remains simulation-only.</p>
+          </section>
 
-        <section className="broker-observer__panel">
-          <h4>Watchlist mini-board</h4>
-          <ul className="broker-observer__list">
-            {watchlistAssets.length > 0 ? watchlistAssets.map((asset) => (
-              <li key={asset.symbol} className="broker-observer__row">
-                <div>
-                  <strong>{asset.symbol}</strong>
-                  <span className="broker-observer__meta">{asset.assetClass.toUpperCase()}</span>
-                </div>
-                <div className="broker-observer__quote">
-                  <strong>{typeof asset.snapshot?.price === 'number' ? `$${asset.snapshot.price.toFixed(2)}` : labels.unavailable}</strong>
-                  <span className={typeof asset.snapshot?.changePercent === 'number' ? asset.snapshot.changePercent >= 0 ? 'market-graph__instrument-change--up' : 'market-graph__instrument-change--down' : 'market-graph__instrument-change--flat'}>
-                    {typeof asset.snapshot?.changePercent === 'number' ? `${asset.snapshot.changePercent >= 0 ? '+' : ''}${asset.snapshot.changePercent.toFixed(2)}%` : labels.unavailable}
+          <section className="broker-observer__panel">
+            <h4>Broker lanes monitor</h4>
+            <ul className="broker-observer__list">
+              {laneStatuses.map((lane) => (
+                <li key={lane.label} className="broker-observer__row">
+                  <span>{lane.label}</span>
+                  <span className={`status-pill status-pill--${lane.status === 'active' ? 'success' : lane.status === 'degraded' ? 'warning' : lane.status === 'simulation' ? 'info' : 'neutral'}`}>
+                    {lane.status}
                   </span>
-                </div>
-              </li>
-            )) : <li className="broker-observer__empty">No watchlist data available.</li>}
-          </ul>
-        </section>
+                </li>
+              ))}
+            </ul>
+          </section>
 
-        <section className="broker-observer__panel">
-          <h4>News observer</h4>
-          <ul className="broker-observer__news-list">
-            {observerNews.length > 0 ? observerNews.map((item) => (
-              <li key={item.id}>
-                {item.url ? (
-                  <a href={item.url} target="_blank" rel="noreferrer noopener" className="broker-observer__news-link">
-                    <strong>{item.title}</strong>
-                  </a>
-                ) : <strong>{item.title}</strong>}
-                <p>{item.summary || 'Market headline update.'}</p>
-                <span className="broker-observer__meta">{item.source || 'Source'} · {new Date(item.publishedAt).toLocaleString('en-US')}</span>
-              </li>
-            )) : <li className="broker-observer__empty">No relevant headlines available.</li>}
-          </ul>
-        </section>
+          <section className="broker-observer__panel">
+            <h4>Watchlist mini-board</h4>
+            <ul className="broker-observer__list">
+              {watchlistAssets.length > 0 ? watchlistAssets.map((asset) => (
+                <li key={asset.symbol} className="broker-observer__row">
+                  <div>
+                    <strong>{asset.symbol}</strong>
+                    <span className="broker-observer__meta">{asset.assetClass.toUpperCase()}</span>
+                  </div>
+                  <div className="broker-observer__quote">
+                    <strong>{typeof asset.snapshot?.price === 'number' ? `$${asset.snapshot.price.toFixed(2)}` : labels.unavailable}</strong>
+                    <span className={typeof asset.snapshot?.changePercent === 'number' ? asset.snapshot.changePercent >= 0 ? 'market-graph__instrument-change--up' : 'market-graph__instrument-change--down' : 'market-graph__instrument-change--flat'}>
+                      {typeof asset.snapshot?.changePercent === 'number' ? `${asset.snapshot.changePercent >= 0 ? '+' : ''}${asset.snapshot.changePercent.toFixed(2)}%` : labels.unavailable}
+                    </span>
+                  </div>
+                </li>
+              )) : <li className="broker-observer__empty">No watchlist data available.</li>}
+            </ul>
+          </section>
 
-        <section className="broker-observer__panel broker-observer__panel--safety">
-          <h4>Broker safety panel</h4>
-          <p>Simulation only. No live execution and no real brokerage routing.</p>
-          <a href="/invest/simulation" className="button button--secondary">Open simulation</a>
-        </section>
+          <section className="broker-observer__panel">
+            <h4>News observer</h4>
+            <ul className="broker-observer__news-list">
+              {observerNews.length > 0 ? observerNews.map((item) => (
+                <li key={item.id}>
+                  {item.url ? (
+                    <a href={item.url} target="_blank" rel="noreferrer noopener" className="broker-observer__news-link">
+                      <strong>{item.title}</strong>
+                    </a>
+                  ) : <strong>{item.title}</strong>}
+                  <p>{item.summary || 'Market headline update.'}</p>
+                  <span className="broker-observer__meta">{item.source || 'Source'} · {new Date(item.publishedAt).toLocaleString('en-US')}</span>
+                </li>
+              )) : <li className="broker-observer__empty">No relevant headlines available.</li>}
+            </ul>
+          </section>
+
+          <section className="broker-observer__panel broker-observer__panel--safety">
+            <h4>Broker safety panel</h4>
+            <p>Simulation only. No live execution and no real brokerage routing.</p>
+            <a href="/invest/simulation" className="button button--secondary">Open simulation</a>
+          </section>
+        </div>
       </aside>
       </div>
     </div>
