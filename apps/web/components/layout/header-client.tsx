@@ -14,6 +14,7 @@ import type { AppMessages } from '../../lib/i18n/messages';
 import { LocaleSwitcher } from './locale-switcher';
 import { SignOutButton } from '../auth/sign-out-button';
 import type { MarketTickerViewModel } from '../../server/mappers/market-ticker-mapper';
+import { CommandPalette } from './command-palette';
 
 type HeaderClientProps = {
   locale: Locale;
@@ -406,6 +407,7 @@ export function HeaderClient({ locale, messages, ticker, auth, navGroups, portfo
           </div>
         </div>
       ) : null}
+      <CommandPalette navGroups={navGroups} ticker={ticker} />
     </>
   );
 }

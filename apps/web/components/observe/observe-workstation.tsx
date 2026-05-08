@@ -30,6 +30,8 @@ export function ObserveWorkstation({ model }: Props) {
   const [watchlistRisk, setWatchlistRisk] = useState(searchParams.get('risk') ?? 'all');
   const [watchlistNews, setWatchlistNews] = useState(searchParams.get('news') ?? 'all');
   const [watchlistSearch, setWatchlistSearch] = useState(searchParams.get('search') ?? '');
+  const [denseMode, setDenseMode] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
 
   const filteredFeed = useMemo(() => model.observerItems.filter((item) => {
     if (sourceFilter !== 'all' && item.source !== sourceFilter) return false;
@@ -67,6 +69,14 @@ export function ObserveWorkstation({ model }: Props) {
   return (
     <>
       <section className="dashboard-section dashboard-section--compact observe-page__summary">
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginBottom: '0.6rem', flexWrap: 'wrap' }}>
+          <button type="button" className={`button button--secondary${denseMode ? ' button--active' : ''}`} onClick={() => setDenseMode((v) => !v)}>
+            {denseMode ? 'Dense mode on' : 'Dense mode'}
+          </button>
+          <button type="button" className={`button button--secondary${focusMode ? ' button--active' : ''}`} onClick={() => setFocusMode((v) => !v)}>
+            {focusMode ? 'Focus mode on' : 'Focus mode'}
+          </button>
+        </div>
         <div className="observation-regime-grid">
           <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">Regime</div><div className="analytics-stat__value">{model.regime.label}</div></article>
           <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">Regime confidence</div><div className="analytics-stat__value">{(model.regime.confidence * 100).toFixed(0)}%</div></article>
@@ -77,7 +87,33 @@ export function ObserveWorkstation({ model }: Props) {
         {model.persistenceDegraded ? <p className="text-muted">Observation persistence degraded. Running in runtime-only fallback.</p> : null}
       </section>
 
-      <section className="dashboard-section dashboard-section--compact dashboard-section--tinted observe-page__panels">
+      <section className={`dashboard-section dashboard-section--compact dashboard-section--tinted observe-page__panels${denseMode ? ' observe-page__panels--dense' : ''}${focusMode ? ' observe-page__panels--focus' : ''}`}>
+        {model.relationshipInsights.length > 0 ? (
+          <article className="analytics-card" style={{ marginBottom: '0.9rem' }}>
+            <div className="analytics-card__header">
+              <div>
+                <div className="section__eyebrow">Cross-Asset Intelligence</div>
+                <h3>Relationship engine</h3>
+              </div>
+            </div>
+            <div className="analytics-card__body">
+              <div className="observe-feed" style={{ maxHeight: denseMode ? '18rem' : '22rem' }}>
+                {model.relationshipInsights.slice(0, 8).map((item) => (
+                  <article key={item.id} className="observe-feed__item">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem', alignItems: 'center' }}>
+                      <strong>{item.title}</strong>
+                      <span className={`status-pill status-pill--${severityTone(item.severity)}`}>{item.severity}</span>
+                    </div>
+                    <p className="text-muted">{item.narrative}</p>
+                    <p className="text-muted" style={{ fontSize: '0.75rem' }}>
+                      Symbols: {item.symbols.join(', ')} · Confidence {(item.confidence * 100).toFixed(0)}% · Type {item.kind}
+                    </p>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </article>
+        ) : null}
         <div className="analytics-two-grid">
           <article className="analytics-card">
             <div className="analytics-card__header"><div><div className="section__eyebrow">AI Market Observer</div><h3>Observation feed</h3></div></div>

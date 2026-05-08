@@ -29,6 +29,7 @@ export default async function ObserveEventDetailPage({
         ]}
         actions={[
           { href: '/observe', label: 'Back to observe' },
+          { href: `/replay/${id}`, label: 'Open replay' },
           ...(event?.symbol ? [{ href: `/stocks/${event.symbol}`, label: `Inspect ${event.symbol}` }] : []),
         ]}
       />

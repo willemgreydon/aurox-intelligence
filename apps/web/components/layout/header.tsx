@@ -31,6 +31,7 @@ export async function Header({ locale, messages }: HeaderProps) {
       items: [
         { href: '/market', label: 'Market', icon: 'MR', description: 'Live chart workstation and cockpit modules.' },
         { href: '/observe', label: 'Observe', icon: 'OB', description: 'AI observer feed, anomalies, timeline, and readiness.' },
+        { href: '/alerts', label: 'Alerts', icon: 'AL', description: 'Escalated intelligence alerts with replay links.' },
         { href: '/signals', label: 'Signals', icon: 'SG', description: 'Signal interpretation and explainability views.' },
         { href: '/portfolio/intelligence', label: 'Portfolio Intelligence', icon: 'PI', description: 'Allocation, risk overlay, and portfolio diagnostics.' },
         { href: '/invest/simulation', label: 'Simulation', icon: 'SM', description: 'Simulation-only order preparation and execution lab.' },
@@ -52,6 +53,7 @@ export async function Header({ locale, messages }: HeaderProps) {
       label: 'Intelligence',
       items: [
         { href: '/observe', label: 'AI Market Observer', icon: 'AO', description: 'Actionable observation feed and explainability.' },
+        { href: '/alerts', label: 'Alert Center', icon: 'AC', description: 'Severity-grouped market intelligence alerts.' },
         { href: '/observe?section=anomalies', label: 'Anomaly Radar', icon: 'AR', description: 'Detect and rank market anomalies by severity.' },
         { href: '/observe?section=timeline', label: 'Market Event Timeline', icon: 'TL', description: 'Chronological event stream with outcomes.' },
         { href: '/observe?section=readiness', label: 'Trade Readiness', icon: 'TR', description: 'Simulation-only readiness checks.' },

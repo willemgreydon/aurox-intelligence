@@ -24,6 +24,10 @@ import {
   type ObservationSeverity,
   type TradeReadinessBreakdown,
 } from '../lib/market-observation-engine';
+import {
+  buildCrossAssetRelationshipInsights,
+  type CrossAssetRelationshipInsight,
+} from '../lib/cross-asset-relationship-engine';
 
 export type WatchlistIntelligenceItem = {
   symbol: string;
@@ -59,6 +63,7 @@ export type ObserveViewModel = {
   timeline: MarketTimelineEvent[];
   anomalies: AnomalyRadarItem[];
   watchlistIntelligence: WatchlistIntelligenceItem[];
+  relationshipInsights: CrossAssetRelationshipInsight[];
   tradeReadiness: {
     symbol: string | null;
     result: TradeReadinessBreakdown | null;
@@ -268,6 +273,9 @@ export async function getObserveViewModel(input?: {
   const recommendationBySymbol = new Map(
     workstation.systemState.recommendations.map((row) => [row.symbol, row.recommendation] as const),
   );
+  const newsSentimentBySymbol = new Map<string, number | null>(
+    Object.entries(workstation.newsBySymbol).map(([symbol, rows]) => [symbol, rows?.[0]?.sentiment ?? null]),
+  );
   const assetBySymbol = new Map(
     workstation.assets.map((asset) => [asset.symbol, asset] as const),
   );
@@ -393,6 +401,26 @@ export async function getObserveViewModel(input?: {
     input?.watchlistSort ?? 'strongest_signal',
     input?.watchlistFilter ?? { assetClass: 'all', signalAction: 'all', risk: 'all', news: 'all', search: '' },
   );
+  const relationshipInsights = buildCrossAssetRelationshipInsights(
+    workstation.assets.map((asset) => {
+      const recommendation = recommendationBySymbol.get(asset.symbol);
+      const normalizedAction = recommendation?.action === 'BUY' || recommendation?.action === 'STRONG_BUY'
+        ? 'BUY'
+        : recommendation?.action === 'SELL' || recommendation?.action === 'STRONG_SELL'
+          ? 'SELL'
+          : recommendation?.action === 'REDUCE'
+            ? 'REDUCE'
+            : 'HOLD';
+      return {
+        symbol: asset.symbol,
+        assetClass: normalizeAssetClass(asset.assetClass),
+        changePercent: asset.changePercent,
+        confidence: recommendation?.confidence ?? null,
+        action: normalizedAction,
+        newsSentiment: newsSentimentBySymbol.get(asset.symbol) ?? null,
+      };
+    }),
+  );
   const selectedReadinessAsset = sortedWatchlist[0]?.symbol ?? topBullish[0]?.symbol ?? null;
   const selectedRec = selectedReadinessAsset ? recommendationBySymbol.get(selectedReadinessAsset) : null;
   const selectedRisk = selectedReadinessAsset ? allocationBySymbol.get(selectedReadinessAsset)?.riskOverlay.riskScore ?? null : null;
@@ -503,6 +531,7 @@ export async function getObserveViewModel(input?: {
     timeline,
     anomalies,
     watchlistIntelligence: sortedWatchlist,
+    relationshipInsights,
     tradeReadiness: {
       symbol: selectedReadinessAsset,
       result: tradeReadiness,
