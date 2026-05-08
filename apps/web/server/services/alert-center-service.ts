@@ -12,7 +12,7 @@ import {
   type AlertSource,
   type AlertStatus,
 } from '@repo/db';
-import { getObserveViewModel } from './market-observation-service';
+import { getObserveViewModel, type ObserveViewModel } from './market-observation-service';
 import { generateAlertCandidates } from '../lib/alert-engine';
 
 export type AlertCenterFilter = {
@@ -59,9 +59,10 @@ export async function getAlertCenterViewModel(input: {
   userId: string;
   workspaceId?: string | null;
   filter?: AlertCenterFilter;
+  observeModel?: ObserveViewModel;
 }): Promise<AlertCenterViewModel> {
   const filters = normalizeFilters(input.filter);
-  const observe = await getObserveViewModel({ userId: input.userId });
+  const observe = input.observeModel ?? await getObserveViewModel({ userId: input.userId });
   const candidates = generateAlertCandidates(observe, { userId: input.userId, workspaceId: input.workspaceId ?? null });
 
   let persistenceDegraded = false;

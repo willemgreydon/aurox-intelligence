@@ -29,6 +29,7 @@ export async function Header({ locale, messages }: HeaderProps) {
       id: 'core-workstations',
       label: 'Core Workstations',
       items: [
+        { href: '/dashboard', label: 'Dashboard', icon: 'DB', description: 'Executive market intelligence command center.' },
         { href: '/market', label: 'Market', icon: 'MR', description: 'Live chart workstation and cockpit modules.' },
         { href: '/observe', label: 'Observe', icon: 'OB', description: 'AI observer feed, anomalies, timeline, and readiness.' },
         { href: '/alerts', label: 'Alerts', icon: 'AL', description: 'Escalated intelligence alerts with replay links.' },
