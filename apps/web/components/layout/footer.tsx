@@ -13,44 +13,43 @@ type FooterLinkGroup = {
 function buildFooterGroups(messages: AppMessages): FooterLinkGroup[] {
   return [
     {
-      title: messages.footer.groupMarkets,
-      links: [
-        { label: messages.shell.nav.marketOverview, href: '/market' },
-        { label: messages.footer.stocksLink, href: '/stocks' },
-        { label: messages.footer.newsLink, href: '/news' },
-        { label: messages.footer.fxLink, href: '/fx' },
-        { label: messages.footer.signalsLink, href: '/signals' },
-        { label: messages.footer.forecastsLink, href: '/forecasts' },
-      ],
-    },
-    {
-      title: messages.footer.groupInvest,
-      links: [
-        { label: messages.shell.nav.investHome, href: '/invest' },
-        { label: messages.footer.stockAllocationLink, href: '/invest/stocks' },
-        { label: messages.footer.etfComparisonLink, href: '/invest/etfs' },
-        { label: messages.footer.cryptoTrackingLink, href: '/invest/crypto' },
-        { label: messages.footer.simulationLink, href: '/invest/simulation' },
-      ],
-    },
-    {
-      title: messages.footer.groupPlatform,
+      title: 'Platform',
       links: [
         { label: messages.shell.nav.dashboard, href: '/dashboard' },
-        { label: messages.footer.adminLink, href: '/admin' },
-        { label: messages.footer.monitoringLink, href: '/admin/monitoring' },
-        { label: messages.footer.accountLink, href: '/account' },
-        { label: messages.footer.profileLink, href: '/account/profile' },
+        { label: messages.shell.nav.investHome, href: '/invest/portfolio' },
+        { label: messages.shell.nav.signals, href: '/signals' },
+        { label: messages.footer.newsLink, href: '/news' },
+        { label: messages.shell.nav.forecasts, href: '/forecasts' },
       ],
     },
     {
-      title: messages.footer.groupLegal,
+      title: 'Markets',
       links: [
-        { label: messages.footer.legalLink, href: '/legal' },
+        { label: 'Stocks', href: '/invest/stocks' },
+        { label: 'ETFs', href: '/invest/etfs' },
+        { label: 'Crypto', href: '/invest/crypto' },
+        { label: 'Macro', href: '/fx' },
+        { label: 'Watchlist', href: '/invest/overview' },
+      ],
+    },
+    {
+      title: 'Intelligence',
+      links: [
+        { label: 'AI Broker', href: '/invest/broker-modes' },
+        { label: 'Risk Engine', href: '/legal/risk-disclosure' },
+        { label: 'Signal Framework', href: '/signals' },
+        { label: 'Simulation', href: '/invest/simulation' },
+        { label: 'Admin Monitor', href: '/admin/monitoring' },
+      ],
+    },
+    {
+      title: 'Legal & Resources',
+      links: [
         { label: messages.footer.termsLink, href: '/legal/terms' },
         { label: messages.footer.privacyLink, href: '/legal/privacy' },
         { label: messages.footer.riskLink, href: '/legal/risk-disclosure' },
-        { label: messages.footer.imprintLink, href: '/legal/imprint' },
+        { label: 'Simulation Disclaimer', href: '/legal/simulation-disclaimer' },
+        { label: 'Documentation', href: '/legal' },
       ],
     },
   ];

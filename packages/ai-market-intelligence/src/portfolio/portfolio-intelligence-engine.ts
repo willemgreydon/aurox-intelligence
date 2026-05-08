@@ -28,7 +28,8 @@ export type RiskOverlay = {
   liquidityRisk: number;  // 0–1
   newsRisk: number;       // 0–1
   correlationRisk: number; // 0–1
-  providerRisk: number;    // 0–1
+  providerRisk: number;    // 0-1
+  concentrationRisk: number; // 0-1
   anomalyRisk?: number;    // 0–1, optional
   explanation: string[];
 };
@@ -164,6 +165,17 @@ function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
+function computeLiquidityRisk(rec: Recommendation): number {
+  const notes = rec.reasoning.uncertaintyNotes.map((note) => note.toLowerCase());
+  const hasLiquidityWarning = notes.some((note) =>
+    note.includes('liquidity') || note.includes('spread') || note.includes('slippage'),
+  );
+  if (hasLiquidityWarning) return 0.75;
+  if (rec.action === 'AVOID' || rec.riskLevel === 'EXTREME') return 0.65;
+  if (rec.riskLevel === 'HIGH') return 0.45;
+  return 0.2;
+}
+
 function mapActionToAllocation(action: RecommendationAction): AllocationAction {
   switch (action) {
     case 'STRONG_BUY': return 'ENTER';
@@ -237,7 +249,7 @@ function computeFactorDecomposition(
 
 // ─── Risk Overlay Logic ───────────────────────────────────────────────────────
 
-function computeRiskOverlay(rec: Recommendation, classConcentration: number): RiskOverlay {
+function computeRiskOverlay(rec: Recommendation, classConcentration: number, positionConcentration: number): RiskOverlay {
   const volatilityRisk =
     rec.riskLevel === 'EXTREME' ? 0.95 :
     rec.riskLevel === 'HIGH' ? 0.75 :
@@ -255,11 +267,17 @@ function computeRiskOverlay(rec: Recommendation, classConcentration: number): Ri
 
   const correlationRisk = classConcentration > 0.5 ? 0.7 : classConcentration > 0.35 ? 0.4 : 0.1;
 
-  const liquidityRisk = 0.1; // placeholder
+  const concentrationRisk = clamp(Math.max(classConcentration, positionConcentration), 0, 1);
+  const liquidityRisk = computeLiquidityRisk(rec);
 
   // Weighted composite risk score 0–100
   const riskScore = clamp(
-    (volatilityRisk * 40 + newsRisk * 25 + correlationRisk * 20 + providerRisk * 10 + liquidityRisk * 5),
+    (volatilityRisk * 25
+      + liquidityRisk * 15
+      + newsRisk * 15
+      + correlationRisk * 15
+      + providerRisk * 10
+      + concentrationRisk * 20),
     0,
     100,
   );
@@ -271,8 +289,10 @@ function computeRiskOverlay(rec: Recommendation, classConcentration: number): Ri
 
   const explanation: string[] = [
     `Volatility risk: ${(volatilityRisk * 100).toFixed(0)}% (${rec.riskLevel} recommendation risk level)`,
+    `Liquidity risk: ${(liquidityRisk * 100).toFixed(0)}%`,
     `News risk: ${(newsRisk * 100).toFixed(0)}%`,
     `Correlation/concentration risk: ${(correlationRisk * 100).toFixed(0)}%`,
+    `Position concentration risk: ${(concentrationRisk * 100).toFixed(0)}%`,
     `Provider reliability risk: ${(providerRisk * 100).toFixed(0)}%`,
     `Composite risk score: ${riskScore.toFixed(0)}/100`,
   ];
@@ -285,6 +305,7 @@ function computeRiskOverlay(rec: Recommendation, classConcentration: number): Ri
     newsRisk,
     correlationRisk,
     providerRisk,
+    concentrationRisk,
     explanation,
   };
 }
@@ -324,8 +345,13 @@ function computePortfolioDiagnostics(
   const etfExposure = classSum('etf');
   const cashTargetWeight = clamp(1 - allocations.reduce((s, a) => s + a.targetWeight, 0), 0, 1);
 
-  const averageConfidence = active.reduce((s, a) => s + a.confidence, 0) / active.length;
-  const averageRiskScore = active.reduce((s, a) => s + a.riskOverlay.riskScore, 0) / active.length;
+  const totalActiveWeight = active.reduce((sum, item) => sum + item.targetWeight, 0);
+  const averageConfidence = totalActiveWeight > 0
+    ? active.reduce((sum, item) => sum + item.confidence * item.targetWeight, 0) / totalActiveWeight
+    : 0;
+  const averageRiskScore = totalActiveWeight > 0
+    ? active.reduce((sum, item) => sum + item.riskOverlay.riskScore * item.targetWeight, 0) / totalActiveWeight
+    : 0;
 
   const dominantRiskFactors: string[] = [];
   if (averageRiskScore > 60) dominantRiskFactors.push('high-volatility');
@@ -355,6 +381,26 @@ function computePortfolioDiagnostics(
 
 // ─── Cross-Asset Ranking ──────────────────────────────────────────────────────
 
+function computeAttractivenessScore(allocation: PortfolioAllocation): number {
+  const signalScore = clamp(allocation.factorDecomposition.finalRawScore, 0, 1);
+  const confidence = clamp(allocation.confidence, 0, 1);
+  const liquidityScore = clamp(1 - allocation.riskOverlay.liquidityRisk, 0, 1);
+  const newsSentimentScore = clamp(1 - allocation.riskOverlay.newsRisk, 0, 1);
+  const macroAlignmentScore = clamp(1 - allocation.riskOverlay.correlationRisk, 0, 1);
+  const compositeRiskPenalty = clamp(allocation.riskOverlay.riskScore / 100, 0, 1);
+
+  return clamp(
+    signalScore * 40
+      + confidence * 20
+      + liquidityScore * 10
+      + newsSentimentScore * 10
+      + macroAlignmentScore * 10
+      - compositeRiskPenalty * 20,
+    0,
+    100,
+  );
+}
+
 function buildRanking(allocations: PortfolioAllocation[]): AssetRanking[] {
   return allocations
     .map((a) => ({
@@ -362,7 +408,7 @@ function buildRanking(allocations: PortfolioAllocation[]): AssetRanking[] {
       symbol: a.symbol,
       assetClass: a.assetClass,
       recommendation: a.recommendationAction,
-      finalScore: a.factorDecomposition.normalizedScore,
+      finalScore: computeAttractivenessScore(a),
       confidence: a.confidence,
       targetWeight: a.targetWeight,
       riskScore: a.riskOverlay.riskScore,
@@ -379,8 +425,14 @@ function buildRanking(allocations: PortfolioAllocation[]): AssetRanking[] {
 
 function buildShortReason(a: PortfolioAllocation): string {
   const action = a.recommendationAction;
-  const conf = (a.confidence * 100).toFixed(0);
-  return `${action} at ${conf}% confidence — ${a.riskLevel} risk`;
+  const confidence = (a.confidence * 100).toFixed(0);
+  const riskLevel =
+    a.riskOverlay.riskScore >= 75 ? 'EXTREME'
+      : a.riskOverlay.riskScore >= 50 ? 'HIGH'
+        : a.riskOverlay.riskScore >= 25 ? 'MEDIUM'
+          : 'LOW';
+  const driver = a.factorDecomposition.explanation[0] ?? 'signal alignment';
+  return `${action} because ${driver.toLowerCase()}, confidence ${confidence}%, risk ${riskLevel}.`;
 }
 
 function buildDetailedReason(a: PortfolioAllocation): string[] {
@@ -553,7 +605,7 @@ export function computePortfolioIntelligence(
   } = input;
 
   const maxPositionWeight = constraints.maxPositionWeight ?? 0.2;
-  const minPositionWeight = constraints.minPositionWeight ?? 0.02;
+  const minPositionWeight = constraints.minPositionWeight ?? 0;
   const maxCryptoWeight = constraints.maxCryptoWeight ?? 0.25;
   const rebalanceThreshold = constraints.rebalanceThreshold ?? 0.05;
 
@@ -626,8 +678,13 @@ export function computePortfolioIntelligence(
   }
 
   // Apply min threshold
-  targetWeights = targetWeights.map((w) => (w < minPositionWeight ? 0 : w));
-  targetWeights = normalizeWeights(targetWeights);
+  if (minPositionWeight > 0) {
+    const thresholded = targetWeights.map((w) => (w < minPositionWeight ? 0 : w));
+    const survivors = thresholded.filter((w) => w > 0).length;
+    if (survivors > 0) {
+      targetWeights = normalizeWeights(thresholded);
+    }
+  }
 
   // Track class distribution for correlation penalty
   const classTotals = new Map<string, number>();
@@ -672,7 +729,7 @@ export function computePortfolioIntelligence(
       const normalizedScore = targetWeight;
       const factorDecomposition = computeFactorDecomposition(recommendation, corrPenalty, normalizedScore);
       const classConcentration = classTotals.get(assetClass) ?? 0;
-      const riskOverlay = computeRiskOverlay(recommendation, classConcentration);
+      const riskOverlay = computeRiskOverlay(recommendation, classConcentration, targetWeight);
 
       if (recommendation.riskLevel === 'EXTREME' || recommendation.riskLevel === 'HIGH') {
         riskAlerts.push({
@@ -773,3 +830,7 @@ export function computePortfolioIntelligence(
     regime,
   };
 }
+
+
+
+

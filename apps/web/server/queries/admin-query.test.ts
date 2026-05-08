@@ -15,6 +15,10 @@ function makeCheck(id: string): ProviderCheck {
     detail: 'ok',
     lastChecked: null,
     latencyMs: null,
+    monitored: true,
+    enabled: true,
+    lastSuccessfulCheck: null,
+    lastError: null,
   };
 }
 

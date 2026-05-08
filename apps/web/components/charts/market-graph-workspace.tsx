@@ -847,7 +847,7 @@ export function MarketGraphWorkspace({
             </ul>
           </section>
 
-          <section className="broker-observer__panel">
+          <section className="broker-observer__panel broker-observer__panel--watchlist">
             <h4>Watchlist mini-board</h4>
             <ul className="broker-observer__list">
               {watchlistAssets.length > 0 ? watchlistAssets.map((asset) => (
@@ -867,7 +867,7 @@ export function MarketGraphWorkspace({
             </ul>
           </section>
 
-          <section className="broker-observer__panel">
+          <section className="broker-observer__panel broker-observer__panel--news">
             <h4>News observer</h4>
             <ul className="broker-observer__news-list">
               {observerNews.length > 0 ? observerNews.map((item) => (
@@ -895,4 +895,3 @@ export function MarketGraphWorkspace({
     </div>
   );
 }
-

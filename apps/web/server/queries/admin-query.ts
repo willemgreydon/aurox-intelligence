@@ -14,7 +14,11 @@ export type ProviderCheck = {
   status: 'nominal' | 'attention' | 'degraded';
   detail: string;
   lastChecked: string | null;
-  latencyMs?: number | null;
+  latencyMs: number | null;
+  monitored: boolean;
+  enabled: boolean;
+  lastSuccessfulCheck: string | null;
+  lastError: string | null;
 };
 
 export type AdminReadModel = {
@@ -89,6 +93,10 @@ async function runProviderCheck(
       detail: monitorConfig.enabled ? 'Health monitoring is disabled by admin configuration.' : 'Disabled by admin monitor configuration.',
       lastChecked: null,
       latencyMs: null,
+      monitored: Boolean(monitorConfig.displayInDashboard),
+      enabled: Boolean(monitorConfig.enabled),
+      lastSuccessfulCheck: null,
+      lastError: null,
     };
   }
 
@@ -104,6 +112,11 @@ async function runProviderCheck(
       status: provider === activeProvider ? 'degraded' : 'attention',
       detail: `No API key is configured for ${meta.displayName}. Set the corresponding environment variable.`,
       lastChecked: null,
+      latencyMs: null,
+      monitored: Boolean(monitorConfig?.displayInDashboard ?? true),
+      enabled: Boolean(monitorConfig?.enabled ?? true),
+      lastSuccessfulCheck: null,
+      lastError: `Missing API key for ${meta.displayName}.`,
     };
   }
 
@@ -129,6 +142,10 @@ async function runProviderCheck(
         : `${meta.displayName} responded but returned no observations for the test symbol.`,
       lastChecked: new Date().toISOString(),
       latencyMs,
+      monitored: Boolean(monitorConfig?.displayInDashboard ?? true),
+      enabled: Boolean(monitorConfig?.enabled ?? true),
+      lastSuccessfulCheck: new Date().toISOString(),
+      lastError: null,
     };
   } catch (error) {
     return {
@@ -143,6 +160,10 @@ async function runProviderCheck(
       detail: error instanceof Error ? error.message : `${meta.displayName} check failed.`,
       lastChecked: new Date().toISOString(),
       latencyMs: null,
+      monitored: Boolean(monitorConfig?.displayInDashboard ?? true),
+      enabled: Boolean(monitorConfig?.enabled ?? true),
+      lastSuccessfulCheck: null,
+      lastError: error instanceof Error ? error.message : `${meta.displayName} check failed.`,
     };
   }
 }
@@ -161,6 +182,10 @@ async function runNewsProviderCheck(providerKey: 'finnhub-news' | 'polygon-news'
       detail: monitorConfig.enabled ? 'Health monitoring is disabled by admin configuration.' : 'Disabled by admin monitor configuration.',
       lastChecked: null,
       latencyMs: null,
+      monitored: Boolean(monitorConfig.displayInDashboard),
+      enabled: Boolean(monitorConfig.enabled),
+      lastSuccessfulCheck: null,
+      lastError: null,
     };
   }
   const t0 = Date.now();
@@ -184,6 +209,10 @@ async function runNewsProviderCheck(providerKey: 'finnhub-news' | 'polygon-news'
     detail: status?.detail ?? 'No status available.',
     lastChecked: new Date().toISOString(),
     latencyMs: Date.now() - t0,
+    monitored: Boolean(monitorConfig?.displayInDashboard ?? true),
+    enabled: Boolean(monitorConfig?.enabled ?? true),
+    lastSuccessfulCheck: status?.health === 'healthy' ? new Date().toISOString() : null,
+    lastError: status?.health === 'healthy' ? null : (status?.detail ?? 'No status available.'),
   };
 }
 

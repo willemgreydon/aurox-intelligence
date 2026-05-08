@@ -156,6 +156,9 @@ export function NewsStreamWidget({ news, title = 'Market News' }: NewsStreamWidg
                               {item.publishedAt ? (
                                 <span className="home-news-source__meta">{new Date(item.publishedAt).toLocaleString('en-US')}</span>
                               ) : null}
+                              <span className="home-news-source__meta">
+                                Why this matters: sentiment {typeof item.sentimentScore === 'number' ? item.sentimentScore.toFixed(2) : 'n/a'}, relevance {typeof item.relevanceScore === 'number' ? item.relevanceScore.toFixed(2) : 'n/a'}
+                              </span>
                             </>
                           );
                         })()}

@@ -70,9 +70,13 @@ export default async function ProviderMonitoringConfigPage() {
                 <div key={config.id} style={{ marginBottom: '1rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.75rem' }}>
                   <p><strong>{config.providerName}</strong> ({maskIdentifier(config.providerKey)})</p>
                   <p>Category: {config.category}</p>
+                  <p>Monitored: {config.displayInDashboard ? 'true' : 'false'}</p>
                   <p>
                     Status: <span className={`status-pill status-pill--${statusTone(runtimeStatus)}`}>{runtimeStatus}</span>
                   </p>
+                  <p>Last successful check: n/a</p>
+                  <p>Last error: n/a</p>
+                  <p>Latency: n/a</p>
                   <label><input type="checkbox" name={`${config.id}:enabled`} defaultChecked={config.enabled} /> Enabled</label>{' '}
                   <label><input type="checkbox" name={`${config.id}:monitorHealth`} defaultChecked={config.monitorHealth} /> Health</label>{' '}
                   <label><input type="checkbox" name={`${config.id}:monitorLatency`} defaultChecked={config.monitorLatency} /> Latency</label>{' '}

@@ -1,4 +1,4 @@
-import type { SimulationAssetClass } from '@repo/api-contracts';
+import type { MicroTradingGuardrails, SimulationAssetClass } from '@repo/api-contracts';
 import {
   executeSimulationOrder,
   getCatalogAssetBySymbol,
@@ -55,6 +55,28 @@ function isFreshQuoteTimestampForSimulation(timestamp: string | null | undefined
   }
 
   return Date.now() - parsed <= SIMULATION_QUOTE_MAX_AGE_MS;
+}
+
+export function getMicroTradingGuardrailsForDisplay(): MicroTradingGuardrails {
+  const enabled = String(process.env.FEATURE_SIM_MICRO_TRADING ?? 'false').toLowerCase() === 'true';
+  return {
+    enabled,
+    simulationOnly: true,
+    minimumSimulatedOrderNotional: 10,
+    maxDailySimulatedTrades: 12,
+    minConfidenceThreshold: 0.7,
+    maxSpreadBpsThreshold: 35,
+    maxVolatilityThreshold: 0.08,
+    estimatedFeeImpactBps: 12,
+    estimatedSpreadImpactBps: 8,
+    estimatedSlippageImpactBps: 10,
+    inefficiencyExplanation: [
+      'Tiny orders can be disproportionately impacted by fees.',
+      'Wide spreads can erase expected edge on micro notional.',
+      'Frequent micro orders increase operational and execution risk.',
+    ],
+    highFrequencyRiskWarning: 'High-frequency micro-ordering can increase drawdown and execution drag.',
+  };
 }
 
 export async function getSimulationWorkspaceData(): Promise<SimulationWorkspaceViewModel> {

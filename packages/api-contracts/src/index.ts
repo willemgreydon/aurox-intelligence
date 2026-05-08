@@ -7,6 +7,7 @@ export * from './fx/fx';
 export * from './forecasts/forecast';
 export * from './ingestion/ingestion-run';
 export * from './intelligence/market-intelligence';
+export * from './intelligence/claude-finance';
 export * from './invest/invest';
 export * from './market/market';
 export * from './news/news';

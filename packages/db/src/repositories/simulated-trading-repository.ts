@@ -37,13 +37,18 @@ const DEFAULT_AI_SIMULATION_STRATEGY_TAG = 'ai_simulation_agent_v1';
 type AccountRow = {
   accountId: string;
   portfolioId: string;
-  currency: 'USD';
+  currency: 'USD' | 'EUR';
   initialCashBalance: number | string;
   cashBalance: number | string;
   realizedPnl: number | string;
   allowNegativeBalance: boolean;
   updatedAt: string | Date;
 };
+
+function getDefaultSimulationCurrency(): 'USD' | 'EUR' {
+  const configured = (process.env.SIMULATION_DEFAULT_CASH_CURRENCY ?? 'EUR').trim().toUpperCase();
+  return configured === 'USD' ? 'USD' : 'EUR';
+}
 
 type PositionRow = {
   id: string;
@@ -348,6 +353,7 @@ async function ensureSimulationAccount(client: DatabaseClient, userId: string) {
   const portfolioId = crypto.randomUUID();
   const createdAt = new Date().toISOString();
   const initialCash = 100000;
+  const defaultCurrency = getDefaultSimulationCurrency();
 
   await client.execute(
     `
@@ -358,9 +364,9 @@ async function ensureSimulationAccount(client: DatabaseClient, userId: string) {
         initial_cash_balance,
         cash_balance,
         realized_pnl
-      ) values ($1, $2, 'USD', $3, $3, 0)
+      ) values ($1, $2, $3, $4, $4, 0)
     `,
-    [accountId, userId, initialCash],
+    [accountId, userId, defaultCurrency, initialCash],
   );
 
   await client.execute(
@@ -410,7 +416,7 @@ async function ensureSimulationAccount(client: DatabaseClient, userId: string) {
   return {
     accountId,
     portfolioId,
-    currency: 'USD' as const,
+    currency: defaultCurrency,
     initialCashBalance: initialCash,
     cashBalance: initialCash,
     realizedPnl: 0,
@@ -977,6 +983,9 @@ export async function getSimulationWorkspace(
     accountId: account.accountId,
     portfolioId: account.portfolioId,
     currency: account.currency,
+    quoteCurrency: 'USD',
+    fxConversionAvailable: false,
+    fxConversionNote: 'No FX conversion available.',
     initialCashBalance: roundCurrency(toNumber(account.initialCashBalance)),
     cashBalance,
     reservedCash,

@@ -31,6 +31,18 @@ function normalizeSymbol(symbol: string) {
   return symbol.trim().toUpperCase();
 }
 
+function inferAssetClass(symbol: string): 'stock' | 'etf' | 'crypto' | 'macro' {
+  if (symbol.includes('BINANCE:') || symbol.endsWith('USDT') || symbol.endsWith('-USD')) return 'crypto';
+  if (symbol === 'MARKET' || symbol === 'CRYPTO') return 'macro';
+  if (symbol === 'SPY' || symbol === 'QQQ' || symbol === 'VTI') return 'etf';
+  return 'stock';
+}
+
+function isStaleNews(publishedAt: string): boolean {
+  const ageMs = Date.now() - new Date(publishedAt).getTime();
+  return Number.isFinite(ageMs) ? ageMs > 72 * 60 * 60 * 1000 : true;
+}
+
 function toIso(value: unknown) {
   if (typeof value !== 'string' || !value) {
     return new Date().toISOString();
@@ -101,6 +113,9 @@ class FinnhubNewsProvider implements NewsProvider {
         return payload.slice(0, input.maxItemsPerSymbol ?? 5).map((item, index): NewsItem => ({
           id: `finnhub:${symbol}:${String(item.id ?? index)}`,
           symbol,
+          symbols: [symbol],
+          assetIds: [],
+          assetClass: inferAssetClass(symbol),
           title: cleanNewsText(item.headline, 'Untitled'),
           summary: cleanNewsText(item.summary, ''),
           url: String(item.url ?? ''),
@@ -113,8 +128,11 @@ class FinnhubNewsProvider implements NewsProvider {
           impactScore: undefined,
           categories: [],
           tickers: [symbol],
+          riskTags: [],
+          extractedEntities: [],
+          stale: isStaleNews(typeof item.datetime === 'number' ? new Date(item.datetime * 1000).toISOString() : toIso(item.datetime)),
           raw: item,
-        }));
+        } as NewsItem));
       });
       return {
         items: bySymbol.flat().filter((item) => item.url.startsWith('http')),
@@ -150,6 +168,9 @@ class PolygonNewsProvider implements NewsProvider {
         return {
           id: `polygon:${String(item.id ?? index)}`,
           symbol,
+          symbols: tickers.length > 0 ? tickers : [symbol],
+          assetIds: [],
+          assetClass: inferAssetClass(symbol),
           title: cleanNewsText(item.title, 'Untitled'),
           summary: cleanNewsText(item.description, ''),
           url: String(item.article_url ?? ''),
@@ -162,8 +183,11 @@ class PolygonNewsProvider implements NewsProvider {
           impactScore: undefined,
           categories: Array.isArray(item.keywords) ? item.keywords.map((k) => String(k)) : [],
           tickers,
+          riskTags: [],
+          extractedEntities: [],
+          stale: isStaleNews(toIso(item.published_utc)),
           raw: item,
-        };
+        } as NewsItem;
       });
       return {
         items: items.filter((item) => item.url.startsWith('http')),
@@ -188,6 +212,9 @@ class MockNewsProvider implements NewsProvider {
     const items = input.symbols.slice(0, 6).map((symbol, index): NewsItem => ({
       id: `mock:${symbol}:${index}`,
       symbol,
+      symbols: [symbol],
+      assetIds: [],
+      assetClass: inferAssetClass(symbol),
       title: `${symbol} local fallback news snapshot`,
       summary: 'Live news providers are unavailable. This is local fallback context.',
       url: `https://example.com/news/${encodeURIComponent(symbol)}`,
@@ -200,7 +227,10 @@ class MockNewsProvider implements NewsProvider {
       impactScore: 0.2,
       categories: ['fallback'],
       tickers: [symbol],
-    }));
+      riskTags: ['FALLBACK'],
+      extractedEntities: [symbol],
+      stale: false,
+    } as NewsItem));
     return {
       items,
       providerStatus: makeStatus('mock', 'healthy', 'Fallback provider active.', 0),
@@ -211,7 +241,7 @@ class MockNewsProvider implements NewsProvider {
 function dedupeNews(items: NewsItem[]): NewsItem[] {
   const byKey = new Map<string, NewsItem>();
   for (const item of items) {
-    const key = `${item.url.toLowerCase()}|${item.title.toLowerCase()}`;
+    const key = `${item.url.toLowerCase()}|${item.title.toLowerCase()}|${item.symbol}`;
     if (!byKey.has(key)) {
       byKey.set(key, item);
     }

@@ -6,6 +6,7 @@ import {
   deriveNewsImpactExplanation,
   type AssetRankingInput,
 } from '@repo/ai-market-intelligence';
+import { getClaudeFinanceProviderAvailability } from '@repo/providers';
 import type { InvestReadModel } from '../queries/invest-query';
 import { getFreshnessState, getLatestTimestamp } from '../lib/market-data';
 import { mapOptionalTimestamp, mapRouteStatusLabel, mapRouteStatusTone } from './route-presentation';
@@ -146,6 +147,7 @@ export function mapInvestOverview(readModel: InvestReadModel): InvestOverview {
     insightConfidence: insight.confidence,
   }));
   const rankedAssets = rankAssets(rankingInputs);
+  const claudeAvailability = getClaudeFinanceProviderAvailability();
   perfLog('invest-mapper:overview-core', t0);
 
   return {
@@ -155,8 +157,9 @@ export function mapInvestOverview(readModel: InvestReadModel): InvestOverview {
     status: items.length > 0 ? 'nominal' : 'attention',
     freshnessState,
     lastUpdatedAt,
-    actionSummary:
-      'Current actions support watchlists, scenario planning, and guarded simulation trading across stocks, ETFs, and crypto while live broker execution remains explicitly gated.',
+    actionSummary: claudeAvailability.configured
+      ? 'Current actions support watchlists, scenario planning, guarded simulation trading, and optional Claude Finance advisory analysis.'
+      : 'Current actions support watchlists, scenario planning, and guarded simulation trading across stocks, ETFs, and crypto while live broker execution remains explicitly gated. Claude Finance advisory provider is degraded or unavailable.',
     capabilities: [
       {
         assetClass: 'stock',

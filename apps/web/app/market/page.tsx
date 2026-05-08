@@ -42,6 +42,7 @@ export default async function MarketPage() {
           ]}
           actions={[
             { href: '/', label: messages.common.home },
+            { href: '/observe', label: 'Open observer' },
             { href: '/stocks', label: messages.shell.nav.stocks },
             { href: '/invest/simulation', label: messages.simulation.navLabel },
           ]}

@@ -20,12 +20,32 @@ type SignalRow = {
   updated: string;
 };
 
+type HistoryRow = {
+  timestamp: string;
+  asset: string;
+  score: string;
+  confidence: string;
+  decision: string;
+  roi: string;
+  outcome: string;
+};
+
 const signalColumns: Array<TableColumn<SignalRow>> = [
   { key: 'asset', label: 'Asset' },
   { key: 'interpretation', label: 'Interpretation' },
   { key: 'score', label: 'Score', align: 'right' },
   { key: 'price', label: 'Latest price', align: 'right' },
   { key: 'updated', label: 'Updated', align: 'right' },
+];
+
+const historyColumns: Array<TableColumn<HistoryRow>> = [
+  { key: 'timestamp', label: 'Timestamp' },
+  { key: 'asset', label: 'Asset' },
+  { key: 'score', label: 'Score', align: 'right' },
+  { key: 'confidence', label: 'Confidence', align: 'right' },
+  { key: 'decision', label: 'Broker decision' },
+  { key: 'roi', label: 'ROI', align: 'right' },
+  { key: 'outcome', label: 'Prediction vs actual' },
 ];
 
 export default async function SignalsPage() {
@@ -39,6 +59,15 @@ export default async function SignalsPage() {
     updated: signal.notes[1] ?? messages.common.unavailable,
   }));
   const leadSignal = data.signals[0];
+  const historyRows: HistoryRow[] = data.signals.map((signal) => ({
+    timestamp: signal.notes[1] ?? messages.common.unavailable,
+    asset: signal.assetName,
+    score: signal.scoreLabel,
+    confidence: `${Math.round(signal.confidenceScore * 100)}%`,
+    decision: signal.interpretationLabel,
+    roi: 'n/a',
+    outcome: 'n/a',
+  }));
 
   return (
     <>
@@ -131,6 +160,34 @@ export default async function SignalsPage() {
             body="Signals are calculated from observable provider data and pure indicator logic with no opaque model-side fabrication."
           />
         </div>
+      </Section>
+
+      <Section className="dashboard-section">
+        <div className="section__eyebrow">Signal intelligence tabs</div>
+        <div className="market-pagination__actions" style={{ marginBottom: '0.75rem' }}>
+          <span className="button button--secondary" aria-current="page">Current Signals</span>
+          <span className="button button--secondary">Decision History</span>
+          <span className="button button--secondary">Prediction Accuracy</span>
+          <span className="button button--secondary">ROI by Signal Type</span>
+          <span className="button button--secondary">News Impact</span>
+        </div>
+        <div className="analytics-strip">
+          <div className="analytics-stat"><div className="analytics-stat__label">Hit rate</div><div className="analytics-stat__value">n/a</div></div>
+          <div className="analytics-stat"><div className="analytics-stat__label">Average ROI</div><div className="analytics-stat__value">n/a</div></div>
+          <div className="analytics-stat"><div className="analytics-stat__label">Average confidence</div><div className="analytics-stat__value">{leadSignal ? `${Math.round(leadSignal.confidenceScore * 100)}%` : 'n/a'}</div></div>
+          <div className="analytics-stat"><div className="analytics-stat__label">Drawdown after signal</div><div className="analytics-stat__value">n/a</div></div>
+          <div className="analytics-stat"><div className="analytics-stat__label">False positive rate</div><div className="analytics-stat__value">n/a</div></div>
+        </div>
+      </Section>
+
+      <Section className="dashboard-section dashboard-section--tinted">
+        <AnalyticsTable
+          title="Decision history"
+          subtitle="Signal-to-decision trace including confidence, outcome placeholders, and ROI tracking hooks."
+          columns={historyColumns}
+          rows={historyRows}
+          emptyMessage="No signal decision history exists yet."
+        />
       </Section>
     </>
   );

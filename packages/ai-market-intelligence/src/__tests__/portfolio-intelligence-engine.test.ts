@@ -330,6 +330,20 @@ describe('computePortfolioIntelligence', () => {
     expect(ranks).toHaveLength(3);
   });
 
+  it('ranking finalScore varies across assets and is in 0-100 scale', () => {
+    const result = computePortfolioIntelligence({
+      recommendations: [
+        { symbol: 'HIGH', recommendation: makeRec({ action: 'STRONG_BUY', confidence: 0.95, scoreBreakdown: { signalScore: 0.95, newsScore: 0.8, riskPenalty: 0.02, finalScore: 0.9 } }) },
+        { symbol: 'LOW', recommendation: makeRec({ action: 'HOLD', confidence: 0.35, riskLevel: 'HIGH', scoreBreakdown: { signalScore: 0.3, newsScore: 0.2, riskPenalty: 0.5, finalScore: 0.28 } }) },
+      ],
+    });
+    const high = result.ranking.find((row) => row.symbol === 'HIGH')!;
+    const low = result.ranking.find((row) => row.symbol === 'LOW')!;
+    expect(high.finalScore).toBeGreaterThan(low.finalScore);
+    expect(high.finalScore).toBeGreaterThanOrEqual(0);
+    expect(high.finalScore).toBeLessThanOrEqual(100);
+  });
+
   it('each ranking entry has short and detailed reason', () => {
     const result = computePortfolioIntelligence({
       recommendations: [{ symbol: 'AAPL', recommendation: makeRec() }],
@@ -382,6 +396,39 @@ describe('computePortfolioIntelligence', () => {
     // Either zeroed out or above threshold — never NaN
     if (tiny) {
       expect(isNaN(tiny.targetWeight)).toBe(false);
+    }
+  });
+
+  it('default minPositionWeight does not collapse broad universes to zero confidence', () => {
+    const recommendations = Array.from({ length: 120 }, (_, index) => ({
+      symbol: `A${index}`,
+      recommendation: makeRec({
+        action: 'BUY',
+        confidence: 0.65 + ((index % 5) * 0.02),
+        scoreBreakdown: {
+          signalScore: 0.6 + ((index % 7) * 0.03),
+          newsScore: 0.5,
+          riskPenalty: 0.1,
+          finalScore: 0.55 + ((index % 7) * 0.02),
+        },
+      }),
+    }));
+    const result = computePortfolioIntelligence({ recommendations });
+    expect(result.diagnostics.averageConfidence).toBeGreaterThan(0);
+    expect(result.ranking.some((row) => row.finalScore > 0)).toBe(true);
+  });
+
+  it('composite risk reflects concentration risk and cannot be zero when concentrated', () => {
+    const result = computePortfolioIntelligence({
+      recommendations: [
+        { symbol: 'BTC', assetClass: 'crypto', recommendation: makeRec({ action: 'BUY', riskLevel: 'HIGH' }) },
+        { symbol: 'ETH', assetClass: 'crypto', recommendation: makeRec({ action: 'BUY', riskLevel: 'HIGH' }) },
+      ],
+      constraints: { maxPositionWeight: 0.9 },
+    });
+    for (const allocation of result.allocations) {
+      expect(allocation.riskOverlay.concentrationRisk).toBeGreaterThan(0);
+      expect(allocation.riskOverlay.riskScore).toBeGreaterThan(0);
     }
   });
 });

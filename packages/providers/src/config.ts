@@ -63,6 +63,12 @@ const providerEnvSchema = z.object({
   COINGECKO_API_KEY: optionalNonEmptyString,
   FINNHUB_API_KEY: optionalNonEmptyString,
   EODHD_API_KEY: optionalNonEmptyString,
+  CLAUDE_FINANCE_API_KEY: optionalNonEmptyString,
+  CLAUDE_FINANCE_PROVIDER_ENABLED: z.preprocess((value) => {
+    if (typeof value !== 'string') return value;
+    const trimmed = value.trim();
+    return trimmed === '' ? undefined : trimmed;
+  }, z.union([z.literal('true'), z.literal('false')]).optional()),
 
   MARKET_SYMBOLS: optionalNonEmptyString,
   SIMULATION_SYMBOLS: optionalNonEmptyString,
@@ -130,6 +136,8 @@ export function getProviderEnv(): ProviderEnv {
     COINGECKO_API_KEY: process.env.COINGECKO_API_KEY,
     FINNHUB_API_KEY: process.env.FINNHUB_API_KEY,
     EODHD_API_KEY: process.env.EODHD_API_KEY,
+    CLAUDE_FINANCE_API_KEY: process.env.CLAUDE_FINANCE_API_KEY,
+    CLAUDE_FINANCE_PROVIDER_ENABLED: process.env.CLAUDE_FINANCE_PROVIDER_ENABLED,
 
     MARKET_SYMBOLS: process.env.MARKET_SYMBOLS,
     SIMULATION_SYMBOLS: process.env.SIMULATION_SYMBOLS,
@@ -297,4 +305,15 @@ export function getHistoryPrioritySymbols(): string[] {
     getLiveCandidateSymbols(),
     getMarketSymbols(),
   );
+}
+
+export function getClaudeFinanceApiKey(): string | undefined {
+  const env = getProviderEnv();
+  return env.CLAUDE_FINANCE_API_KEY;
+}
+
+export function isClaudeFinanceProviderEnabled(): boolean {
+  const env = getProviderEnv();
+  if (!env.CLAUDE_FINANCE_PROVIDER_ENABLED) return true;
+  return env.CLAUDE_FINANCE_PROVIDER_ENABLED === 'true';
 }

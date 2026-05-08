@@ -277,6 +277,23 @@ export default async function InvestCryptoPage({
           </div>
         ) : null}
       </Section>
+
+      <Section className="dashboard-section dashboard-section--tinted">
+        <div className="analytics-card">
+          <div className="analytics-card__header">
+            <div>
+              <div className="section__eyebrow">Crypto micro-order compliance</div>
+              <h3>Minimum size, fees, spread, liquidity and risk warnings</h3>
+            </div>
+          </div>
+          <div className="analytics-card__body">
+            <p>Minimum order size varies by exchange/provider metadata and must be respected.</p>
+            <p>Micro recurring buys can improve average entry over time in simulation, but profits are never guaranteed.</p>
+            <p>Warnings: leverage risk, rapid-trading risk, tax/legal obligations, and exchange counterparty risk.</p>
+            <p>Compliance limits (AML, venue transfer caps, and exchange rules) must not be bypassed.</p>
+          </div>
+        </div>
+      </Section>
     </>
   );
 }

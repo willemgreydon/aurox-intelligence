@@ -74,8 +74,7 @@ export function MarketAssetRow(props: MarketAssetRowProps) {
       <div className="market-row__status">
         <StatusBadge tone={mapTone(props.actionAvailability)}>{props.actionAvailability}</StatusBadge>
       </div>
-      <div className="market-row__thesis">{props.thesis}</div>
-      <div className="market-row__meta">
+      <div className="market-row__score">
         {props.signal ? (
           <SignalScoreBadge
             score={props.signal.score}
@@ -83,9 +82,15 @@ export function MarketAssetRow(props: MarketAssetRowProps) {
             confidence={props.signal.confidence}
             visualState={props.signal.visualState}
           />
-        ) : null}
-        {props.riskLabel ? <span>Risk: {props.riskLabel}</span> : null}
-        {props.signal?.explanation ? <span>{props.signal.explanation}</span> : null}
+        ) : (
+          <span className="market-row__meta">No signal</span>
+        )}
+      </div>
+      <div className="market-row__confidence">
+        Conf. {Math.round((props.signal?.confidence ?? 0) * 100)}%
+      </div>
+      <div className="market-row__risk">
+        {props.riskLabel ? `Risk: ${props.riskLabel}` : 'Risk: n/a'}
       </div>
       <div className="market-row__actions">{props.actions}</div>
     </article>

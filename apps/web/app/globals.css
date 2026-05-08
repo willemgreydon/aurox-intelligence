@@ -1895,7 +1895,8 @@ code,
 }
 
 .hero-graph-card .market-graph__canvas {
-  min-height: clamp(30rem, 78vh, 56rem);
+  min-height: clamp(31rem, 68vh, 45rem);
+  height: clamp(31rem, 68vh, 45rem);
   border: 0;
   border-radius: 0;
   background:
@@ -4478,7 +4479,8 @@ code,
 
 .market-graph__canvas {
   position: relative;
-  min-height: clamp(23rem, 58vh, 42rem);
+  min-height: var(--workstation-chart-height);
+  height: var(--workstation-chart-height);
   padding: 0;
   border: var(--border-width-thin) solid var(--border-default);
   border-radius: var(--radius-xl);
@@ -4614,23 +4616,26 @@ code,
 }
 
 .market-graph__workspace {
+  --workstation-chart-height: clamp(32.5rem, 68vh, 45rem);
   display: grid;
   grid-template-columns: minmax(0, 1.65fr) minmax(18rem, 0.8fr);
   gap: var(--space-4);
-  align-items: start;
+  align-items: stretch;
+  min-height: 0;
 }
 
 .broker-observer {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  position: sticky;
-  top: 0;
-  max-height: 100vh;
-  overflow-y: auto;
+  position: relative;
+  top: auto;
+  min-height: var(--workstation-chart-height);
+  max-height: var(--workstation-chart-height);
+  overflow: hidden;
   scrollbar-width: thin;
   scrollbar-color: var(--border-default) transparent;
-  padding-bottom: var(--space-3);
+  min-width: 0;
 }
 
 /* On desktop the toggle is hidden and content is always visible */
@@ -4639,7 +4644,10 @@ code,
 }
 
 .broker-observer__collapsible {
-  display: contents;
+  display: grid;
+  gap: var(--space-3);
+  min-height: 0;
+  overflow: hidden;
 }
 
 .broker-observer__panel {
@@ -4649,6 +4657,12 @@ code,
   border: var(--border-width-thin) solid color-mix(in srgb, var(--border-default) 82%, transparent);
   border-radius: var(--radius-lg);
   background: linear-gradient(160deg, color-mix(in srgb, var(--surface-raised) 93%, transparent), color-mix(in srgb, var(--surface-base) 96%, transparent));
+}
+
+.broker-observer__panel--watchlist,
+.broker-observer__panel--news {
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr);
 }
 
 .broker-observer__eyebrow {
@@ -4662,6 +4676,18 @@ code,
 .broker-observer__news-list {
   display: grid;
   gap: var(--space-2);
+}
+
+.broker-observer__panel--watchlist .broker-observer__list {
+  max-height: clamp(10rem, 24vh, 16rem);
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.broker-observer__panel--news .broker-observer__news-list {
+  max-height: clamp(11rem, 28vh, 19rem);
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .broker-observer__row {
@@ -4818,7 +4844,8 @@ code,
 }
 
 .market-graph-section .market-graph__canvas {
-  min-height: clamp(26rem, calc(100vh - var(--site-header-offset) - 1px), 72rem);
+  min-height: var(--workstation-chart-height);
+  height: var(--workstation-chart-height);
   border-radius: 0;
   border-left: 0;
   border-right: 0;
@@ -5091,6 +5118,10 @@ code,
 
 @media (max-width: 768px) {
   .market-graph__workspace {
+    --workstation-chart-height: auto;
+  }
+
+  .market-graph__workspace {
     grid-template-columns: 1fr;
   }
 
@@ -5157,8 +5188,9 @@ code,
   /* On mobile the broker-observer stacks below the chart — no sticky, no height cap */
   .broker-observer {
     position: static;
+    min-height: 0;
     max-height: none;
-    overflow-y: visible;
+    overflow: visible;
   }
 
   /* Collapsible sidebar on mobile */
@@ -5225,7 +5257,8 @@ code,
   }
 
   .hero-graph-card .market-graph__canvas {
-    min-height: clamp(18rem, 62vh, 34rem);
+    min-height: clamp(18rem, 58vh, 30rem);
+    height: auto;
   }
 
   /* Canvas: SVG fills row 1, bottom bar fills row 2 */
@@ -5631,12 +5664,13 @@ code,
 .market-row {
   display: grid;
   grid-template-columns:
-    minmax(12rem, 1.2fr)
-    minmax(7rem, 0.7fr)
+    minmax(10rem, 1.2fr)
+    minmax(6rem, 0.7fr)
+    minmax(5.5rem, 0.6fr)
+    minmax(6rem, 0.6fr)
     minmax(6rem, 0.6fr)
     minmax(7rem, 0.65fr)
-    minmax(7rem, 0.7fr)
-    minmax(7rem, 0.7fr)
+    minmax(8rem, 0.75fr)
     auto;
   gap: 0.75rem;
   align-items: center;
@@ -5671,7 +5705,9 @@ code,
 
 .market-row__meta,
 .market-row__freshness,
-.market-row__thesis {
+.market-row__thesis,
+.market-row__confidence,
+.market-row__risk {
   color: var(--text-tertiary);
   font-size: var(--font-size-xs);
 }
@@ -5680,10 +5716,6 @@ code,
 .market-row__move {
   font-family: var(--font-family-mono);
   font-size: var(--font-size-sm);
-}
-
-.market-row__thesis {
-  grid-column: 1 / -2;
 }
 
 .market-row__actions {
@@ -5883,6 +5915,11 @@ code,
 
 .home-fancy {
   position: relative;
+}
+
+.home-fancy--ops {
+  padding-top: clamp(3rem, 7vw, 6rem);
+  padding-bottom: clamp(3.5rem, 8vw, 7rem);
 }
 
 .home-fancy__header {
@@ -6240,6 +6277,49 @@ code,
   gap: var(--space-2);
 }
 
+.observe-feed {
+  display: grid;
+  gap: var(--space-2);
+  max-height: clamp(20rem, 44vh, 34rem);
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.observe-feed__item {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.65rem 0.75rem;
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--border-subtle) 85%, transparent);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--surface-base) 92%, transparent);
+}
+
+.observe-timeline {
+  display: grid;
+  gap: var(--space-2);
+  max-height: clamp(20rem, 44vh, 34rem);
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.observe-timeline__item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: start;
+  padding: 0.65rem 0.75rem;
+  border-left: 2px solid color-mix(in srgb, var(--text-accent) 30%, var(--border-default));
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--surface-base) 92%, transparent);
+}
+
+.observe-bullets {
+  margin-top: 0.55rem;
+  display: grid;
+  gap: 0.4rem;
+  padding-left: 1rem;
+}
+
 .home-db-fallback {
   padding-top: 0.75rem;
   padding-bottom: 0.5rem;
@@ -6252,12 +6332,19 @@ code,
 
 @media (max-width: 1180px) {
   .market-row {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
   }
 
-  .market-row__thesis,
+  .market-row__identity {
+    grid-column: 1 / -1;
+  }
+
+  .market-row__chart,
+  .market-row__freshness,
+  .market-row__status,
   .market-row__actions {
-    grid-column: auto;
+    grid-column: 1 / -1;
   }
 
   .market-ranking__summary {

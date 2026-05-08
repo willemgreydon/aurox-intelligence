@@ -6,6 +6,9 @@ function makeItem(overrides: Partial<NewsItem>): NewsItem {
   return {
     id: 'n1',
     symbol: 'AAPL',
+    assetIds: [],
+    symbols: ['AAPL'],
+    assetClass: 'stock',
     title: 'Headline',
     summary: 'Summary',
     url: 'https://example.com/a',
@@ -15,6 +18,8 @@ function makeItem(overrides: Partial<NewsItem>): NewsItem {
     language: 'en',
     categories: [],
     tickers: ['AAPL'],
+    riskTags: [],
+    extractedEntities: [],
     ...overrides,
   };
 }

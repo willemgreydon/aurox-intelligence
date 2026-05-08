@@ -24,6 +24,7 @@ export * from './ai-simulation-agent/ai-simulation-agent';
 export * from './intelligence/recommendation-types';
 export * from './intelligence/recommendation-engine';
 export * from './intelligence/recommendation-service';
+export * from './intelligence/news-impact-engine';
 export * from './risk/trade-risk-types';
 export * from './risk/trade-risk-engine';
 export * from './execution/execution-mode-types';

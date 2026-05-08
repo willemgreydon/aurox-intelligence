@@ -1,4 +1,5 @@
-import { recommendationService, assessTradeRisk } from '@repo/agents';
+import { recommendationService, assessTradeRisk, computeNewsImpact } from '@repo/agents';
+import type { NewsItem } from '@repo/api-contracts';
 import { deriveSignalSnapshot } from '@repo/signals';
 
 export type SignalLabel = 'Strong Bearish' | 'Bearish' | 'Neutral' | 'Bullish' | 'Strong Bullish';
@@ -28,6 +29,12 @@ export type AssetDecisionIntelligence = {
     drawdownWarning: string | null;
     liquidityWarning: string | null;
     concentrationWarning: string | null;
+  };
+  newsInfluence?: {
+    sentimentAdjustment: number;
+    confidenceAdjustment: number;
+    riskAdjustment: number;
+    explanation: string[];
   };
 };
 
@@ -73,6 +80,7 @@ export function deriveAssetDecisionIntelligence(input: {
   portfolioValue?: number;
   quantity?: number;
   existingExposure?: number;
+  recentNews?: NewsItem[];
 }): AssetDecisionIntelligence {
   const finiteHistory = input.history.filter((value) => Number.isFinite(value) && value > 0);
   const hasInsufficientHistory = finiteHistory.length < 5;
@@ -98,6 +106,16 @@ export function deriveAssetDecisionIntelligence(input: {
     liquidity,
     marketRegime: score > 0.1 ? 'risk_on' : score < -0.1 ? 'risk_off' : 'transitional',
   });
+  const newsImpact = computeNewsImpact({
+    assetId: input.symbol,
+    symbol: input.symbol,
+    recentNews: input.recentNews ?? [],
+  });
+  const adjustedConfidence = clamp(
+    recommendation.confidence + newsImpact.confidenceAdjustment,
+    0,
+    1,
+  );
 
   const risk = assessTradeRisk({
     symbol: input.symbol,
@@ -133,7 +151,7 @@ export function deriveAssetDecisionIntelligence(input: {
     },
     recommendation: {
       value: mapRecommendation(recommendation.recommendation),
-      confidence: recommendation.confidence,
+      confidence: adjustedConfidence,
       rationale: [...recommendation.rationale],
       riskWarnings: [...recommendation.riskWarnings],
       horizon: recommendation.horizon,
@@ -146,6 +164,12 @@ export function deriveAssetDecisionIntelligence(input: {
       drawdownWarning: risk.drawdownWarning,
       liquidityWarning: risk.liquiditySpreadWarning,
       concentrationWarning: risk.concentrationWarning,
+    },
+    newsInfluence: {
+      sentimentAdjustment: newsImpact.sentimentAdjustment,
+      confidenceAdjustment: newsImpact.confidenceAdjustment,
+      riskAdjustment: newsImpact.riskAdjustment,
+      explanation: newsImpact.explanation,
     },
   };
 }

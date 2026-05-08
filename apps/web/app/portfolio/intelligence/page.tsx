@@ -21,12 +21,16 @@ function formatPct(value: number, decimals = 1): string {
   return `${(value * 100).toFixed(decimals)}%`;
 }
 
-function formatUsd(value: number): string {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
+function formatCurrency(value: number, currency: 'USD' | 'EUR'): string {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(value);
 }
 
-function formatScore(value: number): string {
+function formatNormalizedScore(value: number): string {
   return `${(value * 100).toFixed(1)}`;
+}
+
+function formatAttractiveness(value: number): string {
+  return value.toFixed(1);
 }
 
 //  Tone helpers 
@@ -194,7 +198,7 @@ function RankingTable({ ranking }: { ranking: AssetRanking[] }) {
               <td style={{ fontWeight: 600 }}>{r.symbol}</td>
               <td><span className="status-pill status-pill--neutral" style={{ fontSize: '0.65rem' }}>{r.assetClass}</span></td>
               <td><span className={`status-pill status-pill--${r.recommendation.includes('BUY') ? 'success' : r.recommendation.includes('SELL') || r.recommendation === 'AVOID' ? 'error' : 'neutral'}`}>{r.recommendation}</span></td>
-              <td className="tabular-nums" style={{ textAlign: 'right' }}>{formatScore(r.finalScore)}</td>
+              <td className="tabular-nums" style={{ textAlign: 'right' }}>{formatAttractiveness(r.finalScore)}</td>
               <td className="tabular-nums" style={{ textAlign: 'right' }}>{formatPct(r.confidence)}</td>
               <td><RiskScoreBadge score={r.riskScore} level={r.riskScore >= 70 ? 'critical' : r.riskScore >= 45 ? 'high' : r.riskScore >= 25 ? 'medium' : 'low'} /></td>
               <td className="tabular-nums" style={{ textAlign: 'right' }}>{formatPct(r.targetWeight)}</td>
@@ -247,7 +251,7 @@ function AllocationMatrix({ allocations }: { allocations: PortfolioAllocation[] 
                 >
                   {alloc.deltaWeight >= 0 ? '+' : ''}{formatPct(alloc.deltaWeight)}
                 </td>
-                <td className="tabular-nums" style={{ textAlign: 'right' }}>{formatScore(alloc.factorDecomposition.normalizedScore)}</td>
+                <td className="tabular-nums" style={{ textAlign: 'right' }}>{formatNormalizedScore(alloc.factorDecomposition.normalizedScore)}</td>
                 <td><RiskScoreBadge score={alloc.riskOverlay.riskScore} level={alloc.riskOverlay.riskLevel} /></td>
                 <td>
                   <span className={`status-pill status-pill--${actionTone(alloc.suggestedAction)}`}>{alloc.suggestedAction}</span>
@@ -555,6 +559,10 @@ export default async function PortfolioIntelligencePage() {
 
   const { intelligence, brokerReadiness, brokerPreviews, portfolioContext } = vm;
   const { portfolioSummary, allocations, rebalancePlan, riskAlerts, diagnostics, ranking, regime } = intelligence;
+  const top25AvgConfidence = ranking.length > 0
+    ? ranking.slice(0, 25).reduce((sum, item) => sum + item.confidence, 0) / Math.min(25, ranking.length)
+    : 0;
+  const hasActivePortfolio = portfolioContext.state === 'active-portfolio';
 
   return (
     <>
@@ -588,7 +596,7 @@ export default async function PortfolioIntelligencePage() {
           <CompactStatCard
             label="Allocation health"
             value={diagnostics.allocationHealth.replace('-', ' ')}
-            detail="Overall portfolio allocation quality."
+            detail={portfolioContext.stateReason}
             valueTone={diagnostics.allocationHealth === 'healthy' ? 'positive' : diagnostics.allocationHealth === 'high-risk' ? 'negative' : 'neutral'}
           />
           <CompactStatCard
@@ -598,9 +606,9 @@ export default async function PortfolioIntelligencePage() {
             valueTone={diagnostics.diversificationScore > 0.6 ? 'positive' : diagnostics.diversificationScore > 0.3 ? 'neutral' : 'negative'}
           />
           <CompactStatCard
-            label="Avg confidence"
-            value={formatPct(diagnostics.averageConfidence)}
-            detail="Mean signal confidence across active allocations."
+            label={hasActivePortfolio ? 'Portfolio Avg Confidence' : 'Top 25 Avg Signal Confidence'}
+            value={formatPct(hasActivePortfolio ? diagnostics.averageConfidence : top25AvgConfidence)}
+            detail={hasActivePortfolio ? 'Value-weighted confidence across active allocations.' : 'Average confidence across top 25 ranked opportunities.'}
             valueTone={diagnostics.averageConfidence > 0.6 ? 'positive' : diagnostics.averageConfidence > 0.35 ? 'neutral' : 'negative'}
           />
           <CompactStatCard
@@ -626,8 +634,10 @@ export default async function PortfolioIntelligencePage() {
       {/* Portfolio context stats */}
       <Section className="dashboard-section">
         <div className="analytics-strip">
-          <CompactStatCard label="Portfolio value" value={formatUsd(portfolioContext.portfolioValue)} detail="Simulation portfolio total value." />
-          <CompactStatCard label="Cash balance" value={formatUsd(portfolioContext.cashBalance)} detail="Available simulation cash." />
+          <CompactStatCard label="Portfolio value" value={formatCurrency(portfolioContext.portfolioValue, portfolioContext.baseCurrency)} detail="Simulation portfolio total value." />
+          <CompactStatCard label="Cash balance" value={formatCurrency(portfolioContext.cashBalance, portfolioContext.baseCurrency)} detail="Available simulation cash." />
+          <CompactStatCard label="Invested value" value={formatCurrency(portfolioContext.investedValue, portfolioContext.baseCurrency)} detail="Total market value of open simulated positions." />
+          <CompactStatCard label="Cash target" value={portfolioContext.cashTargetRatio === null ? 'n/a' : formatPct(portfolioContext.cashTargetRatio)} detail="Cash share of total portfolio value." />
           <CompactStatCard label="Open positions" value={String(portfolioContext.openPositionCount)} detail="Currently active simulated positions." />
           <CompactStatCard label="Dominant class" value={portfolioSummary.dominantAssetClass} detail="Asset class with largest target allocation." />
           <CompactStatCard

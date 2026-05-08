@@ -101,6 +101,9 @@ async function fetchRssNews(): Promise<NewsStreamResponse> {
         items.push({
           id: `rss:${source.id}:${stableId}`,
           symbol: source.category === 'crypto' ? 'CRYPTO' : 'MARKET',
+          symbols: [source.category === 'crypto' ? 'CRYPTO' : 'MARKET'],
+          assetIds: [],
+          assetClass: source.category === 'crypto' ? 'crypto' : 'macro',
           title: entry.title,
           summary: entry.summary || '',
           url: entry.url,
@@ -110,7 +113,10 @@ async function fetchRssNews(): Promise<NewsStreamResponse> {
           language: 'en',
           categories: [source.category],
           tickers: [],
-        });
+          riskTags: [],
+          extractedEntities: [],
+          stale: false,
+        } as NewsItem);
       }
       providerHealth.push({
         provider: `rss:${source.label}`,

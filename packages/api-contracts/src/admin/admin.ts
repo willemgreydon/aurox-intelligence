@@ -7,7 +7,12 @@ export const adminProviderStatusSchema = z.object({
   name: z.string(),
   status: routeStatusSchema,
   configured: z.boolean(),
+  monitored: z.boolean().default(true),
+  enabled: z.boolean().default(true),
   detail: z.string(),
+  lastSuccessfulCheck: z.string().nullable().default(null),
+  lastError: z.string().nullable().default(null),
+  latencyMs: z.number().nullable().default(null),
   lastChecked: z.string().nullable(),
 });
 

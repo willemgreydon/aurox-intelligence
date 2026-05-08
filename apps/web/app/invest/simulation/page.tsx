@@ -27,6 +27,7 @@ import {
 import { getSimulationWorkstationStateForCurrentUser } from '../../../server/services/simulation-workstation-service';
 import { loadMiniHistorySeries } from '../../../server/services/stock-simulation-service';
 import { checkAiSimulationAgentAvailability } from '../../../server/services/ai-simulation-agent-service';
+import { getMicroTradingGuardrailsForDisplay } from '../../../server/services/simulation-service';
 import { AiSimulationAgentPanel } from '../../../components/invest/ai-simulation-agent-panel';
 
 export const dynamic = 'force-dynamic';
@@ -67,13 +68,22 @@ type LaneRow = {
   recentOrders: string;
 };
 
-function formatSignedCurrency(value: number, locale: Locale) {
-  const formatted = formatUsdPrice(Math.abs(value), locale, 'Unavailable');
+function formatSignedCurrency(value: number, locale: Locale, currency: 'USD' | 'EUR') {
+  const formatted = formatCashCurrency(Math.abs(value), locale, currency);
   return value > 0
     ? `+${formatted}`
     : value < 0
       ? `-${formatted}`
-      : formatUsdPrice(0, locale, 'Unavailable');
+      : formatCashCurrency(0, locale, currency);
+}
+
+function formatCashCurrency(value: number, locale: Locale, currency: 'USD' | 'EUR') {
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
 }
 
 function formatPercent(value: number) {
@@ -206,6 +216,7 @@ export default async function SimulationPage({
   ];
   const sparklineBySymbol = await loadMiniHistorySeries(sparklineSymbols, 24);
   const aiAgentAvailability = checkAiSimulationAgentAvailability();
+  const microTrading = getMicroTradingGuardrailsForDisplay();
 
   if (!portfolio) {
     return (
@@ -281,12 +292,13 @@ export default async function SimulationPage({
             },
             {
               label: 'Total equity',
-              value: formatUsdPrice(portfolio.summary.equityValue, locale, messages.common.unavailable),
+              value: formatCashCurrency(portfolio.summary.equityValue, locale, portfolio.summary.currency),
             },
             {
               label: 'Available cash',
-              value: formatUsdPrice(portfolio.summary.availableCash, locale, messages.common.unavailable),
+              value: formatCashCurrency(portfolio.summary.availableCash, locale, portfolio.summary.currency),
             },
+            { label: 'Cash currency', value: portfolio.summary.currency },
           ]}
           actions={[
             { href: '/stocks', label: 'Browse stocks' },
@@ -330,16 +342,17 @@ export default async function SimulationPage({
 
       <Section className="dashboard-section">
         <div className="analytics-strip">
-          <CompactStatCard label={messages.simulation.cashBalance} value={formatUsdPrice(portfolio.summary.cashBalance, locale, messages.common.unavailable)} detail="Total cash in the simulation account before reserve allocation." />
-          <CompactStatCard label="Available cash" value={formatUsdPrice(portfolio.summary.availableCash, locale, messages.common.unavailable)} detail="Cash currently available for new simulated orders." />
-          <CompactStatCard label="Reserved cash" value={formatUsdPrice(portfolio.summary.reservedCash, locale, messages.common.unavailable)} detail="Reserved lane capital (currently 0 in this release)." />
-          <CompactStatCard label="Invested capital" value={formatUsdPrice(portfolio.summary.investedCapital, locale, messages.common.unavailable)} valueTone={portfolio.summary.investedCapital > 0 ? 'positive' : portfolio.summary.investedCapital < 0 ? 'negative' : 'neutral'} detail="Cost basis of all currently active simulated positions." />
-          <CompactStatCard label="Total equity" value={formatUsdPrice(portfolio.summary.equityValue, locale, messages.common.unavailable)} detail="Cash plus the current market value of all open simulated positions." />
-          <CompactStatCard label={messages.simulation.portfolioValue} value={formatUsdPrice(portfolio.summary.portfolioValue, locale, messages.common.unavailable)} valueTone={portfolio.summary.portfolioValue > 0 ? 'positive' : portfolio.summary.portfolioValue < 0 ? 'negative' : 'neutral'} detail="Current market value of open simulated positions." />
+          <CompactStatCard label={messages.simulation.cashBalance} value={formatCashCurrency(portfolio.summary.cashBalance, locale, portfolio.summary.currency)} detail="Total cash in the simulation account before reserve allocation." />
+          <CompactStatCard label="Available cash" value={formatCashCurrency(portfolio.summary.availableCash, locale, portfolio.summary.currency)} detail="Cash currently available for new simulated orders." />
+          <CompactStatCard label="Reserved cash" value={formatCashCurrency(portfolio.summary.reservedCash, locale, portfolio.summary.currency)} detail="Reserved lane capital (currently 0 in this release)." />
+          <CompactStatCard label="Invested capital" value={formatCashCurrency(portfolio.summary.investedCapital, locale, portfolio.summary.currency)} valueTone={portfolio.summary.investedCapital > 0 ? 'positive' : portfolio.summary.investedCapital < 0 ? 'negative' : 'neutral'} detail="Cost basis of all currently active simulated positions." />
+          <CompactStatCard label="Total equity" value={formatCashCurrency(portfolio.summary.equityValue, locale, portfolio.summary.currency)} detail="Cash plus the current market value of all open simulated positions." />
+          <CompactStatCard label={messages.simulation.portfolioValue} value={formatCashCurrency(portfolio.summary.portfolioValue, locale, portfolio.summary.currency)} valueTone={portfolio.summary.portfolioValue > 0 ? 'positive' : portfolio.summary.portfolioValue < 0 ? 'negative' : 'neutral'} detail="Current market value of open simulated positions." />
           <CompactStatCard label="Active investments" value={String(portfolio.summary.activeInvestmentCount)} detail="Open simulated positions currently running." />
           <CompactStatCard label="Closed investments" value={String(portfolio.summary.closedInvestmentCount)} detail="Previously open positions now fully closed." />
-          <CompactStatCard label={messages.simulation.unrealizedPnl} value={formatSignedCurrency(portfolio.summary.unrealizedPnl, locale)} detail="Open-position gain or loss versus average cost." />
-          <CompactStatCard label={messages.simulation.realizedPnl} value={formatSignedCurrency(portfolio.summary.realizedPnl, locale)} detail="Closed-position gains and losses already locked in by simulated sells." />
+          <CompactStatCard label={messages.simulation.unrealizedPnl} value={formatSignedCurrency(portfolio.summary.unrealizedPnl, locale, portfolio.summary.currency)} detail="Open-position gain or loss versus average cost." />
+          <CompactStatCard label={messages.simulation.realizedPnl} value={formatSignedCurrency(portfolio.summary.realizedPnl, locale, portfolio.summary.currency)} detail="Closed-position gains and losses already locked in by simulated sells." />
+          <CompactStatCard label="FX conversion" value={portfolio.summary.fxConversionAvailable ? 'Available' : 'Unavailable'} detail={portfolio.summary.fxConversionNote} />
           <CompactStatCard label="Total return" value={formatPercent(portfolioReturn)} detail="Portfolio return versus the default 100,000 USD fictive starting balance." />
         </div>
       </Section>
@@ -378,6 +391,28 @@ export default async function SimulationPage({
             </div>
             <ResetSimulationAccountForm label={messages.simulation.resetAccount} />
           </Card>
+          <Card className="analytics-card">
+            <div className="analytics-card__header">
+              <div>
+                <div className="section__eyebrow">Micro trading mode</div>
+                <h3>Simulation-only micro order guardrails</h3>
+                <p>
+                  {microTrading.enabled ? 'Enabled via feature flag.' : 'Disabled by default. Enable FEATURE_SIM_MICRO_TRADING=true for simulation.'}
+                </p>
+              </div>
+            </div>
+            <div className="analytics-card__body">
+              <p>Minimum simulated order size: {formatUsdPrice(microTrading.minimumSimulatedOrderNotional, locale, messages.common.unavailable)}</p>
+              <p>Estimated fee impact: {microTrading.estimatedFeeImpactBps} bps</p>
+              <p>Estimated spread impact: {microTrading.estimatedSpreadImpactBps} bps</p>
+              <p>Estimated slippage impact: {microTrading.estimatedSlippageImpactBps} bps</p>
+              <p>Max daily simulated trades: {microTrading.maxDailySimulatedTrades}</p>
+              <p>Min confidence threshold: {(microTrading.minConfidenceThreshold * 100).toFixed(0)}%</p>
+              <p>Max spread threshold: {microTrading.maxSpreadBpsThreshold} bps</p>
+              <p>Max volatility threshold: {(microTrading.maxVolatilityThreshold * 100).toFixed(1)}%</p>
+              <p><strong>Warning:</strong> {microTrading.highFrequencyRiskWarning}</p>
+            </div>
+          </Card>
         </div>
       </Section>
 
@@ -399,7 +434,7 @@ export default async function SimulationPage({
                 portfolio.summary.portfolioValue > 0
                   ? formatPercent((position.marketValue / portfolio.summary.portfolioValue) * 100)
                   : '0.00%',
-              unrealizedPnl: formatSignedCurrency(position.unrealizedPnl, locale),
+              unrealizedPnl: formatSignedCurrency(position.unrealizedPnl, locale, portfolio.summary.currency),
             }))}
             emptyMessage="No positions are open yet. Use the tradable universe below to start your paper portfolio."
             rowDetailsLabel={messages.table.rowDetails}
@@ -414,7 +449,7 @@ export default async function SimulationPage({
               averageCost: formatUsdPrice(position.averageCost, locale, messages.common.unavailable),
               marketPrice: messages.common.unavailable,
               allocation: '0.00%',
-              unrealizedPnl: formatSignedCurrency(position.realizedPnl, locale),
+              unrealizedPnl: formatSignedCurrency(position.realizedPnl, locale, portfolio.summary.currency),
             }))}
             emptyMessage="No closed investments yet."
             rowDetailsLabel={messages.table.rowDetails}
@@ -433,7 +468,7 @@ export default async function SimulationPage({
               symbol: order.symbol,
               quantity: order.quantity.toFixed(4),
               executedPrice: formatUsdPrice(order.executedPrice, locale, messages.common.unavailable),
-              grossAmount: formatSignedCurrency(order.cashEffect, locale),
+              grossAmount: formatSignedCurrency(order.cashEffect, locale, portfolio.summary.currency),
               createdAt: formatDateTimeLabel(order.createdAt, locale),
             }))}
             emptyMessage="No simulated orders yet."
@@ -446,8 +481,8 @@ export default async function SimulationPage({
             rows={portfolio.transactions.map((transaction) => ({
               type: transaction.transactionType,
               symbol: transaction.symbol ?? 'USD',
-              cashDelta: formatSignedCurrency(transaction.cashDelta, locale),
-              realizedPnl: formatSignedCurrency(transaction.realizedPnl, locale),
+              cashDelta: formatSignedCurrency(transaction.cashDelta, locale, portfolio.summary.currency),
+              realizedPnl: formatSignedCurrency(transaction.realizedPnl, locale, portfolio.summary.currency),
               createdAt: formatDateTimeLabel(transaction.createdAt, locale),
             }))}
             emptyMessage={messages.simulation.emptyTransactions}

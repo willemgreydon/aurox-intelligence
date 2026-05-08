@@ -24,6 +24,7 @@ export const simulationSessionStatusSchema = z.enum([
 ]);
 export const simulationObservationStatusSchema = z.enum(['idle', 'warming', 'watching', 'degraded', 'error']);
 export const simulationAssetScopeSchema = z.enum(['stock', 'etf', 'crypto', 'multi-asset']);
+export const simulationCashCurrencySchema = z.enum(['USD', 'EUR']);
 
 export const simulationExecutionModelSchema = z.object({
   feeBps: z.number().min(0).max(5000).default(0),
@@ -64,7 +65,10 @@ export const simulationExecutionInputSchema = z.object({
 export const simulationAccountSummarySchema = z.object({
   accountId: z.string(),
   portfolioId: z.string(),
-  currency: z.literal('USD'),
+  currency: simulationCashCurrencySchema,
+  quoteCurrency: z.string().default('USD'),
+  fxConversionAvailable: z.boolean().default(false),
+  fxConversionNote: z.string().default('No FX conversion available.'),
   initialCashBalance: z.number(),
   cashBalance: z.number(),
   reservedCash: z.number(),
@@ -179,6 +183,21 @@ export const simulationSessionSchema = z.object({
   lastOpenedAt: z.string().nullable(),
 });
 
+export const microTradingGuardrailsSchema = z.object({
+  enabled: z.boolean().default(false),
+  simulationOnly: z.literal(true).default(true),
+  minimumSimulatedOrderNotional: z.number().nonnegative(),
+  maxDailySimulatedTrades: z.number().int().positive(),
+  minConfidenceThreshold: z.number().min(0).max(1),
+  maxSpreadBpsThreshold: z.number().nonnegative(),
+  maxVolatilityThreshold: z.number().nonnegative(),
+  estimatedFeeImpactBps: z.number().nonnegative(),
+  estimatedSpreadImpactBps: z.number().nonnegative(),
+  estimatedSlippageImpactBps: z.number().nonnegative(),
+  inefficiencyExplanation: z.array(z.string()),
+  highFrequencyRiskWarning: z.string(),
+});
+
 export const simulationOrderErrorCodeSchema = z.enum([
   'INSUFFICIENT_CASH',
   'INSUFFICIENT_POSITION',
@@ -205,6 +224,7 @@ export type SimulationLaneMode = z.infer<typeof simulationLaneModeSchema>;
 export type SimulationSessionStatus = z.infer<typeof simulationSessionStatusSchema>;
 export type SimulationObservationStatus = z.infer<typeof simulationObservationStatusSchema>;
 export type SimulationAssetScope = z.infer<typeof simulationAssetScopeSchema>;
+export type SimulationCashCurrency = z.infer<typeof simulationCashCurrencySchema>;
 export type SimulationExecutionModel = z.infer<typeof simulationExecutionModelSchema>;
 export type SimulationExecutionRecord = z.infer<typeof simulationExecutionRecordSchema>;
 export type SimulationExecutionInput = z.infer<typeof simulationExecutionInputSchema>;
@@ -215,3 +235,4 @@ export type SimulationTransaction = z.infer<typeof simulationTransactionSchema>;
 export type SimulationSnapshot = z.infer<typeof simulationSnapshotSchema>;
 export type SimulationWorkspace = z.infer<typeof simulationWorkspaceSchema>;
 export type SimulationSession = z.infer<typeof simulationSessionSchema>;
+export type MicroTradingGuardrails = z.infer<typeof microTradingGuardrailsSchema>;

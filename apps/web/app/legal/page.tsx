@@ -27,6 +27,31 @@ const legalPages = [
     title: 'Legal Notice / Imprint',
     description: 'Platform operator identification, contact information, and regulatory disclosure as required by applicable law.',
   },
+  {
+    href: '/legal/simulation-disclaimer',
+    title: 'Simulation Disclaimer',
+    description: 'Clarifies that execution is simulation-first and that simulated performance is not live performance.',
+  },
+  {
+    href: '/legal/ai-disclaimer',
+    title: 'AI Disclaimer',
+    description: 'Explains limitations of AI outputs and that AI analysis may be wrong or incomplete.',
+  },
+  {
+    href: '/legal/market-data-disclaimer',
+    title: 'Market Data Disclaimer',
+    description: 'Explains third-party data delays, potential incompleteness, and provider dependency limits.',
+  },
+  {
+    href: '/legal/cookie-notice',
+    title: 'Cookie / Tracking Notice',
+    description: 'Discloses cookie and telemetry handling where enabled by runtime configuration.',
+  },
+  {
+    href: '/legal/contact-support',
+    title: 'Contact & Support',
+    description: 'Support channels and legal contact placeholders when no entity profile is configured.',
+  },
 ];
 
 export default function LegalIndexPage() {
