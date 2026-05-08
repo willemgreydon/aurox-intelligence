@@ -2,6 +2,16 @@ import { getMarketIntelligenceWorkstationModel } from './market-intelligence-wor
 import { getPortfolioIntelligenceViewModel } from './portfolio-intelligence-service';
 import { getNewsStreamData } from './news-service';
 import { getSimulationWorkstationStateForCurrentUser } from './simulation-workstation-service';
+import { getObservationOutcome } from './observation-outcome-service';
+import {
+  listObservationEvents,
+  markObservationEventDismissed,
+  markObservationEventPinned,
+  markObservationEventRead,
+  upsertObservationEvents,
+  type ObservationEventRecord,
+} from '@repo/db';
+import { sortAndFilterWatchlist, type WatchlistFilter, type WatchlistSort } from '../lib/watchlist-intelligence';
 import {
   computeAnomalyScore,
   computeTradeReadiness,
@@ -53,6 +63,7 @@ export type ObserveViewModel = {
     symbol: string | null;
     result: TradeReadinessBreakdown | null;
   };
+  persistenceDegraded: boolean;
 };
 
 function formatPct(value: number | null | undefined): string {
@@ -180,6 +191,7 @@ function buildTimeline(input: {
   anomalies: AnomalyRadarItem[];
   observerItems: ObservationItem[];
   tradeReadinessSymbol: string | null;
+  persistedEvents: ObservationEventRecord[];
 }): MarketTimelineEvent[] {
   const events: MarketTimelineEvent[] = [];
   for (const anomaly of input.anomalies) {
@@ -208,6 +220,19 @@ function buildTimeline(input: {
       actionHref: item.assetSymbol ? `/stocks/${item.assetSymbol}` : '/market',
     });
   }
+  for (const persisted of input.persistedEvents.slice(0, 30)) {
+    events.push({
+      id: `event-persisted-${persisted.id}`,
+      timestamp: persisted.observedAt,
+      eventType: (persisted.eventType as MarketTimelineEvent['eventType']) || 'signal_flip',
+      severity: persisted.severity,
+      description: persisted.description,
+      assetSymbol: persisted.symbol,
+      assetClass: (persisted.assetClass as MarketTimelineEvent['assetClass']) ?? null,
+      relatedId: persisted.id,
+      actionHref: `/observe/${persisted.id}`,
+    });
+  }
   if (input.tradeReadinessSymbol) {
     events.push({
       id: `event-trade-readiness-${input.tradeReadinessSymbol}`,
@@ -227,7 +252,11 @@ function buildTimeline(input: {
     .slice(0, 60);
 }
 
-export async function getObserveViewModel(): Promise<ObserveViewModel> {
+export async function getObserveViewModel(input?: {
+  userId?: string | null;
+  watchlistSort?: WatchlistSort;
+  watchlistFilter?: WatchlistFilter;
+}): Promise<ObserveViewModel> {
   const nowIso = new Date().toISOString();
   const [workstation, portfolio, news, simulation] = await Promise.all([
     getMarketIntelligenceWorkstationModel(),
@@ -359,7 +388,12 @@ export async function getObserveViewModel(): Promise<ObserveViewModel> {
     };
   });
 
-  const selectedReadinessAsset = watchlistIntelligence[0]?.symbol ?? topBullish[0]?.symbol ?? null;
+  const sortedWatchlist = sortAndFilterWatchlist(
+    watchlistIntelligence,
+    input?.watchlistSort ?? 'strongest_signal',
+    input?.watchlistFilter ?? { assetClass: 'all', signalAction: 'all', risk: 'all', news: 'all', search: '' },
+  );
+  const selectedReadinessAsset = sortedWatchlist[0]?.symbol ?? topBullish[0]?.symbol ?? null;
   const selectedRec = selectedReadinessAsset ? recommendationBySymbol.get(selectedReadinessAsset) : null;
   const selectedRisk = selectedReadinessAsset ? allocationBySymbol.get(selectedReadinessAsset)?.riskOverlay.riskScore ?? null : null;
   const selectedLiquidity = selectedReadinessAsset ? allocationBySymbol.get(selectedReadinessAsset)?.riskOverlay.liquidityRisk : null;
@@ -380,12 +414,48 @@ export async function getObserveViewModel(): Promise<ObserveViewModel> {
     })
     : null;
 
-  const timeline = buildTimeline({
+  let persistenceDegraded = false;
+  let persistedEvents: ObservationEventRecord[] = [];
+  if (input?.userId) {
+    const eventPayload = observerItems.map((item) => ({
+      userId: input.userId ?? null,
+      symbol: item.assetSymbol ?? null,
+      assetClass: item.assetClass ?? null,
+      source: item.source,
+      eventType: item.source === 'news' ? 'news_shock' : item.source === 'risk' ? 'portfolio_risk_change' : 'signal_flip',
+      severity: item.severity,
+      title: item.title,
+      description: item.reason,
+      confidence: item.confidence,
+      score: null,
+      observedAt: item.createdAt,
+      metadata: { recommendedNextAction: item.recommendedNextAction },
+    }));
+
+    try {
+      await upsertObservationEvents([...eventPayload]);
+      persistedEvents = await listObservationEvents({ userId: input.userId, limit: 120 });
+    } catch {
+      persistenceDegraded = true;
+    }
+  }
+
+  const timelineRaw = buildTimeline({
     nowIso,
     anomalies,
     observerItems,
     tradeReadinessSymbol: selectedReadinessAsset,
+    persistedEvents,
   });
+  const timeline = await Promise.all(timelineRaw.map(async (event) => {
+    const outcome = input?.userId
+      ? await getObservationOutcome({ userId: input.userId, relatedOrderId: event.eventType === 'simulated_order_event' ? event.relatedId : null })
+      : null;
+    return {
+      ...event,
+      description: outcome ? `${event.description} (${outcome.outcomeStatus.toLowerCase()})` : event.description,
+    };
+  }));
 
   const avgSignal = workstation.systemState.assetStates.length > 0
     ? workstation.systemState.assetStates.reduce((sum, asset) => sum + asset.compositeScore, 0) / workstation.systemState.assetStates.length
@@ -432,10 +502,28 @@ export async function getObserveViewModel(): Promise<ObserveViewModel> {
     observerItems,
     timeline,
     anomalies,
-    watchlistIntelligence,
+    watchlistIntelligence: sortedWatchlist,
     tradeReadiness: {
       symbol: selectedReadinessAsset,
       result: tradeReadiness,
     },
+    persistenceDegraded,
   };
+}
+
+export async function updateObservationInteraction(input: {
+  userId: string;
+  eventId: string;
+  action: 'read' | 'pin' | 'dismiss';
+  value?: boolean;
+}) {
+  if (input.action === 'read') {
+    await markObservationEventRead(input.eventId, input.userId, input.value ?? true);
+    return;
+  }
+  if (input.action === 'pin') {
+    await markObservationEventPinned(input.eventId, input.userId, input.value ?? true);
+    return;
+  }
+  await markObservationEventDismissed(input.eventId, input.userId, input.value ?? true);
 }

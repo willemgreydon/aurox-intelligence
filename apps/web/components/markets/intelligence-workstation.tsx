@@ -51,9 +51,9 @@ export function MarketIntelligenceWorkstation({ model }: { model: MarketIntellig
   );
 
   return (
-    <div style={{ display: 'grid', gap: '1rem' }}>
-      <div className="analytics-two-grid">
-        <Card className="analytics-card">
+    <div className="intelligence-workstation">
+      <div className="analytics-two-grid intelligence-workstation__top">
+        <Card className="analytics-card intelligence-workstation__selector-card">
           <div className="analytics-card__header">
             <div>
               <div className="section__eyebrow">Asset switcher</div>
@@ -62,16 +62,18 @@ export function MarketIntelligenceWorkstation({ model }: { model: MarketIntellig
           </div>
           <div className="analytics-card__body">
             <input
+              className="intelligence-workstation__search-input"
               value={query}
               onChange={(event) => setQuery(event.currentTarget.value)}
               placeholder="Search symbol or name"
+              aria-label="Search symbol or name"
             />
-            <div style={{ display: 'grid', gap: '0.35rem', marginTop: '0.75rem', maxHeight: '15rem', overflow: 'auto' }}>
+            <div className="intelligence-workstation__asset-list">
               {filteredAssets.map((asset) => (
                 <button
                   key={asset.symbol}
                   type="button"
-                  className="button button--secondary"
+                  className={`button button--secondary intelligence-workstation__asset-button${asset.symbol === selectedSymbol ? ' intelligence-workstation__asset-button--active' : ''}`}
                   onClick={() => setSelectedSymbol(asset.symbol)}
                 >
                   {asset.symbol} - {asset.name} ({asset.assetClass})
@@ -81,7 +83,7 @@ export function MarketIntelligenceWorkstation({ model }: { model: MarketIntellig
           </div>
         </Card>
 
-        <Card className="analytics-card">
+        <Card className="analytics-card intelligence-workstation__lane-card">
           <div className="analytics-card__header">
             <div>
               <div className="section__eyebrow">Lane filter</div>
@@ -89,12 +91,12 @@ export function MarketIntelligenceWorkstation({ model }: { model: MarketIntellig
               <p>{laneExplanation(lane)}</p>
             </div>
           </div>
-          <div className="analytics-card__body" style={{ display: 'grid', gap: '0.5rem' }}>
+          <div className="analytics-card__body intelligence-workstation__lane-list">
             {lanes.map((laneItem) => (
               <button
                 key={laneItem}
                 type="button"
-                className="button button--secondary"
+                className={`button button--secondary intelligence-workstation__lane-button${lane === laneItem ? ' intelligence-workstation__lane-button--active' : ''}`}
                 onClick={() => setLane(laneItem)}
                 aria-pressed={lane === laneItem}
               >

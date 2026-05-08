@@ -56,7 +56,7 @@ export function WorkstationPageHeader({
         </div>
 
         {actions.length > 0 ? (
-          <details className="dashboard-page-header__destinations">
+          <details className="dashboard-page-header__destinations" open>
             <summary className="dashboard-page-header__destinations-toggle">{actionsLabel}</summary>
             <nav className="dashboard-page-header__actions" aria-label={`${title} destinations`}>
               {actions.map((action) => (

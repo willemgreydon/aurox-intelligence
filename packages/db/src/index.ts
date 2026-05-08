@@ -12,3 +12,4 @@ export * from './repositories/provider-monitor-config-repository';
 export * from './repositories/simulated-trading-repository';
 export * from './repositories/simulation-session-repository';
 export * from './repositories/intelligence-memory-repository';
+export * from './repositories/observation-events-repository';

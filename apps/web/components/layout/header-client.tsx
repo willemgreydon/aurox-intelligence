@@ -348,7 +348,10 @@ export function HeaderClient({ locale, messages, ticker, auth, navGroups, portfo
                         >
                           <span className="site-menu-overlay__link-copy">
                             {item.icon ? <span className="site-menu-overlay__link-icon" aria-hidden="true">{item.icon}</span> : null}
-                            <span>{item.label}</span>
+                            <span className="site-menu-overlay__link-text">
+                              <strong>{item.label}</strong>
+                              {item.description ? <small>{item.description}</small> : null}
+                            </span>
                           </span>
                           <span className="mobile-drawer__arrow" aria-hidden="true">
                             -&gt;

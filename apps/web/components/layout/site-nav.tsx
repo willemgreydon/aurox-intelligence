@@ -2,10 +2,11 @@ export type NavItem = {
   href: string;
   label: string;
   icon?: string;
+  description?: string;
 };
 
 export type NavGroup = {
-  id: 'markets' | 'analytics' | 'invest' | 'ops';
+  id: string;
   label: string;
   items: NavItem[];
 };

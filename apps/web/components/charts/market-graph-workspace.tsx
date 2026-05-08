@@ -66,6 +66,7 @@ type MarketGraphWorkspaceProps = {
 };
 
 type BrokerLaneStatus = 'active' | 'idle' | 'degraded' | 'simulation';
+type SidebarModuleKey = 'lanes' | 'watchlist' | 'news' | 'safety' | 'cta';
 
 type HoverState = {
   index: number;
@@ -244,6 +245,14 @@ export function MarketGraphWorkspace({
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [hoverState, setHoverState] = useState<HoverState | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [modulesOpen, setModulesOpen] = useState<Record<SidebarModuleKey, boolean>>({
+    lanes: true,
+    watchlist: true,
+    news: true,
+    safety: true,
+    cta: true,
+  });
 
   const canvasRef = useRef<HTMLDivElement | null>(null);
 
@@ -299,6 +308,19 @@ export function MarketGraphWorkspace({
     { label: 'Crypto tracking lane', status: watchlistAssets.some((asset) => asset.assetClass === 'crypto') ? 'active' : 'idle' },
     { label: 'Simulation broker lane', status: 'simulation' },
   ];
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem('market-sidebar-collapsed');
+    setSidebarCollapsed(stored === '1');
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem('market-sidebar-collapsed', sidebarCollapsed ? '1' : '0');
+  }, [sidebarCollapsed]);
+
+  function toggleModule(module: SidebarModuleKey) {
+    setModulesOpen((current) => ({ ...current, [module]: !current[module] }));
+  }
 
   useEffect(() => {
     const nextLength = visible.length;
@@ -466,7 +488,7 @@ export function MarketGraphWorkspace({
 
   return (
     <div className={`market-graph${variant === 'spotlight' ? ' market-graph--spotlight' : ''}`}>
-      <div className="market-graph__workspace">
+      <div className={`market-workstation${sidebarCollapsed ? ' market-workstation--sidebar-collapsed' : ''}`}>
       <div ref={canvasRef} className="market-graph__canvas">
         <div className="market-graph__overlay">
           <section className="market-graph__control-panel" aria-label="Chart controls">
@@ -809,7 +831,7 @@ export function MarketGraphWorkspace({
           </div>
         ) : null}
       </div>
-      <aside className="broker-observer" aria-label="Broker observation workspace">
+      <aside id="market-workstation-sidebar" className="broker-observer" aria-label="Broker observation workspace">
         <button
           type="button"
           className="broker-observer__mobile-toggle"
@@ -822,11 +844,21 @@ export function MarketGraphWorkspace({
             {sidebarOpen ? '▲' : '▼'}
           </span>
         </button>
+        <button
+          type="button"
+          className="broker-observer__desktop-toggle"
+          aria-expanded={!sidebarCollapsed}
+          aria-controls="market-workstation-sidebar-content"
+          onClick={() => setSidebarCollapsed((value) => !value)}
+        >
+          {sidebarCollapsed ? 'Open cockpit' : 'Collapse cockpit'}
+        </button>
 
         <div
-          id="broker-observer-content"
+          id="market-workstation-sidebar-content"
           className={`broker-observer__collapsible${sidebarOpen ? ' broker-observer__collapsible--open' : ''}`}
         >
+          <div className="broker-observer__scroll">
           <section className="broker-observer__panel">
             <div className="broker-observer__eyebrow">Broker Observation Workspace</div>
             <h3>Simulation cockpit</h3>
@@ -834,7 +866,11 @@ export function MarketGraphWorkspace({
           </section>
 
           <section className="broker-observer__panel">
-            <h4>Broker lanes monitor</h4>
+            <button type="button" className="broker-observer__panel-toggle" onClick={() => toggleModule('lanes')} aria-expanded={modulesOpen.lanes}>
+              <h4>Broker lanes monitor</h4>
+              <span aria-hidden="true">{modulesOpen.lanes ? '−' : '+'}</span>
+            </button>
+            {modulesOpen.lanes ? (
             <ul className="broker-observer__list">
               {laneStatuses.map((lane) => (
                 <li key={lane.label} className="broker-observer__row">
@@ -845,10 +881,15 @@ export function MarketGraphWorkspace({
                 </li>
               ))}
             </ul>
+            ) : null}
           </section>
 
           <section className="broker-observer__panel broker-observer__panel--watchlist">
-            <h4>Watchlist mini-board</h4>
+            <button type="button" className="broker-observer__panel-toggle" onClick={() => toggleModule('watchlist')} aria-expanded={modulesOpen.watchlist}>
+              <h4>Watchlist mini-board</h4>
+              <span aria-hidden="true">{modulesOpen.watchlist ? '−' : '+'}</span>
+            </button>
+            {modulesOpen.watchlist ? (
             <ul className="broker-observer__list">
               {watchlistAssets.length > 0 ? watchlistAssets.map((asset) => (
                 <li key={asset.symbol} className="broker-observer__row">
@@ -865,10 +906,15 @@ export function MarketGraphWorkspace({
                 </li>
               )) : <li className="broker-observer__empty">No watchlist data available.</li>}
             </ul>
+            ) : null}
           </section>
 
           <section className="broker-observer__panel broker-observer__panel--news">
-            <h4>News observer</h4>
+            <button type="button" className="broker-observer__panel-toggle" onClick={() => toggleModule('news')} aria-expanded={modulesOpen.news}>
+              <h4>News observer</h4>
+              <span aria-hidden="true">{modulesOpen.news ? '−' : '+'}</span>
+            </button>
+            {modulesOpen.news ? (
             <ul className="broker-observer__news-list">
               {observerNews.length > 0 ? observerNews.map((item) => (
                 <li key={item.id}>
@@ -882,13 +928,36 @@ export function MarketGraphWorkspace({
                 </li>
               )) : <li className="broker-observer__empty">No relevant headlines available.</li>}
             </ul>
+            ) : null}
           </section>
 
           <section className="broker-observer__panel broker-observer__panel--safety">
-            <h4>Broker safety panel</h4>
+            <button type="button" className="broker-observer__panel-toggle" onClick={() => toggleModule('safety')} aria-expanded={modulesOpen.safety}>
+              <h4>Broker safety panel</h4>
+              <span aria-hidden="true">{modulesOpen.safety ? '−' : '+'}</span>
+            </button>
+            {modulesOpen.safety ? (
+            <>
             <p>Simulation only. No live execution and no real brokerage routing.</p>
             <a href="/invest/simulation" className="button button--secondary">Open simulation</a>
+            </>
+            ) : null}
           </section>
+
+          <section className="broker-observer__panel broker-observer__panel--cta">
+            <button type="button" className="broker-observer__panel-toggle" onClick={() => toggleModule('cta')} aria-expanded={modulesOpen.cta}>
+              <h4>Quick navigation</h4>
+              <span aria-hidden="true">{modulesOpen.cta ? '−' : '+'}</span>
+            </button>
+            {modulesOpen.cta ? (
+            <div className="broker-observer__cta-grid">
+              <a href="/observe" className="button button--secondary">Open full observer</a>
+              <a href="/invest/simulation" className="button button--secondary">Open simulation</a>
+              <a href="/signals" className="button button--secondary">Open signals</a>
+            </div>
+            ) : null}
+          </section>
+          </div>
         </div>
       </aside>
       </div>

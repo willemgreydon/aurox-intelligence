@@ -6,13 +6,29 @@ import { requireCurrentSession } from '../../server/auth/session';
 
 export const dynamic = 'force-dynamic';
 
-export default async function ObservePage() {
-  await requireCurrentSession('/login');
-  const model = await getObserveViewModel();
+export default async function ObservePage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const session = await requireCurrentSession('/login');
+  const params = (await searchParams) ?? {};
+  const pick = (value: string | string[] | undefined) => Array.isArray(value) ? value[0] : value;
+  const model = await getObserveViewModel({
+    userId: session.user.id,
+    watchlistSort: (pick(params.watchlistSort) as never) ?? 'strongest_signal',
+    watchlistFilter: {
+      assetClass: (pick(params.assetClass) as never) ?? 'all',
+      signalAction: (pick(params.signalAction) as never) ?? 'all',
+      risk: (pick(params.risk) as never) ?? 'all',
+      news: (pick(params.news) as never) ?? 'all',
+      search: pick(params.search) ?? '',
+    },
+  });
 
   return (
     <>
-      <Section className="dashboard-section dashboard-section--hero">
+      <Section className="dashboard-section dashboard-section--hero dashboard-section--compact observe-page__hero">
         <WorkstationPageHeader
           eyebrow="Observe"
           title="AI Market Observation Workstation"

@@ -27,7 +27,7 @@ export default async function MarketPage() {
     <>
       <MarketGraphSection graph={graph} messages={messages} trackedSymbols={preferredSymbols} newsItems={news.items} />
 
-      <Section className="dashboard-section dashboard-section--hero">
+      <Section className="dashboard-section dashboard-section--hero dashboard-section--after-market-graph">
         <WorkstationPageHeader
           eyebrow={messages.shell.nav.marketOverview}
           title={messages.marketGraph.title}

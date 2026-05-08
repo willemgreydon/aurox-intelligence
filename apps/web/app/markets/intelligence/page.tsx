@@ -10,7 +10,7 @@ export default async function MarketsIntelligencePage() {
 
   return (
     <>
-      <Section className="dashboard-section dashboard-section--hero">
+      <Section className="dashboard-section dashboard-section--hero dashboard-section--compact market-intelligence-page__hero">
         <WorkstationPageHeader
           eyebrow="Markets / Intelligence"
           title="Unified Market Intelligence Workstation"
@@ -30,7 +30,7 @@ export default async function MarketsIntelligencePage() {
         />
       </Section>
 
-      <Section className="dashboard-section">
+      <Section className="dashboard-section dashboard-section--compact market-intelligence-page__content">
         <MarketIntelligenceWorkstation model={model} />
       </Section>
     </>
