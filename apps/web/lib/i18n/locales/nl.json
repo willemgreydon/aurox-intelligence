@@ -630,7 +630,17 @@
       "preparedTicket": "Prepared ticket",
       "clearPreparedTicket": "Clear prepared ticket",
       "openAssetDetail": "Open asset detail",
-      "openPortfolio": "Open portfolio"
+      "openPortfolio": "Open portfolio",
+      "quoteReady": "Quote ready",
+      "fetchingSimulationQuote": "Fetching simulation quote...",
+      "quoteNotReady": "Simulation quote is not ready yet.",
+      "retryQuote": "Retry quote",
+      "retryingInSeconds": "Retrying in {{seconds}}s",
+      "marketClosedUsingLatestQuote": "Market is closed - using the latest available quote for simulation.",
+      "cachedQuoteSimulationWarning": "Using cached quote for simulation estimate.",
+      "delayedQuoteSimulationWarning": "Using delayed quote for simulation estimate.",
+      "quoteFreshnessLimited": "Quote freshness is limited - simulation-only estimate.",
+      "simulationQuoteUnavailable": "Simulation quote is currently unavailable."
     }
   },
   "marketGraph": {

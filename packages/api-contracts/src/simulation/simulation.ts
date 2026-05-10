@@ -204,6 +204,7 @@ export const simulationOrderErrorCodeSchema = z.enum([
   'NO_POSITION_TO_SELL',
   'ZERO_QUANTITY',
   'MARKET_DATA_UNAVAILABLE',
+  'QUOTE_NOT_READY',
   'NO_ACTIVE_SESSION',
   'POSITION_STATE_CHANGED',
   'LANE_MISMATCH',

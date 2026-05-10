@@ -10,3 +10,5 @@ export * from './config';
 export * from './news/client';
 export * from './news/types';
 export * from './ai/claude-finance';
+export * from './macro/client';
+export * from './macro/types';

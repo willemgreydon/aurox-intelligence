@@ -11,6 +11,7 @@ export * from './intelligence/claude-finance';
 export * from './invest/invest';
 export * from './market/market';
 export * from './market/market-stream';
+export * from './macro/macro';
 export * from './news/news';
 export * from './signals/signals';
 export * from './simulation/simulation';

@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useEffect, useMemo, useState } from 'react';
+import { useActionState, useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useFormStatus } from 'react-dom';
 import { emptyFormState, type FormState, type OrderResult } from '../../server/auth/forms';
@@ -91,12 +91,22 @@ type SimulatedOrderFormProps = {
     quantityRequired: string;
     minimumShare: string;
     minimumUnit: string;
-    minimumQuantity: (value: number) => string;
+    minimumQuantityTemplate: string;
     wholeSharesOnly: string;
-    quantityStepMismatch: (step: number) => string;
+    quantityStepMismatchTemplate: string;
     minimumNotional: string;
-    noOpenPositionToSell: (symbol: string) => string;
+    noOpenPositionToSellTemplate: string;
     closePosition: string;
+    quoteReady: string;
+    fetchingSimulationQuote: string;
+    quoteNotReady: string;
+    retryQuote: string;
+    retryingInSeconds: string;
+    marketClosedUsingLatestQuote: string;
+    cachedQuoteSimulationWarning: string;
+    delayedQuoteSimulationWarning: string;
+    quoteFreshnessLimited: string;
+    simulationQuoteUnavailable: string;
   }>;
 };
 
@@ -121,6 +131,7 @@ export function SimulatedOrderForm({
   uiText,
 }: SimulatedOrderFormProps) {
   const [state, formAction] = useActionState(createSimulatedOrderAction, emptyFormState);
+  const formRef = useRef<HTMLFormElement | null>(null);
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
   const rules = useMemo(() => getQuantityRules({ assetClass, symbol, price: currentPrice }), [assetClass, currentPrice, symbol]);
   const numberRules = useMemo(
@@ -132,6 +143,7 @@ export function SimulatedOrderForm({
   const [mode, setMode] = useState<QuantityMode>('quantity');
   const [notionalValue, setNotionalValue] = useState('');
   const [clientError, setClientError] = useState<string | null>(null);
+  const [retryCountdown, setRetryCountdown] = useState<number | null>(null);
   const quantityId = `${assetId}-${side}-quantity`;
   const quantityError = state.fieldErrors.quantity;
   const messageId = `${assetId}-${side}-message`;
@@ -146,6 +158,24 @@ export function SimulatedOrderForm({
       }
     }
   }, [effectiveMinQuantity, numberRules.defaultQuantity, quantity, showQuantityInput, state.status]);
+
+  useEffect(() => {
+    if (state.errorCode !== 'QUOTE_NOT_READY') {
+      setRetryCountdown(null);
+      return;
+    }
+    setRetryCountdown(5);
+  }, [state.errorCode]);
+
+  useEffect(() => {
+    if (retryCountdown === null) return;
+    if (retryCountdown <= 0) {
+      formRef.current?.requestSubmit();
+      return;
+    }
+    const timer = setTimeout(() => setRetryCountdown((value) => (value === null ? null : value - 1)), 1000);
+    return () => clearTimeout(timer);
+  }, [retryCountdown]);
 
   const sanitizedQuantity = useMemo(() => {
     const parsed = Number(quantityValue);
@@ -173,7 +203,7 @@ export function SimulatedOrderForm({
   const effectiveDisabledReason = disabled
     ? disabledReason
     : hasNoPositionToSell
-      ? uiText?.noOpenPositionToSell?.(symbol) ?? buildNoOpenPositionReason(symbol)
+      ? formatTemplate(uiText?.noOpenPositionToSellTemplate, { symbol }) ?? buildNoOpenPositionReason(symbol)
       : undefined;
 
   const estimatedGross =
@@ -193,13 +223,13 @@ export function SimulatedOrderForm({
     if (parsed < effectiveMinQuantity) {
       if (assetClass === 'stock') return uiText?.minimumShare ?? 'Minimum 1 share.';
       if (assetClass === 'etf') return uiText?.minimumUnit ?? 'Minimum 1 unit.';
-      return uiText?.minimumQuantity?.(effectiveMinQuantity) ?? `Minimum quantity: ${effectiveMinQuantity}`;
+      return formatTemplate(uiText?.minimumQuantityTemplate, { value: String(effectiveMinQuantity) }) ?? `Minimum quantity: ${effectiveMinQuantity}`;
     }
     if (!isStepAligned(parsed, effectiveMinQuantity, numberRules.stepQuantity)) {
       if ((assetClass === 'stock' || assetClass === 'etf') && numberRules.stepQuantity === 1) {
         return uiText?.wholeSharesOnly ?? 'Enter a whole number of shares.';
       }
-      return uiText?.quantityStepMismatch?.(numberRules.stepQuantity) ?? `Use increments of ${numberRules.stepQuantity}.`;
+      return formatTemplate(uiText?.quantityStepMismatchTemplate, { step: String(numberRules.stepQuantity) }) ?? `Use increments of ${numberRules.stepQuantity}.`;
     }
     if (mode === 'notional' && sanitizedNotional !== null && sanitizedNotional < numberRules.minNotional) {
       return uiText?.minimumNotional ?? 'Minimum notional requirement not met.';
@@ -217,7 +247,7 @@ export function SimulatedOrderForm({
   }
 
   return (
-    <form action={formAction} className="simulation-form simulation-form--ticket" noValidate onSubmit={onFormSubmit}>
+    <form ref={formRef} action={formAction} className="simulation-form simulation-form--ticket" noValidate onSubmit={onFormSubmit}>
       <input type="hidden" name="assetId" value={assetId} />
       <input type="hidden" name="symbol" value={symbol} />
       <input type="hidden" name="assetClass" value={assetClass} />
@@ -320,6 +350,14 @@ export function SimulatedOrderForm({
         effectiveDisabledReason={effectiveDisabledReason}
         fillDetail={fillDetail}
         state={state}
+        retryCountdown={retryCountdown}
+        retryLabel={uiText?.retryQuote ?? 'Retry quote'}
+        retryingLabel={uiText?.retryingInSeconds ?? 'Retrying in {{seconds}}s'}
+        notReadyLabel={uiText?.quoteNotReady ?? 'Simulation quote is not ready yet.'}
+        onRetry={() => {
+          setRetryCountdown(null);
+          formRef.current?.requestSubmit();
+        }}
       />
     </form>
   );
@@ -330,11 +368,21 @@ function SimulationFormFeedback({
   effectiveDisabledReason,
   fillDetail,
   state,
+  retryCountdown,
+  retryLabel,
+  retryingLabel,
+  notReadyLabel,
+  onRetry,
 }: {
   messageId: string;
   effectiveDisabledReason: string | undefined;
   fillDetail: string | null;
   state: FormState;
+  retryCountdown: number | null;
+  retryLabel: string;
+  retryingLabel: string;
+  notReadyLabel: string;
+  onRetry: () => void;
 }) {
   return (
     <>
@@ -356,6 +404,17 @@ function SimulationFormFeedback({
         <p id={messageId} className="simulation-form__meta simulation-form__meta--success" role="status" aria-live="polite">
           {state.message}
         </p>
+      ) : null}
+      {state.errorCode === 'QUOTE_NOT_READY' ? (
+        <div className="simulation-form__meta simulation-form__meta--warning" role="status" aria-live="polite">
+          <p>{notReadyLabel}</p>
+          {retryCountdown !== null && retryCountdown > 0 ? (
+            <p>{retryingLabel.replace('{{seconds}}', String(retryCountdown))}</p>
+          ) : null}
+          <button type="button" className="button button--secondary simulation-form__button simulation-form__button--inline" onClick={onRetry}>
+            {retryLabel}
+          </button>
+        </div>
       ) : null}
     </>
   );
@@ -433,6 +492,18 @@ function buildFillDetail(result: OrderResult): string {
       ? ` · P&L: ${result.realizedPnl >= 0 ? '+' : ''}$${result.realizedPnl.toFixed(2)}`
       : '';
   return `${verb} ${result.quantity.toFixed(4)} ${result.symbol} @ $${result.executionPrice.toFixed(2)} · ${gross}${pnl}`;
+}
+
+function formatTemplate(template: string | undefined, values: Record<string, string>): string | null {
+  if (!template) {
+    return null;
+  }
+
+  let output = template;
+  for (const [key, value] of Object.entries(values)) {
+    output = output.replaceAll(`{{${key}}}`, value);
+  }
+  return output;
 }
 
 type ResetSimulationAccountFormProps = {

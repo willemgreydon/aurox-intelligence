@@ -21,6 +21,16 @@ vi.mock('../services/simulation-service', () => ({
   executeSimulationOrderForCurrentUser: (...args: unknown[]) =>
     executeSimulationOrderForCurrentUserMock(...args),
 }));
+vi.mock('../services/macro-intelligence-service', () => ({
+  getMacroIntelligenceViewModel: vi.fn().mockResolvedValue({
+    regime: {
+      overallMacroScore: 0.12,
+      confidence: 0.74,
+      riskRegime: { score: -0.2 },
+    },
+    providerStatus: [{ provider: 'fred', freshness: 'partial' }],
+  }),
+}));
 
 vi.mock('@repo/db', () => ({
   resetSimulationAccount: vi.fn(),
@@ -225,19 +235,26 @@ describe('createSimulatedOrderAction', () => {
     expect(state.errorCode).toBe('INSUFFICIENT_CASH');
   });
 
-  it('maps lane mismatch to LANE_MISMATCH', async () => {
+  it('auto-normalizes prepared lane to active compatible lane', async () => {
     assertSimulationSessionMock.mockResolvedValue({
       ...RUNNING_SESSION,
       laneId: 'manual_multi_asset_lane',
     });
+    executeSimulationOrderForCurrentUserMock.mockResolvedValue(FILLED_ORDER);
 
     const state = await createSimulatedOrderAction(
       { status: 'idle', message: null, fieldErrors: {} },
       buyFormData({ strategyLaneId: 'manual_stock_lane' }),
     );
 
-    expect(state.status).toBe('error');
-    expect(state.errorCode).toBe('LANE_MISMATCH');
+    expect(state.status).toBe('success');
+    expect(executeSimulationOrderForCurrentUserMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        strategyLaneId: 'manual_multi_asset_lane',
+        macroRegimeSnapshot: expect.any(String),
+        providerSnapshot: expect.stringContaining('fred:partial'),
+      }),
+    );
   });
 
   it('maps scope mismatch to SCOPE_MISMATCH', async () => {
@@ -259,16 +276,16 @@ describe('createSimulatedOrderAction', () => {
     expect(state.errorCode).toBe('SCOPE_MISMATCH');
   });
 
-  it('maps market data error to MARKET_DATA_UNAVAILABLE', async () => {
+  it('maps quote-not-ready error to QUOTE_NOT_READY', async () => {
     assertSimulationSessionMock.mockResolvedValue(RUNNING_SESSION);
     executeSimulationOrderForCurrentUserMock.mockRejectedValue(
-      new Error('fresh quote is required but market data is unavailable'),
+      new Error('Simulation quote is not ready yet. (MSFT)'),
     );
 
     const state = await createSimulatedOrderAction({ status: 'idle', message: null, fieldErrors: {} }, buyFormData());
 
     expect(state.status).toBe('error');
-    expect(state.errorCode).toBe('MARKET_DATA_UNAVAILABLE');
+    expect(state.errorCode).toBe('QUOTE_NOT_READY');
   });
 
   it('returns clean database unavailable message for simulation writes', async () => {

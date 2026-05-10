@@ -35,6 +35,7 @@ import { getSimulationJournalRowsForCurrentUser } from '../../../server/services
 import { parsePreparedSimulationTicket } from '../../../lib/simulation-prepare';
 import { assertSerializableProps } from '../../../lib/assert-serializable-props';
 import { getAssetInspectHref } from '../../../lib/market-routes';
+import { getMacroIntelligenceViewModel } from '../../../server/services/macro-intelligence-service';
 
 export const dynamic = 'force-dynamic';
 
@@ -73,6 +74,39 @@ type LaneRow = {
   activePositions: string;
   recentOrders: string;
 };
+
+function laneSupportsAssetClass(laneId: SimulationLaneId, assetClass: 'stock' | 'etf' | 'crypto') {
+  if (laneId === 'manual_stock_lane') {
+    return assetClass === 'stock';
+  }
+
+  return assetClass === 'stock' || assetClass === 'etf' || assetClass === 'crypto';
+}
+
+function resolvePreparedTicketLane(input: {
+  preparedLane: SimulationLaneId;
+  activeLane: SimulationLaneId | null;
+  assetClass: 'stock' | 'etf' | 'crypto';
+}) {
+  if (!input.activeLane || input.preparedLane === input.activeLane) {
+    return {
+      lane: input.preparedLane,
+      autoNormalized: false,
+    };
+  }
+
+  if (laneSupportsAssetClass(input.activeLane, input.assetClass)) {
+    return {
+      lane: input.activeLane,
+      autoNormalized: true,
+    };
+  }
+
+  return {
+    lane: input.preparedLane,
+    autoNormalized: false,
+  };
+}
 
 function formatSignedCurrency(value: number, locale: Locale, currency: 'USD' | 'EUR') {
   const formatted = formatCashCurrency(Math.abs(value), locale, currency);
@@ -222,6 +256,7 @@ export default async function SimulationPage({
     loadMiniHistorySeries(sparklineSymbols, 24),
     getSimulationJournalRowsForCurrentUser(60),
   ]);
+  const macroContext = await getMacroIntelligenceViewModel();
   const heldSymbols = new Set(portfolio?.positions.map((position) => position.symbol) ?? []);
   const heldPositionsBySymbol = new Map(portfolio?.positions.map((position) => [position.symbol, position]) ?? []);
   const aiAgentAvailability = checkAiSimulationAgentAvailability();
@@ -236,6 +271,13 @@ export default async function SimulationPage({
   });
   const preparedAsset = preparedTicket
     ? workstation.tradableAssets.find((entry) => entry.asset.symbol === preparedTicket.symbol && entry.asset.assetClass === preparedTicket.assetClass)
+    : null;
+  const preparedLaneResolution = preparedTicket && preparedAsset
+    ? resolvePreparedTicketLane({
+      preparedLane: preparedTicket.lane,
+      activeLane: workstation.session?.laneId ?? null,
+      assetClass: preparedAsset.asset.assetClass,
+    })
     : null;
   const aiPanelLabels = {
     providerUnavailableSafeHold: messages.simulation.agent.providerUnavailableSafeHold,
@@ -316,6 +358,9 @@ export default async function SimulationPage({
                 <div className="section__eyebrow">SIMULATION / PREPARED TICKET</div>
                 <h3>{`Prepare ${preparedTicket.side === 'buy' ? 'Buy' : 'Sell'}: ${preparedAsset.asset.symbol}`}</h3>
                 <p>Review the simulated order before submitting. No real money or broker execution is involved.</p>
+                <p className="simulation-form__meta">
+                  Macro context: {macroContext.regime.explanations[0] ?? 'Macro overlay unavailable.'}
+                </p>
               </div>
               <div className="asset-card-actions__status-row">
                 <span className="status-pill status-pill--info">Simulation only</span>
@@ -323,7 +368,10 @@ export default async function SimulationPage({
                 <span className={`status-pill ${preparedTicket.side === 'buy' ? 'status-pill--success' : 'status-pill--warning'}`}>
                   {preparedTicket.side.toUpperCase()}
                 </span>
-                <span className="status-pill status-pill--neutral">{preparedTicket.lane.replace(/_/g, ' ')}</span>
+                <span className="status-pill status-pill--neutral">{(preparedLaneResolution?.lane ?? preparedTicket.lane).replace(/_/g, ' ')}</span>
+                {preparedLaneResolution?.autoNormalized ? (
+                  <span className="status-pill status-pill--info">auto-aligned to active lane</span>
+                ) : null}
                 {preparedTicket.source && preparedTicket.source !== 'simulation' && (
                   <span className="status-pill status-pill--neutral">{preparedTicket.source}</span>
                 )}
@@ -356,7 +404,7 @@ export default async function SimulationPage({
                 symbol={preparedAsset.asset.symbol}
                 assetClass={preparedAsset.asset.assetClass}
                 side={preparedTicket.side}
-                strategyLaneId={preparedTicket.lane}
+                strategyLaneId={preparedLaneResolution?.lane ?? preparedTicket.lane}
                 simulationSessionId={workstation.session?.id ?? undefined}
                 label={preparedTicket.side === 'buy' ? messages.dashboard.buySimulated : messages.dashboard.sellSimulated}
                 showQuantityInput
@@ -385,11 +433,11 @@ export default async function SimulationPage({
                   quantityRequired: messages.simulation.validation.quantityRequired,
                   minimumShare: messages.simulation.validation.minimumShare,
                   minimumUnit: messages.simulation.validation.minimumUnit,
-                  minimumQuantity: (value) => messages.simulation.validation.minimumQuantity.replace('{{value}}', String(value)),
+                  minimumQuantityTemplate: messages.simulation.validation.minimumQuantity,
                   wholeSharesOnly: messages.simulation.validation.wholeSharesOnly,
-                  quantityStepMismatch: (step) => messages.simulation.validation.quantityStepMismatch.replace('{{step}}', String(step)),
+                  quantityStepMismatchTemplate: messages.simulation.validation.quantityStepMismatch,
                   minimumNotional: messages.simulation.validation.minimumNotional,
-                  noOpenPositionToSell: (s) => messages.simulation.validation.noOpenPositionToSell.replace('{{symbol}}', s),
+                  noOpenPositionToSellTemplate: messages.simulation.validation.noOpenPositionToSell,
                   closePosition: messages.simulation.chips.closePosition,
                 }}
               />
@@ -397,6 +445,27 @@ export default async function SimulationPage({
           </Card>
         </Section>
       ) : null}
+
+      <Section className="dashboard-section">
+        <Card className="analytics-card">
+          <div className="analytics-card__header">
+            <div>
+              <div className="section__eyebrow">Macro regime panel</div>
+              <h3>Simulation context only</h3>
+              <p>{macroContext.simulationOnlyLabel}</p>
+            </div>
+          </div>
+          <div className="analytics-card__body">
+            <div className="observation-regime-grid">
+              <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">Inflation pressure</div><div className="analytics-stat__value">{macroContext.regime.inflationRegime.score.toFixed(2)}</div></article>
+              <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">Rates pressure</div><div className="analytics-stat__value">{macroContext.regime.ratesRegime.score.toFixed(2)}</div></article>
+              <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">Growth backdrop</div><div className="analytics-stat__value">{macroContext.regime.growthRegime.score.toFixed(2)}</div></article>
+              <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">Risk-on / risk-off</div><div className="analytics-stat__value">{macroContext.regime.riskRegime.score.toFixed(2)}</div></article>
+            </div>
+            <p className="simulation-form__meta">Sources: {macroContext.providerStatus.map((item) => `${item.provider}:${item.freshness}`).join(' | ') || 'unavailable'}</p>
+          </div>
+        </Card>
+      </Section>
 
       <Section className="dashboard-section dashboard-section--hero">
         <WorkstationPageHeader
@@ -874,3 +943,4 @@ export default async function SimulationPage({
     </>
   );
 }
+

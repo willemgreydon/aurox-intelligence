@@ -15,6 +15,7 @@ import { getInvestPortfolioData } from './portfolio-service';
 import { getOptionalCurrentSession } from '../auth/session';
 import { getSimulationOverviewDataForUser } from './stock-simulation-service';
 import { getNewsRiskSummary } from './news-intelligence-service';
+import { getMacroIntelligenceViewModel } from './macro-intelligence-service';
 
 export type PortfolioIntelligenceViewModel = {
   intelligence: PortfolioIntelligenceResult;
@@ -47,6 +48,7 @@ export type PortfolioIntelligenceViewModel = {
     maxRisk: number;
     affectedAssets: string[];
   };
+  macroContext: Awaited<ReturnType<typeof getMacroIntelligenceViewModel>>;
 };
 
 function mapAssetClassToAgents(
@@ -59,10 +61,11 @@ function mapAssetClassToAgents(
 export async function getPortfolioIntelligenceViewModel(): Promise<PortfolioIntelligenceViewModel> {
   const SIMULATION_ONLY_NOTICE = 'Simulation only — no real capital deployed.';
 
-  const [workstation, portfolioData, session] = await Promise.all([
+  const [workstation, portfolioData, session, macroContext] = await Promise.all([
     getMarketIntelligenceWorkstationModel(),
     getInvestPortfolioData({ view: 'list', positionState: 'open', assetClass: 'all', lane: 'all' }),
     getOptionalCurrentSession(),
+    getMacroIntelligenceViewModel(),
   ]);
   const newsExposure = await getNewsRiskSummary(portfolioData.openPositions.map((position) => position.assetId)).catch(() => ({
     avgRisk: 0,
@@ -155,6 +158,7 @@ export async function getPortfolioIntelligenceViewModel(): Promise<PortfolioInte
       statusReason: 'No market intelligence recommendations available to generate allocations.',
       simulationOnlyNotice: SIMULATION_ONLY_NOTICE,
       newsExposure,
+      macroContext,
     };
   }
 
@@ -240,6 +244,7 @@ export async function getPortfolioIntelligenceViewModel(): Promise<PortfolioInte
     statusReason: systemState.degraded ? 'Market data is partially degraded. Allocations may be based on incomplete data.' : 'All systems nominal.',
     simulationOnlyNotice: SIMULATION_ONLY_NOTICE,
     newsExposure,
+    macroContext,
   };
 }
 

@@ -1,4 +1,5 @@
 export * from './portfolio/portfolio-intelligence-engine';
+export * from './macro/regime-engine';
 export {
   rankAssets,
   computeCompositeScore,

@@ -560,7 +560,17 @@
       "preparedTicket": "Vorbereitetes Ticket",
       "clearPreparedTicket": "Ticket löschen",
       "openAssetDetail": "Anlage-Detail öffnen",
-      "openPortfolio": "Portfolio öffnen"
+      "openPortfolio": "Portfolio öffnen",
+      "quoteReady": "Kurs bereit",
+      "fetchingSimulationQuote": "Simulationskurs wird geladen...",
+      "quoteNotReady": "Simulationskurs ist noch nicht bereit.",
+      "retryQuote": "Kurs erneut laden",
+      "retryingInSeconds": "Erneuter Versuch in {{seconds}} s",
+      "marketClosedUsingLatestQuote": "Markt ist geschlossen - f?r die Simulation wird der letzte verf?gbare Kurs verwendet.",
+      "cachedQuoteSimulationWarning": "Zwischengespeicherter Kurs wird f?r die Simulationssch?tzung verwendet.",
+      "delayedQuoteSimulationWarning": "Verz?gerter Kurs wird f?r die Simulationssch?tzung verwendet.",
+      "quoteFreshnessLimited": "Kursfrische ist eingeschr?nkt - nur Simulationssch?tzung.",
+      "simulationQuoteUnavailable": "Simulationskurs ist aktuell nicht verf?gbar."
     },
     "validation": {
       "wholeSharesOnly": "Geben Sie eine ganze Anzahl von Aktien ein.",

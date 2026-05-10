@@ -10,6 +10,7 @@ import type {
   PortfolioDiagnostics,
 } from '@repo/ai-market-intelligence';
 import type { BrokerDecision } from '@repo/agents';
+import { buildSimulationPrepareHrefForAsset } from '../../../lib/simulation-prepare-url';
 
 export const dynamic = 'force-dynamic';
 const MAX_VISIBLE_PORTFOLIO_ROWS = 25;
@@ -32,17 +33,19 @@ function formatAttractiveness(value: number): string {
   return value.toFixed(1);
 }
 
-function buildPrepareTradeHref(input: { symbol: string; assetId: string | null; side: 'BUY' | 'SELL'; source: string }) {
-  const params = new URLSearchParams({
+function buildPrepareTradeHref(input: {
+  symbol: string;
+  assetClass: 'stock' | 'etf' | 'crypto' | 'other';
+  side: 'BUY' | 'SELL';
+  source: string;
+}) {
+  const normalizedAssetClass = input.assetClass === 'other' ? 'stock' : input.assetClass;
+  return buildSimulationPrepareHrefForAsset({
     symbol: input.symbol,
-    side: input.side,
-    intent: 'prepare',
+    assetClass: normalizedAssetClass,
+    side: input.side === 'SELL' ? 'sell' : 'buy',
     source: input.source,
   });
-  if (input.assetId) {
-    params.set('assetId', input.assetId);
-  }
-  return `/invest/simulation?${params.toString()}`;
 }
 
 //  Tone helpers 
@@ -179,9 +182,31 @@ function RegimePanel({ regime }: { regime: RegimeAwareness }) {
   );
 }
 
+function MacroOverlayPanel({ macroScore, confidence, explanation }: { macroScore: number; confidence: number; explanation: string }) {
+  const tone = macroScore > 0.15 ? 'success' : macroScore < -0.15 ? 'error' : 'warning';
+  return (
+    <article className="analytics-card">
+      <div className="analytics-card__header">
+        <div>
+          <div className="section__eyebrow">Macro risk overlay</div>
+          <h3>Simulation context only</h3>
+          <p>{explanation}</p>
+        </div>
+      </div>
+      <div className="analytics-card__body">
+        <div className="observation-regime-grid">
+          <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">Macro score</div><div className="analytics-stat__value">{macroScore.toFixed(2)}</div></article>
+          <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">Confidence</div><div className="analytics-stat__value">{(confidence * 100).toFixed(0)}%</div></article>
+          <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">Risk tone</div><div className={`status-pill status-pill--${tone}`}>{tone.toUpperCase()}</div></article>
+        </div>
+      </div>
+    </article>
+  );
+}
+
 //  Ranking table 
 
-function RankingTable({ ranking, assetIdBySymbol }: { ranking: AssetRanking[]; assetIdBySymbol: Record<string, string> }) {
+function RankingTable({ ranking }: { ranking: AssetRanking[] }) {
   if (ranking.length === 0) return <p className="text-muted">No ranking data available.</p>;
   const visibleRanking = ranking.slice(0, MAX_VISIBLE_PORTFOLIO_ROWS);
   return (
@@ -217,7 +242,7 @@ function RankingTable({ ranking, assetIdBySymbol }: { ranking: AssetRanking[]; a
               <td className="tabular-nums" style={{ textAlign: 'right' }}>{formatPct(r.targetWeight)}</td>
               <td style={{ fontSize: '0.75rem', color: 'var(--color-muted-foreground)', maxWidth: '16rem' }}>{r.reasonShort}</td>
               <td>
-                <Link className="button button--secondary" href={buildPrepareTradeHref({ symbol: r.symbol, assetId: assetIdBySymbol[r.symbol] ?? null, side: r.recommendation.includes('SELL') ? 'SELL' : 'BUY', source: 'portfolio-intelligence' })}>
+                <Link className="button button--secondary" href={buildPrepareTradeHref({ symbol: r.symbol, assetClass: r.assetClass, side: r.recommendation.includes('SELL') ? 'SELL' : 'BUY', source: 'portfolio-intelligence' })}>
                   {r.recommendation.includes('SELL') ? 'Prepare Sell' : 'Prepare Buy'}
                 </Link>
               </td>
@@ -231,7 +256,7 @@ function RankingTable({ ranking, assetIdBySymbol }: { ranking: AssetRanking[]; a
 
 //  Allocation matrix 
 
-function AllocationMatrix({ allocations, assetIdBySymbol }: { allocations: PortfolioAllocation[]; assetIdBySymbol: Record<string, string> }) {
+function AllocationMatrix({ allocations }: { allocations: PortfolioAllocation[] }) {
   if (allocations.length === 0) return <p className="text-muted">No allocations computed.</p>;
   const visibleAllocations = allocations.slice(0, MAX_VISIBLE_PORTFOLIO_ROWS);
   return (
@@ -279,7 +304,7 @@ function AllocationMatrix({ allocations, assetIdBySymbol }: { allocations: Portf
                   <span className="text-muted" style={{ fontSize: '0.75rem' }}>{alloc.recommendationAction}</span>
                 </td>
                 <td>
-                  <Link className="button button--secondary" href={buildPrepareTradeHref({ symbol: alloc.symbol, assetId: assetIdBySymbol[alloc.symbol] ?? null, side: alloc.deltaWeight < 0 ? 'SELL' : 'BUY', source: 'portfolio-intelligence' })}>
+                  <Link className="button button--secondary" href={buildPrepareTradeHref({ symbol: alloc.symbol, assetClass: alloc.assetClass, side: alloc.deltaWeight < 0 ? 'SELL' : 'BUY', source: 'portfolio-intelligence' })}>
                     {alloc.deltaWeight < 0 ? 'Reduce / Close' : 'Prepare Buy'}
                   </Link>
                 </td>
@@ -581,8 +606,9 @@ export default async function PortfolioIntelligencePage() {
     );
   }
 
-  const { intelligence, brokerReadiness, brokerPreviews, portfolioContext, assetIdBySymbol, newsExposure } = vm;
+  const { intelligence, brokerReadiness, brokerPreviews, portfolioContext, newsExposure } = vm;
   const { portfolioSummary, allocations, rebalancePlan, riskAlerts, diagnostics, ranking, regime } = intelligence;
+  const macro = vm.macroContext.regime;
   const top25AvgConfidence = ranking.length > 0
     ? ranking.slice(0, 25).reduce((sum, item) => sum + item.confidence, 0) / Math.min(25, ranking.length)
     : 0;
@@ -685,6 +711,11 @@ export default async function PortfolioIntelligencePage() {
       {/*  3. Regime Awareness  */}
       <Section className="dashboard-section dashboard-section--tinted">
         <RegimePanel regime={regime} />
+        <MacroOverlayPanel
+          macroScore={macro.overallMacroScore}
+          confidence={macro.confidence}
+          explanation={macro.explanations[0] ?? 'Macro data is used as simulation context only.'}
+        />
       </Section>
 
       {/*  Diagnostics chart strip  */}
@@ -745,7 +776,7 @@ export default async function PortfolioIntelligencePage() {
             </div>
           </div>
           <div className="analytics-card__body">
-            <RankingTable ranking={ranking} assetIdBySymbol={assetIdBySymbol} />
+            <RankingTable ranking={ranking} />
           </div>
         </Card>
       </Section>
@@ -761,7 +792,7 @@ export default async function PortfolioIntelligencePage() {
             </div>
           </div>
           <div className="analytics-card__body">
-            <AllocationMatrix allocations={allocations} assetIdBySymbol={assetIdBySymbol} />
+            <AllocationMatrix allocations={allocations} />
           </div>
         </Card>
       </Section>

@@ -17,4 +17,8 @@ describe('getAssetInspectHref', () => {
   it('falls back to market for unknown classes', () => {
     expect(getAssetInspectHref({ symbol: 'DXY', assetClass: 'other' })).toBe('/market?symbol=DXY');
   });
+
+  it('routes macro assets to macro anchor view', () => {
+    expect(getAssetInspectHref({ symbol: 'US10Y', assetClass: 'macro' })).toBe('/market?assetClass=macro&symbol=US10Y#macro');
+  });
 });

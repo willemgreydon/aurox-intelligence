@@ -9,8 +9,7 @@ import {
 import { requireCurrentSession } from '../auth/session';
 import { loadQuoteSnapshots } from './stock-simulation-service';
 import { isPrismaDbEnabled } from '../lib/db-runtime';
-
-const SIMULATION_QUOTE_MAX_AGE_MS = 15 * 60 * 1000;
+import { evaluateSimulationQuoteUsability } from './simulation-quote-usability';
 
 type SimulationWorkspaceViewModel = Awaited<ReturnType<typeof getSimulationWorkspace>> & {
   investableAssets: Array<{
@@ -25,6 +24,14 @@ type SimulationWorkspaceViewModel = Awaited<ReturnType<typeof getSimulationWorks
     changePercent: number | null;
     lastUpdatedAt: string | null;
   }>;
+};
+
+type SimulationRiskGuardConfig = {
+  maxNotionalPerTradeUsd: number;
+  maxDailyNotionalUsd: number;
+  maxOpenExposureUsd: number;
+  maxPerAssetExposureUsd: number;
+  blockOnStaleQuote: boolean;
 };
 
 function roundCurrency(value: number) {
@@ -44,27 +51,18 @@ function formatQuantity(value: number) {
   return value.toFixed(4);
 }
 
-function freshQuoteRequiredMessage(assetClass: SimulationAssetClass, symbol: string) {
-  if (assetClass === 'etf') {
-    return `Fresh ETF quote required before simulation execution. (${symbol})`;
-  }
-  if (assetClass === 'crypto') {
-    return `Fresh crypto quote required before simulation execution. (${symbol})`;
-  }
-  return `Fresh stock quote required before simulation execution. (${symbol})`;
+function freshQuoteRequiredMessage(symbol: string) {
+  return `Simulation quote is not ready yet. (${symbol})`;
 }
 
-function isFreshQuoteTimestampForSimulation(timestamp: string | null | undefined) {
-  if (!timestamp) {
-    return false;
-  }
-
-  const parsed = new Date(timestamp).getTime();
-  if (!Number.isFinite(parsed)) {
-    return false;
-  }
-
-  return Date.now() - parsed <= SIMULATION_QUOTE_MAX_AGE_MS;
+function getRiskGuardConfig(): SimulationRiskGuardConfig {
+  return {
+    maxNotionalPerTradeUsd: Number(process.env.SIM_MAX_NOTIONAL_PER_TRADE_USD ?? 25_000),
+    maxDailyNotionalUsd: Number(process.env.SIM_MAX_DAILY_NOTIONAL_USD ?? 100_000),
+    maxOpenExposureUsd: Number(process.env.SIM_MAX_OPEN_EXPOSURE_USD ?? 250_000),
+    maxPerAssetExposureUsd: Number(process.env.SIM_MAX_PER_ASSET_EXPOSURE_USD ?? 75_000),
+    blockOnStaleQuote: String(process.env.SIM_BLOCK_ON_STALE_QUOTE ?? 'true').toLowerCase() !== 'false',
+  };
 }
 
 export function getMicroTradingGuardrailsForDisplay(): MicroTradingGuardrails {
@@ -159,6 +157,9 @@ export async function executeSimulationOrderForCurrentUser(input: {
     | 'agent_sandbox_lane';
   sessionAssetScope?: 'stock' | 'etf' | 'crypto' | 'multi-asset';
   notes?: string;
+  macroRegimeSnapshot?: string | null;
+  providerSnapshot?: string | null;
+  freshnessState?: string | null;
   idempotencyKey?: string;
 }) {
   if (!isPrismaDbEnabled()) {
@@ -207,21 +208,75 @@ export async function executeSimulationOrderForCurrentUser(input: {
   }
 
   const [observation] = await loadQuoteSnapshots([asset.symbol]);
-
-  if (typeof observation?.price !== 'number' || !Number.isFinite(observation.price) || observation.price <= 0) {
-    throw new Error(freshQuoteRequiredMessage(input.assetClass, asset.symbol));
+  const quoteUsability = evaluateSimulationQuoteUsability({
+    symbol: asset.symbol,
+    assetClass: input.assetClass,
+    quote: observation,
+  });
+  if (process.env.NODE_ENV !== 'production') {
+    console.info('[simulation] quote candidate', {
+      symbol: asset.symbol,
+      assetClass: input.assetClass,
+      price: observation?.price ?? null,
+      provider: observation?.source ?? null,
+      freshnessState: quoteUsability.freshnessState ?? null,
+      quoteMode: null,
+      updatedAt: null,
+      observedAt: observation?.observedAt ?? null,
+      receivedAt: null,
+      marketSessionState: quoteUsability.marketSessionState ?? 'unknown',
+    });
   }
 
-  const quoteTimestamp = observation.observedAt ?? observation.fetchedAt ?? null;
-  if (!isFreshQuoteTimestampForSimulation(quoteTimestamp)) {
-    throw new Error(freshQuoteRequiredMessage(input.assetClass, asset.symbol));
+  if (!quoteUsability.usable || quoteUsability.price === null) {
+    throw new Error(freshQuoteRequiredMessage(asset.symbol));
+  }
+  const guard = getRiskGuardConfig();
+  if (guard.blockOnStaleQuote && quoteUsability.reasonCode === 'STALE_DURING_MARKET_HOURS') {
+    throw new Error(freshQuoteRequiredMessage(asset.symbol));
   }
 
-  const grossAmount = roundCurrency(input.quantity * observation.price);
+  const grossAmount = roundCurrency(input.quantity * quoteUsability.price);
+  if (grossAmount > guard.maxNotionalPerTradeUsd) {
+    throw new Error(`Order notional exceeds per-trade cap (${formatUsd(guard.maxNotionalPerTradeUsd)}).`);
+  }
 
   if (input.side === 'buy' && workspace.summary.availableCash + 1e-8 < grossAmount) {
     throw new Error(`Insufficient available simulation cash. Required: ${formatUsd(grossAmount)}. Available: ${formatUsd(workspace.summary.availableCash)}.`);
   }
+  const positionByAsset = workspace.positions.find((position) => position.assetId === asset.assetId) ?? null;
+  const currentAssetExposure = positionByAsset ? roundCurrency(positionByAsset.quantity * (quoteUsability.price || positionByAsset.averageCost)) : 0;
+  const nextAssetExposure = input.side === 'buy'
+    ? currentAssetExposure + grossAmount
+    : Math.max(0, currentAssetExposure - grossAmount);
+  if (nextAssetExposure > guard.maxPerAssetExposureUsd) {
+    throw new Error(`Asset exposure cap exceeded (${formatUsd(guard.maxPerAssetExposureUsd)}).`);
+  }
+  const openExposure = workspace.summary.portfolioValue ?? 0;
+  const nextExposure = input.side === 'buy'
+    ? openExposure + grossAmount
+    : Math.max(0, openExposure - grossAmount);
+  if (nextExposure > guard.maxOpenExposureUsd) {
+    throw new Error(`Open exposure cap exceeded (${formatUsd(guard.maxOpenExposureUsd)}).`);
+  }
+  const startOfDay = new Date();
+  startOfDay.setUTCHours(0, 0, 0, 0);
+  const dailyNotional = (workspace.orders ?? [])
+    .filter((order) => new Date(order.executedAt).getTime() >= startOfDay.getTime())
+    .reduce((sum, order) => sum + Math.abs(order.grossAmount), 0);
+  if (dailyNotional + grossAmount > guard.maxDailyNotionalUsd) {
+    throw new Error(`Daily notional cap exceeded (${formatUsd(guard.maxDailyNotionalUsd)}).`);
+  }
+
+  const noteParts = [
+    input.notes ?? null,
+    input.macroRegimeSnapshot ? `macro=${input.macroRegimeSnapshot}` : null,
+    input.providerSnapshot ? `provider=${input.providerSnapshot}` : null,
+    input.freshnessState ? `freshness=${input.freshnessState}` : null,
+    quoteUsability.warning ? `quote_warning=${quoteUsability.warning}` : null,
+    quoteUsability.quoteAgeSeconds !== undefined ? `quote_age_seconds=${quoteUsability.quoteAgeSeconds}` : null,
+    quoteUsability.marketSessionState ? `market_session=${quoteUsability.marketSessionState}` : null,
+  ].filter((item): item is string => Boolean(item));
 
   return executeSimulationOrder({
     userId: session.user.id,
@@ -230,9 +285,9 @@ export async function executeSimulationOrderForCurrentUser(input: {
     assetClass: asset.assetClass,
     side: input.side,
     quantity: input.quantity,
-    executionPrice: observation.price,
-    requestedPrice: observation.price,
-    ...(input.notes ? { notes: input.notes } : {}),
+    executionPrice: quoteUsability.price,
+    requestedPrice: quoteUsability.price,
+    ...(noteParts.length > 0 ? { notes: noteParts.join(';') } : {}),
     ...(input.idempotencyKey ? { idempotencyKey: input.idempotencyKey } : {}),
     executionModel: {
       feeBps: input.assetClass === 'crypto' ? 12 : 3,

@@ -171,11 +171,11 @@ export default async function StockDetailPage({ params }: StockDetailPageProps) 
                       quantityRequired: messages.simulation.validation.quantityRequired,
                       minimumShare: messages.simulation.validation.minimumShare,
                       minimumUnit: messages.simulation.validation.minimumUnit,
-                      minimumQuantity: (value) => messages.simulation.validation.minimumQuantity.replace('{{value}}', String(value)),
+                      minimumQuantityTemplate: messages.simulation.validation.minimumQuantity,
                       wholeSharesOnly: messages.simulation.validation.wholeSharesOnly,
-                      quantityStepMismatch: (step) => messages.simulation.validation.quantityStepMismatch.replace('{{step}}', String(step)),
+                      quantityStepMismatchTemplate: messages.simulation.validation.quantityStepMismatch,
                       minimumNotional: messages.simulation.validation.minimumNotional,
-                      noOpenPositionToSell: (s) => messages.simulation.validation.noOpenPositionToSell.replace('{{symbol}}', s),
+                      noOpenPositionToSellTemplate: messages.simulation.validation.noOpenPositionToSell,
                       closePosition: messages.simulation.chips.closePosition,
                     }}
                   />
@@ -198,11 +198,11 @@ export default async function StockDetailPage({ params }: StockDetailPageProps) 
                       quantityRequired: messages.simulation.validation.quantityRequired,
                       minimumShare: messages.simulation.validation.minimumShare,
                       minimumUnit: messages.simulation.validation.minimumUnit,
-                      minimumQuantity: (value) => messages.simulation.validation.minimumQuantity.replace('{{value}}', String(value)),
+                      minimumQuantityTemplate: messages.simulation.validation.minimumQuantity,
                       wholeSharesOnly: messages.simulation.validation.wholeSharesOnly,
-                      quantityStepMismatch: (step) => messages.simulation.validation.quantityStepMismatch.replace('{{step}}', String(step)),
+                      quantityStepMismatchTemplate: messages.simulation.validation.quantityStepMismatch,
                       minimumNotional: messages.simulation.validation.minimumNotional,
-                      noOpenPositionToSell: (s) => messages.simulation.validation.noOpenPositionToSell.replace('{{symbol}}', s),
+                      noOpenPositionToSellTemplate: messages.simulation.validation.noOpenPositionToSell,
                       closePosition: messages.simulation.chips.closePosition,
                     }}
                   />
@@ -294,3 +294,4 @@ export default async function StockDetailPage({ params }: StockDetailPageProps) 
     </>
   );
 }
+

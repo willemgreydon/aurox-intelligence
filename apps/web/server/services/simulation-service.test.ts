@@ -58,7 +58,12 @@ function mockHappyPath(assetClass: 'stock' | 'etf' | 'crypto') {
 describe('executeSimulationOrderForCurrentUser', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.unstubAllEnvs();
     vi.stubEnv('ENABLE_PRISMA_DB', 'true');
+    vi.stubEnv('SIM_MAX_NOTIONAL_PER_TRADE_USD', '100000000');
+    vi.stubEnv('SIM_MAX_DAILY_NOTIONAL_USD', '100000000');
+    vi.stubEnv('SIM_MAX_OPEN_EXPOSURE_USD', '100000000');
+    vi.stubEnv('SIM_MAX_PER_ASSET_EXPOSURE_USD', '100000000');
   });
 
   it('executes ETF buy orders in simulation mode', async () => {
@@ -184,7 +189,7 @@ describe('executeSimulationOrderForCurrentUser', () => {
     ).rejects.toThrow('not enabled for simulation trading');
   });
 
-  it('rejects stale or missing quotes', async () => {
+  it('accepts cached/stale ETF quote outside market hours for simulation', async () => {
     mockHappyPath('etf');
     loadQuoteSnapshotsMock.mockResolvedValue([
       {
@@ -204,7 +209,7 @@ describe('executeSimulationOrderForCurrentUser', () => {
         quantity: 1,
         strategyLaneId: 'manual_multi_asset_lane',
       }),
-    ).rejects.toThrow('Fresh ETF quote required before simulation execution');
+    ).resolves.toEqual({ id: 'order-1' });
   });
 
   it('rejects wrong lane scope for multi-asset orders', async () => {
@@ -235,5 +240,47 @@ describe('executeSimulationOrderForCurrentUser', () => {
         quantity: 1,
       }),
     ).rejects.toThrow('Simulation database is currently unavailable.');
+  });
+
+  it('enforces per-trade notional cap deterministically', async () => {
+    mockHappyPath('stock');
+    vi.stubEnv('SIM_MAX_NOTIONAL_PER_TRADE_USD', '100');
+
+    await expect(
+      executeSimulationOrderForCurrentUser({
+        assetId: 'stock-1',
+        symbol: 'SPY',
+        assetClass: 'stock',
+        side: 'buy',
+        quantity: 2,
+      }),
+    ).rejects.toThrow('Order notional exceeds per-trade cap');
+  });
+
+  it('persists macro/provider/freshness metadata into simulation notes', async () => {
+    mockHappyPath('stock');
+
+    await executeSimulationOrderForCurrentUser({
+      assetId: 'stock-1',
+      symbol: 'SPY',
+      assetClass: 'stock',
+      side: 'buy',
+      quantity: 1,
+      notes: 'session=s1;lane=manual_stock_lane',
+      macroRegimeSnapshot: '0.11|0.78|-0.12',
+      providerSnapshot: 'fred:partial,world-bank:partial',
+      freshnessState: 'partial',
+    });
+
+    expect(executeSimulationOrderMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        notes: expect.stringContaining('macro=0.11|0.78|-0.12'),
+      }),
+    );
+    expect(executeSimulationOrderMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        notes: expect.stringContaining('provider=fred:partial,world-bank:partial'),
+      }),
+    );
   });
 });

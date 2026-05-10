@@ -8,6 +8,9 @@ describe('provider capabilities registry', () => {
     expect(ids).toContain('bybit');
     expect(ids).toContain('okx');
     expect(ids).toContain('coinbase');
+    expect(ids).toContain('world-bank');
+    expect(ids).toContain('ecb');
+    expect(ids).toContain('fred');
   });
 
   it('marks bybit/okx as public-only auth mode', () => {
@@ -21,5 +24,11 @@ describe('provider capabilities registry', () => {
     expect(caps.authMode).toBe('hmac');
     expect(caps.supportsWebSocket).toBe(true);
     expect(caps.supportsPerpetuals).toBe(true);
+  });
+
+  it('models macro providers with correct auth modes', () => {
+    expect(getProviderCapabilities('world-bank').authMode).toBe('none');
+    expect(getProviderCapabilities('ecb').authMode).toBe('none');
+    expect(getProviderCapabilities('fred').authMode).toBe('api-key');
   });
 });

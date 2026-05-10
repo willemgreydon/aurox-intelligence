@@ -28,6 +28,7 @@ import {
   resolveLaneMode,
   startSimulationSessionForCurrentUser,
 } from '../services/simulation-workstation-service';
+import { getMacroIntelligenceViewModel } from '../services/macro-intelligence-service';
 
 const watchlistInputSchema = z.object({
   assetId: z.string().min(1),
@@ -94,8 +95,11 @@ function mapSimulationOrderError(raw: string, symbol: string): MappedOrderError 
   if (raw.includes('Simulation database is currently unavailable')) {
     return { code: 'INTERNAL_ERROR', message: 'Simulation database is currently unavailable.' };
   }
-  if (raw.includes('Fresh ETF quote required') || raw.includes('Fresh stock quote required') || raw.includes('Fresh crypto quote required')) {
-    return { code: 'MARKET_DATA_UNAVAILABLE', message: 'Fresh market quote required before simulation execution.' };
+  if (raw.includes('Simulation quote is not ready yet')) {
+    return { code: 'QUOTE_NOT_READY', message: 'Simulation quote is not ready yet.' };
+  }
+  if (raw.includes('cap exceeded')) {
+    return { code: 'VALIDATION_ERROR', message: raw };
   }
   if (raw.includes('price') || raw.includes('quote') || raw.includes('market data')) {
     return { code: 'MARKET_DATA_UNAVAILABLE', message: 'Market price data is temporarily unavailable. Please try again shortly.' };
@@ -134,6 +138,22 @@ function buildUnsupportedLaneMessage(laneId: SimulationLaneId, assetClass: Simul
   }
 
   return `${assetClass.toUpperCase()} is not enabled for the selected simulation lane.`;
+}
+
+function resolveEffectiveStrategyLaneId(input: {
+  requestedLaneId: SimulationLaneId;
+  activeLaneId: SimulationLaneId;
+  assetClass: SimulationAssetClass;
+}) {
+  if (input.requestedLaneId === input.activeLaneId) {
+    return input.activeLaneId;
+  }
+
+  if (laneSupportsAssetClass(input.activeLaneId, input.assetClass)) {
+    return input.activeLaneId;
+  }
+
+  return input.requestedLaneId;
 }
 
 export async function startSimulationSessionAction(formData: FormData): Promise<void> {
@@ -230,16 +250,15 @@ export async function createSimulatedOrderAction(_: FormState, formData: FormDat
   let order;
   try {
     const simulationSession = await assertSimulationSessionAllowsTradingForCurrentUser(parsed.data.simulationSessionId);
+    const macroContext = await getMacroIntelligenceViewModel().catch(() => null);
 
-    if (simulationSession.laneId !== parsed.data.strategyLaneId) {
-      return errorFormState(
-        `This order was prepared for ${parsed.data.strategyLaneId}, but the active simulation lane is ${simulationSession.laneId}. Refresh the workstation and submit again.`,
-        {},
-        'LANE_MISMATCH',
-      );
-    }
+    const effectiveStrategyLaneId = resolveEffectiveStrategyLaneId({
+      requestedLaneId: parsed.data.strategyLaneId,
+      activeLaneId: simulationSession.laneId,
+      assetClass: parsed.data.assetClass,
+    });
 
-    if (!laneSupportsAssetClass(simulationSession.laneId, parsed.data.assetClass)) {
+    if (!laneSupportsAssetClass(effectiveStrategyLaneId, parsed.data.assetClass)) {
       return errorFormState(buildUnsupportedLaneMessage(simulationSession.laneId, parsed.data.assetClass), {}, 'UNSUPPORTED_ASSET_CLASS');
     }
 
@@ -257,14 +276,26 @@ export async function createSimulatedOrderAction(_: FormState, formData: FormDat
       assetClass: parsed.data.assetClass as SimulationAssetClass,
       side: parsed.data.side,
       quantity: parsed.data.quantity,
-      strategyLaneId: simulationSession.laneId,
+      strategyLaneId: effectiveStrategyLaneId,
       sessionAssetScope: simulationSession.assetScope,
-      notes: `session=${simulationSession.id};lane=${parsed.data.strategyLaneId};source=${parsed.data.sourceContext ?? parsed.data.decisionSource}`,
+      notes: `session=${simulationSession.id};lane=${effectiveStrategyLaneId};source=${parsed.data.sourceContext ?? parsed.data.decisionSource};simulation_only=true`,
+      macroRegimeSnapshot: macroContext
+        ? `${macroContext.regime.overallMacroScore.toFixed(2)}|${macroContext.regime.confidence.toFixed(2)}|${macroContext.regime.riskRegime.score.toFixed(2)}`
+        : null,
+      providerSnapshot: macroContext
+        ? macroContext.providerStatus
+          .map((provider) => `${provider.provider}:${provider.freshness}`)
+          .join(',')
+        : null,
+      freshnessState: preparedFreshnessFromSource(parsed.data.sourceContext),
       idempotencyKey: parsed.data.idempotencyKey,
     });
   } catch (error) {
     const raw = error instanceof Error ? error.message : String(error);
     const { message, code } = mapSimulationOrderError(raw, parsed.data.symbol);
+    if (code === 'QUOTE_NOT_READY') {
+      return errorFormState('Simulation quote is not ready yet. Retry in a few seconds.', {}, 'QUOTE_NOT_READY');
+    }
     return errorFormState(message, {}, code);
   }
 
@@ -279,6 +310,13 @@ export async function createSimulatedOrderAction(_: FormState, formData: FormDat
     grossAmount: order.grossAmount,
     realizedPnl: order.realizedPnl,
   });
+}
+
+function preparedFreshnessFromSource(sourceContext: string | undefined): string {
+  if (!sourceContext) return 'unknown';
+  if (sourceContext.includes('crypto')) return 'live_or_partial';
+  if (sourceContext.includes('etf') || sourceContext.includes('stock')) return 'partial_or_delayed';
+  return 'unknown';
 }
 
 export async function resetSimulationAccountAction(): Promise<FormState> {
