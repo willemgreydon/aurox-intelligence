@@ -59,6 +59,10 @@ type HeroSectionProps = {
       historyRange: string;
       chartAria: string;
       noData: string;
+      intradayUnavailable: string;
+      dailyFallback: string;
+      candlesUnavailable: string;
+      insufficientHistory: string;
     };
   };
 };
@@ -139,6 +143,10 @@ export function HeroSection({ stocks, marketGraph, labels, trackedSymbols = [], 
                 chartAriaTemplate: labels.graphLabels.chartAria,
                 noData: labels.graphLabels.noData,
                 unavailable: labels.unavailable,
+                intradayUnavailable: labels.graphLabels.intradayUnavailable,
+                dailyFallback: labels.graphLabels.dailyFallback,
+                candlesUnavailable: labels.graphLabels.candlesUnavailable,
+                insufficientHistory: labels.graphLabels.insufficientHistory,
               }}
             />
           </Card>

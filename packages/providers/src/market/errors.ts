@@ -19,6 +19,10 @@ export function createMissingConfigError(provider: MarketDataProvider, detail: s
   return new MarketProviderError(provider, 'missing_config', detail, false);
 }
 
+export function createUnsupportedSymbolError(provider: MarketDataProvider, detail: string) {
+  return new MarketProviderError(provider, 'unsupported_symbol', detail, false);
+}
+
 export function normalizeProviderError(provider: MarketDataProvider, error: unknown): MarketProviderError {
   if (error instanceof MarketProviderError) {
     return error;

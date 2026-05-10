@@ -1,4 +1,4 @@
-﻿import Link from 'next/link';
+import Link from 'next/link';
 import { DashboardShell } from '../../components/dashboard/dashboard-shell';
 import { DashboardHero } from '../../components/dashboard/dashboard-hero';
 import { DashboardKpiStrip } from '../../components/dashboard/dashboard-kpi-strip';
@@ -12,11 +12,15 @@ import { DashboardAssetClassSnapshot } from '../../components/dashboard/dashboar
 import { DashboardPanel } from '../../components/dashboard/dashboard-panel';
 import { requireCurrentSession } from '../../server/auth/session';
 import { getDashboardExecutiveViewModel } from '../../server/services/dashboard-executive-service';
+import { getMessages } from '../../lib/i18n/messages';
+import { getRequestLocale } from '../../server/i18n/locale';
 
 export const dynamic = 'force-dynamic';
 
 export default async function DashboardPage() {
   const session = await requireCurrentSession('/login');
+  const locale = await getRequestLocale();
+  const messages = getMessages(locale);
   const model = await getDashboardExecutiveViewModel({ userId: session.user.id });
 
   return (
@@ -26,11 +30,27 @@ export default async function DashboardPage() {
       main={(
         <>
           <div className="dashboard-exec-main-grid__left">
-            <DashboardMarketPulse model={model} />
+            <DashboardMarketPulse
+              model={model}
+              labels={{
+                eyebrow: messages.dashboard.marketPulseEyebrow,
+                title: messages.dashboard.marketPulseTitle,
+                description: messages.dashboard.marketPulseDescription,
+                unavailable: messages.dashboard.marketPulseUnavailable,
+              }}
+            />
             <DashboardObservationSummary model={model} />
-            <DashboardPanel eyebrow="Cross-Asset Intelligence" title="Relationship engine" description="Cross-asset dependencies and narrative context." href="/observe">
+            <DashboardPanel eyebrow="Cross-Asset Intelligence" title="Relationship engine" description="Cross-asset dependencies, correlations, and narrative context derived from live observations." href="/observe">
               <div className="dashboard-exec-list">
-                {model.relationships.length === 0 ? <p className="text-muted">Unavailable</p> : model.relationships.map((row) => (
+                {model.relationships.length === 0 ? (
+                  <div className="aurox-empty-state aurox-empty-state--inline">
+                    <p className="aurox-empty-state__title">No cross-asset relationships detected</p>
+                    <p className="text-muted" style={{ fontSize: '0.8rem' }}>
+                      The relationship engine requires active observations. Open the Observer to generate market intelligence.
+                    </p>
+                    <Link href="/observe" className="button button--secondary">Open Observer</Link>
+                  </div>
+                ) : model.relationships.map((row) => (
                   <article key={row.id} className="dashboard-exec-list__item">
                     <strong>{row.title}</strong>
                     <span className={`status-pill status-pill--${row.severity === 'CRITICAL' ? 'danger' : row.severity === 'WARNING' ? 'warning' : row.severity === 'WATCH' ? 'info' : 'success'}`}>{row.severity}</span>
@@ -77,9 +97,12 @@ export default async function DashboardPage() {
       )}
       ctas={(
         <div className="dashboard-exec-cta-band">
-          <Link href="/market" className="button">Continue in Market Workstation</Link>
-          <Link href="/alerts" className="button button--secondary">Review Alert Center</Link>
-          <Link href="/invest/simulation" className="button button--secondary">Run Simulation Check</Link>
+          <Link href="/market" className="button">Open Market Workstation</Link>
+          <Link href="/observe" className="button button--secondary">Open Observer Feed</Link>
+          <Link href="/alerts" className="button button--secondary">Inspect Alert Center</Link>
+          <Link href="/invest/simulation" className="button button--secondary">Open Simulation Cockpit</Link>
+          <Link href="/portfolio/intelligence" className="button button--secondary">Review Portfolio Intelligence</Link>
+          <span className="dashboard-exec-cta-band__hint text-muted">Press <kbd>⌘K</kbd> for quick navigation</span>
         </div>
       )}
     />

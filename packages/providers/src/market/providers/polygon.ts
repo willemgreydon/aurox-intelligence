@@ -1,8 +1,8 @@
 import { getProviderEnv, requirePolygonApiKey } from '../../config';
-import { createMissingConfigError } from '../errors';
+import { createMissingConfigError, createUnsupportedSymbolError } from '../errors';
 import { assetMetadataSchema, marketHistoryPointSchema, marketObservationSchema } from '../schemas';
 import { resolvePolygonSymbol } from '../provider-symbols';
-import type { AssetMetadata, HistoricalBar, MarketQuote } from '../types';
+import type { AssetMetadata, HistoricalBar, MarketHistoryResolution, MarketQuote } from '../types';
 import { buildUrl, fetchJson } from '../../shared/http-client';
 
 type PolygonSnapshotResponse = {
@@ -87,7 +87,12 @@ export async function fetchPolygonQuote(symbol: string): Promise<MarketQuote> {
   return observation;
 }
 
-export async function fetchPolygonHistory(symbol: string, from?: string, to?: string): Promise<HistoricalBar[]> {
+export async function fetchPolygonHistory(
+  symbol: string,
+  from?: string,
+  to?: string,
+  resolution: MarketHistoryResolution = '1d',
+): Promise<HistoricalBar[]> {
   const providerSymbol = resolvePolygonSymbol(symbol);
 
   if (!providerSymbol) {
@@ -96,6 +101,9 @@ export async function fetchPolygonHistory(symbol: string, from?: string, to?: st
 
   if (!isPolygonConfigured()) {
     throw createMissingConfigError('polygon', 'Polygon is not configured.');
+  }
+  if (resolution !== '1d') {
+    throw createUnsupportedSymbolError('polygon', `Polygon resolution ${resolution} is not enabled in this adapter.`);
   }
 
   const apiKey = requirePolygonApiKey();

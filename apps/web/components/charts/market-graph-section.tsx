@@ -26,6 +26,7 @@ export function MarketGraphSection({ graph, messages, className, trackedSymbols 
     <section className={sectionClassName}>
       <MarketGraphWorkspace
         assets={graph.assets}
+        meta={graph.meta}
         trackedSymbols={trackedSymbols}
         newsItems={newsItems}
         labels={{
@@ -49,6 +50,10 @@ export function MarketGraphSection({ graph, messages, className, trackedSymbols 
           chartAriaTemplate: messages.marketGraph.chartAria,
           noData: messages.marketGraph.noData,
           unavailable: messages.common.unavailable,
+          intradayUnavailable: messages.marketGraph.intradayUnavailable,
+          dailyFallback: messages.marketGraph.dailyFallback,
+          candlesUnavailable: messages.marketGraph.candlesUnavailable,
+          insufficientHistory: messages.marketGraph.insufficientHistory,
         }}
       />
     </section>

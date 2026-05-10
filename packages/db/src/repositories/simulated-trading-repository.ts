@@ -1432,6 +1432,252 @@ export async function resetSimulationAccount(userId: string): Promise<void> {
   });
 }
 
+export async function resetSimulationCashBalance(userId: string): Promise<void> {
+  const client = createDatabaseClient();
+  assertDatabaseConfigured(client);
+
+  return client.transaction(async (transactionClient) => {
+    const account = await ensureSimulationAccount(transactionClient, userId);
+    const initialCash = roundCurrency(toNumber(account.initialCashBalance));
+    const now = new Date().toISOString();
+
+    await transactionClient.execute(
+      `
+        update ${accountsTable}
+        set
+          cash_balance = $2,
+          updated_at = $3
+        where id = $1
+      `,
+      [account.accountId, initialCash, now],
+    );
+
+    await transactionClient.execute(
+      `
+        insert into ${transactionsTable} (
+          id,
+          account_id,
+          portfolio_id,
+          transaction_type,
+          gross_amount,
+          fee_amount,
+          cash_delta,
+          realized_pnl,
+          description,
+          created_at
+        ) values ($1, $2, $3, 'reset', 0, 0, 0, 0, 'Simulation cash balance reset', $4)
+      `,
+      [crypto.randomUUID(), account.accountId, account.portfolioId, now],
+    );
+
+    await captureSnapshot(transactionClient, account.accountId, account.portfolioId);
+  });
+}
+
+export async function closeAllSimulationPositions(userId: string): Promise<number> {
+  const client = createDatabaseClient();
+  assertDatabaseConfigured(client);
+
+  return client.transaction(async (transactionClient) => {
+    const account = await ensureSimulationAccount(transactionClient, userId);
+    const now = new Date().toISOString();
+    const openPositions = await transactionClient.query<PositionRow>(
+      `
+        select
+          id,
+          asset_id as "assetId",
+          symbol,
+          asset_class as "assetClass",
+          quantity,
+          average_cost as "averageCost",
+          realized_pnl as "realizedPnl",
+          opened_at as "openedAt",
+          closed_at as "closedAt",
+          updated_at as "updatedAt"
+        from ${positionsTable}
+        where portfolio_id = $1
+          and quantity > 0
+        for update
+      `,
+      [account.portfolioId],
+    );
+
+    let cashBalance = roundCurrency(toNumber(account.cashBalance));
+    for (const position of openPositions) {
+      const quantity = roundQuantity(toNumber(position.quantity));
+      const executionPrice = roundPrice(toNumber(position.averageCost));
+      const grossAmount = roundCurrency(quantity * executionPrice);
+      const cashEffect = grossAmount;
+      const orderId = crypto.randomUUID();
+
+      await transactionClient.execute(
+        `
+          update ${positionsTable}
+          set
+            quantity = 0,
+            closed_at = $2,
+            updated_at = $2
+          where id = $1
+        `,
+        [position.id, now],
+      );
+
+      await transactionClient.execute(
+        `
+          insert into ${ordersTable} (
+            id,
+            account_id,
+            portfolio_id,
+            asset_id,
+            symbol,
+            asset_class,
+            side,
+            status,
+            order_type,
+            quantity,
+            requested_price,
+            executed_price,
+            gross_amount,
+            cash_effect,
+            realized_pnl,
+            notes,
+            created_at,
+            updated_at,
+            executed_at
+          ) values ($1, $2, $3, $4, $5, $6, 'sell', 'filled', 'market', $7, $8, $8, $9, $10, 0, 'system=close_all_positions', $11, $11, $11)
+        `,
+        [
+          orderId,
+          account.accountId,
+          account.portfolioId,
+          position.assetId,
+          position.symbol,
+          position.assetClass,
+          quantity,
+          executionPrice,
+          grossAmount,
+          cashEffect,
+          now,
+        ],
+      );
+
+      await transactionClient.execute(
+        `
+          insert into ${transactionsTable} (
+            id,
+            account_id,
+            portfolio_id,
+            order_id,
+            position_id,
+            transaction_type,
+            asset_id,
+            symbol,
+            asset_class,
+            quantity,
+            price,
+            gross_amount,
+            fee_amount,
+            cash_delta,
+            realized_pnl,
+            description,
+            created_at
+          ) values ($1, $2, $3, $4, $5, 'sell', $6, $7, $8, $9, $10, $11, 0, $12, 0, 'Close-all simulated position', $13)
+        `,
+        [
+          crypto.randomUUID(),
+          account.accountId,
+          account.portfolioId,
+          orderId,
+          position.id,
+          position.assetId,
+          position.symbol,
+          position.assetClass,
+          quantity,
+          executionPrice,
+          grossAmount,
+          cashEffect,
+          now,
+        ],
+      );
+
+      cashBalance = roundCurrency(cashBalance + cashEffect);
+    }
+
+    await transactionClient.execute(
+      `
+        update ${accountsTable}
+        set
+          cash_balance = $2,
+          updated_at = $3
+        where id = $1
+      `,
+      [account.accountId, cashBalance, now],
+    );
+
+    await transactionClient.execute(
+      `
+        insert into ${transactionsTable} (
+          id,
+          account_id,
+          portfolio_id,
+          transaction_type,
+          gross_amount,
+          fee_amount,
+          cash_delta,
+          realized_pnl,
+          description,
+          created_at
+        ) values ($1, $2, $3, 'reset', 0, 0, 0, 0, 'Close-all positions action', $4)
+      `,
+      [crypto.randomUUID(), account.accountId, account.portfolioId, now],
+    );
+
+    await captureSnapshot(transactionClient, account.accountId, account.portfolioId);
+    return openPositions.length;
+  });
+}
+
+export async function clearSimulationDecisionHistory(userId: string): Promise<void> {
+  const client = createDatabaseClient();
+  assertDatabaseConfigured(client);
+
+  await client.transaction(async (transactionClient) => {
+    const account = await ensureSimulationAccount(transactionClient, userId);
+    const now = new Date().toISOString();
+    await transactionClient.execute(
+      `
+        delete from ${simulationAgentOrderLinksTable}
+        where user_id = $1
+      `,
+      [userId],
+    );
+    await transactionClient.execute(
+      `
+        delete from ${simulationAgentDecisionsTable}
+        where user_id = $1
+      `,
+      [userId],
+    );
+    await transactionClient.execute(
+      `
+        insert into ${transactionsTable} (
+          id,
+          account_id,
+          portfolio_id,
+          transaction_type,
+          gross_amount,
+          fee_amount,
+          cash_delta,
+          realized_pnl,
+          description,
+          created_at
+        ) values ($1, $2, $3, 'reset', 0, 0, 0, 0, 'Simulation decision history cleared', $4)
+      `,
+      [crypto.randomUUID(), account.accountId, account.portfolioId, now],
+    );
+  });
+}
+
 export async function captureSimulationSnapshotsForAllAccounts(): Promise<number> {
   const client = createDatabaseClient();
   assertDatabaseConfigured(client);

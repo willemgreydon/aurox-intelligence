@@ -7,6 +7,7 @@ export {
   computeRankingConfidence,
 } from './ranking-engine';
 export { deriveNewsImpactExplanation } from './news/news-impact';
+export { extractNewsIntelligenceSnapshot, buildContentHash } from './news/news-intelligence-extractor';
 export { orchestrateSystemState } from './orchestration/system-orchestrator';
 export type { SystemState, AssetState, AssetOrchestrationInput } from './orchestration/system-orchestrator';
 export { computeRecommendation } from './recommendation/recommendation-engine';

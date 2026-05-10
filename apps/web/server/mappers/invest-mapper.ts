@@ -207,6 +207,8 @@ function mapFreshnessLabel(state: InvestOverview['freshnessState']): string {
   switch (state) {
     case 'live': return 'Fresh';
     case 'delayed': return 'Delayed';
+    case 'cached': return 'Cached';
+    case 'market_closed': return 'Market closed';
     case 'stale': return 'Stale';
     case 'partial': return 'Partial';
     case 'unavailable': default: return 'Unavailable';
@@ -214,7 +216,10 @@ function mapFreshnessLabel(state: InvestOverview['freshnessState']): string {
 }
 
 function mapFreshnessTone(state: InvestOverview['freshnessState']): DataHealthViewModel['freshnessTone'] {
-  return state === 'live' ? 'success' : state === 'delayed' || state === 'stale' ? 'warning' : 'info';
+  if (state === 'live') return 'success';
+  if (state === 'delayed' || state === 'stale') return 'warning';
+  if (state === 'cached' || state === 'market_closed') return 'info';
+  return 'info';
 }
 
 export function mapInvestOverviewViewModel(

@@ -3,8 +3,8 @@ import { buildUrl, fetchJson } from '../../shared/http-client';
 import { mapEodhdHistory, mapEodhdObservation, mapFinnhubHistory, mapFinnhubObservation } from '../mapper';
 import { resolveEodhdSymbol, resolveFinnhubSymbol } from '../provider-symbols';
 import type { EodhdHistoricalPointResponse, EodhdRealTimeResponse, FinnhubCandleResponse, FinnhubQuoteResponse } from '../legacy-types';
-import type { HistoricalBar, MarketQuote } from '../types';
-import { createMissingConfigError } from '../errors';
+import type { HistoricalBar, MarketHistoryResolution, MarketQuote } from '../types';
+import { createMissingConfigError, createUnsupportedSymbolError } from '../errors';
 
 export function isLegacyProviderConfigured(provider: Extract<MarketDataProvider, 'finnhub' | 'eodhd'>) {
   const env = getProviderEnv();
@@ -27,11 +27,19 @@ export async function fetchFinnhubQuote(symbol: string): Promise<MarketQuote> {
   return mapFinnhubObservation(symbol, response);
 }
 
-export async function fetchFinnhubHistory(symbol: string, from?: string, to?: string): Promise<HistoricalBar[]> {
+export async function fetchFinnhubHistory(
+  symbol: string,
+  from?: string,
+  to?: string,
+  resolution: MarketHistoryResolution = '1d',
+): Promise<HistoricalBar[]> {
   const providerSymbol = resolveFinnhubSymbol(symbol);
 
   if (!providerSymbol || !isLegacyProviderConfigured('finnhub')) {
     throw createMissingConfigError('finnhub', `Finnhub is not configured or does not support ${symbol}.`);
+  }
+  if (resolution !== '1d') {
+    throw createUnsupportedSymbolError('finnhub', `Finnhub intraday resolution ${resolution} is not enabled in this adapter.`);
   }
 
   const token = getMarketProviderApiKey('finnhub');
@@ -64,11 +72,19 @@ export async function fetchEodhdQuote(symbol: string): Promise<MarketQuote> {
   return mapEodhdObservation(symbol, response);
 }
 
-export async function fetchEodhdHistory(symbol: string, from?: string, to?: string): Promise<HistoricalBar[]> {
+export async function fetchEodhdHistory(
+  symbol: string,
+  from?: string,
+  to?: string,
+  resolution: MarketHistoryResolution = '1d',
+): Promise<HistoricalBar[]> {
   const providerSymbol = resolveEodhdSymbol(symbol);
 
   if (!providerSymbol || !isLegacyProviderConfigured('eodhd')) {
     throw createMissingConfigError('eodhd', `EODHD is not configured or does not support ${symbol}.`);
+  }
+  if (resolution !== '1d') {
+    throw createUnsupportedSymbolError('eodhd', `EODHD intraday resolution ${resolution} is not enabled in this adapter.`);
   }
 
   const apiToken = getMarketProviderApiKey('eodhd');

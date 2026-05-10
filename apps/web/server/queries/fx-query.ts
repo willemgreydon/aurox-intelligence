@@ -8,6 +8,7 @@ const fxSymbolsByProvider: Record<MarketDataProvider, string[]> = {
   coingecko: ['EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD'],
   finnhub: ['OANDA:EUR_USD', 'OANDA:GBP_USD', 'OANDA:USD_JPY', 'OANDA:AUD_USD'],
   eodhd: ['EURUSD.FOREX', 'GBPUSD.FOREX', 'USDJPY.FOREX', 'AUDUSD.FOREX'],
+  binance: ['EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD'],
 };
 
 function resolveFxProvider(): MarketDataProvider {

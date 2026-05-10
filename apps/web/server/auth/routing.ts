@@ -1,5 +1,5 @@
 export const AUTH_SESSION_COOKIE_NAME = 'aurox-session';
-export const AUTH_PROTECTED_PREFIXES = ['/account'];
+export const AUTH_PROTECTED_PREFIXES = ['/account', '/admin'];
 export const AUTH_GUEST_ONLY_ROUTES = ['/login', '/signup'];
 
 export function normalizeNextPath(value: string | null | undefined) {

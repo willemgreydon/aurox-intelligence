@@ -18,6 +18,7 @@ import {
   type PersistedMarketQuoteSnapshot,
 } from '@repo/db';
 import { fetchMarketHistory, fetchMarketSnapshot, getProviderEnv } from '@repo/providers';
+import type { MarketHistoryResolution } from '@repo/providers';
 import { getOptionalCurrentSession, requireCurrentSession } from '../auth/session';
 import { hashSymbols } from '../lib/cache-key';
 import {
@@ -26,6 +27,7 @@ import {
   getMarketSnapshotCacheTtlMs,
 } from '../lib/market-runtime-config';
 import { perfLog, perfNow } from '../lib/perf';
+import { getOrLoadProviderCache } from '../lib/provider-cache';
 import { buildSimulationActivityLanes, type SimulationActivityLane } from './simulation-activity-lanes';
 
 const SIMULATION_QUOTE_MAX_AGE_MS = 15 * 60 * 1000;
@@ -33,6 +35,10 @@ const QUOTE_STALE_MS = SIMULATION_QUOTE_MAX_AGE_MS;
 const HISTORY_STALE_MS = 18 * 60 * 60 * 1000;
 const PROVIDER_ERROR_CACHE_TTL_MS = 10 * 1000;
 const CATALOG_SYMBOL_CACHE_ERROR_TTL_MS = 30 * 1000;
+const QUOTE_PROVIDER_TTL_MS = 45 * 1000;
+const QUOTE_PROVIDER_STALE_MS = 75 * 1000;
+const HISTORY_PROVIDER_TTL_MS = 15 * 60 * 1000;
+const HISTORY_PROVIDER_STALE_MS = 60 * 60 * 1000;
 
 type CacheEntry<T> = {
   value: T;
@@ -204,9 +210,14 @@ async function getCatalogAssetIdBySymbolMap() {
 export async function loadQuoteSnapshots(
   symbols: string[],
   knownAssetIdBySymbol?: ReadonlyMap<string, string>,
+  options: { preferCached?: boolean; maxSymbols?: number } = {},
 ): Promise<PersistedMarketQuoteSnapshot[]> {
   const t0 = perfNow();
-  const normalized = [...new Set(symbols.map((symbol) => symbol.trim().toUpperCase()).filter(Boolean))];
+  const normalizedAll = [...new Set(symbols.map((symbol) => symbol.trim().toUpperCase()).filter(Boolean))];
+  const normalized =
+    typeof options.maxSymbols === 'number' && Number.isFinite(options.maxSymbols) && options.maxSymbols > 0
+      ? normalizedAll.slice(0, Math.floor(options.maxSymbols))
+      : normalizedAll;
 
   if (normalized.length === 0) {
     return [];
@@ -236,6 +247,18 @@ export async function loadQuoteSnapshots(
       return !isFreshEnough(freshnessTimestamp, QUOTE_STALE_MS);
     });
 
+    if (options.preferCached) {
+      const snapshots = normalized.flatMap((symbol) => (cachedBySymbol.get(symbol) ? [cachedBySymbol.get(symbol)!] : []));
+      setCacheValue(
+        quoteSnapshotCache,
+        cacheKey,
+        snapshots,
+        snapshots.length > 0 ? getMarketSnapshotCacheTtlMs() : PROVIDER_ERROR_CACHE_TTL_MS,
+      );
+      perfLog(`quote-snapshots:cached-only symbols=${normalized.length} stale=${staleOrMissingSymbols.length}`, t0);
+      return snapshots;
+    }
+
     if (staleOrMissingSymbols.length === 0) {
       const snapshots = normalized.flatMap((symbol) => (cachedBySymbol.get(symbol) ? [cachedBySymbol.get(symbol)!] : []));
       setCacheValue(
@@ -253,9 +276,17 @@ export async function loadQuoteSnapshots(
 
     try {
       const tProvider = perfNow();
-      const fetchedSnapshots = await fetchMarketSnapshot({
-        symbols: staleOrMissingSymbols,
+      const cacheRead = await getOrLoadProviderCache({
+        key: `snapshot:${getProviderEnv().MARKET_DATA_PROVIDER}:${hashSymbols(staleOrMissingSymbols)}:${staleOrMissingSymbols.length}`,
+        ttlMs: QUOTE_PROVIDER_TTL_MS,
+        staleWhileRevalidateMs: QUOTE_PROVIDER_STALE_MS,
+        source: getProviderEnv().MARKET_DATA_PROVIDER,
+        loader: () => fetchMarketSnapshot({
+          symbols: staleOrMissingSymbols,
+        }),
+        shouldStore: (rows) => rows.length > 0,
       });
+      const fetchedSnapshots = cacheRead.value;
       perfLog(`quote-snapshots:provider-fetch symbols=${staleOrMissingSymbols.length}`, tProvider);
 
       await upsertMarketQuoteSnapshots(
@@ -303,7 +334,11 @@ export async function loadQuoteSnapshots(
   return loader;
 }
 
-export async function loadHistoryBars(symbol: string): Promise<PersistedMarketHistoryBar[]> {
+export async function loadHistoryBars(
+  symbol: string,
+  minBars = 90,
+  resolution: MarketHistoryResolution = '1d',
+): Promise<PersistedMarketHistoryBar[]> {
   const t0 = perfNow();
   const normalized = symbol.trim().toUpperCase();
 
@@ -311,18 +346,75 @@ export async function loadHistoryBars(symbol: string): Promise<PersistedMarketHi
     return [];
   }
 
-  const cachedBars = normalizeHistoryBars(await getMarketHistoryBars(normalized, 90));
+  // Intraday resolutions are provider-backed and memory-cached only for now.
+  if (resolution !== '1d') {
+    const intradayHoursNeeded = Math.max(1, Math.ceil(minBars / 12));
+    const fromDate = new Date(Date.now() - intradayHoursNeeded * 60 * 60 * 1000);
+    const fromIso = fromDate.toISOString();
+    try {
+      const cacheRead = await getOrLoadProviderCache({
+        key: `history:${getProviderEnv().MARKET_DATA_PROVIDER}:${normalized}:${resolution}:${fromIso.slice(0, 13)}`,
+        ttlMs: 60 * 1000,
+        staleWhileRevalidateMs: 5 * 60 * 1000,
+        source: getProviderEnv().MARKET_DATA_PROVIDER,
+        loader: () =>
+          fetchMarketHistory({
+            symbol: normalized,
+            from: fromIso,
+            resolution,
+          }),
+        shouldStore: (rows) => rows.length > 0,
+      });
+      return normalizeHistoryBars(
+        cacheRead.value.map((bar) => ({
+          symbol: normalized,
+          timestamp: bar.timestamp,
+          open: bar.open,
+          high: bar.high,
+          low: bar.low,
+          close: bar.close,
+          volume: bar.volume ?? null,
+          source: bar.source,
+          fetchedAt: new Date().toISOString(),
+        })),
+      );
+    } catch {
+      return [];
+    }
+  }
+
+  // Request enough bars from DB to satisfy the caller's minimum requirement.
+  const dbLimit = Math.max(minBars, 730);
+  const cachedBars = normalizeHistoryBars(await getMarketHistoryBars(normalized, dbLimit));
   const lastBarTimestamp = cachedBars.at(-1)?.timestamp ?? null;
 
-  if (cachedBars.length >= 20 && isFreshEnough(lastBarTimestamp, HISTORY_STALE_MS)) {
-    perfLog(`history-bars:cache-hit symbol=${normalized}`, t0);
+  // Cache hit only when we have enough bars and data is sufficiently fresh.
+  const minCacheHitBars = Math.max(20, Math.floor(minBars * 0.75));
+  if (cachedBars.length >= minCacheHitBars && isFreshEnough(lastBarTimestamp, HISTORY_STALE_MS)) {
+    perfLog(`history-bars:cache-hit symbol=${normalized} bars=${cachedBars.length}`, t0);
     return cachedBars;
   }
 
+  // Compute a `from` date that covers the requested bar count.
+  // Trading days ≈ 70% of calendar days, so multiply by ~1.43 to get calendar days.
+  const calendarDaysNeeded = Math.ceil(minBars * 1.43);
+  const fromDate = new Date(Date.now() - calendarDaysNeeded * 24 * 60 * 60 * 1000);
+  const fromIso = fromDate.toISOString().slice(0, 10);
+
   try {
-    const history = await fetchMarketHistory({
-      symbol: normalized,
+    const cacheRead = await getOrLoadProviderCache({
+      key: `history:${getProviderEnv().MARKET_DATA_PROVIDER}:${normalized}:1d:${fromIso}`,
+      ttlMs: HISTORY_PROVIDER_TTL_MS,
+      staleWhileRevalidateMs: HISTORY_PROVIDER_STALE_MS,
+      source: getProviderEnv().MARKET_DATA_PROVIDER,
+      loader: () => fetchMarketHistory({
+        symbol: normalized,
+        from: fromIso,
+        resolution: '1d',
+      }),
+      shouldStore: (rows) => rows.length > 0,
     });
+    const history = cacheRead.value;
 
     const normalizedHistory = normalizeHistoryBars(
       history.map((bar) => ({

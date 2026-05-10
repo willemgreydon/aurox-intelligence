@@ -6,38 +6,100 @@ import {
   confirmAiSimulationTradeAction,
 } from '../../server/actions/ai-simulation-agent-actions';
 import type { AiSimulationAgentResult } from '@repo/api-contracts';
+import { getAgentCapRules } from '../../lib/simulation-number-rules';
+import { normalizeAgentError } from '../../lib/simulation-form-helpers';
 
 type Props = {
   isAvailable: boolean;
   unavailableReason?: string;
+  providerWarning?: string;
   isReadOnly: boolean;
   readOnlyReason?: string;
+  labels?: Partial<{
+    providerUnavailableSafeHold: string;
+    rawProviderError: string;
+    maxNotionalPerTrade: string;
+    maxDailyNotional: string;
+    maxOpenExposure: string;
+    commonAmount: string;
+    runAgent: string;
+    minimumForFieldTemplate: string;
+  }>;
 };
 
 export function AiSimulationAgentPanel({
   isAvailable,
   unavailableReason,
+  providerWarning,
   isReadOnly,
   readOnlyReason,
+  labels,
 }: Props) {
+  function minValueError(field: string, fallback: string) {
+    const template = labels?.minimumForFieldTemplate;
+    if (!template) {
+      return fallback;
+    }
+    return template.replace('{{field}}', field);
+  }
+
+  const capRules = getAgentCapRules();
   const [isPending, startTransition] = useTransition();
   const [isConfirming, startConfirming] = useTransition();
   const [lastResult, setLastResult] = useState<AiSimulationAgentResult | null>(null);
   const [runError, setRunError] = useState<string | null>(null);
+  const [runErrorRaw, setRunErrorRaw] = useState<string | null>(null);
   const [confirmFeedback, setConfirmFeedback] = useState<{
     ok: boolean;
     message: string;
   } | null>(null);
+  const [agentFormError, setAgentFormError] = useState<string | null>(null);
+  const [maxNotionalPerTrade, setMaxNotionalPerTrade] = useState(capRules.maxNotionalPerTrade);
+  const [maxDailyNotional, setMaxDailyNotional] = useState(capRules.maxDailyNotional);
+  const [maxOpenExposure, setMaxOpenExposure] = useState(capRules.maxOpenExposure);
 
   function handleRunAgent(formData: FormData) {
     setRunError(null);
+    setRunErrorRaw(null);
+    setAgentFormError(null);
     setConfirmFeedback(null);
+    const maxNotionalPerTradeInput = Number(formData.get('maxNotionalPerTrade') ?? 0);
+    const maxDailyNotionalInput = Number(formData.get('maxDailyNotional') ?? 0);
+    const maxOpenExposureInput = Number(formData.get('maxOpenExposure') ?? 0);
+    if (!Number.isFinite(maxNotionalPerTradeInput) || maxNotionalPerTradeInput < capRules.min) {
+      setAgentFormError(
+        minValueError(
+          labels?.maxNotionalPerTrade ?? 'Max notional / trade',
+          'Max notional per trade must be at least 1.',
+        ),
+      );
+      return;
+    }
+    if (!Number.isFinite(maxDailyNotionalInput) || maxDailyNotionalInput < capRules.min) {
+      setAgentFormError(
+        minValueError(
+          labels?.maxDailyNotional ?? 'Max daily notional',
+          'Max daily notional must be at least 1.',
+        ),
+      );
+      return;
+    }
+    if (!Number.isFinite(maxOpenExposureInput) || maxOpenExposureInput < capRules.min) {
+      setAgentFormError(
+        minValueError(
+          labels?.maxOpenExposure ?? 'Max open exposure',
+          'Max open exposure must be at least 1.',
+        ),
+      );
+      return;
+    }
     startTransition(async () => {
       const result = await runAiSimulationAgentAction(formData);
       if (result.ok) {
         setLastResult(result.result);
       } else {
-        setRunError(result.error);
+        setRunErrorRaw(result.error);
+        setRunError(normalizeAgentError(result.error, labels?.providerUnavailableSafeHold ?? 'AI provider unavailable. The agent defaulted to HOLD for safety.'));
       }
     });
   }
@@ -84,106 +146,115 @@ export function AiSimulationAgentPanel({
             a simulated trade within your configured fictive cash caps. No real broker orders.
             No money movement. All actions use fictive cash only.
           </p>
+          <p className="ai-agent-panel__text-sm">
+            Create an Anthropic API key in the Anthropic Console and add it to{' '}
+            <code>.env.local</code> as <code>ANTHROPIC_API_KEY</code>.
+          </p>
         </div>
         <span className="status-pill status-pill--info">Simulation only</span>
       </div>
 
       {!isAvailable && (
         <div className="analytics-card__body">
-          <p style={{ color: 'var(--color-text-warning, #b45309)', fontSize: '0.875rem' }}>
+          <p className="ai-agent-panel__notice ai-agent-panel__notice--warning">
             {unavailableReason ??
-              'AI simulation agent unavailable — missing server configuration (OPENAI_API_KEY).'}
+              'AI provider unavailable. The agent defaulted to HOLD for safety.'}
           </p>
         </div>
       )}
 
       {isAvailable && (
-        <div className="analytics-card__body" style={{ display: 'grid', gap: '1rem' }}>
+        <div className="analytics-card__body ai-agent-panel">
           {isReadOnly && (
-            <div
-              style={{
-                padding: '0.625rem 0.875rem',
-                background: 'rgba(220,38,38,0.08)',
-                border: '1px solid rgba(220,38,38,0.4)',
-                borderRadius: '6px',
-                fontSize: '0.8125rem',
-              }}
-            >
+            <div className="ai-agent-panel__notice ai-agent-panel__notice--danger">
               AI simulation agent is disabled because this simulation session is read-only.
               {readOnlyReason ? ` ${readOnlyReason}` : ''}
             </div>
           )}
 
-          <div
-            style={{
-              padding: '0.625rem 0.875rem',
-              background: 'rgba(245,158,11,0.08)',
-              border: '1px solid rgba(245,158,11,0.4)',
-              borderRadius: '6px',
-              fontSize: '0.8125rem',
-            }}
-          >
+          <div className="ai-agent-panel__notice ai-agent-panel__notice--caution">
             This agent does not trade real money. All proposed and executed actions are
             simulated within your fictive cash account and subject to existing risk guards.
           </div>
+          {providerWarning ? (
+            <div className="ai-agent-panel__notice ai-agent-panel__notice--warning">
+              {providerWarning}
+            </div>
+          ) : null}
 
-          <form action={handleRunAgent} style={{ display: 'grid', gap: '0.875rem' }}>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
-                gap: '0.75rem',
-              }}
-            >
-              <label style={{ display: 'grid', gap: '0.25rem', fontSize: '0.8125rem' }}>
-                Max notional / trade ($)
+          <form action={handleRunAgent} noValidate className="ai-agent-panel__form">
+            <div className="ai-agent-panel__grid">
+              <label className="ai-agent-panel__field">
+                {labels?.maxNotionalPerTrade ?? 'Max notional / trade ($)'}
                 <input
                   name="maxNotionalPerTrade"
                   type="number"
-                  defaultValue={500}
-                  min={10}
+                  value={maxNotionalPerTrade}
+                  min={capRules.min}
                   max={100000}
-                  step={10}
-                  required
-                  style={{ padding: '0.375rem 0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'inherit', width: '100%' }}
+                  step={capRules.step}
+                  inputMode="numeric"
+                  onChange={(event) => setMaxNotionalPerTrade(Number(event.currentTarget.value))}
+                  className="ai-agent-panel__input"
                 />
               </label>
 
-              <label style={{ display: 'grid', gap: '0.25rem', fontSize: '0.8125rem' }}>
-                Max daily notional ($)
+              <label className="ai-agent-panel__field">
+                {labels?.maxDailyNotional ?? 'Max daily notional ($)'}
                 <input
                   name="maxDailyNotional"
                   type="number"
-                  defaultValue={2000}
-                  min={10}
+                  value={maxDailyNotional}
+                  min={capRules.min}
                   max={500000}
-                  step={50}
-                  required
-                  style={{ padding: '0.375rem 0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'inherit', width: '100%' }}
+                  step={capRules.step}
+                  inputMode="numeric"
+                  onChange={(event) => setMaxDailyNotional(Number(event.currentTarget.value))}
+                  className="ai-agent-panel__input"
                 />
               </label>
 
-              <label style={{ display: 'grid', gap: '0.25rem', fontSize: '0.8125rem' }}>
-                Max open exposure ($)
+              <label className="ai-agent-panel__field">
+                {labels?.maxOpenExposure ?? 'Max open exposure ($)'}
                 <input
                   name="maxOpenExposure"
                   type="number"
-                  defaultValue={5000}
-                  min={10}
+                  value={maxOpenExposure}
+                  min={capRules.min}
                   max={1000000}
-                  step={100}
-                  required
-                  style={{ padding: '0.375rem 0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'inherit', width: '100%' }}
+                  step={capRules.step}
+                  inputMode="numeric"
+                  onChange={(event) => setMaxOpenExposure(Number(event.currentTarget.value))}
+                  className="ai-agent-panel__input"
                 />
               </label>
             </div>
+            <div className="ai-agent-panel__chips-wrap">
+              <span className="ai-agent-panel__chips-label">{labels?.commonAmount ?? 'Common amount'}</span>
+              <div className="ai-agent-panel__chips">
+              {capRules.quickValues.map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  className="button button--secondary"
+                  onClick={() => {
+                    setMaxNotionalPerTrade(value);
+                    setMaxDailyNotional(value);
+                    setMaxOpenExposure(value);
+                  }}
+                >
+                  {value}
+                </button>
+              ))}
+            </div>
+            </div>
 
-            <label style={{ display: 'grid', gap: '0.25rem', fontSize: '0.8125rem', maxWidth: '320px' }}>
+            <label className="ai-agent-panel__field ai-agent-panel__field--compact">
               Autonomy mode
               <select
                 name="autonomyMode"
                 defaultValue="suggest_only"
-                style={{ padding: '0.375rem 0.5rem', borderRadius: '4px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'inherit' }}
+                className="ai-agent-panel__input"
               >
                 <option value="suggest_only">Suggest only — no execution</option>
                 <option value="human_confirmed">Human-confirmed simulation</option>
@@ -196,111 +267,96 @@ export function AiSimulationAgentPanel({
             <button
               type="submit"
               disabled={isPending || isReadOnly}
-              style={{
-                padding: '0.5rem 1rem',
-                borderRadius: '6px',
-                background: 'var(--color-primary, #2563eb)',
-                color: '#fff',
-                border: 'none',
-                cursor: isPending || isReadOnly ? 'not-allowed' : 'pointer',
-                opacity: isPending || isReadOnly ? 0.7 : 1,
-                fontSize: '0.875rem',
-                fontWeight: 600,
-                alignSelf: 'start',
-              }}
+              className="ai-agent-panel__submit"
             >
-              {isPending ? 'Analyzing…' : 'Run AI simulation agent'}
+              {isPending ? 'Analyzing…' : (labels?.runAgent ?? 'Run AI simulation agent')}
             </button>
           </form>
 
-          {runError !== null && (
-            <p style={{ color: 'var(--color-danger, #dc2626)', fontSize: '0.8125rem', margin: 0 }}>
-              {runError}
+          {agentFormError !== null && (
+            <p className="ai-agent-panel__error">
+              {agentFormError}
             </p>
           )}
 
+          {runError !== null && (
+            <details className="ai-agent-panel__details">
+              <summary>{runError}</summary>
+              {runErrorRaw ? (
+                <pre className="ai-agent-panel__raw">
+                  <strong>{labels?.rawProviderError ?? 'Raw provider error'}:</strong>{'\n'}
+                  {runErrorRaw}
+                </pre>
+              ) : null}
+            </details>
+          )}
+
           {decision !== undefined && decision !== null && (
-            <div
-              style={{
-                display: 'grid',
-                gap: '0.75rem',
-                padding: '1rem',
-                background: 'var(--color-surface-subtle, rgba(0,0,0,0.03))',
-                borderRadius: '6px',
-                border: '1px solid var(--color-border)',
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.625rem',
-                  flexWrap: 'wrap',
-                }}
-              >
+            <div className="ai-agent-panel__decision">
+              <div className="ai-agent-panel__decision-meta">
                 <strong>Decision:</strong>
                 <span className={`status-pill status-pill--${actionPillTone}`}>
                   {decision.action}
                 </span>
                 {decision.symbol !== null && (
-                  <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>
+                  <span className="ai-agent-panel__symbol">
                     {decision.symbol}
                   </span>
                 )}
                 {decision.notional !== null && (
-                  <span style={{ fontSize: '0.875rem' }}>
+                  <span className="ai-agent-panel__text-sm">
                     ${decision.notional.toLocaleString('en-US', { maximumFractionDigits: 2 })} notional
                   </span>
                 )}
-                <span style={{ fontSize: '0.875rem' }}>
+                <span className="ai-agent-panel__text-sm">
                   Confidence: {(decision.confidence * 100).toFixed(0)}%
                 </span>
               </div>
 
               <div>
-                <div style={{ fontWeight: 600, fontSize: '0.8125rem', marginBottom: '0.25rem' }}>
+                <div className="ai-agent-panel__label">
                   Reasoning
                 </div>
-                <p style={{ fontSize: '0.8125rem', margin: 0, lineHeight: 1.5 }}>
+                <p className="ai-agent-panel__body">
                   {decision.reasoning}
                 </p>
               </div>
 
               <div>
-                <div style={{ fontWeight: 600, fontSize: '0.8125rem', marginBottom: '0.25rem' }}>
+                <div className="ai-agent-panel__label">
                   Risk notes
                 </div>
-                <p style={{ fontSize: '0.8125rem', margin: 0, lineHeight: 1.5 }}>
+                <p className="ai-agent-panel__body">
                   {decision.riskNotes}
                 </p>
               </div>
 
               {decision.rejectedReason !== null && (
-                <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-warning, #b45309)', margin: 0 }}>
+                <p className="ai-agent-panel__warning">
                   Rejected reason: {decision.rejectedReason}
                 </p>
               )}
 
               {lastResult?.tradeSubmitted && (
-                <p style={{ color: 'var(--color-success, #16a34a)', fontSize: '0.8125rem', margin: 0, fontWeight: 600 }}>
+                <p className="ai-agent-panel__success">
                   Simulated trade submitted autonomously.
                 </p>
               )}
 
               {lastResult?.tradeError !== null && lastResult?.tradeError !== undefined && (
-                <p style={{ color: 'var(--color-danger, #dc2626)', fontSize: '0.8125rem', margin: 0 }}>
+                <p className="ai-agent-panel__error">
                   Autonomous trade error: {lastResult.tradeError}
                 </p>
               )}
 
-              <p style={{ fontSize: '0.75rem', margin: 0, opacity: 0.55, fontStyle: 'italic' }}>
+              <p className="ai-agent-panel__disclaimer">
                 This is a simulation-only decision. No real money is involved.
               </p>
 
               {canConfirm && decision.proposedOrder !== null && (
                 <form
                   action={handleConfirmTrade}
-                  style={{ display: 'flex', gap: '0.625rem', flexWrap: 'wrap', alignItems: 'center' }}
+                  className="ai-agent-panel__confirm"
                 >
                   <input
                     type="hidden"
@@ -326,17 +382,7 @@ export function AiSimulationAgentPanel({
                   <button
                     type="submit"
                     disabled={isConfirming || isReadOnly}
-                    style={{
-                      padding: '0.5rem 1rem',
-                      borderRadius: '6px',
-                      background: 'var(--color-primary, #2563eb)',
-                      color: '#fff',
-                      border: 'none',
-                      cursor: isConfirming || isReadOnly ? 'not-allowed' : 'pointer',
-                      opacity: isConfirming || isReadOnly ? 0.7 : 1,
-                      fontSize: '0.875rem',
-                      fontWeight: 600,
-                    }}
+                    className="ai-agent-panel__submit"
                   >
                     {isConfirming
                       ? 'Submitting…'
@@ -345,15 +391,7 @@ export function AiSimulationAgentPanel({
                   <button
                     type="button"
                     onClick={() => setLastResult(null)}
-                    style={{
-                      padding: '0.5rem 1rem',
-                      borderRadius: '6px',
-                      background: 'transparent',
-                      border: '1px solid var(--color-border)',
-                      cursor: 'pointer',
-                      fontSize: '0.875rem',
-                      color: 'inherit',
-                    }}
+                    className="button button--secondary"
                   >
                     Dismiss
                   </button>
@@ -363,16 +401,7 @@ export function AiSimulationAgentPanel({
           )}
 
           {confirmFeedback !== null && (
-            <p
-              style={{
-                color: confirmFeedback.ok
-                  ? 'var(--color-success, #16a34a)'
-                  : 'var(--color-danger, #dc2626)',
-                fontSize: '0.8125rem',
-                margin: 0,
-                fontWeight: confirmFeedback.ok ? 600 : 400,
-              }}
-            >
+            <p className={confirmFeedback.ok ? 'ai-agent-panel__success' : 'ai-agent-panel__error'}>
               {confirmFeedback.message}
             </p>
           )}

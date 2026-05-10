@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { IBM_Plex_Mono, IBM_Plex_Sans } from 'next/font/google';
-import type { ReactNode } from 'react';
+import { Suspense, type ReactNode } from 'react';
 import './globals.css';
 import { getMessages } from '../lib/i18n/messages';
 import { ThemeProvider } from '../components/layout/theme-provider';
@@ -41,6 +41,12 @@ function normalizeTheme(value: string | undefined): ThemeMode {
   return value === 'light' ? 'light' : 'dark';
 }
 
+// Thin skeleton shown while the async Header resolves its data.
+// Keeps the layout shift minimal — same height placeholder.
+function HeaderSkeleton() {
+  return <div className="header-skeleton" aria-hidden />;
+}
+
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const cookieStore = await cookies();
   const initialTheme = normalizeTheme(cookieStore.get(THEME_COOKIE_KEY)?.value);
@@ -67,7 +73,14 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             }}
           />
           <div className="app-shell">
-            <Header locale={locale} messages={messages} />
+            {/*
+              Wrap the Header in Suspense so the page body can stream to the
+              browser while the header awaits market ticker + portfolio data.
+              The HeaderSkeleton keeps layout stable with no content shift.
+            */}
+            <Suspense fallback={<HeaderSkeleton />}>
+              <Header locale={locale} messages={messages} />
+            </Suspense>
             <main className="page-main">{children}</main>
             <Footer messages={messages} />
           </div>

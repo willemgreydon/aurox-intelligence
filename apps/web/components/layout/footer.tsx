@@ -29,7 +29,7 @@ function buildFooterGroups(messages: AppMessages): FooterLinkGroup[] {
         { label: 'ETFs', href: '/invest/etfs' },
         { label: 'Crypto', href: '/invest/crypto' },
         { label: 'Macro', href: '/fx' },
-        { label: 'Watchlist', href: '/invest/overview' },
+        { label: 'Watchlist', href: '/watchlist' },
       ],
     },
     {

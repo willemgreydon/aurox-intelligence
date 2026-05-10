@@ -30,7 +30,8 @@ export type InvestReadModel = {
 
 const INVEST_CACHE_TTL_MS = 60_000;
 const INVEST_CACHE_ERROR_TTL_MS = 10_000;
-const DEFAULT_HISTORY_SYMBOL_LIMIT = 40;
+const DEFAULT_HISTORY_SYMBOL_LIMIT = 24;
+const DEFAULT_QUOTE_SYMBOL_LIMIT = 60;
 const INVEST_READ_TYPE = 'invest-read-model-v2';
 
 export type InvestReadModelOptions = {
@@ -75,7 +76,7 @@ function resolveOptions(options: InvestReadModelOptions): ResolvedInvestReadMode
     quoteSymbolLimit:
       typeof options.quoteSymbolLimit === 'number' && Number.isFinite(options.quoteSymbolLimit) && options.quoteSymbolLimit > 0
         ? Math.floor(options.quoteSymbolLimit)
-        : null,
+        : DEFAULT_QUOTE_SYMBOL_LIMIT,
     historySymbolLimit:
       typeof options.historySymbolLimit === 'number' && Number.isFinite(options.historySymbolLimit) && options.historySymbolLimit > 0
         ? Math.floor(options.historySymbolLimit)
@@ -125,7 +126,7 @@ function buildInvestCacheKey(provider: string, assets: CatalogAsset[], options: 
     `context=${options.pageContext}`,
     `assetClass=${options.assetClassFilter ?? 'all'}`,
     `assetKind=stock,etf,crypto`,
-    `quoteLimit=${options.quoteSymbolLimit ?? 'all'}`,
+    `quoteLimit=${options.quoteSymbolLimit}`,
     `page=${options.page}`,
     `pageSize=${options.pageSize ?? 'all'}`,
     `historyRange=30`,
@@ -204,7 +205,10 @@ export async function getInvestReadModel(options: InvestReadModelOptions = {}): 
   try {
     const symbols = assets.map((item) => item.symbol);
     const t1 = perfNow();
-    const quotes = await loadQuoteSnapshots(symbols, assetIdBySymbol);
+    const quotes = await loadQuoteSnapshots(symbols, assetIdBySymbol, {
+      preferCached: true,
+      maxSymbols: resolvedOptions.quoteSymbolLimit ?? undefined,
+    });
     perfLog(`invest-query:provider-fetch symbols=${symbols.length}`, t1);
 
     const symbolsWithQuotes = quotes

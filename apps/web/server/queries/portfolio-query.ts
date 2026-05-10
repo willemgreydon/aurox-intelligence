@@ -25,7 +25,7 @@ export async function getPortfolioReadModel(): Promise<PortfolioReadModel> {
       workstationStatus: 'degraded' as const,
       statusMessage: 'Database unavailable.',
     },
-    () => getSimulationWorkstationStateForCurrentUser({ sessionId: null }),
+    () => getSimulationWorkstationStateForCurrentUser({ sessionId: null, assetLimit: 80, watchlistLimit: 30 }),
   )).value;
 
   const symbols = [

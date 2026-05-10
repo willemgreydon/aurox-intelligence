@@ -57,12 +57,12 @@ class OptionalClaudeFinanceProvider implements ClaudeFinanceProvider {
 
   async analyze(input: ClaudeFinanceProviderInput): Promise<ClaudeFinanceAnalysis> {
     if (!isClaudeFinanceProviderEnabled()) {
-      return fallbackAnalysis(input, 'CLAUDE_FINANCE_PROVIDER_ENABLED=false');
+      return fallbackAnalysis(input, 'ANTHROPIC_PROVIDER_ENABLED=false');
     }
 
     const key = getClaudeFinanceApiKey();
     if (!key) {
-      return fallbackAnalysis(input, 'Missing CLAUDE_FINANCE_API_KEY');
+      return fallbackAnalysis(input, 'Missing ANTHROPIC_API_KEY (or deprecated CLAUDE_FINANCE_API_KEY alias)');
     }
 
     // Provider hook intentionally returns a deterministic, explainable placeholder
@@ -95,10 +95,10 @@ export function getClaudeFinanceProviderAvailability(): { enabled: boolean; conf
   const enabled = isClaudeFinanceProviderEnabled();
   const configured = Boolean(getClaudeFinanceApiKey());
   if (!enabled) {
-    return { enabled, configured: false, reason: 'CLAUDE_FINANCE_PROVIDER_ENABLED=false' };
+    return { enabled, configured: false, reason: 'ANTHROPIC_PROVIDER_ENABLED=false' };
   }
   if (!configured) {
-    return { enabled, configured, reason: 'Missing CLAUDE_FINANCE_API_KEY' };
+    return { enabled, configured, reason: 'Missing ANTHROPIC_API_KEY (or deprecated CLAUDE_FINANCE_API_KEY alias)' };
   }
   return { enabled, configured, reason: null };
 }

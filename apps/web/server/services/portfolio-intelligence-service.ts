@@ -14,6 +14,7 @@ import { getMarketIntelligenceWorkstationModel } from './market-intelligence-wor
 import { getInvestPortfolioData } from './portfolio-service';
 import { getOptionalCurrentSession } from '../auth/session';
 import { getSimulationOverviewDataForUser } from './stock-simulation-service';
+import { getNewsRiskSummary } from './news-intelligence-service';
 
 export type PortfolioIntelligenceViewModel = {
   intelligence: PortfolioIntelligenceResult;
@@ -37,9 +38,15 @@ export type PortfolioIntelligenceViewModel = {
     state: 'no-account' | 'cash-only' | 'no-positions' | 'stale-market-data' | 'active-portfolio' | 'insufficient-data';
     stateReason: string;
   };
+  assetIdBySymbol: Record<string, string>;
   status: 'nominal' | 'degraded' | 'empty';
   statusReason: string;
   simulationOnlyNotice: string;
+  newsExposure: {
+    avgRisk: number;
+    maxRisk: number;
+    affectedAssets: string[];
+  };
 };
 
 function mapAssetClassToAgents(
@@ -57,6 +64,11 @@ export async function getPortfolioIntelligenceViewModel(): Promise<PortfolioInte
     getInvestPortfolioData({ view: 'list', positionState: 'open', assetClass: 'all', lane: 'all' }),
     getOptionalCurrentSession(),
   ]);
+  const newsExposure = await getNewsRiskSummary(portfolioData.openPositions.map((position) => position.assetId)).catch(() => ({
+    avgRisk: 0,
+    maxRisk: 0,
+    affectedAssets: [] as string[],
+  }));
 
   const overview = session ? await getSimulationOverviewDataForUser(session.user.id).catch(() => null) : null;
   const summary = overview?.summary;
@@ -138,9 +150,11 @@ export async function getPortfolioIntelligenceViewModel(): Promise<PortfolioInte
         state,
         stateReason,
       },
+      assetIdBySymbol: {},
       status: 'empty',
       statusReason: 'No market intelligence recommendations available to generate allocations.',
       simulationOnlyNotice: SIMULATION_ONLY_NOTICE,
+      newsExposure,
     };
   }
 
@@ -221,9 +235,11 @@ export async function getPortfolioIntelligenceViewModel(): Promise<PortfolioInte
       state,
       stateReason,
     },
+    assetIdBySymbol: Object.fromEntries(workstation.assets.map((asset) => [asset.symbol, ''])),
     status,
     statusReason: systemState.degraded ? 'Market data is partially degraded. Allocations may be based on incomplete data.' : 'All systems nominal.',
     simulationOnlyNotice: SIMULATION_ONLY_NOTICE,
+    newsExposure,
   };
 }
 

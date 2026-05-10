@@ -1,0 +1,418 @@
+'use client';
+
+import Link from 'next/link';
+import { useMemo, useState } from 'react';
+import type { SignalsPageViewModel } from '../../server/mappers/analysis-mapper';
+
+type Props = { data: SignalsPageViewModel };
+
+type TabId = 'current' | 'history' | 'accuracy' | 'roi' | 'news';
+
+const TABS: { id: TabId; label: string }[] = [
+  { id: 'current', label: 'Current Signals' },
+  { id: 'history', label: 'Decision History' },
+  { id: 'accuracy', label: 'Prediction Accuracy' },
+  { id: 'roi', label: 'ROI by Signal Type' },
+  { id: 'news', label: 'News Impact' },
+];
+
+type ActionFilter = 'all' | 'bullish' | 'neutral' | 'bearish';
+type AssetClassFilter = 'all' | 'stock' | 'etf' | 'crypto';
+
+function interpretationChipClass(interp: string) {
+  if (interp === 'bullish') return 'observe-chip observe-chip--success';
+  if (interp === 'bearish') return 'observe-chip observe-chip--danger';
+  return 'observe-chip observe-chip--neutral';
+}
+
+function scoreColor(score: number) {
+  if (score >= 0.2) return 'var(--status-success, #22c55e)';
+  if (score <= -0.2) return 'var(--status-danger, #ef4444)';
+  return 'var(--text-muted, #6b7280)';
+}
+
+export function SignalsCockpit({ data }: Props) {
+  const [activeTab, setActiveTab] = useState<TabId>('current');
+  const [actionFilter, setActionFilter] = useState<ActionFilter>('all');
+  const [assetClassFilter, setAssetClassFilter] = useState<AssetClassFilter>('all');
+  const [search, setSearch] = useState('');
+
+  const signals = data.signals;
+
+  const filtered = useMemo(() => signals.filter((s) => {
+    if (actionFilter !== 'all' && s.interpretation !== actionFilter) return false;
+    if (assetClassFilter !== 'all' && s.assetClass !== assetClassFilter) return false;
+    if (search.trim()) {
+      const q = search.trim().toUpperCase();
+      if (!s.assetName.toUpperCase().includes(q)) return false;
+    }
+    return true;
+  }), [signals, actionFilter, assetClassFilter, search]);
+
+  const hasFilters = actionFilter !== 'all' || assetClassFilter !== 'all' || search.trim().length > 0;
+
+  function clearFilters() {
+    setActionFilter('all');
+    setAssetClassFilter('all');
+    setSearch('');
+  }
+
+  const bullishCount = signals.filter((s) => s.interpretation === 'bullish').length;
+  const bearishCount = signals.filter((s) => s.interpretation === 'bearish').length;
+  const neutralCount = signals.filter((s) => s.interpretation === 'neutral').length;
+  const avgConfidence = signals.length > 0
+    ? Math.round(signals.reduce((sum, s) => sum + s.confidenceScore, 0) / signals.length * 100)
+    : 0;
+  const highConfCount = signals.filter((s) => s.confidenceScore >= 0.7).length;
+  const lowConfCount = signals.filter((s) => s.confidenceScore < 0.4).length;
+  const avgScore = signals.length > 0
+    ? (signals.reduce((sum, s) => sum + (s.score ?? 0), 0) / signals.length).toFixed(2)
+    : '—';
+
+  return (
+    <>
+      {/* ── Operator Command Bar ── */}
+      <div className="observe-command-bar" role="toolbar" aria-label="Signal cockpit controls">
+        <div className="observe-command-bar__inner">
+          {/* Tab selector */}
+          <div className="observe-command-bar__group" role="tablist" aria-label="Signal intelligence tabs">
+            {TABS.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === tab.id}
+                className={`observe-mode-btn${activeTab === tab.id ? ' observe-mode-btn--active' : ''}`}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="observe-command-bar__divider" role="separator" />
+
+          {/* Action filter chips */}
+          <div className="observe-command-bar__group" aria-label="Filter by signal direction">
+            {(['all', 'bullish', 'neutral', 'bearish'] as const).map((dir) => (
+              <button
+                key={dir}
+                type="button"
+                aria-pressed={actionFilter === dir}
+                className={`observe-filter-chip${actionFilter === dir ? ' observe-filter-chip--active' : ''}${dir === 'bearish' ? ' observe-filter-chip--danger' : dir === 'bullish' ? ' observe-filter-chip--info' : ''}`}
+                onClick={() => setActionFilter(dir)}
+              >
+                {dir === 'all' ? 'All' : dir.charAt(0).toUpperCase() + dir.slice(1)}
+              </button>
+            ))}
+          </div>
+
+          <div className="observe-command-bar__divider" role="separator" />
+
+          {/* Asset class chips */}
+          <div className="observe-command-bar__group" aria-label="Filter by asset class">
+            {(['all', 'stock', 'etf', 'crypto'] as const).map((cls) => (
+              <button
+                key={cls}
+                type="button"
+                aria-pressed={assetClassFilter === cls}
+                className={`observe-filter-chip${assetClassFilter === cls ? ' observe-filter-chip--active' : ''}`}
+                onClick={() => setAssetClassFilter(cls)}
+              >
+                {cls === 'all' ? 'All Classes' : cls.toUpperCase()}
+              </button>
+            ))}
+          </div>
+
+          <div className="observe-command-bar__divider" role="separator" />
+
+          {/* Symbol search */}
+          <div className="observe-command-bar__search">
+            <input
+              className="observe-search-input"
+              placeholder="Search symbol…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              aria-label="Search signals by symbol"
+            />
+          </div>
+
+          {hasFilters && (
+            <button
+              type="button"
+              className="observe-mode-btn"
+              onClick={clearFilters}
+              aria-label="Clear all signal filters"
+            >
+              Clear
+            </button>
+          )}
+
+          <div className="observe-command-bar__group observe-command-bar__group--right">
+            <a href="/invest/simulation?intent=prepare" className="observe-mode-btn observe-mode-btn--primary">
+              Prepare Sim
+            </a>
+          </div>
+        </div>
+      </div>
+
+      {/* ── KPI Metric Rail ── */}
+      <div className="observe-metric-rail" aria-label="Signal statistics">
+        <div className="observe-metric-card observe-metric-card--success">
+          <div className="observe-metric-card__label">Bullish</div>
+          <div className="observe-metric-card__value">{bullishCount}</div>
+        </div>
+        <div className="observe-metric-card observe-metric-card--danger">
+          <div className="observe-metric-card__label">Bearish</div>
+          <div className="observe-metric-card__value">{bearishCount}</div>
+        </div>
+        <div className="observe-metric-card">
+          <div className="observe-metric-card__label">Neutral</div>
+          <div className="observe-metric-card__value">{neutralCount}</div>
+        </div>
+        <div className="observe-metric-card">
+          <div className="observe-metric-card__label">Avg Confidence</div>
+          <div className="observe-metric-card__value">{avgConfidence}%</div>
+        </div>
+        <div className="observe-metric-card observe-metric-card--success">
+          <div className="observe-metric-card__label">High Conf ≥70%</div>
+          <div className="observe-metric-card__value">{highConfCount}</div>
+        </div>
+        <div className="observe-metric-card observe-metric-card--warning">
+          <div className="observe-metric-card__label">Low Conf &lt;40%</div>
+          <div className="observe-metric-card__value">{lowConfCount}</div>
+        </div>
+        <div className="observe-metric-card">
+          <div className="observe-metric-card__label">Avg Score</div>
+          <div className="observe-metric-card__value">{avgScore}</div>
+        </div>
+      </div>
+
+      {/* ── Tab Panels ── */}
+      <div className="observe-cockpit">
+
+        {/* CURRENT SIGNALS */}
+        <div
+          role="tabpanel"
+          aria-label="Current Signals"
+          hidden={activeTab !== 'current'}
+        >
+          <div className="observe-cockpit__row--full">
+            <div className="observe-panel">
+              <div className="observe-panel__header">
+                <span className="observe-panel__title">Current Signals</span>
+                <span className="text-muted" style={{ fontSize: '0.75rem' }}>
+                  {filtered.length} of {signals.length} signals
+                  {hasFilters && ' (filtered)'}
+                </span>
+              </div>
+              <div className="observe-panel__body">
+                {signals.length === 0 ? (
+                  <div className="aurox-empty-state">
+                    <p className="aurox-empty-state__title">No signals available yet</p>
+                    <p className="aurox-empty-state__body">
+                      Signal derivation requires tracked assets with sufficient price history.
+                    </p>
+                    <Link href="/observe" className="button button--secondary">Open Observer</Link>
+                  </div>
+                ) : filtered.length === 0 ? (
+                  <div className="aurox-empty-state">
+                    <p className="aurox-empty-state__title">No signals match your filters</p>
+                    <p className="aurox-empty-state__body">Adjust the direction, asset class, or symbol filter above.</p>
+                    <button type="button" className="button button--secondary" onClick={clearFilters}>Clear filters</button>
+                  </div>
+                ) : (
+                  <div style={{ overflowX: 'auto' }}>
+                    <table className="data-table" style={{ width: '100%' }}>
+                      <thead>
+                        <tr>
+                          <th scope="col">Symbol</th>
+                          <th scope="col">Class</th>
+                          <th scope="col">Direction</th>
+                          <th scope="col" style={{ textAlign: 'right' }}>Score</th>
+                          <th scope="col" style={{ textAlign: 'right' }}>Confidence</th>
+                          <th scope="col" style={{ textAlign: 'right' }}>Price</th>
+                          <th scope="col">Reason</th>
+                          <th scope="col">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filtered.map((signal) => (
+                          <tr key={signal.assetId}>
+                            <td style={{ fontFamily: 'var(--font-family-mono)', fontWeight: 600 }}>{signal.assetName}</td>
+                            <td>
+                              <span className="status-pill status-pill--neutral" style={{ fontSize: '0.7rem' }}>
+                                {signal.assetClass?.toUpperCase() ?? '—'}
+                              </span>
+                            </td>
+                            <td>
+                              <span className={interpretationChipClass(signal.interpretation)} style={{ fontSize: '0.72rem' }}>
+                                {signal.interpretationLabel}
+                              </span>
+                            </td>
+                            <td style={{ textAlign: 'right', fontFamily: 'var(--font-family-mono)', color: scoreColor(signal.score ?? 0) }}>
+                              {signal.scoreLabel}
+                            </td>
+                            <td style={{ textAlign: 'right', fontFamily: 'var(--font-family-mono)' }}>
+                              {Math.round(signal.confidenceScore * 100)}%
+                            </td>
+                            <td style={{ textAlign: 'right', fontFamily: 'var(--font-family-mono)' }}>
+                              {signal.latestPriceLabel}
+                            </td>
+                            <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '14rem' }}>
+                              {signal.notes[0] ?? '—'}
+                            </td>
+                            <td>
+                              <div className="aurox-action-row">
+                                <Link
+                                  href={`/observe?search=${encodeURIComponent(signal.assetName)}`}
+                                  className="journal-action-link"
+                                  aria-label={`Inspect ${signal.assetName} in Observer`}
+                                >
+                                  Inspect
+                                </Link>
+                                <Link
+                                  href={`/invest/simulation?symbol=${encodeURIComponent(signal.assetName)}&side=buy&intent=prepare&source=signal`}
+                                  className="journal-action-link"
+                                  aria-label={`Prepare simulation buy for ${signal.assetName}`}
+                                >
+                                  Prepare Buy
+                                </Link>
+                                <Link
+                                  href={`/invest/simulation?symbol=${encodeURIComponent(signal.assetName)}&side=sell&intent=prepare&source=signal`}
+                                  className="journal-action-link"
+                                  aria-label={`Prepare simulation sell for ${signal.assetName}`}
+                                >
+                                  Prepare Sell
+                                </Link>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+              <div className="observe-panel__footer">
+                <span className="observe-panel__note">Signals are deterministic — same inputs produce the same outputs. Simulation only.</span>
+                <Link href="/forecasts" className="observe-panel__action">View Forecasts →</Link>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* DECISION HISTORY */}
+        <div role="tabpanel" aria-label="Decision History" hidden={activeTab !== 'history'}>
+          <div className="observe-cockpit__row--full">
+            <div className="observe-panel">
+              <div className="observe-panel__header">
+                <span className="observe-panel__title">Decision History</span>
+              </div>
+              <div className="observe-panel__body">
+                <div className="aurox-empty-state">
+                  <p className="aurox-empty-state__title">No decision history yet</p>
+                  <p className="aurox-empty-state__body">
+                    Simulation trades linked to signals will appear here once you begin preparing orders.
+                    Decision history tracks signal-to-order traceability.
+                  </p>
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+                    <Link href="/invest/simulation" className="button button--secondary">Open Simulation</Link>
+                    <Link href="/invest/simulation#journal" className="button button--secondary">View Journal</Link>
+                  </div>
+                </div>
+              </div>
+              <div className="observe-panel__footer">
+                <span className="observe-panel__note">Signal-to-order traceability is tracked per simulation order.</span>
+                <Link href="/invest/simulation#journal" className="observe-panel__action">Open Journal →</Link>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* PREDICTION ACCURACY */}
+        <div role="tabpanel" aria-label="Prediction Accuracy" hidden={activeTab !== 'accuracy'}>
+          <div className="observe-cockpit__row--full">
+            <div className="observe-panel">
+              <div className="observe-panel__header">
+                <span className="observe-panel__title">Prediction Accuracy</span>
+              </div>
+              <div className="observe-panel__body">
+                <div className="aurox-empty-state">
+                  <p className="aurox-empty-state__title">Prediction accuracy tracking not yet active</p>
+                  <p className="aurox-empty-state__body">
+                    This surface will show signal hit rates, direction accuracy, and confidence calibration
+                    once enough simulation trades have been completed and evaluated against outcomes.
+                  </p>
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+                    <Link href="/invest/simulation#journal" className="button button--secondary">View Journal</Link>
+                    <Link href="/portfolio/intelligence" className="button button--secondary">Portfolio Intel</Link>
+                  </div>
+                </div>
+              </div>
+              <div className="observe-panel__footer">
+                <span className="observe-panel__note">Accuracy tracking requires completed simulation trades with logged outcomes.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ROI BY SIGNAL TYPE */}
+        <div role="tabpanel" aria-label="ROI by Signal Type" hidden={activeTab !== 'roi'}>
+          <div className="observe-cockpit__row--full">
+            <div className="observe-panel">
+              <div className="observe-panel__header">
+                <span className="observe-panel__title">ROI by Signal Type</span>
+              </div>
+              <div className="observe-panel__body">
+                <div className="aurox-empty-state">
+                  <p className="aurox-empty-state__title">ROI attribution not yet active</p>
+                  <p className="aurox-empty-state__body">
+                    ROI by signal type requires completed simulation trades with outcomes.
+                    Start by preparing and executing simulated orders linked to signal decisions.
+                  </p>
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+                    <Link href="/invest/simulation" className="button button--secondary">Open Simulation</Link>
+                    <Link href="/invest/stocks" className="button button--secondary">Browse Stocks</Link>
+                  </div>
+                </div>
+              </div>
+              <div className="observe-panel__footer">
+                <span className="observe-panel__note">Past simulation returns do not guarantee future results. Simulation only.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* NEWS IMPACT */}
+        <div role="tabpanel" aria-label="News Impact" hidden={activeTab !== 'news'}>
+          <div className="observe-cockpit__row--full">
+            <div className="observe-panel">
+              <div className="observe-panel__header">
+                <span className="observe-panel__title">News Impact Analysis</span>
+              </div>
+              <div className="observe-panel__body">
+                <div className="aurox-empty-state">
+                  <p className="aurox-empty-state__title">News impact analysis not yet active</p>
+                  <p className="aurox-empty-state__body">
+                    This surface will correlate news sentiment shocks with signal movements.
+                    News impact analysis requires live observation data from the Observer feed.
+                  </p>
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+                    <Link href="/observe" className="button button--secondary">Open Observer</Link>
+                    <Link href="/alerts" className="button button--secondary">Alert Center</Link>
+                  </div>
+                </div>
+              </div>
+              <div className="observe-panel__footer">
+                <span className="observe-panel__note">News impact correlation requires Observer feed integration.</span>
+                <Link href="/observe" className="observe-panel__action">Open Observer →</Link>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </>
+  );
+}

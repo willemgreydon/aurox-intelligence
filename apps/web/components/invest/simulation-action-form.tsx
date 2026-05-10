@@ -1,8 +1,12 @@
 'use client';
 
 import { useActionState, useEffect, useMemo, useState } from 'react';
+import type { FormEvent } from 'react';
 import { useFormStatus } from 'react-dom';
 import { emptyFormState, type FormState, type OrderResult } from '../../server/auth/forms';
+import { getQuantityRules, notionalToQuantity, type QuantityMode } from '../../lib/simulation-order-ticket';
+import { getSimulationQuantityRules, isStepAligned } from '../../lib/simulation-number-rules';
+import { buildNoOpenPositionReason, snapToStep } from '../../lib/simulation-form-helpers';
 import {
   createSimulatedOrderAction,
   resetSimulationAccountAction,
@@ -45,7 +49,7 @@ export function WatchlistToggleForm({ assetId, symbol, assetClass, active, label
       <input type="hidden" name="symbol" value={symbol} />
       <input type="hidden" name="assetClass" value={assetClass} />
       <ActionButton
-        className={`button ${active ? 'button--primary' : 'button--secondary'} simulation-form__button`}
+        className={`button ${active ? 'button--primary' : 'button--secondary'} simulation-form__button simulation-form__button--inline`}
         label={label}
       />
       {state.message ? (
@@ -79,6 +83,21 @@ type SimulatedOrderFormProps = {
   quantityLabel?: string;
   disabled?: boolean;
   disabledReason?: string | undefined;
+  sourceContext?: string;
+  uiText?: Partial<{
+    quantityMode: string;
+    notionalMode: string;
+    notionalAmount: string;
+    quantityRequired: string;
+    minimumShare: string;
+    minimumUnit: string;
+    minimumQuantity: (value: number) => string;
+    wholeSharesOnly: string;
+    quantityStepMismatch: (step: number) => string;
+    minimumNotional: string;
+    noOpenPositionToSell: (symbol: string) => string;
+    closePosition: string;
+  }>;
 };
 
 export function SimulatedOrderForm({
@@ -90,7 +109,7 @@ export function SimulatedOrderForm({
   simulationSessionId,
   label,
   quantity = 1,
-  minQuantity = 0.0001,
+  minQuantity = 1,
   maxQuantity = null,
   currentHeldQuantity = null,
   currentPrice = null,
@@ -98,10 +117,21 @@ export function SimulatedOrderForm({
   quantityLabel = 'Quantity',
   disabled = false,
   disabledReason,
+  sourceContext,
+  uiText,
 }: SimulatedOrderFormProps) {
   const [state, formAction] = useActionState(createSimulatedOrderAction, emptyFormState);
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
-  const [quantityValue, setQuantityValue] = useState(() => formatQuantityInput(quantity));
+  const rules = useMemo(() => getQuantityRules({ assetClass, symbol, price: currentPrice }), [assetClass, currentPrice, symbol]);
+  const numberRules = useMemo(
+    () => getSimulationQuantityRules({ assetClass, symbol, price: currentPrice }),
+    [assetClass, currentPrice, symbol],
+  );
+  const effectiveMinQuantity = Math.max(minQuantity, numberRules.minQuantity);
+  const [quantityValue, setQuantityValue] = useState(() => formatQuantityInput(quantity, numberRules.defaultQuantity, effectiveMinQuantity));
+  const [mode, setMode] = useState<QuantityMode>('quantity');
+  const [notionalValue, setNotionalValue] = useState('');
+  const [clientError, setClientError] = useState<string | null>(null);
   const quantityId = `${assetId}-${side}-quantity`;
   const quantityError = state.fieldErrors.quantity;
   const messageId = `${assetId}-${side}-message`;
@@ -110,10 +140,12 @@ export function SimulatedOrderForm({
     if (state.status === 'success') {
       setIdempotencyKey(crypto.randomUUID());
       if (showQuantityInput) {
-        setQuantityValue(formatQuantityInput(quantity));
+        setQuantityValue(formatQuantityInput(quantity, numberRules.defaultQuantity, effectiveMinQuantity));
+        setNotionalValue('');
+        setClientError(null);
       }
     }
-  }, [quantity, showQuantityInput, state.status]);
+  }, [effectiveMinQuantity, numberRules.defaultQuantity, quantity, showQuantityInput, state.status]);
 
   const sanitizedQuantity = useMemo(() => {
     const parsed = Number(quantityValue);
@@ -122,13 +154,26 @@ export function SimulatedOrderForm({
     }
     return parsed;
   }, [quantityValue]);
+  const sanitizedNotional = useMemo(() => {
+    const parsed = Number(notionalValue);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  }, [notionalValue]);
+
+  useEffect(() => {
+    if (mode === 'notional' && sanitizedNotional !== null && typeof currentPrice === 'number' && currentPrice > 0) {
+      const calculated = notionalToQuantity(sanitizedNotional, currentPrice, numberRules.stepQuantity);
+      if (calculated !== null && calculated > 0) {
+        setQuantityValue(formatQuantityInput(calculated, numberRules.defaultQuantity, effectiveMinQuantity));
+      }
+    }
+  }, [currentPrice, effectiveMinQuantity, mode, numberRules.defaultQuantity, numberRules.stepQuantity, sanitizedNotional]);
 
   const hasNoPositionToSell = side === 'sell' && (currentHeldQuantity ?? 0) <= 0;
 
   const effectiveDisabledReason = disabled
     ? disabledReason
     : hasNoPositionToSell
-      ? `No open ${symbol} position is available to sell.`
+      ? uiText?.noOpenPositionToSell?.(symbol) ?? buildNoOpenPositionReason(symbol)
       : undefined;
 
   const estimatedGross =
@@ -137,16 +182,49 @@ export function SimulatedOrderForm({
       : null;
 
   const fillDetail = state.status === 'success' && state.orderResult ? buildFillDetail(state.orderResult) : null;
-  const describedByIds = [quantityError ? `${quantityId}-error` : null, `${quantityId}-hint`].filter(Boolean).join(' ') || undefined;
+  const describedByIds = [quantityError || clientError ? `${quantityId}-error` : null, `${quantityId}-hint`].filter(Boolean).join(' ') || undefined;
+  const step = numberRules.stepQuantity;
+
+  function validateClientQuantity() {
+    const parsed = Number(quantityValue);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      return uiText?.quantityRequired ?? 'Quantity is required.';
+    }
+    if (parsed < effectiveMinQuantity) {
+      if (assetClass === 'stock') return uiText?.minimumShare ?? 'Minimum 1 share.';
+      if (assetClass === 'etf') return uiText?.minimumUnit ?? 'Minimum 1 unit.';
+      return uiText?.minimumQuantity?.(effectiveMinQuantity) ?? `Minimum quantity: ${effectiveMinQuantity}`;
+    }
+    if (!isStepAligned(parsed, effectiveMinQuantity, numberRules.stepQuantity)) {
+      if ((assetClass === 'stock' || assetClass === 'etf') && numberRules.stepQuantity === 1) {
+        return uiText?.wholeSharesOnly ?? 'Enter a whole number of shares.';
+      }
+      return uiText?.quantityStepMismatch?.(numberRules.stepQuantity) ?? `Use increments of ${numberRules.stepQuantity}.`;
+    }
+    if (mode === 'notional' && sanitizedNotional !== null && sanitizedNotional < numberRules.minNotional) {
+      return uiText?.minimumNotional ?? 'Minimum notional requirement not met.';
+    }
+    return null;
+  }
+
+  function onFormSubmit(event: FormEvent<HTMLFormElement>) {
+    const error = validateClientQuantity();
+    setClientError(error);
+    if (error) {
+      event.preventDefault();
+      return;
+    }
+  }
 
   return (
-    <form action={formAction} className="simulation-form">
+    <form action={formAction} className="simulation-form simulation-form--ticket" noValidate onSubmit={onFormSubmit}>
       <input type="hidden" name="assetId" value={assetId} />
       <input type="hidden" name="symbol" value={symbol} />
       <input type="hidden" name="assetClass" value={assetClass} />
       <input type="hidden" name="side" value={side} />
       <input type="hidden" name="strategyLaneId" value={strategyLaneId} />
       <input type="hidden" name="decisionSource" value="manual_ui" />
+      {sourceContext ? <input type="hidden" name="sourceContext" value={sourceContext} /> : null}
       <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
       {simulationSessionId ? <input type="hidden" name="simulationSessionId" value={simulationSessionId} /> : null}
 
@@ -157,15 +235,62 @@ export function SimulatedOrderForm({
             id={quantityId}
             name="quantity"
             type="number"
-            min={String(minQuantity)}
-            step="0.0001"
+            min={String(effectiveMinQuantity)}
+            required
+            step={String(numberRules.stepQuantity)}
             max={typeof maxQuantity === 'number' && Number.isFinite(maxQuantity) ? String(maxQuantity) : undefined}
             value={quantityValue}
-            inputMode="decimal"
-            onChange={(event) => setQuantityValue(event.currentTarget.value)}
-            aria-invalid={quantityError ? 'true' : 'false'}
+            inputMode={numberRules.stepQuantity >= 1 ? 'numeric' : 'decimal'}
+            onChange={(event) => {
+              setQuantityValue(event.currentTarget.value);
+              if (clientError) {
+                setClientError(null);
+              }
+            }}
+            aria-invalid={quantityError || clientError ? 'true' : 'false'}
             aria-describedby={describedByIds}
           />
+          <div className="simulation-form__mode-toggle">
+            <button type="button" className={`button button--secondary ${mode === 'quantity' ? 'button--active' : ''}`} onClick={() => setMode('quantity')}>{uiText?.quantityMode ?? 'Quantity'}</button>
+            <button type="button" className={`button button--secondary ${mode === 'notional' ? 'button--active' : ''}`} onClick={() => setMode('notional')}>{uiText?.notionalMode ?? 'Notional'}</button>
+          </div>
+          {mode === 'quantity' ? (
+            <div className="simulation-form__chips">
+              {(assetClass === 'stock' || assetClass === 'etf' ? [1, 5, 10, 25] : [0.0001, 0.001, 0.01, 0.1]).map((chip) => (
+                <button key={String(chip)} type="button" className="button button--secondary" onClick={() => setQuantityValue(String(chip))}>
+                  {chip}
+                </button>
+              ))}
+              {side === 'sell' && typeof currentHeldQuantity === 'number' && currentHeldQuantity > 0 ? (
+                <>
+                  <button type="button" className="button button--secondary" onClick={() => setQuantityValue(String(snapToStep(currentHeldQuantity * 0.25, effectiveMinQuantity, step)))}>25%</button>
+                  <button type="button" className="button button--secondary" onClick={() => setQuantityValue(String(snapToStep(currentHeldQuantity * 0.5, effectiveMinQuantity, step)))}>50%</button>
+                  <button type="button" className="button button--secondary" onClick={() => setQuantityValue(String(snapToStep(currentHeldQuantity, effectiveMinQuantity, step)))}>100%</button>
+                  <button type="button" className="button button--secondary" onClick={() => setQuantityValue(String(snapToStep(currentHeldQuantity, effectiveMinQuantity, step)))}>{uiText?.closePosition ?? 'Close position'}</button>
+                </>
+              ) : null}
+            </div>
+          ) : null}
+          {mode === 'notional' ? (
+            <label className="form-field" htmlFor={`${quantityId}-notional`}>
+              <span>{uiText?.notionalAmount ?? 'Notional amount'}</span>
+              <input
+                id={`${quantityId}-notional`}
+                type="number"
+                min={String(numberRules.minNotional)}
+                step={String(numberRules.stepNotional)}
+                value={notionalValue}
+                onChange={(event) => setNotionalValue(event.currentTarget.value)}
+              />
+              <div className="simulation-form__chips">
+                {[25, 50, 100, 250, 500].map((chip) => (
+                  <button key={chip} type="button" className="button button--secondary" onClick={() => setNotionalValue(String(chip))}>
+                    ${chip}
+                  </button>
+                ))}
+              </div>
+            </label>
+          ) : null}
           <span id={`${quantityId}-hint`} className="simulation-form__meta">
             {buildQuantityHint({
               side,
@@ -175,11 +300,12 @@ export function SimulatedOrderForm({
               sanitizedQuantity,
               estimatedGross,
               maxQuantity,
+              rulesHint: rules.hint,
             })}
           </span>
-          {quantityError ? (
+          {quantityError || clientError ? (
             <span id={`${quantityId}-error`} className="simulation-form__meta simulation-form__meta--error">
-              {quantityError}
+              {clientError ?? quantityError}
             </span>
           ) : null}
         </label>
@@ -248,8 +374,11 @@ function formatUsd(value: number | null | undefined) {
   }).format(value);
 }
 
-function formatQuantityInput(value: number) {
-  return Number.isFinite(value) ? String(Math.max(value, 0.0001)) : '1';
+function formatQuantityInput(value: number, defaultQuantity: number, minQuantity: number) {
+  if (!Number.isFinite(value)) {
+    return String(Math.max(defaultQuantity, minQuantity));
+  }
+  return String(Math.max(value, minQuantity));
 }
 
 function formatQuantity(value: number | null | undefined) {
@@ -268,8 +397,10 @@ function buildQuantityHint(input: {
   sanitizedQuantity: number | null;
   estimatedGross: number | null;
   maxQuantity: number | null;
+  rulesHint: string;
 }) {
   const fragments: string[] = [];
+  fragments.push(input.rulesHint);
 
   if (input.side === 'sell') {
     fragments.push(`Held: ${formatQuantity(input.currentHeldQuantity)} ${input.symbol}`);

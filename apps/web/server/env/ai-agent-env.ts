@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { resolveAiProviderConfig, type AiProviderName } from '@repo/providers';
 
 const optionalString = z
   .string()
@@ -14,6 +15,22 @@ const aiAgentEnvSchema = z.object({
 });
 
 export type AiAgentEnv = z.infer<typeof aiAgentEnvSchema>;
+
+export type ResolvedAiAgentProvider =
+  | {
+      available: true;
+      provider: AiProviderName;
+      apiKey: string;
+      fallbackProviderUsed: boolean;
+      usingDeprecatedClaudeAlias: boolean;
+    }
+  | {
+      available: false;
+      provider: null;
+      fallbackProviderUsed: boolean;
+      usingDeprecatedClaudeAlias: boolean;
+      reason: string;
+    };
 
 let cachedEnv: AiAgentEnv | null = null;
 
@@ -34,4 +51,25 @@ export function hasOpenAiApiKey(): boolean {
 
 export function getOpenAiSimAgentModel(): string {
   return getAiAgentEnv().OPENAI_SIM_AGENT_MODEL ?? 'gpt-4o-mini';
+}
+
+export function resolveAiAgentProviderConfig(): ResolvedAiAgentProvider {
+  const resolved = resolveAiProviderConfig();
+  if (!resolved.available) {
+    return {
+      available: false,
+      provider: null,
+      fallbackProviderUsed: resolved.fallbackProviderUsed,
+      usingDeprecatedClaudeAlias: resolved.usingDeprecatedClaudeAlias,
+      reason: resolved.reason,
+    };
+  }
+
+  return {
+    available: true,
+    provider: resolved.provider,
+    apiKey: resolved.apiKey,
+    fallbackProviderUsed: resolved.fallbackProviderUsed,
+    usingDeprecatedClaudeAlias: resolved.usingDeprecatedClaudeAlias,
+  };
 }

@@ -56,10 +56,6 @@ export default async function CryptoDetailPage({ params }: CryptoDetailPageProps
     asset.asset.isSimulated &&
     asset.asset.isTradable &&
     asset.asset.actionAvailability !== 'unavailable';
-  const isQuoteFresh =
-    quoteTimestamp !== null &&
-    Number.isFinite(new Date(quoteTimestamp).getTime()) &&
-    Date.now() - new Date(quoteTimestamp).getTime() <= 15 * 60 * 1000;
   const disabledReason = (() => {
     if (!isSimulationTradable) {
       return 'Simulation trading for this asset is not active yet.';
@@ -81,8 +77,8 @@ export default async function CryptoDetailPage({ params }: CryptoDetailPageProps
       return `The active session is scoped to ${sessionContext.assetScope?.toUpperCase() ?? 'another asset class'} assets.`;
     }
 
-    if (!isQuoteFresh) {
-      return `Fresh crypto quote required for ${asset.asset.symbol} before simulation execution.`;
+    if (!hasQuotePrice) {
+      return `${messages.simulation.validation.freshCryptoQuoteRequired} (${asset.asset.symbol})`;
     }
 
     return undefined;
@@ -185,8 +181,8 @@ export default async function CryptoDetailPage({ params }: CryptoDetailPageProps
                   active={asset.isWatched}
                   label={asset.isWatched ? messages.dashboard.removeFromWatchlist : messages.dashboard.addToWatchlist}
                 />
-                <SimulatedOrderForm assetId={asset.asset.assetId} symbol={asset.asset.symbol} assetClass="crypto" side="buy" strategyLaneId="manual_multi_asset_lane" simulationSessionId={sessionContext?.sessionId ?? undefined} label={messages.dashboard.buySimulated} showQuantityInput quantityLabel={messages.simulation.quantity} disabled={tradingDisabled} disabledReason={disabledReason} />
-                <SimulatedOrderForm assetId={asset.asset.assetId} symbol={asset.asset.symbol} assetClass="crypto" side="sell" strategyLaneId="manual_multi_asset_lane" simulationSessionId={sessionContext?.sessionId ?? undefined} label={messages.dashboard.sellSimulated} showQuantityInput quantityLabel={messages.simulation.quantity} disabled={tradingDisabled} disabledReason={disabledReason} />
+                <SimulatedOrderForm assetId={asset.asset.assetId} symbol={asset.asset.symbol} assetClass="crypto" side="buy" strategyLaneId="manual_multi_asset_lane" simulationSessionId={sessionContext?.sessionId ?? undefined} label={messages.dashboard.buySimulated} showQuantityInput quantityLabel={messages.simulation.quantity} disabled={tradingDisabled} disabledReason={disabledReason} currentPrice={asset.quote?.price ?? null} currentHeldQuantity={asset.position?.quantity ?? 0} sourceContext="crypto-lane" uiText={{ quantityMode: messages.simulation.quantity, notionalMode: 'Notional', notionalAmount: 'Notional amount', quantityRequired: messages.simulation.validation.quantityRequired, minimumShare: messages.simulation.validation.minimumShare, minimumUnit: messages.simulation.validation.minimumUnit, minimumQuantity: (value) => messages.simulation.validation.minimumQuantity.replace('{{value}}', String(value)), wholeSharesOnly: messages.simulation.validation.wholeSharesOnly, quantityStepMismatch: (step) => messages.simulation.validation.quantityStepMismatch.replace('{{step}}', String(step)), minimumNotional: messages.simulation.validation.minimumNotional, noOpenPositionToSell: (s) => messages.simulation.validation.noOpenPositionToSell.replace('{{symbol}}', s), closePosition: messages.simulation.chips.closePosition }} />
+                <SimulatedOrderForm assetId={asset.asset.assetId} symbol={asset.asset.symbol} assetClass="crypto" side="sell" strategyLaneId="manual_multi_asset_lane" simulationSessionId={sessionContext?.sessionId ?? undefined} label={messages.dashboard.sellSimulated} showQuantityInput quantityLabel={messages.simulation.quantity} disabled={tradingDisabled || !asset.position || asset.position.quantity <= 0} disabledReason={!asset.position || asset.position.quantity <= 0 ? messages.simulation.validation.noOpenPositionToSell.replace('{{symbol}}', asset.asset.symbol) : disabledReason} currentPrice={asset.quote?.price ?? null} currentHeldQuantity={asset.position?.quantity ?? 0} sourceContext="crypto-lane" uiText={{ quantityMode: messages.simulation.quantity, notionalMode: 'Notional', notionalAmount: 'Notional amount', quantityRequired: messages.simulation.validation.quantityRequired, minimumShare: messages.simulation.validation.minimumShare, minimumUnit: messages.simulation.validation.minimumUnit, minimumQuantity: (value) => messages.simulation.validation.minimumQuantity.replace('{{value}}', String(value)), wholeSharesOnly: messages.simulation.validation.wholeSharesOnly, quantityStepMismatch: (step) => messages.simulation.validation.quantityStepMismatch.replace('{{step}}', String(step)), minimumNotional: messages.simulation.validation.minimumNotional, noOpenPositionToSell: (s) => messages.simulation.validation.noOpenPositionToSell.replace('{{symbol}}', s), closePosition: messages.simulation.chips.closePosition }} />
               </div>
             </Card>
             <DetailSlotCard

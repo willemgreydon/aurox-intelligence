@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const providerSchema = z.enum(['polygon', 'twelve-data', 'tiingo', 'coingecko', 'finnhub', 'eodhd']);
+const providerSchema = z.enum(['polygon', 'twelve-data', 'tiingo', 'coingecko', 'finnhub', 'eodhd', 'binance']);
 const assetKindSchema = z.enum(['stock', 'etf', 'crypto', 'fx', 'index']);
 
 export const marketObservationSchema = z.object({

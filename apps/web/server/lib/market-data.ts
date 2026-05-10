@@ -20,7 +20,20 @@ export function getTrendDirection(changePercent: number | null | undefined): Tre
   return 'flat';
 }
 
-export function getFreshnessState(timestamp: TimestampLike): FreshnessState {
+type AssetClassHint = 'stock' | 'etf' | 'crypto' | 'fx' | 'index' | null | undefined;
+
+function isStockMarketOpen(): boolean {
+  const now = new Date();
+  const day = now.getUTCDay(); // 0=Sun, 6=Sat
+  if (day === 0 || day === 6) return false;
+  const hours = now.getUTCHours();
+  const minutes = now.getUTCMinutes();
+  const totalMinutes = hours * 60 + minutes;
+  // NYSE: 14:30–21:00 UTC (9:30 AM–4:00 PM ET)
+  return totalMinutes >= 870 && totalMinutes < 1260;
+}
+
+export function getFreshnessState(timestamp: TimestampLike, assetClass?: AssetClassHint): FreshnessState {
   if (!timestamp) {
     return 'unavailable';
   }
@@ -33,16 +46,25 @@ export function getFreshnessState(timestamp: TimestampLike): FreshnessState {
 
   const ageMs = Date.now() - parsed;
   const ageMinutes = ageMs / (60 * 1000);
+  const isCrypto = assetClass === 'crypto';
 
   if (ageMinutes <= 20) {
     return 'live';
   }
 
   if (ageMinutes <= 120) {
+    // For stocks/ETFs outside market hours, a recent cached quote is expected
+    if (!isCrypto && !isStockMarketOpen()) {
+      return 'cached';
+    }
     return 'delayed';
   }
 
   if (ageMinutes <= 24 * 60) {
+    // For stocks/ETFs on weekend or after-hours with <24h old data
+    if (!isCrypto && !isStockMarketOpen()) {
+      return 'market_closed';
+    }
     return 'stale';
   }
 
@@ -100,6 +122,10 @@ export function getFreshnessLabel(state: FreshnessState): string {
       return 'Live';
     case 'delayed':
       return 'Delayed';
+    case 'cached':
+      return 'Cached';
+    case 'market_closed':
+      return 'Market closed';
     case 'stale':
       return 'Stale';
     case 'partial':

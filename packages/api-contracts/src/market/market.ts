@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const routeStatusSchema = z.enum(['nominal', 'attention', 'degraded']);
-export const freshnessStateSchema = z.enum(['live', 'delayed', 'stale', 'partial', 'unavailable']);
+export const freshnessStateSchema = z.enum(['live', 'delayed', 'cached', 'market_closed', 'stale', 'partial', 'unavailable']);
 export const trendDirectionSchema = z.enum(['up', 'down', 'flat']);
 export const sentimentStateSchema = z.enum(['positive', 'negative', 'neutral']);
 

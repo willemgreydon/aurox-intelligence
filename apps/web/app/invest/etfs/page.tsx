@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { getUserWatchlist } from '@repo/db';
+import { getSimulationWorkspace, getUserWatchlist } from '@repo/db';
 import { Section } from '../../../components/ui/section';
 import { WorkstationPageHeader } from '../../../components/asset/workstation-page-header';
 import { MarketGraphSection } from '../../../components/charts/market-graph-section';
@@ -52,6 +52,12 @@ export default async function InvestEtfsPage({
   const group = invest.groupedAssets.find((item) => item.assetClass === 'etf');
   const items = group?.items ?? [];
   const watchlist = auth ? await getUserWatchlist(auth.user.id) : [];
+  const workspace = auth ? await getSimulationWorkspace(auth.user.id).catch(() => null) : null;
+  const heldSymbols = new Set(
+    (workspace?.positions ?? [])
+      .filter((position) => position.assetClass === 'etf' && position.quantity > 0)
+      .map((position) => position.symbol),
+  );
   const sessionContext = auth
     ? await getSimulationSessionTradingContextForUser(auth.user.id).catch(() => null)
     : null;
@@ -87,13 +93,8 @@ export default async function InvestEtfsPage({
       return `The active session is scoped to ${sessionContext.assetScope?.toUpperCase() ?? 'another asset class'} assets.`;
     }
 
-    if (!item.lastUpdatedAt) {
-      return `Fresh ETF quote required for ${item.symbol} before simulation execution.`;
-    }
-
-    const quoteTime = new Date(item.lastUpdatedAt).getTime();
-    if (!Number.isFinite(quoteTime) || Date.now() - quoteTime > 15 * 60 * 1000) {
-      return `Fresh ETF quote required for ${item.symbol} before simulation execution.`;
+    if (typeof item.price !== 'number' || !Number.isFinite(item.price) || item.price <= 0) {
+      return `${messages.simulation.validation.freshEtfQuoteRequired} (${item.symbol})`;
     }
 
     return undefined;
@@ -207,6 +208,8 @@ export default async function InvestEtfsPage({
                     isWatched={watchlist.some((entry) => entry.assetId === item.assetId)}
                     watchlistLabelAdd={messages.dashboard.addToWatchlist}
                     watchlistLabelRemove={messages.dashboard.removeFromWatchlist}
+                    hasSimulatedPosition={heldSymbols.has(item.symbol)}
+                    source="etf-lane"
                   />
                 )}
               />
@@ -249,6 +252,8 @@ export default async function InvestEtfsPage({
                       isWatched={watchlist.some((entry) => entry.assetId === item.assetId)}
                       watchlistLabelAdd={messages.dashboard.addToWatchlist}
                       watchlistLabelRemove={messages.dashboard.removeFromWatchlist}
+                      hasSimulatedPosition={heldSymbols.has(item.symbol)}
+                      source="etf-lane"
                     />
                   </div>
                 )}
@@ -276,6 +281,31 @@ export default async function InvestEtfsPage({
             </div>
           </div>
         ) : null}
+      </Section>
+
+      <Section className="dashboard-section dashboard-section--tinted">
+        <div className="analytics-card" style={{ maxWidth: '48rem' }}>
+          <div className="analytics-card__header">
+            <div>
+              <div className="section__eyebrow">ETF compliance notice</div>
+              <h3>ETF simulation context</h3>
+            </div>
+          </div>
+          <div className="analytics-card__body">
+            <p>All ETF actions on this platform are <strong>simulated only</strong> — no real capital is deployed and no orders are routed to any exchange or broker.</p>
+            <p style={{ marginTop: '0.5rem' }}>Key ETF considerations for simulation planning:</p>
+            <ul style={{ marginTop: '0.5rem', paddingLeft: '1.25rem', lineHeight: '1.7', color: 'var(--text-secondary)' }}>
+              <li><strong>Tracking error</strong> — ETFs may deviate from their benchmark index due to fees, rebalancing, and liquidity constraints.</li>
+              <li><strong>NAV vs market price</strong> — ETF market prices can trade at a premium or discount to net asset value (NAV). Simulation uses market price.</li>
+              <li><strong>Expense ratio</strong> — Real ETF holdings incur annual management fees (shown where available). Not modelled in simulation.</li>
+              <li><strong>Synthetic and leveraged ETFs</strong> — Leveraged or inverse ETFs carry significantly amplified risk. Simulation treats them at face price without leverage modelling.</li>
+              <li><strong>Liquidity</strong> — Some ETFs have wide bid-ask spreads. Simulation uses mid-price and does not model slippage.</li>
+            </ul>
+            <p style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>
+              Past performance is not indicative of future results. This is not financial advice.
+            </p>
+          </div>
+        </div>
       </Section>
     </>
   );

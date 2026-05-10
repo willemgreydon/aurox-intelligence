@@ -1,4 +1,13 @@
 export * from './types';
 export * from './canonicalize';
 export * from './run-lifecycle';
-
+export * from './market-stream/types';
+export * from './market-stream/contracts';
+export * from './market-stream/capabilities';
+export * from './market-stream/symbol-normalization';
+export * from './market-stream/mappers';
+export * from './market-stream/adapters';
+export * from './market-stream/event-bus';
+export * from './market-stream/manager';
+export * from './market-stream/rest-fallback';
+export * from './market-stream/example-consumers';

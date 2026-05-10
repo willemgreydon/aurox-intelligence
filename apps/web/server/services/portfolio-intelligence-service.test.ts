@@ -5,8 +5,24 @@ const getMarketIntelligenceWorkstationModelMock = vi.fn();
 const getInvestPortfolioDataMock = vi.fn();
 const computePortfolioIntelligenceMock = vi.fn();
 const evaluateBrokerDecisionMock = vi.fn();
-
 const checkReadinessMock = vi.fn();
+
+// Auth session must be mocked before the service module is loaded — the
+// transitive import chain (portfolio-intelligence-service → session → auth/config)
+// throws a Zod validation error when AUTH_SECRET is not set in the test env.
+vi.mock('../auth/session', () => ({
+  getOptionalCurrentSession: () => Promise.resolve(null),
+}));
+
+// Stub the simulation overview so the null-session fast-path is exercised cleanly.
+vi.mock('./stock-simulation-service', () => ({
+  getSimulationOverviewDataForUser: () => Promise.resolve(null),
+}));
+
+// Stub news risk summary — not relevant to intelligence logic being tested.
+vi.mock('./news-intelligence-service', () => ({
+  getNewsRiskSummary: () => Promise.resolve({ avgRisk: 0, maxRisk: 0, affectedAssets: [] }),
+}));
 
 vi.mock('./market-intelligence-workstation-service', () => ({
   getMarketIntelligenceWorkstationModel: (...args: unknown[]) =>

@@ -7,6 +7,7 @@ import {
 } from './providers/coingecko';
 import { fetchEodhdHistory, fetchEodhdQuote, fetchFinnhubHistory, fetchFinnhubQuote } from './providers/legacy';
 import { fetchPolygonHistory, fetchPolygonMetadata, fetchPolygonQuote } from './providers/polygon';
+import { fetchBinanceHistory, fetchBinanceQuote } from './providers/binance';
 import { fetchTiingoMetadata } from './providers/tiingo';
 import { fetchTwelveDataHistory, fetchTwelveDataQuote } from './providers/twelve-data';
 import { normalizeProviderError, toProviderError } from './errors';
@@ -26,6 +27,7 @@ import type {
   FetchMarketHistoryOptions,
   FetchMarketSnapshotOptions,
   HistoricalBar,
+  MarketHistoryResolution,
   MarketQuote,
   ProviderHealthStatus,
   ProviderMarketHistoryPoint,
@@ -38,6 +40,8 @@ const SNAPSHOT_BATCH_SIZE = 4;
 
 async function fetchQuoteFromProvider(provider: MarketDataProvider, symbol: string): Promise<MarketQuote> {
   switch (provider) {
+    case 'binance':
+      return fetchBinanceQuote(symbol);
     case 'polygon':
       return fetchPolygonQuote(symbol);
     case 'twelve-data':
@@ -58,20 +62,23 @@ async function fetchQuoteFromProvider(provider: MarketDataProvider, symbol: stri
 async function fetchHistoryFromProvider(
   provider: MarketDataProvider,
   symbol: string,
+  resolution: MarketHistoryResolution,
   from?: string,
   to?: string,
 ): Promise<HistoricalBar[]> {
   switch (provider) {
+    case 'binance':
+      return fetchBinanceHistory(symbol, resolution, from, to);
     case 'polygon':
-      return fetchPolygonHistory(symbol, from, to);
+      return fetchPolygonHistory(symbol, from, to, resolution);
     case 'twelve-data':
-      return fetchTwelveDataHistory(symbol, from, to);
+      return fetchTwelveDataHistory(symbol, from, to, resolution);
     case 'coingecko':
-      return fetchCoinGeckoHistory(symbol);
+      return fetchCoinGeckoHistory(symbol, resolution);
     case 'finnhub':
-      return fetchFinnhubHistory(symbol, from, to);
+      return fetchFinnhubHistory(symbol, from, to, resolution);
     case 'eodhd':
-      return fetchEodhdHistory(symbol, from, to);
+      return fetchEodhdHistory(symbol, from, to, resolution);
     case 'tiingo':
       throw new Error('Tiingo is not configured for history reads.');
     default:
@@ -90,6 +97,7 @@ async function fetchMetadataFromProvider(provider: MarketDataProvider, symbol: s
     case 'twelve-data':
     case 'finnhub':
     case 'eodhd':
+    case 'binance':
       throw new Error(`${provider} is not configured for metadata reads.`);
     default:
       throw new Error(`Unsupported metadata provider ${provider satisfies never}.`);
@@ -183,9 +191,10 @@ export async function readMarketHistory(
   from?: string,
   to?: string,
   provider?: MarketDataProvider,
+  resolution: MarketHistoryResolution = '1d',
 ): Promise<ProviderReadResult<HistoricalBar[]>> {
   return readWithFallback('history', symbol, getHistoryProviderChain(symbol, provider), (selectedProvider) =>
-    fetchHistoryFromProvider(selectedProvider, symbol, from, to),
+    fetchHistoryFromProvider(selectedProvider, symbol, resolution, from, to),
   );
 }
 
@@ -234,7 +243,13 @@ export async function fetchMarketSnapshot(
 export async function fetchMarketHistory(
   options: FetchMarketHistoryOptions,
 ): Promise<ProviderMarketHistoryPoint[]> {
-  const result = await readMarketHistory(options.symbol, options.from, options.to, options.provider);
+  const result = await readMarketHistory(
+    options.symbol,
+    options.from,
+    options.to,
+    options.provider,
+    options.resolution ?? '1d',
+  );
   return result.data;
 }
 

@@ -3,7 +3,6 @@ import { requireCurrentSession } from '../../../server/auth/session';
 import { getPortfolioIntelligenceViewModel } from '../../../server/services/portfolio-intelligence-service';
 import { Section } from '../../../components/ui/section';
 import { Card } from '../../../components/ui/card';
-import { CompactStatCard } from '../../../components/stats/compact-stat-card';
 import type {
   PortfolioAllocation,
   AssetRanking,
@@ -31,6 +30,19 @@ function formatNormalizedScore(value: number): string {
 
 function formatAttractiveness(value: number): string {
   return value.toFixed(1);
+}
+
+function buildPrepareTradeHref(input: { symbol: string; assetId: string | null; side: 'BUY' | 'SELL'; source: string }) {
+  const params = new URLSearchParams({
+    symbol: input.symbol,
+    side: input.side,
+    intent: 'prepare',
+    source: input.source,
+  });
+  if (input.assetId) {
+    params.set('assetId', input.assetId);
+  }
+  return `/invest/simulation?${params.toString()}`;
 }
 
 //  Tone helpers 
@@ -169,7 +181,7 @@ function RegimePanel({ regime }: { regime: RegimeAwareness }) {
 
 //  Ranking table 
 
-function RankingTable({ ranking }: { ranking: AssetRanking[] }) {
+function RankingTable({ ranking, assetIdBySymbol }: { ranking: AssetRanking[]; assetIdBySymbol: Record<string, string> }) {
   if (ranking.length === 0) return <p className="text-muted">No ranking data available.</p>;
   const visibleRanking = ranking.slice(0, MAX_VISIBLE_PORTFOLIO_ROWS);
   return (
@@ -189,6 +201,7 @@ function RankingTable({ ranking }: { ranking: AssetRanking[] }) {
             <th scope="col" style={{ textAlign: 'right' }}>Risk</th>
             <th scope="col" style={{ textAlign: 'right' }}>Target</th>
             <th scope="col" style={{ textAlign: 'left' }}>Reason</th>
+            <th scope="col" style={{ textAlign: 'left' }}>Action</th>
           </tr>
         </thead>
         <tbody>
@@ -203,6 +216,11 @@ function RankingTable({ ranking }: { ranking: AssetRanking[] }) {
               <td><RiskScoreBadge score={r.riskScore} level={r.riskScore >= 70 ? 'critical' : r.riskScore >= 45 ? 'high' : r.riskScore >= 25 ? 'medium' : 'low'} /></td>
               <td className="tabular-nums" style={{ textAlign: 'right' }}>{formatPct(r.targetWeight)}</td>
               <td style={{ fontSize: '0.75rem', color: 'var(--color-muted-foreground)', maxWidth: '16rem' }}>{r.reasonShort}</td>
+              <td>
+                <Link className="button button--secondary" href={buildPrepareTradeHref({ symbol: r.symbol, assetId: assetIdBySymbol[r.symbol] ?? null, side: r.recommendation.includes('SELL') ? 'SELL' : 'BUY', source: 'portfolio-intelligence' })}>
+                  {r.recommendation.includes('SELL') ? 'Prepare Sell' : 'Prepare Buy'}
+                </Link>
+              </td>
             </tr>
           ))}
         </tbody>
@@ -213,7 +231,7 @@ function RankingTable({ ranking }: { ranking: AssetRanking[] }) {
 
 //  Allocation matrix 
 
-function AllocationMatrix({ allocations }: { allocations: PortfolioAllocation[] }) {
+function AllocationMatrix({ allocations, assetIdBySymbol }: { allocations: PortfolioAllocation[]; assetIdBySymbol: Record<string, string> }) {
   if (allocations.length === 0) return <p className="text-muted">No allocations computed.</p>;
   const visibleAllocations = allocations.slice(0, MAX_VISIBLE_PORTFOLIO_ROWS);
   return (
@@ -232,6 +250,7 @@ function AllocationMatrix({ allocations }: { allocations: PortfolioAllocation[] 
             <th scope="col" style={{ textAlign: 'right' }}>Risk</th>
             <th scope="col" style={{ textAlign: 'left' }}>Action</th>
             <th scope="col" style={{ textAlign: 'left' }}>Status</th>
+            <th scope="col" style={{ textAlign: 'left' }}>Action</th>
           </tr>
         </thead>
         <tbody>
@@ -258,6 +277,11 @@ function AllocationMatrix({ allocations }: { allocations: PortfolioAllocation[] 
                 </td>
                 <td>
                   <span className="text-muted" style={{ fontSize: '0.75rem' }}>{alloc.recommendationAction}</span>
+                </td>
+                <td>
+                  <Link className="button button--secondary" href={buildPrepareTradeHref({ symbol: alloc.symbol, assetId: assetIdBySymbol[alloc.symbol] ?? null, side: alloc.deltaWeight < 0 ? 'SELL' : 'BUY', source: 'portfolio-intelligence' })}>
+                    {alloc.deltaWeight < 0 ? 'Reduce / Close' : 'Prepare Buy'}
+                  </Link>
                 </td>
               </tr>
             );
@@ -557,7 +581,7 @@ export default async function PortfolioIntelligencePage() {
     );
   }
 
-  const { intelligence, brokerReadiness, brokerPreviews, portfolioContext } = vm;
+  const { intelligence, brokerReadiness, brokerPreviews, portfolioContext, assetIdBySymbol, newsExposure } = vm;
   const { portfolioSummary, allocations, rebalancePlan, riskAlerts, diagnostics, ranking, regime } = intelligence;
   const top25AvgConfidence = ranking.length > 0
     ? ranking.slice(0, 25).reduce((sum, item) => sum + item.confidence, 0) / Math.min(25, ranking.length)
@@ -566,88 +590,97 @@ export default async function PortfolioIntelligencePage() {
 
   return (
     <>
-      {/*  1. Hero / Command Header  */}
-      <Section className="dashboard-section dashboard-section--hero">
-        <header className="dashboard-section-heading">
-          <div>
-            <div className="section__eyebrow">Portfolio Intelligence v2</div>
-            <h2 className="dashboard-section-heading__title">Explainable Portfolio Decision Engine</h2>
-            <p className="dashboard-section-heading__description">
-              Deterministic allocation analysis  factor decomposition, risk overlay, regime awareness, and simulation-first broker preview.
-            </p>
+      {/* ── Compact Command Header ── */}
+      <header className="observe-command-header">
+        <div className="observe-command-header__inner">
+          <div className="observe-command-header__top">
+            <div className="observe-command-header__identity">
+              <span className="observe-command-header__eyebrow">Portfolio / Intelligence</span>
+              <h1 className="observe-command-header__title">Portfolio Command Cockpit</h1>
+              <p className="observe-command-header__sub">
+                Deterministic allocation analysis — factor decomposition, risk overlay, regime awareness, and simulation-first broker preview.
+              </p>
+            </div>
+            <div className="observe-command-header__chips">
+              <span className={`observe-chip observe-chip--${vm.status === 'nominal' ? 'success' : 'warning'}`} title="Intelligence system status">
+                {vm.status.toUpperCase()}
+              </span>
+              <span className="observe-chip observe-chip--neutral" title="Market regime">
+                {regime.regime.toUpperCase()}
+              </span>
+              <span className="observe-chip observe-chip--neutral" title="Ranked assets">
+                {ranking.length} Assets
+              </span>
+              {riskAlerts.length > 0 && (
+                <span className="observe-chip observe-chip--danger" title="Active risk alerts">
+                  {riskAlerts.length} Risk Alert{riskAlerts.length !== 1 ? 's' : ''}
+                </span>
+              )}
+              <span className="observe-chip observe-chip--info" title="Simulation only — no live capital">
+                SIM only
+              </span>
+            </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-            <span className={`status-pill status-pill--${vm.status === 'nominal' ? 'success' : 'warning'}`}>
-              {vm.status}
-            </span>
-            <span className="status-pill status-pill--neutral">SIMULATION ONLY</span>
-          </div>
-        </header>
+          <nav className="observe-command-header__actions" aria-label="Portfolio intelligence primary actions">
+            <a href="/observe" className="button button--secondary observe-command-action">Observer</a>
+            <a href="/signals" className="button button--secondary observe-command-action">Signals</a>
+            <a href="/invest/simulation" className="button button--secondary observe-command-action">Simulation</a>
+            <a href="/portfolio" className="button button--secondary observe-command-action">Portfolio</a>
+            <a href="/alerts" className="button button--secondary observe-command-action">Alerts</a>
+          </nav>
+        </div>
+      </header>
 
-        {/* Safety notice  always visible */}
+      {/* ── Safety Notice ── */}
+      <div style={{ padding: '0 var(--space-5, 1.25rem) var(--space-3, 0.75rem)' }}>
         <div className="alert alert--info" role="alert" aria-live="polite">
-          <strong>Simulation only</strong>  {vm.simulationOnlyNotice} Live trading is permanently locked.
+          <strong>Simulation only</strong> — {vm.simulationOnlyNotice} Live trading is permanently locked.
         </div>
-      </Section>
+      </div>
 
-      {/*  2. Portfolio Health Strip  */}
-      <Section className="dashboard-section">
-        <div className="analytics-strip">
-          <CompactStatCard
-            label="Allocation health"
-            value={diagnostics.allocationHealth.replace('-', ' ')}
-            detail={portfolioContext.stateReason}
-            valueTone={diagnostics.allocationHealth === 'healthy' ? 'positive' : diagnostics.allocationHealth === 'high-risk' ? 'negative' : 'neutral'}
-          />
-          <CompactStatCard
-            label="Diversification"
-            value={formatPct(diagnostics.diversificationScore)}
-            detail="Herfindahl-adjusted diversification score."
-            valueTone={diagnostics.diversificationScore > 0.6 ? 'positive' : diagnostics.diversificationScore > 0.3 ? 'neutral' : 'negative'}
-          />
-          <CompactStatCard
-            label={hasActivePortfolio ? 'Portfolio Avg Confidence' : 'Top 25 Avg Signal Confidence'}
-            value={formatPct(hasActivePortfolio ? diagnostics.averageConfidence : top25AvgConfidence)}
-            detail={hasActivePortfolio ? 'Value-weighted confidence across active allocations.' : 'Average confidence across top 25 ranked opportunities.'}
-            valueTone={diagnostics.averageConfidence > 0.6 ? 'positive' : diagnostics.averageConfidence > 0.35 ? 'neutral' : 'negative'}
-          />
-          <CompactStatCard
-            label="Avg risk score"
-            value={`${diagnostics.averageRiskScore.toFixed(0)}/100`}
-            detail="Mean composite risk score across all assets."
-            valueTone={diagnostics.averageRiskScore > 60 ? 'negative' : diagnostics.averageRiskScore > 35 ? 'neutral' : 'positive'}
-          />
-          <CompactStatCard
-            label="Crypto exposure"
-            value={formatPct(diagnostics.cryptoExposure)}
-            detail="Total crypto allocation target weight."
-            valueTone={diagnostics.cryptoExposure > 0.4 ? 'negative' : 'neutral'}
-          />
-          <CompactStatCard
-            label="Cash target"
-            value={formatPct(diagnostics.cashTargetWeight)}
-            detail="Estimated cash as percentage of portfolio."
-          />
+      {/* ── Unified KPI Metric Rail ── */}
+      <div className="observe-metric-rail" aria-label="Portfolio intelligence key metrics">
+        <div className={`observe-metric-card${diagnostics.allocationHealth === 'healthy' ? ' observe-metric-card--success' : diagnostics.allocationHealth === 'high-risk' ? ' observe-metric-card--danger' : ' observe-metric-card--warning'}`}>
+          <div className="observe-metric-card__label">Health</div>
+          <div className="observe-metric-card__value">{diagnostics.allocationHealth.replace('-', ' ')}</div>
         </div>
-      </Section>
-
-      {/* Portfolio context stats */}
-      <Section className="dashboard-section">
-        <div className="analytics-strip">
-          <CompactStatCard label="Portfolio value" value={formatCurrency(portfolioContext.portfolioValue, portfolioContext.baseCurrency)} detail="Simulation portfolio total value." />
-          <CompactStatCard label="Cash balance" value={formatCurrency(portfolioContext.cashBalance, portfolioContext.baseCurrency)} detail="Available simulation cash." />
-          <CompactStatCard label="Invested value" value={formatCurrency(portfolioContext.investedValue, portfolioContext.baseCurrency)} detail="Total market value of open simulated positions." />
-          <CompactStatCard label="Cash target" value={portfolioContext.cashTargetRatio === null ? 'n/a' : formatPct(portfolioContext.cashTargetRatio)} detail="Cash share of total portfolio value." />
-          <CompactStatCard label="Open positions" value={String(portfolioContext.openPositionCount)} detail="Currently active simulated positions." />
-          <CompactStatCard label="Dominant class" value={portfolioSummary.dominantAssetClass} detail="Asset class with largest target allocation." />
-          <CompactStatCard
-            label="Concentration risk"
-            value={portfolioSummary.concentrationRisk}
-            detail="Single-asset concentration risk level."
-            valueTone={riskTone(portfolioSummary.concentrationRisk)}
-          />
+        <div className={`observe-metric-card${diagnostics.diversificationScore > 0.6 ? ' observe-metric-card--success' : diagnostics.diversificationScore > 0.3 ? '' : ' observe-metric-card--danger'}`}>
+          <div className="observe-metric-card__label">Diversification</div>
+          <div className="observe-metric-card__value">{formatPct(diagnostics.diversificationScore)}</div>
         </div>
-      </Section>
+        <div className={`observe-metric-card${diagnostics.averageConfidence > 0.6 ? ' observe-metric-card--success' : diagnostics.averageConfidence > 0.35 ? '' : ' observe-metric-card--warning'}`}>
+          <div className="observe-metric-card__label">Avg Confidence</div>
+          <div className="observe-metric-card__value">{formatPct(hasActivePortfolio ? diagnostics.averageConfidence : top25AvgConfidence)}</div>
+        </div>
+        <div className={`observe-metric-card${diagnostics.averageRiskScore > 60 ? ' observe-metric-card--danger' : diagnostics.averageRiskScore > 35 ? ' observe-metric-card--warning' : ' observe-metric-card--success'}`}>
+          <div className="observe-metric-card__label">Avg Risk</div>
+          <div className="observe-metric-card__value">{diagnostics.averageRiskScore.toFixed(0)}/100</div>
+        </div>
+        <div className="observe-metric-card">
+          <div className="observe-metric-card__label">Portfolio Value</div>
+          <div className="observe-metric-card__value">{formatCurrency(portfolioContext.portfolioValue, portfolioContext.baseCurrency)}</div>
+        </div>
+        <div className="observe-metric-card">
+          <div className="observe-metric-card__label">Cash</div>
+          <div className="observe-metric-card__value">{formatCurrency(portfolioContext.cashBalance, portfolioContext.baseCurrency)}</div>
+        </div>
+        <div className="observe-metric-card">
+          <div className="observe-metric-card__label">Positions</div>
+          <div className="observe-metric-card__value">{portfolioContext.openPositionCount}</div>
+        </div>
+        <div className={`observe-metric-card${diagnostics.cryptoExposure > 0.4 ? ' observe-metric-card--warning' : ''}`}>
+          <div className="observe-metric-card__label">Crypto Exp.</div>
+          <div className="observe-metric-card__value">{formatPct(diagnostics.cryptoExposure)}</div>
+        </div>
+        <div className="observe-metric-card">
+          <div className="observe-metric-card__label">Cash Target</div>
+          <div className="observe-metric-card__value">{formatPct(diagnostics.cashTargetWeight)}</div>
+        </div>
+        <div className={`observe-metric-card${newsExposure.maxRisk > 75 ? ' observe-metric-card--danger' : newsExposure.maxRisk > 55 ? ' observe-metric-card--warning' : ''}`}>
+          <div className="observe-metric-card__label">News Risk</div>
+          <div className="observe-metric-card__value">{newsExposure.maxRisk.toFixed(0)}/100</div>
+        </div>
+      </div>
 
       {/*  3. Regime Awareness  */}
       <Section className="dashboard-section dashboard-section--tinted">
@@ -712,7 +745,7 @@ export default async function PortfolioIntelligencePage() {
             </div>
           </div>
           <div className="analytics-card__body">
-            <RankingTable ranking={ranking} />
+            <RankingTable ranking={ranking} assetIdBySymbol={assetIdBySymbol} />
           </div>
         </Card>
       </Section>
@@ -728,7 +761,7 @@ export default async function PortfolioIntelligencePage() {
             </div>
           </div>
           <div className="analytics-card__body">
-            <AllocationMatrix allocations={allocations} />
+            <AllocationMatrix allocations={allocations} assetIdBySymbol={assetIdBySymbol} />
           </div>
         </Card>
       </Section>
@@ -829,4 +862,3 @@ export default async function PortfolioIntelligencePage() {
     </>
   );
 }
-

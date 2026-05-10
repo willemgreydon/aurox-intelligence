@@ -87,8 +87,10 @@ export function InvestableAssetCard(props: InvestableAssetCardProps) {
       </div>
       <div className="analytics-card__body">
         <p>{props.thesis}</p>
-        <p>{props.riskSummary}{props.riskLabel ? ` | Risk: ${props.riskLabel}` : ''}</p>
-        <p>Freshness: {props.freshnessLabel}</p>
+        <p className="market-card__meta-row">
+          {props.riskLabel ? <span className="market-card__risk-badge">Risk: {props.riskLabel}</span> : null}
+          <span className="market-card__freshness">Updated {props.freshnessLabel}</span>
+        </p>
         {props.signal ? (
           <SignalSummary
             score={props.signal.score}
@@ -99,10 +101,12 @@ export function InvestableAssetCard(props: InvestableAssetCardProps) {
             visualState={props.signal.visualState}
           />
         ) : null}
-        <div className="analytics-card__action-grid market-card__actions">
-          <Link href={props.href} className="button button--primary">
-            View details
-          </Link>
+        <div className="asset-card-actions">
+          <div className="asset-card-actions__primary">
+            <Link href={props.href} className="button button--secondary asset-card-action asset-card-action--inspect">
+              Inspect
+            </Link>
+          </div>
           {props.actions}
         </div>
       </div>

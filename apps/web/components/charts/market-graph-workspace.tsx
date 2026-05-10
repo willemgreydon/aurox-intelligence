@@ -1,8 +1,21 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { formatChartAxisDate, formatChartMonthRange, formatChartTooltipDate } from '../../lib/chart-date-format';
+import { formatChartMonthRange } from '../../lib/chart-date-format';
 import { decodeHtmlEntities } from '../../lib/text/decode-html-entities';
+import {
+  MARKET_GRAPH_TIMEFRAME_ORDER,
+  MARKET_GRAPH_TIMEFRAMES,
+  formatAxisTimestamp,
+  formatTooltipTimestamp,
+  sliceBarsForTimeframe,
+  downsampleBars,
+  getAxisFormatForVisibleBars,
+  computeAxisTicks,
+  type MarketGraphTimeframeId,
+} from '../../lib/market-graph-timeframes';
+import { getQuoteRefreshIntervalMs, shouldPollQuotes } from '../../lib/market-refresh';
+import type { MarketGraphDataMeta } from '../../server/services/market-graph-service';
 
 type HistoryPoint = {
   timestamp: string;
@@ -29,6 +42,8 @@ type AssetSeries = {
 
 type MarketGraphWorkspaceProps = {
   assets: AssetSeries[];
+  /** Optional metadata from the server about what was fetched */
+  meta?: MarketGraphDataMeta;
   trackedSymbols?: string[];
   newsItems?: Array<{
     id: string;
@@ -62,6 +77,10 @@ type MarketGraphWorkspaceProps = {
     chartAriaTemplate: string;
     noData: string;
     unavailable: string;
+    intradayUnavailable: string;
+    dailyFallback: string;
+    candlesUnavailable: string;
+    insufficientHistory: string;
   };
 };
 
@@ -74,89 +93,93 @@ type HoverState = {
   panelY: number;
 };
 
-type MarketGraphRangeKey = '1m' | '1h' | '1D' | '1W' | '1M' | '3M' | '1Y' | '2Y';
-
-type MarketGraphRangeOption = {
-  key: MarketGraphRangeKey;
-  label: MarketGraphRangeKey;
-  candleCount: number;
-  interval: string;
-  description: string;
-};
-
-function daysInMonthUtc(referenceDate: Date) {
-  return new Date(Date.UTC(referenceDate.getUTCFullYear(), referenceDate.getUTCMonth() + 1, 0)).getUTCDate();
-}
-
-function quarterSpanDaysUtc(referenceDate: Date) {
-  const year = referenceDate.getUTCFullYear();
-  const month = referenceDate.getUTCMonth();
-  const quarterStartMonth = Math.floor(month / 3) * 3;
-  const quarterStart = Date.UTC(year, quarterStartMonth, 1);
-  const quarterEnd = Date.UTC(year, quarterStartMonth + 3, 0);
-  return Math.max(1, Math.round((quarterEnd - quarterStart) / 86_400_000) + 1);
-}
-
-function buildRangeOptions(referenceTimestamp: string | null): MarketGraphRangeOption[] {
-  const referenceDate = referenceTimestamp ? new Date(referenceTimestamp) : new Date('2026-01-01T00:00:00.000Z');
-  const safeReferenceDate = Number.isFinite(referenceDate.getTime()) ? referenceDate : new Date('2026-01-01T00:00:00.000Z');
-  const oneMonthCandles = Math.max(1, daysInMonthUtc(safeReferenceDate) * 2) || 60;
-  const threeMonthsCandles = Math.max(1, Math.round((quarterSpanDaysUtc(safeReferenceDate) / 3) * 2)) || 60;
-
-  return [
-    { key: '1m', label: '1m', candleCount: 60, interval: '1m', description: '1m · 60 candles' },
-    { key: '1h', label: '1h', candleCount: 60, interval: '1h', description: '1h · 60 candles' },
-    { key: '1D', label: '1D', candleCount: 48, interval: '1D', description: '1D · 48 candles' },
-    { key: '1W', label: '1W', candleCount: 28, interval: '4h', description: '1W · 28 candles' },
-    { key: '1M', label: '1M', candleCount: oneMonthCandles, interval: '12h', description: `1M · ${oneMonthCandles} candles` },
-    { key: '3M', label: '3M', candleCount: threeMonthsCandles, interval: '1D', description: `3M · ${threeMonthsCandles} candles` },
-    { key: '1Y', label: '1Y', candleCount: 48, interval: '1W', description: '1Y · 48 candles' },
-    { key: '2Y', label: '2Y', candleCount: 48, interval: '2W', description: '2Y · 48 candles' },
-  ];
-}
+// --- Pure geometry helpers ---
 
 function average(values: number[]) {
   return values.reduce((sum, value) => sum + value, 0) / Math.max(1, values.length);
 }
 
-function buildLine(values: number[], width: number, height: number): string {
+function buildLine(values: number[], width: number, height: number, padPct = 0.05): string {
   if (values.length < 2 || values.some((value) => !Number.isFinite(value))) {
     return '';
   }
   const min = Math.min(...values);
   const max = Math.max(...values);
-  const range = Math.max(1, max - min);
+  const rawRange = max - min;
+  const pad = rawRange * padPct;
+  const paddedMin = min - pad;
+  const paddedMax = max + pad;
+  const range = Math.max(1, paddedMax - paddedMin);
   return values
     .map((value, index) => {
       const x = (index / Math.max(1, values.length - 1)) * width;
-      const y = height - ((value - min) / range) * height;
+      const y = height - ((value - paddedMin) / range) * height;
       return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
     })
     .join(' ');
 }
 
-function buildArea(values: number[], width: number, height: number): string {
+function buildArea(values: number[], width: number, height: number, padPct = 0.05): string {
   if (values.length < 2 || values.some((value) => !Number.isFinite(value))) return '';
   const min = Math.min(...values);
   const max = Math.max(...values);
-  const range = Math.max(1, max - min);
+  const rawRange = max - min;
+  const pad = rawRange * padPct;
+  const paddedMin = min - pad;
+  const paddedMax = max + pad;
+  const range = Math.max(1, paddedMax - paddedMin);
   const pts = values.map((value, i) => {
     const x = (i / Math.max(1, values.length - 1)) * width;
-    const y = height - ((value - min) / range) * height;
+    const y = height - ((value - paddedMin) / range) * height;
     return `${x},${y}`;
   });
   return `M 0,${height} L ${pts.join(' L ')} L ${width},${height} Z`;
 }
 
-function movingAverage(points: HistoryPoint[], period: number) {
+function movingAverage(points: HistoryPoint[], period: number): number[] {
   return points.map((_, index) => {
     const slice = points.slice(Math.max(0, index - period + 1), index + 1);
     return average(slice.map((point) => point.close));
   });
 }
 
+/**
+ * Compute padded y bounds for a value array.
+ * Returns { paddedMin, paddedMax, range }.
+ */
+function paddedBounds(values: number[], padPct = 0.05) {
+  if (values.length === 0) return { paddedMin: 0, paddedMax: 1, range: 1 };
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const rawRange = max - min;
+  const pad = rawRange * padPct;
+  const paddedMin = min - pad;
+  const paddedMax = max + pad;
+  return { paddedMin, paddedMax, range: Math.max(1, paddedMax - paddedMin) };
+}
+
+/**
+ * Normalize two price series to 100 at the first value of the primary series.
+ * Used for compare mode.
+ */
+function normalizeTo100(closes: number[]): number[] {
+  if (closes.length === 0) return [];
+  const base = closes[0];
+  if (!base || base === 0) return closes;
+  return closes.map((c) => (c / base) * 100);
+}
+
+/**
+ * Check if OHLC data has meaningful spread (not all bars flat).
+ */
+function hasOhlcSpread(points: HistoryPoint[]): boolean {
+  if (points.length < 2) return false;
+  return points.some((p) => Math.abs(p.high - p.low) > 0.001 || Math.abs(p.open - p.close) > 0.001);
+}
+
 export function MarketGraphWorkspace({
   assets,
+  meta,
   labels,
   variant = 'default',
   trackedSymbols = [],
@@ -173,7 +196,6 @@ export function MarketGraphWorkspace({
         dedupedSymbols.set(asset.symbol, asset);
       }
     }
-
     return [...dedupedSymbols.values()].map((asset) => {
       const dedupedByTimestamp = new Map<string, HistoryPoint>();
       for (const point of asset.history) {
@@ -194,6 +216,7 @@ export function MarketGraphWorkspace({
       };
     });
   }, [assets]);
+
   const prioritizedTrackedSymbols = useMemo(
     () => [...new Set(trackedSymbols.map((symbol) => symbol.trim().toUpperCase()).filter(Boolean))],
     [trackedSymbols],
@@ -236,7 +259,7 @@ export function MarketGraphWorkspace({
 
   const [symbol, setSymbol] = useState(assets[0]?.symbol ?? '');
   const [compareSymbol, setCompareSymbol] = useState('');
-  const [timeframe, setTimeframe] = useState<MarketGraphRangeKey>('1D');
+  const [timeframe, setTimeframe] = useState<MarketGraphTimeframeId>('1D');
   const [graphType, setGraphType] = useState<'line' | 'candles'>('line');
   const [showMovingAverage, setShowMovingAverage] = useState(true);
   const [showSignals, setShowSignals] = useState(true);
@@ -255,53 +278,190 @@ export function MarketGraphWorkspace({
   });
 
   const canvasRef = useRef<HTMLDivElement | null>(null);
+  const [historyFetchPending, setHistoryFetchPending] = useState(false);
+  const [historyFetchError, setHistoryFetchError] = useState<string | null>(null);
+  const [historyTopUps, setHistoryTopUps] = useState<Record<string, HistoryPoint[]>>({});
+  const [quoteOverrides, setQuoteOverrides] = useState<Record<string, { price: number; changePercent?: number }>>({});
 
-  const selected = normalizedAssets.find((asset) => asset.symbol === symbol) ?? normalizedAssets[0] ?? null;
-  const compare = normalizedAssets.find((asset) => asset.symbol === compareSymbol) ?? null;
-  const rangeOptions = useMemo(
-    () => buildRangeOptions(selected?.history.at(-1)?.timestamp ?? null),
-    [selected?.history],
-  );
-  const timeframeConfig = rangeOptions.find((item) => item.key === timeframe) ?? rangeOptions[2]!;
+  const mergedAssets = useMemo(() => {
+    return normalizedAssets.map((asset) => {
+      const topUp = historyTopUps[asset.symbol];
+      if (!topUp || topUp.length === 0) return asset;
+      const byTimestamp = new Map<string, HistoryPoint>();
+      for (const point of [...asset.history, ...topUp]) {
+        byTimestamp.set(point.timestamp, point);
+      }
+      return {
+        ...asset,
+        snapshot: quoteOverrides[asset.symbol] ?? asset.snapshot,
+        history: [...byTimestamp.values()].sort(
+          (left, right) => new Date(left.timestamp).getTime() - new Date(right.timestamp).getTime(),
+        ),
+      };
+    });
+  }, [historyTopUps, normalizedAssets, quoteOverrides]);
+
+  const selected = mergedAssets.find((asset) => asset.symbol === symbol) ?? mergedAssets[0] ?? null;
+  const compare = mergedAssets.find((asset) => asset.symbol === compareSymbol) ?? null;
+
+  const timeframeConfig = MARKET_GRAPH_TIMEFRAMES[timeframe];
 
   useEffect(() => {
-    if (normalizedAssets.length === 0) {
+    if (mergedAssets.length === 0) {
       if (symbol !== '') setSymbol('');
       return;
     }
-    if (!normalizedAssets.some((asset) => asset.symbol === symbol)) {
-      setSymbol(normalizedAssets[0]!.symbol);
+    if (!mergedAssets.some((asset) => asset.symbol === symbol)) {
+      setSymbol(mergedAssets[0]!.symbol);
     }
-  }, [normalizedAssets, symbol]);
+  }, [mergedAssets, symbol]);
 
+  // Slice bars client-side for the selected timeframe.
+  // Anchor to the latest available bar timestamp so stale cached data slices correctly.
+  // Apply downsampling for 1Y/2Y to keep SVG path complexity manageable.
   const visible = useMemo(() => {
-    if (!selected) return [];
-    return selected.history.slice(-timeframeConfig.candleCount);
-  }, [selected, timeframeConfig.candleCount]);
+    if (!selected || selected.history.length === 0) return [];
+    const lastBar = selected.history[selected.history.length - 1]!;
+    const referenceDate = new Date(lastBar.timestamp);
+    const { bars } = sliceBarsForTimeframe(selected.history, timeframe, referenceDate);
+    const config = MARKET_GRAPH_TIMEFRAMES[timeframe];
+    return config.aggregationPolicy === 'downsample'
+      ? downsampleBars(bars, config.targetPointCount)
+      : bars;
+  }, [selected, timeframe]);
 
   const compareVisible = useMemo(() => {
-    if (!compare) return [];
-    return compare.history.slice(-timeframeConfig.candleCount);
-  }, [compare, timeframeConfig.candleCount]);
+    if (!compare || compare.history.length === 0) return [];
+    const lastBar = compare.history[compare.history.length - 1]!;
+    const referenceDate = new Date(lastBar.timestamp);
+    const { bars } = sliceBarsForTimeframe(compare.history, timeframe, referenceDate);
+    const config = MARKET_GRAPH_TIMEFRAMES[timeframe];
+    return config.aggregationPolicy === 'downsample'
+      ? downsampleBars(bars, config.targetPointCount)
+      : bars;
+  }, [compare, timeframe]);
 
-  const providerHistorySupportsIntraday = useMemo(() => {
-    if (!selected || selected.history.length < 2) {
-      return false;
-    }
-    const latest = selected.history.at(-1);
-    const prev = selected.history.at(-2);
-    if (!latest || !prev) {
-      return false;
-    }
-    const deltaMs = new Date(latest.timestamp).getTime() - new Date(prev.timestamp).getTime();
-    if (!Number.isFinite(deltaMs) || deltaMs <= 0) {
-      return false;
-    }
-    return deltaMs < 6 * 60 * 60 * 1000;
-  }, [selected]);
+  // Detect if intraday was expected but we only have daily bars.
+  // Do this client-side by inspecting actual bar spacing in `visible`,
+  // NOT from server meta (which reflects the server's requested timeframe, not the current one).
+  const isIntradayTimeframe = timeframe === '1m' || timeframe === '1h';
+  const visibleIsDailyFallback = useMemo(() => {
+    if (!isIntradayTimeframe) return false;
+    if (visible.length === 0) return true;
+    if (visible.length < 2) return true;
+    const first = new Date(visible[0]!.timestamp).getTime();
+    const second = new Date(visible[1]!.timestamp).getTime();
+    const deltaMs = second - first;
+    return Number.isFinite(deltaMs) && deltaMs >= 6 * 60 * 60 * 1000;
+  }, [isIntradayTimeframe, visible]);
+  const usingDegradedInterval = isIntradayTimeframe && visibleIsDailyFallback;
 
-  const usingDegradedInterval =
-    (timeframeConfig.key === '1m' || timeframeConfig.key === '1h') && !providerHistorySupportsIntraday;
+  // Effective x-axis format: adapts to actual bar spacing to avoid "00:00" labels
+  // when daily bars are shown for an intraday timeframe.
+  const effectiveXAxisFormat = useMemo(
+    () => getAxisFormatForVisibleBars(timeframe, visible),
+    [timeframe, visible],
+  );
+
+  // Client-side visible metadata (reflects current timeframe slice, not server meta).
+  const visibleMeta = useMemo(() => {
+    if (visible.length === 0) {
+      return { pointCount: 0, actualStart: null, actualEnd: null, coverageRatio: 0 };
+    }
+    const config = MARKET_GRAPH_TIMEFRAMES[timeframe];
+    const firstBar = visible[0]!;
+    const lastBar = visible[visible.length - 1]!;
+    const actualStartMs = new Date(firstBar.timestamp).getTime();
+    const actualEndMs = new Date(lastBar.timestamp).getTime();
+    const requestedStartMs = actualEndMs - config.coverageDays * 24 * 60 * 60 * 1000;
+    const requestedWindowMs = actualEndMs - requestedStartMs;
+    const actualWindowMs = actualEndMs - actualStartMs;
+    const coverageRatio =
+      requestedWindowMs > 0 ? Math.min(1, actualWindowMs / requestedWindowMs) : 0;
+    return {
+      pointCount: visible.length,
+      actualStart: firstBar.timestamp,
+      actualEnd: lastBar.timestamp,
+      coverageRatio,
+    };
+  }, [visible, timeframe]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const selectedSymbol = selected?.symbol;
+    if (!selectedSymbol) return;
+    const requiresTopUp =
+      (timeframe === '1Y' || timeframe === '2Y') && visibleMeta.coverageRatio < 0.75;
+    if (!requiresTopUp) return;
+
+    setHistoryFetchPending(true);
+    setHistoryFetchError(null);
+    fetch(`/api/market/history?symbol=${encodeURIComponent(selectedSymbol)}&timeframe=${timeframe}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((payload) => {
+        if (cancelled || !payload) return;
+        if (payload.degradedReason) {
+          setHistoryFetchError(String(payload.degradedReason));
+        }
+        if (!payload.bars || !Array.isArray(payload.bars)) return;
+        setHistoryTopUps((current) => ({
+          ...current,
+          [selectedSymbol]: payload.bars,
+        }));
+      })
+      .finally(() => {
+        if (!cancelled) setHistoryFetchPending(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selected?.symbol, timeframe, visibleMeta.coverageRatio]);
+
+  useEffect(() => {
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const selectedSymbol = selected?.symbol;
+    const selectedAssetClass = selected?.assetClass;
+    if (!selectedSymbol || !selectedAssetClass) return;
+
+    const tick = async () => {
+      try {
+        if (!shouldPollQuotes(typeof document !== 'undefined' ? document.hidden : false)) {
+          return;
+        }
+        const response = await fetch(
+          `/api/market/quote?symbol=${encodeURIComponent(selectedSymbol)}&assetClass=${encodeURIComponent(selectedAssetClass)}`,
+        );
+        if (!response.ok) return;
+        const payload = await response.json();
+        const quote = payload?.quote;
+        if (!cancelled && quote && typeof quote.price === 'number') {
+          setQuoteOverrides((current) => ({
+            ...current,
+            [selectedSymbol]: {
+              price: quote.price,
+              ...(typeof quote.changePercent === 'number' ? { changePercent: quote.changePercent } : {}),
+            },
+          }));
+        }
+      } finally {
+        if (!cancelled) {
+          timer = setTimeout(tick, getQuoteRefreshIntervalMs(typeof document !== 'undefined' ? !document.hidden : true));
+        }
+      }
+    };
+
+    timer = setTimeout(tick, 1500);
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [selected?.assetClass, selected?.symbol]);
+
+  // Detect if candles mode is meaningful (bars have real OHLC spread).
+  const candlesAvailable = hasOhlcSpread(visible);
+
   const laneStatuses: Array<{ label: string; status: BrokerLaneStatus }> = [
     { label: 'Manual stock lane', status: selected ? 'active' : 'idle' },
     { label: 'ETF comparison lane', status: compare ? 'active' : 'idle' },
@@ -353,29 +513,38 @@ export function MarketGraphWorkspace({
   const hasRenderableSeries = viewportVisible.length >= 2;
   const closes = hasRenderableSeries ? viewportVisible.map((point) => point.close) : [];
   const ma = hasRenderableSeries ? movingAverage(viewportVisible, 10) : [];
-  const compareCloses = hasRenderableSeries ? viewportCompare.map((point) => point.close) : [];
 
-  const closeLine = hasRenderableSeries ? buildLine(closes, 980, 420) : '';
-  const closeArea = hasRenderableSeries && graphType === 'line' ? buildArea(closes, 980, 420) : '';
+  // Compare normalization: both series normalized to 100 at the first close of the primary.
+  const compareCloses = hasRenderableSeries && viewportCompare.length > 0
+    ? viewportCompare.map((point) => point.close)
+    : [];
+
+  const useCompareMode = compareCloses.length > 1;
+
+  // Normalize primary and compare to 100 if compare mode is active.
+  const primaryClosesForLine = useCompareMode ? normalizeTo100(closes) : closes;
+  const compareClosesNorm = useCompareMode ? normalizeTo100(compareCloses) : compareCloses;
+
+  const { paddedMin: closeMin, paddedMax: closeMax, range: closeRange } = paddedBounds(primaryClosesForLine);
+
+  const allHighLow = hasRenderableSeries
+    ? [...viewportVisible.map((p) => p.high), ...viewportVisible.map((p) => p.low)]
+    : [];
+  const { paddedMin: minPrice, paddedMax: maxPrice, range: priceRange } = paddedBounds(allHighLow);
+
+  const closeLine = hasRenderableSeries ? buildLine(primaryClosesForLine, 980, 420) : '';
+  const closeArea = hasRenderableSeries && graphType === 'line' ? buildArea(primaryClosesForLine, 980, 420) : '';
   const maLine = hasRenderableSeries ? buildLine(ma, 980, 420) : '';
-  const compareLine = hasRenderableSeries && compareCloses.length > 1 ? buildLine(compareCloses, 980, 420) : null;
-
-  const minPrice = hasRenderableSeries ? Math.min(...viewportVisible.map((point) => point.low)) : 0;
-  const maxPrice = hasRenderableSeries ? Math.max(...viewportVisible.map((point) => point.high)) : 0;
-  const priceRange = hasRenderableSeries ? Math.max(1, maxPrice - minPrice) : 1;
-
-  const closeMin = hasRenderableSeries ? Math.min(...closes) : 0;
-  const closeMax = hasRenderableSeries ? Math.max(...closes) : 0;
-  const closeRange = hasRenderableSeries ? Math.max(1, closeMax - closeMin) : 1;
+  const compareLine = useCompareMode && compareClosesNorm.length > 1 ? buildLine(compareClosesNorm, 980, 420) : null;
 
   const candleBodyHalf = Math.max(1.5, Math.min(6, Math.floor((940 / Math.max(1, viewportVisible.length)) * 0.38)));
 
-  const lastClose = closes.at(-1);
+  const lastClose = primaryClosesForLine.at(-1);
   const lastPriceY =
     lastClose !== undefined && hasRenderableSeries
       ? graphType === 'line'
         ? 420 - ((lastClose - closeMin) / closeRange) * 420
-        : 400 - ((lastClose - minPrice) / priceRange) * 360
+        : 400 - ((viewportVisible.at(-1)!.close - minPrice) / priceRange) * 360
       : null;
 
   const priceLabel = typeof selected.snapshot?.price === 'number' ? `$${selected.snapshot.price.toFixed(2)}` : labels.unavailable;
@@ -402,20 +571,28 @@ export function MarketGraphWorkspace({
     hoverState && hasRenderableSeries
       ? (hoverState.index / Math.max(1, viewportVisible.length - 1)) * 980
       : null;
+
+  // Hover Y based on normalized or raw closes
+  const hoveredPrimaryClose =
+    hoverState && primaryClosesForLine[hoverState.index] !== undefined
+      ? primaryClosesForLine[hoverState.index]!
+      : null;
   const hoveredY =
-    hoveredPoint && hoveredX !== null
+    hoveredPrimaryClose !== null && hoveredX !== null
       ? graphType === 'line'
-        ? 420 - ((hoveredPoint.close - closeMin) / closeRange) * 420
-        : 400 - ((hoveredPoint.close - minPrice) / priceRange) * 360
+        ? 420 - ((hoveredPrimaryClose - closeMin) / closeRange) * 420
+        : hoveredPoint
+          ? 400 - ((hoveredPoint.close - minPrice) / priceRange) * 360
+          : null
       : null;
 
   const yLabelW = 72;
   const yLabelH = 18;
-  const xLabelW = 72;
+  const xLabelW = 84;
   const xLabelH = 17;
 
-  const tooltipWidth = 176;
-  const tooltipHeight = graphType === 'candles' ? 130 : 96;
+  const tooltipWidth = 188;
+  const tooltipHeight = graphType === 'candles' ? 140 : 108;
   const canvasWidth = canvasRef.current?.clientWidth ?? 980;
   const canvasHeight = canvasRef.current?.clientHeight ?? 420;
   const tooltipLeft = hoverState
@@ -425,21 +602,27 @@ export function MarketGraphWorkspace({
     ? Math.max(8, Math.min(hoverState.panelY - tooltipHeight - 12, canvasHeight - tooltipHeight - 8))
     : 8;
 
+  // Y-axis ticks: based on padded price bounds.
   const yAxisTicks = hasRenderableSeries
     ? Array.from({ length: 5 }, (_, index) => {
         const ratio = index / 4;
-        const value = maxPrice - ratio * priceRange;
-        return { y: 20 + ratio * 360, label: `$${value.toFixed(2)}` };
+        const value = useCompareMode
+          ? closeMax - ratio * closeRange
+          : maxPrice - ratio * priceRange;
+        const y = 20 + ratio * 360;
+        const label = useCompareMode ? `${value.toFixed(1)}` : `$${value.toFixed(2)}`;
+        return { y, label };
       })
     : [];
-  const xTickCount = viewportVisible.length > 20 ? 4 : 3;
+
+  // X-axis ticks: evenly spaced with deduplication; uses effective format to
+  // avoid "00:00" labels when daily bars are displayed for an intraday timeframe.
   const xAxisTicks = hasRenderableSeries
-    ? Array.from({ length: xTickCount }, (_, index) => {
-        const ratio = index / (xTickCount - 1);
-        const pointIndex = Math.min(viewportVisible.length - 1, Math.max(0, Math.round(ratio * (viewportVisible.length - 1))));
-        const point = viewportVisible[pointIndex];
-        return { x: ratio * 980, label: point ? formatChartAxisDate(point.timestamp) : '' };
-      })
+    ? computeAxisTicks(viewportVisible, effectiveXAxisFormat, 6).map((tick) => ({
+        x: (tick.index / Math.max(1, viewportVisible.length - 1)) * 980,
+        label: tick.label,
+        timestamp: tick.timestamp,
+      }))
     : [];
 
   function zoomIn() {
@@ -469,9 +652,7 @@ export function MarketGraphWorkspace({
   }
 
   function handleChartPointerMove(event: React.PointerEvent<SVGSVGElement>) {
-    if (event.pointerType !== 'touch') {
-      return;
-    }
+    if (event.pointerType !== 'touch') return;
     const svgRect = event.currentTarget.getBoundingClientRect();
     const relativeX = ((event.clientX - svgRect.left) / Math.max(1, svgRect.width)) * 980;
     const clamped = Math.max(0, Math.min(980, relativeX));
@@ -486,6 +667,33 @@ export function MarketGraphWorkspace({
     setHoverState(null);
   }
 
+  // Build the degraded message shown below the toolbar.
+  function buildDegradedMessage(): string | null {
+    if (usingDegradedInterval) {
+      return meta?.fallbackReason ?? labels.intradayUnavailable;
+    }
+    if (meta?.isDegraded && meta.degradedReason) {
+      return meta.degradedReason;
+    }
+    if (meta?.isDegraded) {
+      return labels.insufficientHistory;
+    }
+    return null;
+  }
+
+  const degradedMessage = buildDegradedMessage();
+  const coverageLoadingMessage = historyFetchPending ? 'Loading additional provider history...' : null;
+  const topUpErrorMessage = historyFetchError ? `Top-up unavailable: ${historyFetchError}` : null;
+
+  // Candle mode note: show a note if candles are requested but data has no spread.
+  const showCandlesUnavailableNote = graphType === 'candles' && hasRenderableSeries && !candlesAvailable;
+
+  // Last updated string for meta display.
+  const lastUpdatedDisplay =
+    meta?.lastBarTimestamp
+      ? new Date(meta.lastBarTimestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      : null;
+
   return (
     <div className={`market-graph${variant === 'spotlight' ? ' market-graph--spotlight' : ''}`}>
       <div className={`market-workstation${sidebarCollapsed ? ' market-workstation--sidebar-collapsed' : ''}`}>
@@ -497,7 +705,7 @@ export function MarketGraphWorkspace({
                 <label className="market-graph__selector">
                   <span className="market-graph__selector-label">{labels.selectAsset}</span>
                   <select className="market-graph__selector-input" value={symbol} onChange={(event) => setSymbol(event.target.value)}>
-                    {normalizedAssets.map((asset) => (
+                    {mergedAssets.map((asset) => (
                       <option key={asset.symbol} value={asset.symbol}>
                         {asset.symbol} - {asset.name}
                       </option>
@@ -508,7 +716,7 @@ export function MarketGraphWorkspace({
                   <span className="market-graph__selector-label">{labels.compare}</span>
                   <select className="market-graph__selector-input" value={compareSymbol} onChange={(event) => setCompareSymbol(event.target.value)}>
                     <option value="">{labels.noCompare}</option>
-                    {normalizedAssets
+                    {mergedAssets
                       .filter((asset) => asset.symbol !== symbol)
                       .map((asset) => (
                         <option key={asset.symbol} value={asset.symbol}>
@@ -522,20 +730,39 @@ export function MarketGraphWorkspace({
               <div className="market-graph__toolbar-zone market-graph__toolbar-zone--center">
                 <div className="chart-toolbar__group market-graph__control-group" aria-label={labels.timeframe}>
                   <div className="chart-toolbar market-graph__pill-group">
-                    {rangeOptions.map((item) => (
-                      <button
-                        key={item.key}
-                        type="button"
-                        className={item.key === timeframe ? 'control-pill market-graph__pill market-graph__pill--active' : 'control-pill market-graph__pill'}
-                        aria-pressed={item.key === timeframe}
-                        aria-label={`${item.label} range with ${item.candleCount} candles`}
-                        title={item.description}
-                        onClick={() => setTimeframe(item.key)}
-                      >
-                        {item.label}
-                        {item.key === timeframe ? <span className="market-graph__pill-meta">{item.candleCount}</span> : null}
-                      </button>
-                    ))}
+                    {MARKET_GRAPH_TIMEFRAME_ORDER.map((tfId) => {
+                      const tfConfig = MARKET_GRAPH_TIMEFRAMES[tfId];
+                      const isActive = tfId === timeframe;
+                      const isIntraday = tfId === '1m' || tfId === '1h';
+                      const isDisabled = isIntraday && meta !== undefined && meta.actualResolution === 'daily';
+                      const pointCount = isActive ? visibleMeta.pointCount : null;
+                      return (
+                        <button
+                          key={tfId}
+                          type="button"
+                          className={[
+                            'control-pill market-graph__pill',
+                            isActive ? 'market-graph__pill--active' : '',
+                            isDisabled ? 'market-graph__pill--disabled' : '',
+                          ]
+                            .join(' ')
+                            .trim()}
+                          aria-pressed={isActive}
+                          aria-label={`${tfConfig.displayLabel} range`}
+                          title={
+                            isDisabled
+                              ? 'Intraday unavailable from configured provider.'
+                              : tfConfig.displayLabel
+                          }
+                          onClick={() => setTimeframe(tfId)}
+                        >
+                          {tfConfig.label}
+                          {isActive && pointCount !== null
+                            ? <span className="market-graph__pill-meta">{pointCount}</span>
+                            : null}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -620,13 +847,71 @@ export function MarketGraphWorkspace({
                     <span>{labels.signals}</span>
                   </label>
                 </div>
+                <div className="market-graph__meta-row">
+                  <span className="market-graph__meta-item">
+                    {visibleMeta.pointCount} pts
+                  </span>
+                  <span className="market-graph__meta-item">
+                    {timeframe}
+                  </span>
+                  {meta ? (
+                    <>
+                      <span className="market-graph__meta-item">
+                        req {meta.requestedResolution}
+                      </span>
+                      <span className="market-graph__meta-item">
+                        act {meta.actualResolution}
+                      </span>
+                      <span className="market-graph__meta-item">
+                        {meta.provider} {meta.isFresh ? 'LIVE' : 'STALE'}
+                      </span>
+                      <span className="market-graph__meta-item">
+                        mode {meta.providerQuoteMode ?? 'unknown'}
+                      </span>
+                      <span className="market-graph__meta-item">
+                        cov {(meta.coverageRatio * 100).toFixed(0)}%
+                      </span>
+                      <span className="market-graph__meta-item">
+                        backfill {meta.backfillAttempted ? (meta.backfillSucceeded ? 'ok' : 'fail') : 'n/a'}
+                      </span>
+                    </>
+                  ) : null}
+                  {lastUpdatedDisplay ? (
+                    <span className="market-graph__meta-item">
+                      Updated {lastUpdatedDisplay}
+                    </span>
+                  ) : null}
+                </div>
               </div>
             ) : null}
           </section>
 
-          {usingDegradedInterval ? (
+          {/* Degraded / fallback notices */}
+          {degradedMessage ? (
             <div className="market-graph__degraded-note" role="status" aria-live="polite">
-              Using available provider history for this interval.
+              {degradedMessage}
+            </div>
+          ) : null}
+          {coverageLoadingMessage ? (
+            <div className="market-graph__degraded-note" role="status" aria-live="polite">
+              {coverageLoadingMessage}
+            </div>
+          ) : null}
+          {topUpErrorMessage ? (
+            <div className="market-graph__degraded-note" role="status" aria-live="polite">
+              {topUpErrorMessage}
+            </div>
+          ) : null}
+
+          {showCandlesUnavailableNote ? (
+            <div className="market-graph__degraded-note market-graph__degraded-note--candles" role="status" aria-live="polite">
+              {labels.candlesUnavailable}
+            </div>
+          ) : null}
+
+          {useCompareMode ? (
+            <div className="market-graph__compare-note" role="status" aria-live="polite">
+              Indexed to 100 at first shared bar
             </div>
           ) : null}
 
@@ -666,13 +951,14 @@ export function MarketGraphWorkspace({
               <line key={step} x1="0" y1={step * 105} x2="980" y2={step * 105} className="market-graph__grid" />
             ))}
           </g>
+
           {yAxisTicks.map((tick) => (
             <text key={tick.y} x="972" y={tick.y} textAnchor="end" className="market-graph__axis-tick">
               {tick.label}
             </text>
           ))}
           {xAxisTicks.map((tick) => (
-            <text key={`${tick.x}-${tick.label}`} x={tick.x} y="414" textAnchor="middle" className="market-graph__axis-tick">
+            <text key={`${tick.timestamp}-${tick.label}`} x={tick.x} y="414" textAnchor="middle" className="market-graph__axis-tick">
               {tick.label}
             </text>
           ))}
@@ -692,7 +978,7 @@ export function MarketGraphWorkspace({
           ) : null}
 
           {hasRenderableSeries ? (
-            graphType === 'candles'
+            graphType === 'candles' && !useCompareMode
               ? viewportVisible.map((point, index) => {
                   const x = (index / Math.max(1, viewportVisible.length - 1)) * 940 + 20;
                   const openY = 400 - ((point.open - minPrice) / priceRange) * 360;
@@ -721,12 +1007,18 @@ export function MarketGraphWorkspace({
             </text>
           )}
 
-          {hasRenderableSeries && showMovingAverage ? <path d={maLine} className="market-graph__average" /> : null}
-          {hasRenderableSeries && compareLine ? <path d={compareLine} className="market-graph__compare" /> : null}
+          {hasRenderableSeries && showMovingAverage && !useCompareMode ? (
+            <path d={maLine} className="market-graph__average" />
+          ) : null}
+
+          {hasRenderableSeries && compareLine ? (
+            <path d={compareLine} className="market-graph__compare" />
+          ) : null}
+
           {hasRenderableSeries && showSignals && selected.signal ? (
             <circle
               cx="950"
-              cy={400 - ((closes.at(-1)! - minPrice) / priceRange) * 360}
+              cy={400 - ((primaryClosesForLine.at(-1)! - closeMin) / closeRange) * (graphType === 'line' ? 420 : 360)}
               r="6"
               className={`market-graph__signal market-graph__signal--${selected.signal.interpretation}`}
             />
@@ -753,7 +1045,9 @@ export function MarketGraphWorkspace({
                   textAnchor="middle"
                   className="market-graph__axis-label-text"
                 >
-                  ${hoveredPoint.close.toFixed(2)}
+                  {useCompareMode
+                    ? `${hoveredPrimaryClose?.toFixed(1)}`
+                    : `$${hoveredPoint.close.toFixed(2)}`}
                 </text>
               </g>
 
@@ -772,7 +1066,7 @@ export function MarketGraphWorkspace({
                   textAnchor="middle"
                   className="market-graph__axis-label-text"
                 >
-                  {formatChartAxisDate(hoveredPoint.timestamp)}
+                  {formatAxisTimestamp(hoveredPoint.timestamp, effectiveXAxisFormat)}
                 </text>
               </g>
             </g>
@@ -785,9 +1079,11 @@ export function MarketGraphWorkspace({
             style={{ left: `${tooltipLeft}px`, top: `${tooltipTop}px` }}
             aria-hidden="true"
           >
-            <div className="market-graph__tooltip-date">{formatChartTooltipDate(hoveredPoint.timestamp)}</div>
+            <div className="market-graph__tooltip-date">
+              {formatTooltipTimestamp(hoveredPoint.timestamp, timeframeConfig.tooltipDateFormat)}
+            </div>
 
-            {graphType === 'candles' ? (
+            {graphType === 'candles' && !useCompareMode ? (
               <div className="market-graph__tooltip-ohlc">
                 <div className="market-graph__tooltip-row">
                   <span className="market-graph__tooltip-label">O</span>
@@ -810,23 +1106,39 @@ export function MarketGraphWorkspace({
               </div>
             ) : (
               <div className="market-graph__tooltip-row market-graph__tooltip-row--primary">
-                <span className="market-graph__tooltip-label">Close</span>
-                <span className="market-graph__tooltip-value">${hoveredPoint.close.toFixed(2)}</span>
+                <span className="market-graph__tooltip-label">{useCompareMode ? 'Idx' : 'Close'}</span>
+                <span className="market-graph__tooltip-value">
+                  {useCompareMode
+                    ? `${hoveredPrimaryClose?.toFixed(2)}`
+                    : `$${hoveredPoint.close.toFixed(2)}`}
+                </span>
               </div>
             )}
 
-            {showMovingAverage && ma[hoverState.index] !== undefined ? (
+            {showMovingAverage && ma[hoverState.index] !== undefined && !useCompareMode ? (
               <div className="market-graph__tooltip-row">
                 <span className="market-graph__tooltip-label">MA(10)</span>
                 <span className="market-graph__tooltip-value">${ma[hoverState.index]!.toFixed(2)}</span>
               </div>
             ) : null}
 
-            {compare && compareCloses[hoverState.index] !== undefined ? (
-              <div className="market-graph__tooltip-row">
-                <span className="market-graph__tooltip-label">{compare.symbol}</span>
-                <span className="market-graph__tooltip-value">${compareCloses[hoverState.index]!.toFixed(2)}</span>
-              </div>
+            {compare && useCompareMode && compareClosesNorm[hoverState.index] !== undefined ? (
+              <>
+                <div className="market-graph__tooltip-row">
+                  <span className="market-graph__tooltip-label">{selected.symbol}</span>
+                  <span className="market-graph__tooltip-value">{hoveredPrimaryClose?.toFixed(2)}</span>
+                </div>
+                <div className="market-graph__tooltip-row">
+                  <span className="market-graph__tooltip-label">{compare.symbol}</span>
+                  <span className="market-graph__tooltip-value">{compareClosesNorm[hoverState.index]!.toFixed(2)}</span>
+                </div>
+                <div className="market-graph__tooltip-row">
+                  <span className="market-graph__tooltip-label">Rel</span>
+                  <span className={`market-graph__tooltip-value ${(compareClosesNorm[hoverState.index]! - (hoveredPrimaryClose ?? 100)) >= 0 ? 'market-graph__tooltip-value--up' : 'market-graph__tooltip-value--down'}`}>
+                    {((compareClosesNorm[hoverState.index]! - (hoveredPrimaryClose ?? 100))).toFixed(2)}
+                  </span>
+                </div>
+              </>
             ) : null}
           </div>
         ) : null}

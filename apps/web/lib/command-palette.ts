@@ -10,7 +10,11 @@ export type CommandPaletteEntry = {
 export function searchCommandPalette(entries: CommandPaletteEntry[], query: string): CommandPaletteEntry[] {
   const q = query.trim().toLowerCase();
   if (q.length === 0) {
-    return entries.slice(0, 24);
+    // Show curated defaults: routes first, then actions
+    const routes = entries.filter((e) => e.group === 'Routes').slice(0, 10);
+    const actions = entries.filter((e) => e.group === 'Actions').slice(0, 8);
+    const assets = entries.filter((e) => e.group === 'Assets').slice(0, 6);
+    return [...routes, ...actions, ...assets];
   }
 
   const score = (entry: CommandPaletteEntry): number => {

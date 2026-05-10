@@ -313,6 +313,7 @@ export default async function PortfolioPage({
                       isWatched={position.isWatched}
                       watchlistLabelAdd="Add to watchlist"
                       watchlistLabelRemove="Remove watchlist"
+                      hasSimulatedPosition
                     />
                   )}
                 />
@@ -351,6 +352,7 @@ export default async function PortfolioPage({
                         isWatched={position.isWatched}
                         watchlistLabelAdd="Add to watchlist"
                         watchlistLabelRemove="Remove watchlist"
+                        hasSimulatedPosition
                       />
                     </div>
                   )}

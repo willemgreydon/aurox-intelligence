@@ -26,6 +26,12 @@ type WorkspacePreferencesFormProps = {
     defaultTimePeriod: string;
     trackedSymbols: string;
     trackedSymbolsHint: string;
+    trackedSymbolsFormatHint: string;
+    trackedSymbolsExamples: string;
+    trackedSymbolsNormalized: string;
+    trackedSymbolsNone: string;
+    trackedSymbolsInvalid: string;
+    trackedSymbolsIgnored: string;
     visibleModules: string;
     simulationPreferencesTitle: string;
     preferredBrokerMode: string;
@@ -36,6 +42,11 @@ type WorkspacePreferencesFormProps = {
     orderActivityDigest: string;
     laneStatusAlerts: string;
     save: string;
+    brokerModeLabels: Record<BrokerMode, string>;
+    assetScopeLabels: Record<BrokerAssetScope, string>;
+    chartTypeLabels: Record<ChartType, string>;
+    timePeriodLabels: Record<TimePeriod, string>;
+    moduleLabels: Record<DashboardModuleId, string>;
   };
 };
 
@@ -47,19 +58,6 @@ const brokerModes: BrokerMode[] = [
   'agent_sandbox_lane',
 ];
 const brokerAssetScopes: BrokerAssetScope[] = ['stock', 'etf', 'crypto', 'multi-asset'];
-const brokerModeLabels: Record<BrokerMode, string> = {
-  manual_stock_lane: 'Manual stock lane',
-  manual_multi_asset_lane: 'Manual multi-asset lane',
-  ai_copilot_lane: 'AI copilot lane',
-  signal_follow_lane: 'Signal-follow lane',
-  agent_sandbox_lane: 'Broker-agent sandbox lane',
-};
-const brokerAssetScopeLabels: Record<BrokerAssetScope, string> = {
-  stock: 'Stock',
-  etf: 'ETF',
-  crypto: 'Crypto',
-  'multi-asset': 'Multi-asset',
-};
 
 export function WorkspacePreferencesForm({ preset, labels }: WorkspacePreferencesFormProps) {
   const [state, formAction] = useActionState(updateWorkspacePreferencesAction, emptyFormState);
@@ -100,7 +98,7 @@ export function WorkspacePreferencesForm({ preset, labels }: WorkspacePreference
           <select name="defaultChartType" defaultValue={preset.defaultChartType}>
             {availableChartTypes.map((chartType: ChartType) => (
               <option key={chartType} value={chartType}>
-                {chartType}
+                {labels.chartTypeLabels[chartType] ?? chartType}
               </option>
             ))}
           </select>
@@ -113,7 +111,7 @@ export function WorkspacePreferencesForm({ preset, labels }: WorkspacePreference
           <select name="defaultTimePeriod" defaultValue={preset.defaultTimePeriod}>
             {availableTimePeriods.map((timePeriod: TimePeriod) => (
               <option key={timePeriod} value={timePeriod}>
-                {timePeriod}
+                {labels.timePeriodLabels[timePeriod] ?? timePeriod}
               </option>
             ))}
           </select>
@@ -134,22 +132,20 @@ export function WorkspacePreferencesForm({ preset, labels }: WorkspacePreference
           />
           {state.fieldErrors.trackedSymbols ? <span className="form-field__error">{state.fieldErrors.trackedSymbols}</span> : null}
           <span className="form-field__hint" id={trackedSymbolsHintId}>
-            {labels.trackedSymbolsHint} Use comma-separated symbols. We trim spaces, uppercase entries, and remove duplicates.
+            {labels.trackedSymbolsHint} {labels.trackedSymbolsFormatHint}
           </span>
           <span className="form-field__hint">
-            Normalized: {trackedSymbolsValidation.normalized.join(', ') || 'None'} ({trackedSymbolsValidation.message})
+            {labels.trackedSymbolsNormalized}: {trackedSymbolsValidation.normalized.join(', ') || labels.trackedSymbolsNone} ({trackedSymbolsValidation.message})
           </span>
           {!trackedSymbolsValidation.isValid ? (
-            <span className="form-field__error">Add at least one valid symbol before saving.</span>
+            <span className="form-field__error">{labels.trackedSymbolsInvalid}</span>
           ) : null}
           {trackedSymbolsValidation.invalid.length > 0 ? (
             <span className="form-field__error">
-              Ignored invalid symbols: {trackedSymbolsValidation.invalid.join(', ')}
+              {labels.trackedSymbolsIgnored}: {trackedSymbolsValidation.invalid.join(', ')}
             </span>
           ) : null}
-          <span className="form-field__hint">
-            Allowed examples: AAPL, MSFT, NVDA, SPY, BINANCE:BTCUSDT
-          </span>
+          <span className="form-field__hint">{labels.trackedSymbolsExamples}</span>
         </label>
       </div>
 
@@ -164,7 +160,7 @@ export function WorkspacePreferencesForm({ preset, labels }: WorkspacePreference
                 value={moduleId}
                 defaultChecked={preset.visibleModules.includes(moduleId)}
               />
-              <span>{moduleId}</span>
+              <span>{labels.moduleLabels[moduleId] ?? moduleId}</span>
             </label>
           ))}
         </div>
@@ -178,7 +174,7 @@ export function WorkspacePreferencesForm({ preset, labels }: WorkspacePreference
             <select name="preferredBrokerMode" defaultValue={preset.simulationPreferences.preferredBrokerMode}>
               {brokerModes.map((mode) => (
                 <option key={mode} value={mode}>
-                  {brokerModeLabels[mode]}
+                  {labels.brokerModeLabels[mode]}
                 </option>
               ))}
             </select>
@@ -189,7 +185,7 @@ export function WorkspacePreferencesForm({ preset, labels }: WorkspacePreference
             <select name="defaultAssetScope" defaultValue={preset.simulationPreferences.defaultAssetScope}>
               {brokerAssetScopes.map((scope) => (
                 <option key={scope} value={scope}>
-                  {brokerAssetScopeLabels[scope]}
+                  {labels.assetScopeLabels[scope]}
                 </option>
               ))}
             </select>

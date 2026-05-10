@@ -1,5 +1,3 @@
-import { Section } from '../../components/ui/section';
-import { WorkstationPageHeader } from '../../components/asset/workstation-page-header';
 import { MarketGraphSection } from '../../components/charts/market-graph-section';
 import { getMessages } from '../../lib/i18n/messages';
 import { getRequestLocale } from '../../server/i18n/locale';
@@ -25,29 +23,43 @@ export default async function MarketPage() {
 
   return (
     <>
-      <MarketGraphSection graph={graph} messages={messages} trackedSymbols={preferredSymbols} newsItems={news.items} />
+      {/* ── Compact Command Header — above the chart ── */}
+      <header className="observe-command-header">
+        <div className="observe-command-header__inner">
+          <div className="observe-command-header__top">
+            <div className="observe-command-header__identity">
+              <span className="observe-command-header__eyebrow">Market / Graph Workstation</span>
+              <h1 className="observe-command-header__title">{messages.marketGraph.title}</h1>
+              <p className="observe-command-header__sub">
+                {messages.marketGraph.subtitle}
+              </p>
+            </div>
+            <div className="observe-command-header__chips">
+              <span className="observe-chip observe-chip--info" title="Market data provider">
+                {graph.meta.provider.toUpperCase()}
+              </span>
+              <span className="observe-chip observe-chip--neutral" title="Assets tracked">
+                {graph.assets.length} Assets
+              </span>
+              <span className="observe-chip observe-chip--neutral" title="History window">
+                2Y History
+              </span>
+              <span className="observe-chip observe-chip--info" title="Simulation only — no live capital">
+                SIM only
+              </span>
+            </div>
+          </div>
+          <nav className="observe-command-header__actions" aria-label="Market primary actions">
+            <a href="/" className="button button--secondary observe-command-action">Home</a>
+            <a href="/observe" className="button button--secondary observe-command-action">Observer</a>
+            <a href="/signals" className="button button--secondary observe-command-action">Signals</a>
+            <a href="/stocks" className="button button--secondary observe-command-action">Stocks</a>
+            <a href="/invest/simulation" className="button button--secondary observe-command-action">Simulation</a>
+          </nav>
+        </div>
+      </header>
 
-      <Section className="dashboard-section dashboard-section--hero dashboard-section--after-market-graph">
-        <WorkstationPageHeader
-          eyebrow={messages.shell.nav.marketOverview}
-          title={messages.marketGraph.title}
-          description={messages.marketGraph.subtitle}
-          summary={messages.common.simulationDisclosure}
-          statusLabel={graph.provider.toUpperCase()}
-          statusTone="info"
-          meta={[
-            { label: messages.common.coverage, value: String(graph.assets.length) },
-            { label: messages.common.sourceSummary, value: graph.provider.toUpperCase() },
-            { label: messages.common.historyWindow, value: '2Y' },
-          ]}
-          actions={[
-            { href: '/', label: messages.common.home },
-            { href: '/observe', label: 'Open observer' },
-            { href: '/stocks', label: messages.shell.nav.stocks },
-            { href: '/invest/simulation', label: messages.simulation.navLabel },
-          ]}
-        />
-      </Section>
+      <MarketGraphSection graph={graph} messages={messages} trackedSymbols={preferredSymbols} newsItems={news.items} />
     </>
   );
 }

@@ -35,5 +35,11 @@ describe('i18n locale key parity', () => {
       const unknown = keys.filter((key) => !base.has(key));
       expect(unknown).toEqual([]);
     });
+
+    it(`${name} includes all keys from en`, () => {
+      const keys = new Set(flattenKeys(locale as Record<string, unknown>));
+      const missing = [...base].filter((key) => !keys.has(key));
+      expect(missing).toEqual([]);
+    });
   }
 });

@@ -1,6 +1,8 @@
 import { ingestMacroDataJob } from '../jobs/ingest-macro-data.js';
 import { ingestMarketDataJob } from '../jobs/ingest-market-data.js';
 import { extractMarketIntelligenceJob } from '../jobs/extract-market-intelligence.js';
+import { extractNewsIntelligenceJob } from '../jobs/extract-news-intelligence.js';
+import { ingestIntradayMarketDataJob } from '../jobs/ingest-intraday-market-data.js';
 import { recomputeForecastsJob } from '../jobs/recompute-forecasts.js';
 import { recomputeSignalsJob } from '../jobs/recompute-signals.js';
 import { runJob } from '../runners/run-job.js';
@@ -21,6 +23,16 @@ const scheduledJobs: ScheduledJob[] = [
     name: 'extract-market-intelligence',
     intervalMs: 10 * 60 * 1000,
     execute: extractMarketIntelligenceJob,
+  },
+  {
+    name: 'extract-news-intelligence',
+    intervalMs: 12 * 60 * 1000,
+    execute: extractNewsIntelligenceJob,
+  },
+  {
+    name: 'ingest-intraday-market-data',
+    intervalMs: 7 * 60 * 1000,
+    execute: ingestIntradayMarketDataJob,
   },
   {
     name: 'recompute-signals',

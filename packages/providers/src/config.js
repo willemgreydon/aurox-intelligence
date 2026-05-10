@@ -40,7 +40,7 @@ const optionalNonEmptyString = z.preprocess((value) => {
 }, z.string().min(1).optional());
 const providerEnvSchema = z.object({
     MARKET_DATA_PROVIDER: z
-        .enum(['polygon', 'twelve-data', 'tiingo', 'coingecko', 'finnhub', 'eodhd'])
+        .enum(['polygon', 'twelve-data', 'tiingo', 'coingecko', 'finnhub', 'eodhd', 'binance'])
         .default('polygon'),
     POLYGON_API_KEY: optionalNonEmptyString,
     TWELVE_DATA_API_KEY: optionalNonEmptyString,
@@ -48,6 +48,29 @@ const providerEnvSchema = z.object({
     COINGECKO_API_KEY: optionalNonEmptyString,
     FINNHUB_API_KEY: optionalNonEmptyString,
     EODHD_API_KEY: optionalNonEmptyString,
+    ANTHROPIC_API_KEY: optionalNonEmptyString,
+    OPENAI_API_KEY: optionalNonEmptyString,
+    CLAUDE_FINANCE_API_KEY: optionalNonEmptyString,
+    ANTHROPIC_PROVIDER_ENABLED: z.preprocess((value) => {
+        if (typeof value !== 'string')
+            return value;
+        const trimmed = value.trim();
+        return trimmed === '' ? undefined : trimmed;
+    }, z.union([z.literal('true'), z.literal('false')]).optional()),
+    OPENAI_PROVIDER_ENABLED: z.preprocess((value) => {
+        if (typeof value !== 'string')
+            return value;
+        const trimmed = value.trim();
+        return trimmed === '' ? undefined : trimmed;
+    }, z.union([z.literal('true'), z.literal('false')]).optional()),
+    AI_PRIMARY_PROVIDER: z.enum(['anthropic', 'openai']).optional(),
+    AI_FALLBACK_PROVIDER: z.enum(['anthropic', 'openai']).optional(),
+    CLAUDE_FINANCE_PROVIDER_ENABLED: z.preprocess((value) => {
+        if (typeof value !== 'string')
+            return value;
+        const trimmed = value.trim();
+        return trimmed === '' ? undefined : trimmed;
+    }, z.union([z.literal('true'), z.literal('false')]).optional()),
     MARKET_SYMBOLS: optionalNonEmptyString,
     SIMULATION_SYMBOLS: optionalNonEmptyString,
     SIMULATION_STOCK_SYMBOLS: optionalNonEmptyString,
@@ -101,6 +124,14 @@ export function getProviderEnv() {
         COINGECKO_API_KEY: process.env.COINGECKO_API_KEY,
         FINNHUB_API_KEY: process.env.FINNHUB_API_KEY,
         EODHD_API_KEY: process.env.EODHD_API_KEY,
+        ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
+        OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+        CLAUDE_FINANCE_API_KEY: process.env.CLAUDE_FINANCE_API_KEY,
+        ANTHROPIC_PROVIDER_ENABLED: process.env.ANTHROPIC_PROVIDER_ENABLED,
+        OPENAI_PROVIDER_ENABLED: process.env.OPENAI_PROVIDER_ENABLED,
+        AI_PRIMARY_PROVIDER: process.env.AI_PRIMARY_PROVIDER,
+        AI_FALLBACK_PROVIDER: process.env.AI_FALLBACK_PROVIDER,
+        CLAUDE_FINANCE_PROVIDER_ENABLED: process.env.CLAUDE_FINANCE_PROVIDER_ENABLED,
         MARKET_SYMBOLS: process.env.MARKET_SYMBOLS,
         SIMULATION_SYMBOLS: process.env.SIMULATION_SYMBOLS,
         SIMULATION_STOCK_SYMBOLS: process.env.SIMULATION_STOCK_SYMBOLS,
@@ -173,6 +204,8 @@ export function getMarketProviderApiKey(provider) {
             return requireFinnhubApiKey();
         case 'eodhd':
             return requireEodhdApiKey();
+        case 'binance':
+            throw new Error('Binance uses public market-data endpoints and does not require an API key.');
         default:
             throw new Error(`Unsupported market data provider: ${provider}`);
     }
@@ -226,4 +259,72 @@ export function getHistoryPrioritySymbols() {
         return mergeSymbolSets(configured);
     }
     return mergeSymbolSets(getSimulationSymbols(), getLiveCandidateSymbols(), getMarketSymbols());
+}
+function asEnabledFlag(value, defaultValue) {
+    if (value === undefined)
+        return defaultValue;
+    return value === 'true';
+}
+export function getClaudeFinanceApiKey() {
+    const env = getProviderEnv();
+    return env.ANTHROPIC_API_KEY ?? env.CLAUDE_FINANCE_API_KEY;
+}
+export function isClaudeFinanceProviderEnabled() {
+    const env = getProviderEnv();
+    if (env.ANTHROPIC_PROVIDER_ENABLED !== undefined) {
+        return env.ANTHROPIC_PROVIDER_ENABLED === 'true';
+    }
+    if (!env.CLAUDE_FINANCE_PROVIDER_ENABLED)
+        return true;
+    return env.CLAUDE_FINANCE_PROVIDER_ENABLED === 'true';
+}
+export function resolveAiProviderConfig() {
+    const env = getProviderEnv();
+    const anthropicKey = env.ANTHROPIC_API_KEY ?? env.CLAUDE_FINANCE_API_KEY;
+    const usingDeprecatedClaudeAlias = !env.ANTHROPIC_API_KEY && Boolean(env.CLAUDE_FINANCE_API_KEY);
+    const openaiKey = env.OPENAI_API_KEY;
+    const anthropicEnabled = asEnabledFlag(env.ANTHROPIC_PROVIDER_ENABLED, true);
+    const openaiEnabled = asEnabledFlag(env.OPENAI_PROVIDER_ENABLED, true);
+    const primaryProvider = env.AI_PRIMARY_PROVIDER ?? 'anthropic';
+    const fallbackProvider = env.AI_FALLBACK_PROVIDER ?? (primaryProvider === 'anthropic' ? 'openai' : 'anthropic');
+    const providers = {
+        anthropic: { enabled: anthropicEnabled, key: anthropicKey },
+        openai: { enabled: openaiEnabled, key: openaiKey },
+    };
+    const primary = providers[primaryProvider];
+    if (primary.enabled && primary.key) {
+        return {
+            available: true,
+            provider: primaryProvider,
+            apiKey: primary.key,
+            fallbackProviderUsed: false,
+            usingDeprecatedClaudeAlias,
+        };
+    }
+    const fallback = providers[fallbackProvider];
+    if (fallbackProvider !== primaryProvider && fallback.enabled && fallback.key) {
+        return {
+            available: true,
+            provider: fallbackProvider,
+            apiKey: fallback.key,
+            fallbackProviderUsed: true,
+            usingDeprecatedClaudeAlias,
+        };
+    }
+    const anyEnabled = anthropicEnabled || openaiEnabled;
+    const anyKey = Boolean(anthropicKey || openaiKey);
+    const reason = !anyEnabled
+        ? 'all_providers_disabled'
+        : !anyKey
+            ? 'missing_all_keys'
+            : primary.enabled
+                ? 'missing_primary_key'
+                : 'primary_disabled';
+    return {
+        available: false,
+        provider: null,
+        fallbackProviderUsed: false,
+        usingDeprecatedClaudeAlias,
+        reason,
+    };
 }

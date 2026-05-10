@@ -1,9 +1,9 @@
 import { getProviderEnv, requireCoinGeckoApiKey } from '../../config';
 import { buildUrl, fetchJson } from '../../shared/http-client';
-import { createMissingConfigError } from '../errors';
+import { createMissingConfigError, createUnsupportedSymbolError } from '../errors';
 import { assetMetadataSchema, cryptoGlobalMetricsSchema, marketHistoryPointSchema, marketObservationSchema } from '../schemas';
 import { resolveCoinGeckoId } from '../provider-symbols';
-import type { AssetMetadata, CryptoGlobalMetrics, HistoricalBar, MarketQuote } from '../types';
+import type { AssetMetadata, CryptoGlobalMetrics, HistoricalBar, MarketHistoryResolution, MarketQuote } from '../types';
 
 type CoinGeckoSimplePriceResponse = Record<
   string,
@@ -103,7 +103,10 @@ export async function fetchCoinGeckoQuote(symbol: string): Promise<MarketQuote> 
   });
 }
 
-export async function fetchCoinGeckoHistory(symbol: string): Promise<HistoricalBar[]> {
+export async function fetchCoinGeckoHistory(
+  symbol: string,
+  resolution: MarketHistoryResolution = '1d',
+): Promise<HistoricalBar[]> {
   const coinId = resolveCoinGeckoId(symbol);
 
   if (!coinId) {
@@ -112,6 +115,9 @@ export async function fetchCoinGeckoHistory(symbol: string): Promise<HistoricalB
 
   if (!isCoinGeckoConfigured()) {
     throw createMissingConfigError('coingecko', 'CoinGecko is not configured.');
+  }
+  if (resolution !== '1d') {
+    throw createUnsupportedSymbolError('coingecko', `CoinGecko resolution ${resolution} is not supported for OHLC history.`);
   }
 
   const url = buildUrl(`https://pro-api.coingecko.com/api/v3/coins/${coinId}/market_chart`, {

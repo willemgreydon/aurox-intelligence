@@ -204,7 +204,7 @@ describe('executeSimulationOrderForCurrentUser', () => {
         quantity: 1,
         strategyLaneId: 'manual_multi_asset_lane',
       }),
-    ).rejects.toThrow('fresh quote is required');
+    ).rejects.toThrow('Fresh ETF quote required before simulation execution');
   });
 
   it('rejects wrong lane scope for multi-asset orders', async () => {

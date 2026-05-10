@@ -1,6 +1,7 @@
 import { verifyEmailInputSchema } from '@repo/api-contracts';
 import { NextResponse } from 'next/server';
 import { AuthenticationError, verifyEmailWithToken } from '../../../../server/auth/service';
+import { checkRateLimit } from '../../../../server/lib/rate-limit';
 
 function getTokenFromRequest(request: Request) {
   const url = new URL(request.url);
@@ -22,9 +23,10 @@ async function handleVerification(token: string | null) {
 
   try {
     const user = await verifyEmailWithToken(parsed.data.token);
+    const { id, email, name, role, avatarUrl, createdAt, updatedAt } = user;
     return NextResponse.json({
       success: true,
-      user,
+      user: { id, email, name, role, avatarUrl, createdAt, updatedAt },
     });
   } catch (error) {
     if (error instanceof AuthenticationError) {
@@ -42,10 +44,14 @@ async function handleVerification(token: string | null) {
 }
 
 export async function GET(request: Request) {
+  const limited = await checkRateLimit(request, 'auth:verify-email', { max: 20, windowMs: 60_000 });
+  if (limited) return limited;
   return handleVerification(getTokenFromRequest(request));
 }
 
 export async function POST(request: Request) {
+  const limited = await checkRateLimit(request, 'auth:verify-email', { max: 20, windowMs: 60_000 });
+  if (limited) return limited;
   const payload = await request.json().catch(() => null);
   return handleVerification(typeof payload?.token === 'string' ? payload.token : null);
 }

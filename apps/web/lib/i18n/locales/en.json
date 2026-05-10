@@ -163,7 +163,18 @@
     "assetClassColumn": "Asset class",
     "createdColumn": "Created",
     "typeColumn": "Type",
-    "cashDeltaColumn": "Cash delta"
+    "cashDeltaColumn": "Cash delta",
+    "marketPulseEyebrow": "Market Pulse",
+    "marketPulseTitle": "Live pulse snapshot",
+    "marketPulseDescription": "Top watchlist movers and freshness.",
+    "marketPulseUnavailable": "Unavailable",
+    "freshnessLive": "Live",
+    "freshnessPartial": "Partial",
+    "freshnessDelayed": "Delayed",
+    "freshnessCached": "Cached",
+    "freshnessMarketClosed": "Market closed",
+    "freshnessStale": "Stale",
+    "freshnessUnavailable": "Unavailable"
   },
   "account": {
     "preferencesTitle": "Workspace preferences",
@@ -174,6 +185,12 @@
     "defaultChartType": "Default chart type",
     "defaultTimePeriod": "Default time period",
     "trackedSymbolsHint": "Use commas to separate symbols such as AAPL, MSFT, NVDA, BINANCE:BTCUSDT.",
+    "trackedSymbolsFormatHint": "Use comma-separated symbols. We trim spaces, uppercase entries, and remove duplicates.",
+    "trackedSymbolsExamples": "Allowed examples: AAPL, MSFT, NVDA, SPY, BINANCE:BTCUSDT",
+    "trackedSymbolsNormalized": "Normalized",
+    "trackedSymbolsNone": "None",
+    "trackedSymbolsInvalid": "Add at least one valid symbol before saving.",
+    "trackedSymbolsIgnored": "Ignored invalid symbols",
     "simulationPreferencesTitle": "Simulation broker mode defaults",
     "preferredBrokerMode": "Preferred broker mode",
     "brokerModeCapitalLimitUsd": "Broker mode capital limit (USD)",
@@ -181,7 +198,42 @@
     "defaultAssetScope": "Default asset scope",
     "activityPreferencesTitle": "Activity preferences",
     "orderActivityDigest": "Enable order activity digest",
-    "laneStatusAlerts": "Enable lane status alerts"
+    "laneStatusAlerts": "Enable lane status alerts",
+    "sessionControlsEyebrow": "Session controls",
+    "sessionControlsTitle": "Sign-out and session awareness",
+    "sessionControlsDescription": "You currently have {{count}} active session.",
+    "sessionControlsDescriptionPlural": "You currently have {{count}} active sessions.",
+    "brokerModeManualStock": "Manual stock lane",
+    "brokerModeManualMultiAsset": "Manual multi-asset lane",
+    "brokerModeAiCopilot": "AI copilot lane",
+    "brokerModeSignalFollow": "Signal-follow lane",
+    "brokerModeAgentSandbox": "Broker-agent sandbox lane",
+    "assetScopeStock": "Stock",
+    "assetScopeEtf": "ETF",
+    "assetScopeCrypto": "Crypto",
+    "assetScopeMultiAsset": "Multi-asset",
+    "chartTypeTrend": "Trend",
+    "chartTypeStock": "Stock",
+    "chartTypeComparison": "Comparison",
+    "chartTypeBar": "Bar",
+    "chartTypeDonut": "Donut",
+    "timePeriod1s": "1 second",
+    "timePeriod3s": "3 seconds",
+    "timePeriod5s": "5 seconds",
+    "timePeriod10s": "10 seconds",
+    "timePeriod1m": "1 minute",
+    "timePeriod1h": "1 hour",
+    "timePeriod1d": "1 day",
+    "timePeriod1w": "1 week",
+    "timePeriod1mo": "1 month",
+    "timePeriod1y": "1 year",
+    "timePeriod2y": "2 years",
+    "timePeriod5y": "5 years",
+    "moduleMarketOverview": "Market overview",
+    "moduleWatchlist": "Watchlist",
+    "moduleForecastAnalysis": "Forecast analysis",
+    "moduleBrokerTools": "Broker tools",
+    "moduleSystemObservation": "System observation"
   },
   "invest": {
     "heroEyebrow": "Investment architecture",
@@ -378,13 +430,23 @@
       "title": "Five purpose-built lanes for every stage of the investment workflow.",
       "description": "Each lane owns a distinct domain from raw data ingestion to risk-governed execution. All lanes share a unified asset taxonomy and enforce explicit risk rules.",
       "enterLane": "Open lane",
-      "flowSteps": ["Data", "Signals", "Risk", "Simulation", "Portfolio"],
+      "flowSteps": [
+        "Data",
+        "Signals",
+        "Risk",
+        "Simulation",
+        "Portfolio"
+      ],
       "items": [
         {
           "label": "Lane 01",
           "title": "Market Intelligence Lane",
           "description": "Deterministic asset ranking, explainable signals, and AI-driven market context across stocks, ETFs, and crypto — all traceable to their inputs.",
-          "features": ["Composite score ranking", "Explainable AI signals", "Regime and factor analysis"],
+          "features": [
+            "Composite score ranking",
+            "Explainable AI signals",
+            "Regime and factor analysis"
+          ],
           "href": "/invest",
           "statusLabel": "Active"
         },
@@ -392,7 +454,11 @@
           "label": "Lane 02",
           "title": "Simulation Trading Lane",
           "description": "Production-grade paper trading with real market mechanics — order routing, position accounting, fee tracking, and full transaction audit history.",
-          "features": ["Simulated buy and sell orders", "Portfolio PnL tracking", "Order and transaction audit"],
+          "features": [
+            "Simulated buy and sell orders",
+            "Portfolio PnL tracking",
+            "Order and transaction audit"
+          ],
           "href": "/invest/simulation",
           "statusLabel": "Active"
         },
@@ -400,7 +466,11 @@
           "label": "Lane 03",
           "title": "Risk Governance Lane",
           "description": "Exposure limits, drawdown monitoring, and instrument constraints are enforced before any execution path is opened — for simulation and future live orders.",
-          "features": ["Max exposure enforcement", "Drawdown monitoring", "Instrument constraint checks"],
+          "features": [
+            "Max exposure enforcement",
+            "Drawdown monitoring",
+            "Instrument constraint checks"
+          ],
           "href": "/dashboard",
           "statusLabel": "Active"
         },
@@ -408,7 +478,11 @@
           "label": "Lane 04",
           "title": "Execution Readiness Lane",
           "description": "Broker adapter readiness gates, asset validation, and live execution eligibility checks — all auditable before any order can be routed to a real venue.",
-          "features": ["Broker readiness gate", "Asset scope validation", "Live execution gating"],
+          "features": [
+            "Broker readiness gate",
+            "Asset scope validation",
+            "Live execution gating"
+          ],
           "href": "/invest",
           "statusLabel": "Gated"
         },
@@ -416,7 +490,11 @@
           "label": "Lane 05",
           "title": "Portfolio Intelligence Lane",
           "description": "Cross-asset allocation view, factor exposure analysis, and simulation performance attribution — presenting positions in structured, explainable context.",
-          "features": ["Cross-asset allocation view", "Factor exposure analysis", "Simulation PnL attribution"],
+          "features": [
+            "Cross-asset allocation view",
+            "Factor exposure analysis",
+            "Simulation PnL attribution"
+          ],
           "href": "/stocks",
           "statusLabel": "Active"
         }
@@ -471,7 +549,89 @@
     "statusStopped": "Session is not currently running. Trading actions are read-only.",
     "statusFailed": "Session failed and requires a manual restart.",
     "statusError": "Observation feed is unavailable. Trading is read-only.",
-    "statusDegraded": "Observation feed is degraded. Trading is read-only until freshness recovers."
+    "statusDegraded": "Observation feed is degraded. Trading is read-only until freshness recovers.",
+    "form": {
+      "quantity": "Quantity",
+      "notional": "Notional",
+      "notionalAmount": "Notional amount",
+      "orderValue": "Order value",
+      "estimatedQuantity": "Estimated quantity",
+      "estimatedNotional": "Estimated notional",
+      "preparedTicket": "Prepared ticket",
+      "clearPreparedTicket": "Clear prepared ticket",
+      "openAssetDetail": "Open asset detail",
+      "openPortfolio": "Open portfolio"
+    },
+    "validation": {
+      "wholeSharesOnly": "Enter a whole number of shares.",
+      "minimumQuantity": "Minimum quantity: {{value}}",
+      "minimumNotional": "Minimum notional requirement not met.",
+      "insufficientCash": "Not enough cash for this simulation order.",
+      "noOpenPositionToSell": "No open {{symbol}} position is available to sell.",
+      "invalidNumber": "Enter a valid number.",
+      "quantityStepMismatch": "Use increments of {{step}}.",
+      "amountStepMismatch": "Use amount increments of {{step}}.",
+      "quantityRequired": "Quantity is required.",
+      "minimumShare": "Minimum 1 share.",
+      "minimumUnit": "Minimum 1 unit.",
+      "freshEtfQuoteRequired": "Fresh ETF quote required before simulation execution.",
+      "freshCryptoQuoteRequired": "Fresh crypto quote required before simulation execution.",
+      "noOpenEtfPositionToSell": "No open ETF position is available to sell.",
+      "noOpenCryptoPositionToSell": "No open crypto position is available to sell.",
+      "wholeEtfSharesOnly": "Whole ETF shares only in simulation.",
+      "cryptoPrecisionHint": "Crypto precision is based on provider/min-notional rules."
+    },
+    "chips": {
+      "quantityOne": "1",
+      "quantityFive": "5",
+      "quantityTen": "10",
+      "quantityTwentyFive": "25",
+      "percent25": "25%",
+      "percent50": "50%",
+      "percent100": "100%",
+      "closePosition": "Close position",
+      "cash25": "$25",
+      "cash50": "$50",
+      "cash100": "$100",
+      "cash250": "$250",
+      "cash500": "$500"
+    },
+    "agent": {
+      "providerUnavailableSafeHold": "AI provider unavailable. The agent defaulted to HOLD for safety.",
+      "rawProviderError": "Raw provider error",
+      "maxNotionalPerTrade": "Max notional / trade ($)",
+      "maxDailyNotional": "Max daily notional ($)",
+      "maxOpenExposure": "Max open exposure ($)",
+      "commonAmount": "Common amount",
+      "runAgent": "Run AI simulation agent",
+      "minimumForField": "{{field}} must be at least 1."
+    },
+    "actions": {
+      "prepareBuy": "Prepare Buy",
+      "prepareSell": "Prepare Sell",
+      "simulateBuy": "Simulate Buy",
+      "simulateSell": "Simulate Sell"
+    },
+    "errors": {
+      "quoteUnavailable": "Quote unavailable. The simulated order was not submitted.",
+      "insufficientCash": "Insufficient simulated cash for this order.",
+      "noPositionToSell": "No simulated position available to sell.",
+      "invalidQuantity": "Invalid quantity for this order.",
+      "providerUnavailable": "AI provider temporarily unavailable. No order was submitted.",
+      "dbTimeout": "Database temporarily unavailable. Please try again.",
+      "unknown": "An unexpected error occurred. The order was not submitted."
+    },
+    "success": {
+      "buySubmitted": "Simulated buy submitted.",
+      "sellSubmitted": "Simulated sell submitted."
+    },
+    "journal": {
+      "initialFunding": "Initial funding",
+      "simulatedBuy": "Simulated buy",
+      "simulatedSell": "Simulated sell",
+      "cashAdjustment": "Cash adjustment",
+      "technicalDetails": "Technical details"
+    }
   },
   "marketGraph": {
     "title": "Market graph",
@@ -495,7 +655,16 @@
     "viewport": "Viewport controls",
     "historyRange": "History range",
     "chartAria": "{{symbol}} market chart",
-    "noData": "No market history is available for this view."
+    "noData": "No market history is available for this view.",
+    "intradayUnavailable": "Intraday bars unavailable. Showing daily history.",
+    "dailyFallback": "Using daily provider history.",
+    "providerReturnedBars": "Provider returned {{count}} bars for {{timeframe}}.",
+    "cachedHistoryShown": "Cached history shown. Last updated {{date}}.",
+    "candlesUnavailable": "Candles unavailable for this provider/timeframe.",
+    "insufficientHistory": "Insufficient history for selected timeframe.",
+    "selectedTimeframe": "Selected timeframe",
+    "pointCount": "{{count}} data points",
+    "actualResolution": "Resolution: {{resolution}}"
   },
   "stocks": {
     "providerUnavailableSummary": "Live stocks snapshot is unavailable: {{message}}",

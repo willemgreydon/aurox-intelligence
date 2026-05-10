@@ -15,6 +15,7 @@ import { getRequestLocale } from '../../../server/i18n/locale';
 import { formatFreshnessLabel, formatPercentChange, formatUsdPrice, getQuoteTimestamp } from '../../../server/lib/quote-display';
 import { getStockDetailPageData } from '../../../server/services/stock-simulation-service';
 import { deriveAssetDecisionIntelligence } from '../../../server/services/decision-intelligence-service';
+import { getSnapshotsForAsset } from '../../../server/services/news-intelligence-service';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,6 +30,7 @@ export default async function StockDetailPage({ params }: StockDetailPageProps) 
   const locale = await getRequestLocale();
   const messages = getMessages(locale);
   const stock = await getStockDetailPageData(symbol);
+  const newsSnapshots = await getSnapshotsForAsset(symbol).catch(() => []);
   const quoteTimestamp = getQuoteTimestamp(stock?.quote);
   const hasQuotePrice = typeof stock?.quote?.price === 'number' && Number.isFinite(stock.quote.price);
 
@@ -141,16 +143,70 @@ export default async function StockDetailPage({ params }: StockDetailPageProps) 
                   <p>No shares are currently held in the paper portfolio.</p>
                 )}
               </div>
-              <div className="analytics-card__action-grid">
-                <WatchlistToggleForm
-                  assetId={stock.asset.assetId}
-                  symbol={stock.asset.symbol}
-                  assetClass="stock"
-                  active={stock.isWatched}
-                  label={stock.isWatched ? messages.dashboard.removeFromWatchlist : messages.dashboard.addToWatchlist}
-                />
-                <SimulatedOrderForm assetId={stock.asset.assetId} symbol={stock.asset.symbol} assetClass="stock" side="buy" label={messages.dashboard.buySimulated} showQuantityInput quantityLabel={messages.simulation.quantity} />
-                <SimulatedOrderForm assetId={stock.asset.assetId} symbol={stock.asset.symbol} assetClass="stock" side="sell" label={messages.dashboard.sellSimulated} showQuantityInput quantityLabel={messages.simulation.quantity} />
+              <div className="stock-detail-actions">
+                <div className="stock-detail-actions__watchlist">
+                  <WatchlistToggleForm
+                    assetId={stock.asset.assetId}
+                    symbol={stock.asset.symbol}
+                    assetClass="stock"
+                    active={stock.isWatched}
+                    label={stock.isWatched ? messages.dashboard.removeFromWatchlist : messages.dashboard.addToWatchlist}
+                  />
+                </div>
+                <div className="stock-detail-actions__orders">
+                  <SimulatedOrderForm
+                    assetId={stock.asset.assetId}
+                    symbol={stock.asset.symbol}
+                    assetClass="stock"
+                    side="buy"
+                    label={messages.dashboard.buySimulated}
+                    showQuantityInput
+                    quantityLabel={messages.simulation.quantity}
+                    currentPrice={stock.quote?.price ?? null}
+                    currentHeldQuantity={stock.position?.quantity ?? 0}
+                    uiText={{
+                      quantityMode: messages.simulation.quantity,
+                      notionalMode: 'Notional',
+                      notionalAmount: 'Notional amount',
+                      quantityRequired: messages.simulation.validation.quantityRequired,
+                      minimumShare: messages.simulation.validation.minimumShare,
+                      minimumUnit: messages.simulation.validation.minimumUnit,
+                      minimumQuantity: (value) => messages.simulation.validation.minimumQuantity.replace('{{value}}', String(value)),
+                      wholeSharesOnly: messages.simulation.validation.wholeSharesOnly,
+                      quantityStepMismatch: (step) => messages.simulation.validation.quantityStepMismatch.replace('{{step}}', String(step)),
+                      minimumNotional: messages.simulation.validation.minimumNotional,
+                      noOpenPositionToSell: (s) => messages.simulation.validation.noOpenPositionToSell.replace('{{symbol}}', s),
+                      closePosition: messages.simulation.chips.closePosition,
+                    }}
+                  />
+                  <SimulatedOrderForm
+                    assetId={stock.asset.assetId}
+                    symbol={stock.asset.symbol}
+                    assetClass="stock"
+                    side="sell"
+                    label={messages.dashboard.sellSimulated}
+                    showQuantityInput
+                    quantityLabel={messages.simulation.quantity}
+                    currentPrice={stock.quote?.price ?? null}
+                    currentHeldQuantity={stock.position?.quantity ?? 0}
+                    disabled={!stock.position || stock.position.quantity <= 0}
+                    disabledReason={messages.simulation.validation.noOpenPositionToSell.replace('{{symbol}}', stock.asset.symbol)}
+                    uiText={{
+                      quantityMode: messages.simulation.quantity,
+                      notionalMode: 'Notional',
+                      notionalAmount: 'Notional amount',
+                      quantityRequired: messages.simulation.validation.quantityRequired,
+                      minimumShare: messages.simulation.validation.minimumShare,
+                      minimumUnit: messages.simulation.validation.minimumUnit,
+                      minimumQuantity: (value) => messages.simulation.validation.minimumQuantity.replace('{{value}}', String(value)),
+                      wholeSharesOnly: messages.simulation.validation.wholeSharesOnly,
+                      quantityStepMismatch: (step) => messages.simulation.validation.quantityStepMismatch.replace('{{step}}', String(step)),
+                      minimumNotional: messages.simulation.validation.minimumNotional,
+                      noOpenPositionToSell: (s) => messages.simulation.validation.noOpenPositionToSell.replace('{{symbol}}', s),
+                      closePosition: messages.simulation.chips.closePosition,
+                    }}
+                  />
+                </div>
               </div>
             </Card>
             <DetailSlotCard
@@ -174,6 +230,28 @@ export default async function StockDetailPage({ params }: StockDetailPageProps) 
               concentrationWarning={decision.risk.concentrationWarning}
               riskLevel={decision.risk.label}
             />
+            <Card className="analytics-card">
+              <div className="analytics-card__header">
+                <div>
+                  <div className="section__eyebrow">News Intelligence</div>
+                  <h3>Snapshot-driven news context</h3>
+                  <p>Deterministic event extraction and risk/opportunity scoring from recent headlines.</p>
+                </div>
+              </div>
+              <div className="analytics-card__body">
+                {newsSnapshots.slice(0, 3).length === 0 ? (
+                  <p>No news intelligence snapshots available for this symbol yet.</p>
+                ) : (
+                  newsSnapshots.slice(0, 3).map((snapshot) => (
+                    <article key={snapshot.id} style={{ marginBottom: '0.6rem' }}>
+                      <p><strong>{snapshot.article.title}</strong></p>
+                      <p>Risk {snapshot.riskScore.toFixed(0)} / Opportunity {snapshot.opportunityScore.toFixed(0)} / Sentiment {snapshot.sentimentScore.toFixed(2)}</p>
+                      <p>{snapshot.eventTypes.length > 0 ? `Events: ${snapshot.eventTypes.join(', ')}` : 'No major event type detected.'}</p>
+                    </article>
+                  ))
+                )}
+              </div>
+            </Card>
           </div>
         </div>
       </Section>

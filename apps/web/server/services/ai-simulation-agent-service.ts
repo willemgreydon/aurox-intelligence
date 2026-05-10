@@ -14,7 +14,7 @@ import {
   linkSimulationAgentDecisionToOrder,
 } from '@repo/db';
 import { createHash } from 'node:crypto';
-import { hasOpenAiApiKey } from '../env/ai-agent-env';
+import { hasOpenAiApiKey, resolveAiAgentProviderConfig } from '../env/ai-agent-env';
 import { callOpenAiSimulationAgent } from '../lib/ai/openai-client';
 import { executeTradeForUser } from './trade-execution-service';
 import { getBrokerModeConfig } from '../config/broker-mode-registry';
@@ -25,6 +25,7 @@ import {
   mapRankedAssetsForAgent,
   type AiDailyNotionalCapDecision,
 } from './ai-simulation-agent-guardrails';
+import { getLatestNewsSignalForAsset, getSnapshotsForAsset } from './news-intelligence-service';
 
 export type AiSimulationAgentServiceInput = {
   userId: string;
@@ -36,23 +37,43 @@ export type AiSimulationAgentServiceInput = {
 };
 
 export type AiSimulationAgentAvailability =
-  | { available: false; reason: string }
-  | { available: true };
+  | { available: false; reason: string; warning?: string }
+  | { available: true; warning?: string };
 
 const AI_SIMULATION_STRATEGY_TAG = 'ai_simulation_agent_v1';
 const AI_RANKED_QUOTE_SYMBOL_LIMIT = 40;
 const AI_RANKED_HISTORY_SYMBOL_LIMIT = 40;
 
 export function checkAiSimulationAgentAvailability(): AiSimulationAgentAvailability {
-  if (!hasOpenAiApiKey()) {
+  const resolved = resolveAiAgentProviderConfig();
+  if (!resolved.available) {
     return {
       available: false,
-      reason:
-        'AI simulation agent unavailable — missing server configuration (OPENAI_API_KEY).',
+      reason: 'AI provider unavailable. The agent defaulted to HOLD for safety.',
     };
   }
-
-  return { available: true };
+  if (resolved.provider !== 'openai') {
+    if (hasOpenAiApiKey()) {
+      return {
+        available: true,
+        warning:
+          'Primary AI provider is Anthropic, but the simulation agent currently executes with OpenAI fallback.',
+      };
+    }
+    return {
+      available: false,
+      reason: 'AI provider unavailable. The agent defaulted to HOLD for safety.',
+      warning: resolved.usingDeprecatedClaudeAlias
+        ? 'Using deprecated CLAUDE_FINANCE_API_KEY alias. Prefer ANTHROPIC_API_KEY.'
+        : undefined,
+    };
+  }
+  return {
+    available: true,
+    warning: resolved.usingDeprecatedClaudeAlias
+      ? 'Using deprecated CLAUDE_FINANCE_API_KEY alias. Prefer ANTHROPIC_API_KEY.'
+      : undefined,
+  };
 }
 
 function buildUnavailableResult(
@@ -190,11 +211,19 @@ export async function runAiSimulationAgentForUser(
   );
 
   let marketFreshnessNote = 'No market data available — agent will default to HOLD.';
+  let newsContextNote = 'No news intelligence context available.';
+  let newsSnapshotIds: string[] = [];
   const firstSymbol = openPositions[0]?.symbol;
   if (firstSymbol) {
     const snapshot = await getLatestMarketQuoteSnapshot(firstSymbol);
     if (snapshot) {
       marketFreshnessNote = `Last quote for ${firstSymbol}: $${snapshot.price} (observed ${snapshot.observedAt ?? snapshot.fetchedAt}).`;
+    }
+    const newsSignal = await getLatestNewsSignalForAsset(firstSymbol).catch(() => null);
+    const newsRows = await getSnapshotsForAsset(firstSymbol).catch(() => []);
+    newsSnapshotIds = newsRows.slice(0, 5).map((row) => row.id);
+    if (newsSignal) {
+      newsContextNote = `News sentiment ${newsSignal.avgSentiment.toFixed(2)}, max risk ${newsSignal.maxRisk.toFixed(0)}, urgency ${(newsSignal.maxUrgency * 100).toFixed(0)}%.`;
     }
   }
 
@@ -247,7 +276,8 @@ export async function runAiSimulationAgentForUser(
       decision,
       capSettings: agentRequest.capSettings,
       generatedAt: agentRequest.generatedAt,
-      marketFreshnessNote: agentRequest.marketFreshnessNote,
+      marketFreshnessNote: `${agentRequest.marketFreshnessNote} ${newsContextNote}`,
+      newsSnapshotIds,
       rankedAssetCount: agentRequest.rankedAssets.length,
     },
     rejectedReason: decision.rejectedReason,

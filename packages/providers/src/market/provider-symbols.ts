@@ -158,14 +158,14 @@ export function normalizeMarketSymbol(symbol: string): string {
   }
 
   if (raw.includes('/') || raw.includes('-')) {
-    const forexCandidate = normalizeForexPair(raw);
-    if (forexCandidate) {
-      return forexCandidate;
-    }
-
     const cryptoCandidate = normalizeCryptoFromDashedPair(raw);
     if (cryptoCandidate) {
       return cryptoCandidate;
+    }
+
+    const forexCandidate = normalizeForexPair(raw);
+    if (forexCandidate) {
+      return forexCandidate;
     }
   }
 

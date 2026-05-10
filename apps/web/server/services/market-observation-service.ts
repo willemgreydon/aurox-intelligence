@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { getMarketIntelligenceWorkstationModel } from './market-intelligence-workstation-service';
 import { getPortfolioIntelligenceViewModel } from './portfolio-intelligence-service';
 import { getNewsStreamData } from './news-service';
@@ -28,6 +29,7 @@ import {
   buildCrossAssetRelationshipInsights,
   type CrossAssetRelationshipInsight,
 } from '../lib/cross-asset-relationship-engine';
+import { listNewsIntelligenceSnapshots } from './news-intelligence-service';
 
 export type WatchlistIntelligenceItem = {
   symbol: string;
@@ -94,6 +96,15 @@ function buildObserverItems(input: {
   anomalies: AnomalyRadarItem[];
   staleProviderCount: number;
   simulationCandidates: Array<{ symbol: string; confidence: number; assetClass: 'stock' | 'etf' | 'crypto' | 'other' }>;
+  newsShockItems: Array<{
+    id: string;
+    title: string;
+    severity: ObservationSeverity;
+    reason: string;
+    confidence: number;
+    createdAt: string;
+    symbol: string | null;
+  }>;
 }): ObservationItem[] {
   const items: ObservationItem[] = [];
 
@@ -182,6 +193,21 @@ function buildObserverItems(input: {
       source: 'portfolio',
       createdAt: input.nowIso,
       recommendedNextAction: 'open_simulation_ticket',
+    });
+  }
+
+  for (const newsShock of input.newsShockItems.slice(0, 8)) {
+    items.push({
+      id: `obs-news-${newsShock.id}`,
+      title: newsShock.title,
+      severity: newsShock.severity,
+      assetSymbol: newsShock.symbol,
+      assetClass: null,
+      reason: newsShock.reason,
+      confidence: newsShock.confidence,
+      source: 'news',
+      createdAt: newsShock.createdAt,
+      recommendedNextAction: 'inspect',
     });
   }
 
@@ -283,6 +309,7 @@ export async function getObserveViewModel(input?: {
     portfolio.intelligence.allocations.map((row) => [row.symbol, row] as const),
   );
   const staleProviderCount = workstation.assets.filter((asset) => asset.price === null).length;
+  const newsSnapshots = await listNewsIntelligenceSnapshots({ minRiskScore: 65, limit: 40 }).catch(() => []);
 
   const topBullish = workstation.systemState.topOpportunities.map((item) => ({
     symbol: item.symbol,
@@ -359,6 +386,23 @@ export async function getObserveViewModel(input?: {
     confidence: item.recommendation.confidence,
     assetClass: normalizeAssetClass(assetBySymbol.get(item.symbol)?.assetClass ?? 'other'),
   }));
+  const newsShockItems = newsSnapshots.map((snapshot) => ({
+    id: snapshot.id,
+    title: snapshot.article.title.slice(0, 96),
+    severity: snapshot.riskScore >= 80 ? 'CRITICAL' : snapshot.riskScore >= 65 ? 'WARNING' : 'WATCH',
+    reason: `News risk ${snapshot.riskScore.toFixed(0)}/100, urgency ${(snapshot.urgencyScore * 100).toFixed(0)}%, sentiment ${snapshot.sentimentScore.toFixed(2)}.`,
+    confidence: snapshot.confidence,
+    createdAt: snapshot.article.publishedAt,
+    symbol: snapshot.article.title.match(/\b[A-Z]{2,6}\b/)?.[0] ?? null,
+  })) as Array<{
+    id: string;
+    title: string;
+    severity: ObservationSeverity;
+    reason: string;
+    confidence: number;
+    createdAt: string;
+    symbol: string | null;
+  }>;
 
   const observerItems = buildObserverItems({
     nowIso,
@@ -369,6 +413,7 @@ export async function getObserveViewModel(input?: {
     anomalies,
     staleProviderCount,
     simulationCandidates,
+    newsShockItems,
   });
 
   const watchlistIntelligence: WatchlistIntelligenceItem[] = simulation.watchlist.map((row) => {
@@ -462,7 +507,7 @@ export async function getObserveViewModel(input?: {
 
     try {
       await upsertObservationEvents([...eventPayload]);
-      persistedEvents = await listObservationEvents({ userId: input.userId, limit: 120 });
+      persistedEvents = await listObservationEvents({ userId: input.userId, limit: 40 });
     } catch {
       persistenceDegraded = true;
     }
@@ -539,6 +584,10 @@ export async function getObserveViewModel(input?: {
     persistenceDegraded,
   };
 }
+
+export const getObserveViewModelRequestScoped = cache(
+  async (userId: string | null): Promise<ObserveViewModel> => getObserveViewModel({ userId }),
+);
 
 export async function updateObservationInteraction(input: {
   userId: string;

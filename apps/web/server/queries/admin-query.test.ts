@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { shouldDisplayProviderCheck, type ProviderCheck } from './admin-query';
+import { getProviderCapabilityRows, shouldDisplayProviderCheck, type ProviderCheck } from './admin-query';
 import type { MonitoredProviderConfig } from '@repo/api-contracts';
 
 function makeCheck(id: string): ProviderCheck {
@@ -54,5 +54,14 @@ describe('shouldDisplayProviderCheck', () => {
 
   it('shows provider when config is missing', () => {
     expect(shouldDisplayProviderCheck(makeCheck('polygon'), new Map())).toBe(true);
+  });
+});
+
+describe('getProviderCapabilityRows', () => {
+  it('includes binance intraday support', () => {
+    const rows = getProviderCapabilityRows();
+    const binance = rows.find((row) => row.provider === 'binance');
+    expect(binance).toBeDefined();
+    expect(binance?.resolutions).toEqual(expect.arrayContaining(['1m', '5m', '15m', '30m', '60m', '1d']));
   });
 });

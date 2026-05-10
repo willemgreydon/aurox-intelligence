@@ -1,4 +1,3 @@
-import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { getAuthSecret } from './config';
 
 const textEncoder = new TextEncoder();
@@ -14,28 +13,39 @@ function encodeBase64Url(bytes: Uint8Array) {
     binary += String.fromCharCode(byte);
   }
 
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+  return btoa(binary).replace(/[+]/g, '-').replace(/[/]/g, '_').replace(/=+$/g, '');
 }
 
-function decodeBase64Url(value: string) {
-  return Buffer.from(value, 'base64url');
+function decodeBase64Url(value: string): Uint8Array {
+  if (typeof Buffer !== 'undefined') {
+    return new Uint8Array(Buffer.from(value, 'base64url'));
+  }
+
+  const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4);
+  const binary = atob(padded);
+  const bytes = new Uint8Array(binary.length);
+
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+
+  return bytes;
 }
 
-async function createHmacSignature(value: string) {
-  const key = await crypto.subtle.importKey(
+async function createHmacKey() {
+  return crypto.subtle.importKey(
     'raw',
     textEncoder.encode(getAuthSecret()),
     { name: 'HMAC', hash: 'SHA-256' },
     false,
-    ['sign'],
+    ['sign', 'verify'],
   );
-
-  const signature = await crypto.subtle.sign('HMAC', key, textEncoder.encode(value));
-  return encodeBase64Url(new Uint8Array(signature));
 }
 
 export function generateOpaqueToken() {
-  return randomBytes(32).toString('base64url');
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  return encodeBase64Url(bytes);
 }
 
 export async function hashSessionToken(token: string) {
@@ -44,8 +54,10 @@ export async function hashSessionToken(token: string) {
 }
 
 export async function createSignedSessionValue(token: string) {
-  const signature = await createHmacSignature(token);
-  return `${token}.${signature}`;
+  const key = await createHmacKey();
+  const signature = await crypto.subtle.sign('HMAC', key, textEncoder.encode(token));
+  const encoded = encodeBase64Url(new Uint8Array(signature));
+  return token + '.' + encoded;
 }
 
 export async function parseSignedSessionValue(value: string | undefined) {
@@ -53,19 +65,26 @@ export async function parseSignedSessionValue(value: string | undefined) {
     return null;
   }
 
-  const [token, signature] = value.split('.');
+  const dotIndex = value.lastIndexOf('.');
 
-  if (!token || !signature) {
+  if (dotIndex === -1) {
     return null;
   }
 
-  const expectedSignature = await createHmacSignature(token);
-  const providedBuffer = decodeBase64Url(signature);
-  const expectedBuffer = decodeBase64Url(expectedSignature);
+  const token = value.slice(0, dotIndex);
+  const signatureB64 = value.slice(dotIndex + 1);
 
-  if (providedBuffer.length !== expectedBuffer.length) {
+  if (!token || !signatureB64) {
     return null;
   }
 
-  return timingSafeEqual(providedBuffer, expectedBuffer) ? token : null;
+  try {
+    const key = await createHmacKey();
+    const decoded = decodeBase64Url(signatureB64);
+    const signatureBytes = decoded.buffer.slice(decoded.byteOffset, decoded.byteOffset + decoded.byteLength) as ArrayBuffer;
+    const valid = await crypto.subtle.verify('HMAC', key, signatureBytes, textEncoder.encode(token));
+    return valid ? token : null;
+  } catch {
+    return null;
+  }
 }

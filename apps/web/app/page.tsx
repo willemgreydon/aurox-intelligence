@@ -44,18 +44,23 @@ export default async function HomePage() {
   const pageStart = perfNow();
   const locale = await getRequestLocale();
   const messages = getMessages(locale);
-  const preferredSymbols = await getWorkspaceTrackedSymbols(16);
-  const [stocksResult, marketGraphResult, newsResult, auth] = await Promise.all([
+  // Run auth + news in parallel with the workspace symbols lookup — none depend
+  // on each other. Stocks and graph are started after symbols resolve because
+  // they use preferredSymbols to filter their queries.
+  const [preferredSymbols, newsResult, auth] = await Promise.all([
+    getWorkspaceTrackedSymbols(16),
+    withDbReadFallback('home:news-stream', { items: [], providerHealth: [], updatedAt: new Date().toISOString(), degraded: true, message: 'Database unavailable — showing local fallback data.' }, () => getNewsStreamData()),
+    getOptionalCurrentSession(),
+  ]);
+  const [stocksResult, marketGraphResult] = await Promise.all([
     withDbReadFallback('home:stocks-overview', buildFallbackStocks(messages), () =>
       getStocksOverviewData(locale, messages, {
         ...(preferredSymbols.length > 0 ? { preferredSymbols } : {}),
       }),
     ),
-    withDbReadFallback('home:market-graph', { provider: 'cache', assets: [] }, () => getMarketGraphData({
+    withDbReadFallback('home:market-graph', { meta: { provider: 'cache', selectedTimeframe: '1D' as const, requestedResolution: '1day', actualResolution: 'unknown' as const, pointCount: 0, minAcceptablePoints: 10, isFresh: false, isFallback: false, fallbackReason: null, isDegraded: true, degradedReason: 'Database unavailable.', lastBarTimestamp: null, totalBarsInCache: 0, requestedStart: '', actualStart: null, coverageRatio: 0 }, assets: [] }, () => getMarketGraphData({
       ...(preferredSymbols.length > 0 ? { preferredSymbols } : {}),
     })),
-    withDbReadFallback('home:news-stream', { items: [], providerHealth: [], updatedAt: new Date().toISOString(), degraded: true, message: 'Database unavailable — showing local fallback data.' }, () => getNewsStreamData()),
-    getOptionalCurrentSession(),
   ]);
   const portfolioResult = auth
     ? await withDbReadFallback('home:simulation-overview', null, () => getSimulationOverviewDataForUser(auth.user.id))
@@ -129,6 +134,10 @@ export default async function HomePage() {
             historyRange: messages.marketGraph.historyRange,
             chartAria: messages.marketGraph.chartAria,
             noData: messages.marketGraph.noData,
+            intradayUnavailable: messages.marketGraph.intradayUnavailable,
+            dailyFallback: messages.marketGraph.dailyFallback,
+            candlesUnavailable: messages.marketGraph.candlesUnavailable,
+            insufficientHistory: messages.marketGraph.insufficientHistory,
           },
         }}
       />

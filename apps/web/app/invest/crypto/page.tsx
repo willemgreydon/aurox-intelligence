@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { getUserWatchlist } from '@repo/db';
+import { getSimulationWorkspace, getUserWatchlist } from '@repo/db';
 import { Section } from '../../../components/ui/section';
 import { WorkstationPageHeader } from '../../../components/asset/workstation-page-header';
 import { MarketGraphSection } from '../../../components/charts/market-graph-section';
@@ -52,6 +52,12 @@ export default async function InvestCryptoPage({
   const group = invest.groupedAssets.find((item) => item.assetClass === 'crypto');
   const items = group?.items ?? [];
   const watchlist = auth ? await getUserWatchlist(auth.user.id) : [];
+  const workspace = auth ? await getSimulationWorkspace(auth.user.id).catch(() => null) : null;
+  const heldSymbols = new Set(
+    (workspace?.positions ?? [])
+      .filter((position) => position.assetClass === 'crypto' && position.quantity > 0)
+      .map((position) => position.symbol),
+  );
   const sessionContext = auth
     ? await getSimulationSessionTradingContextForUser(auth.user.id).catch(() => null)
     : null;
@@ -87,13 +93,8 @@ export default async function InvestCryptoPage({
       return `The active session is scoped to ${sessionContext.assetScope?.toUpperCase() ?? 'another asset class'} assets.`;
     }
 
-    if (!item.lastUpdatedAt) {
-      return `Fresh crypto quote required for ${item.symbol} before simulation execution.`;
-    }
-
-    const quoteTime = new Date(item.lastUpdatedAt).getTime();
-    if (!Number.isFinite(quoteTime) || Date.now() - quoteTime > 15 * 60 * 1000) {
-      return `Fresh crypto quote required for ${item.symbol} before simulation execution.`;
+    if (typeof item.price !== 'number' || !Number.isFinite(item.price) || item.price <= 0) {
+      return `${messages.simulation.validation.freshCryptoQuoteRequired} (${item.symbol})`;
     }
 
     return undefined;
@@ -207,6 +208,8 @@ export default async function InvestCryptoPage({
                     isWatched={watchlist.some((entry) => entry.assetId === item.assetId)}
                     watchlistLabelAdd={messages.dashboard.addToWatchlist}
                     watchlistLabelRemove={messages.dashboard.removeFromWatchlist}
+                    hasSimulatedPosition={heldSymbols.has(item.symbol)}
+                    source="crypto-lane"
                   />
                 )}
               />
@@ -249,6 +252,8 @@ export default async function InvestCryptoPage({
                       isWatched={watchlist.some((entry) => entry.assetId === item.assetId)}
                       watchlistLabelAdd={messages.dashboard.addToWatchlist}
                       watchlistLabelRemove={messages.dashboard.removeFromWatchlist}
+                      hasSimulatedPosition={heldSymbols.has(item.symbol)}
+                      source="crypto-lane"
                     />
                   </div>
                 )}
@@ -279,18 +284,27 @@ export default async function InvestCryptoPage({
       </Section>
 
       <Section className="dashboard-section dashboard-section--tinted">
-        <div className="analytics-card">
+        <div className="analytics-card" style={{ maxWidth: '48rem' }}>
           <div className="analytics-card__header">
             <div>
-              <div className="section__eyebrow">Crypto micro-order compliance</div>
-              <h3>Minimum size, fees, spread, liquidity and risk warnings</h3>
+              <div className="section__eyebrow">Crypto simulation notice</div>
+              <h3>Crypto simulation context</h3>
             </div>
           </div>
           <div className="analytics-card__body">
-            <p>Minimum order size varies by exchange/provider metadata and must be respected.</p>
-            <p>Micro recurring buys can improve average entry over time in simulation, but profits are never guaranteed.</p>
-            <p>Warnings: leverage risk, rapid-trading risk, tax/legal obligations, and exchange counterparty risk.</p>
-            <p>Compliance limits (AML, venue transfer caps, and exchange rules) must not be bypassed.</p>
+            <p>All crypto actions on this platform are <strong>simulated only</strong> — no real capital is deployed and no orders are routed to any exchange.</p>
+            <p style={{ marginTop: '0.5rem' }}>Key crypto considerations for simulation planning:</p>
+            <ul style={{ marginTop: '0.5rem', paddingLeft: '1.25rem', lineHeight: '1.7', color: 'var(--text-secondary)' }}>
+              <li><strong>24/7 volatility</strong> — Crypto markets operate continuously. Price moves can be extreme outside traditional market hours. Simulation captures point-in-time prices only.</li>
+              <li><strong>Minimum order size</strong> — Real exchanges enforce minimum notional values and quantity precision (step size). Simulation validates these but does not route real orders.</li>
+              <li><strong>Exchange and liquidity risk</strong> — Real crypto orders are subject to spread, order book depth, and exchange downtime. Simulation uses mid-price without slippage modelling.</li>
+              <li><strong>Provider data delays</strong> — Crypto price feeds may lag by seconds to minutes depending on provider. Signal confidence is reduced for stale quotes.</li>
+              <li><strong>No guaranteed profits</strong> — Simulation performance does not predict real trading outcomes. Crypto is highly speculative.</li>
+              <li><strong>Tax and compliance obligations</strong> — Real crypto trading may trigger tax events and AML obligations. Not modelled in simulation.</li>
+            </ul>
+            <p style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>
+              Past performance is not indicative of future results. This is not financial advice. Simulation only — no real capital involved.
+            </p>
           </div>
         </div>
       </Section>

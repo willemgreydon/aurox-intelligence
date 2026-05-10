@@ -1,15 +1,28 @@
 'use server';
 
-import { resetSimulationAccount, getUserWatchlist, toggleWatchlistItem } from '@repo/db';
+import {
+  clearSimulationDecisionHistory,
+  closeAllSimulationPositions,
+  getUserWatchlist,
+  resetSimulationAccount,
+  resetSimulationCashBalance,
+  toggleWatchlistItem,
+} from '@repo/db';
 import type { SimulationAssetClass, SimulationLaneId, SimulationOrderErrorCode } from '@repo/api-contracts';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { getMessages } from '../../lib/i18n/messages';
+import { normalizeSimulationError } from '../../lib/simulation-error-normalizer';
 import { requireCurrentSession } from '../auth/session';
 import { getRequestLocale } from '../i18n/locale';
 import { errorFormState, formStateFromZodError, successFormState, type FormState } from '../auth/forms';
 import { executeSimulationOrderForCurrentUser } from '../services/simulation-service';
+import {
+  revalidateForSimulationOrder,
+  revalidateForSimulationReset,
+  revalidateForWatchlistChange,
+} from '../lib/revalidation-targets';
 import {
   assertSimulationSessionAllowsTradingForCurrentUser,
   resolveLaneMode,
@@ -38,6 +51,7 @@ const simulationOrderInputSchema = z.object({
     ])
     .default('manual_stock_lane'),
   decisionSource: z.enum(['manual_ui', 'ai_assisted', 'automation']).default('manual_ui'),
+  sourceContext: z.string().max(64).optional(),
   simulationSessionId: z.string().uuid().optional(),
   idempotencyKey: z.string().max(64).optional(),
 });
@@ -59,16 +73,19 @@ const startSimulationSessionInputSchema = z.object({
 type MappedOrderError = { message: string; code: SimulationOrderErrorCode };
 
 function mapSimulationOrderError(raw: string, symbol: string): MappedOrderError {
-  if (raw.includes('Insufficient fictive cash')) {
+  if (raw.includes('Insufficient fictive cash') || raw.includes('Insufficient available simulation cash')) {
     return { code: 'INSUFFICIENT_CASH', message: 'Insufficient simulation cash balance for this order.' };
   }
-  if (raw.includes('Insufficient position quantity')) {
+  if (raw.includes('Insufficient position quantity') || raw.includes('Sell quantity exceeds')) {
     return { code: 'INSUFFICIENT_POSITION', message: `No open ${symbol} position is available to sell, or position size is too small.` };
+  }
+  if (raw.includes(`No open ${symbol} position`) || raw.includes('No open') && raw.includes('position is available to sell')) {
+    return { code: 'INSUFFICIENT_POSITION', message: `No open ${symbol} position is available to sell.` };
   }
   if (raw.includes('Order quantity must be greater than zero')) {
     return { code: 'ZERO_QUANTITY', message: 'Order quantity must be greater than zero.' };
   }
-  if (raw.includes('Position metadata mismatch')) {
+  if (raw.includes('Position metadata mismatch') || raw.includes('Asset metadata mismatch') || raw.includes('Asset class mismatch')) {
     return { code: 'POSITION_STATE_CHANGED', message: 'Position state has changed. Please refresh the page and try again.' };
   }
   if (raw.includes('No active simulation session')) {
@@ -76,6 +93,9 @@ function mapSimulationOrderError(raw: string, symbol: string): MappedOrderError 
   }
   if (raw.includes('Simulation database is currently unavailable')) {
     return { code: 'INTERNAL_ERROR', message: 'Simulation database is currently unavailable.' };
+  }
+  if (raw.includes('Fresh ETF quote required') || raw.includes('Fresh stock quote required') || raw.includes('Fresh crypto quote required')) {
+    return { code: 'MARKET_DATA_UNAVAILABLE', message: 'Fresh market quote required before simulation execution.' };
   }
   if (raw.includes('price') || raw.includes('quote') || raw.includes('market data')) {
     return { code: 'MARKET_DATA_UNAVAILABLE', message: 'Market price data is temporarily unavailable. Please try again shortly.' };
@@ -86,11 +106,18 @@ function mapSimulationOrderError(raw: string, symbol: string): MappedOrderError 
     raw.includes('syntax error') ||
     raw.includes('violates') ||
     raw.includes('duplicate key') ||
-    raw.includes('ERROR:')
+    raw.includes('ERROR:') ||
+    raw.includes('SQLSTATE')
   ) {
     return { code: 'INTERNAL_ERROR', message: 'An internal error occurred while processing the simulation order. Please try again.' };
   }
-  return { code: 'INTERNAL_ERROR', message: raw };
+
+  // Final safety gate: use the normalizer to avoid leaking raw provider errors (e.g. OpenAI 429)
+  const normalized = normalizeSimulationError(new Error(raw));
+  return {
+    code: 'INTERNAL_ERROR',
+    message: normalized.userMessage,
+  };
 }
 
 function laneSupportsAssetClass(laneId: SimulationLaneId, assetClass: SimulationAssetClass) {
@@ -165,15 +192,7 @@ export async function toggleWatchlistAction(_: FormState, formData: FormData): P
     addedAt: new Date().toISOString(),
   });
 
-  revalidatePath('/dashboard');
-  revalidatePath('/invest');
-  revalidatePath('/invest/simulation');
-  revalidatePath('/stocks');
-  revalidatePath('/invest/etfs');
-  revalidatePath('/invest/crypto');
-  if (parsed.data.assetClass === 'stock') {
-    revalidatePath(`/stocks/${parsed.data.symbol}`);
-  }
+  revalidateForWatchlistChange({ symbol: parsed.data.symbol, assetClass: parsed.data.assetClass });
 
   const exists = watchlist.some((item) => item.assetId === parsed.data.assetId);
   return successFormState(exists ? messages.dashboard.addToWatchlist : messages.dashboard.removeFromWatchlist);
@@ -191,6 +210,7 @@ export async function createSimulatedOrderAction(_: FormState, formData: FormDat
     quantity: formData.get('quantity') ?? 1,
     strategyLaneId: String(formData.get('strategyLaneId') ?? 'manual_stock_lane'),
     decisionSource: String(formData.get('decisionSource') ?? 'manual_ui'),
+    sourceContext: formData.get('sourceContext') ? String(formData.get('sourceContext')) : undefined,
     simulationSessionId: formData.get('simulationSessionId') ? String(formData.get('simulationSessionId')) : undefined,
     idempotencyKey: formData.get('idempotencyKey') ? String(formData.get('idempotencyKey')) : undefined,
   });
@@ -239,7 +259,7 @@ export async function createSimulatedOrderAction(_: FormState, formData: FormDat
       quantity: parsed.data.quantity,
       strategyLaneId: simulationSession.laneId,
       sessionAssetScope: simulationSession.assetScope,
-      notes: `session=${simulationSession.id};lane=${parsed.data.strategyLaneId};source=${parsed.data.decisionSource}`,
+      notes: `session=${simulationSession.id};lane=${parsed.data.strategyLaneId};source=${parsed.data.sourceContext ?? parsed.data.decisionSource}`,
       idempotencyKey: parsed.data.idempotencyKey,
     });
   } catch (error) {
@@ -248,17 +268,7 @@ export async function createSimulatedOrderAction(_: FormState, formData: FormDat
     return errorFormState(message, {}, code);
   }
 
-  revalidatePath('/dashboard');
-  revalidatePath('/invest');
-  revalidatePath('/invest/simulation');
-  revalidatePath('/invest/portfolio');
-  revalidatePath('/invest/orders');
-  revalidatePath('/stocks');
-  revalidatePath('/invest/etfs');
-  revalidatePath('/invest/crypto');
-  if (parsed.data.assetClass === 'stock') {
-    revalidatePath(`/stocks/${parsed.data.symbol}`);
-  }
+  revalidateForSimulationOrder({ symbol: parsed.data.symbol, assetClass: parsed.data.assetClass });
 
   return successFormState(messages.simulation.orderRecorded, {
     orderId: order.id,
@@ -282,11 +292,49 @@ export async function resetSimulationAccountAction(): Promise<FormState> {
     return errorFormState(error instanceof Error ? error.message : messages.simulation.resetConfirmation);
   }
 
-  revalidatePath('/dashboard');
-  revalidatePath('/invest');
-  revalidatePath('/invest/simulation');
+  revalidateForSimulationReset();
 
   return successFormState(messages.simulation.resetConfirmation);
+}
+
+const simulationControlInputSchema = z.object({
+  control: z.enum(['reset_all', 'reset_cash_only', 'close_all_positions', 'clear_decision_history']),
+  confirmText: z.string().min(1),
+  expectedConfirmText: z.string().min(1),
+});
+
+export async function runSimulationControlAction(_: FormState, formData: FormData): Promise<FormState> {
+  const auth = await requireCurrentSession('/invest/simulation');
+  const parsed = simulationControlInputSchema.safeParse({
+    control: String(formData.get('control') ?? ''),
+    confirmText: String(formData.get('confirmText') ?? ''),
+    expectedConfirmText: String(formData.get('expectedConfirmText') ?? ''),
+  });
+
+  if (!parsed.success) {
+    return formStateFromZodError(parsed.error);
+  }
+
+  if (parsed.data.confirmText.trim() !== parsed.data.expectedConfirmText.trim()) {
+    return errorFormState('Confirmation text did not match. Action aborted.');
+  }
+
+  try {
+    if (parsed.data.control === 'reset_all') {
+      await resetSimulationAccount(auth.user.id);
+    } else if (parsed.data.control === 'reset_cash_only') {
+      await resetSimulationCashBalance(auth.user.id);
+    } else if (parsed.data.control === 'close_all_positions') {
+      await closeAllSimulationPositions(auth.user.id);
+    } else {
+      await clearSimulationDecisionHistory(auth.user.id);
+    }
+  } catch (error) {
+    return errorFormState(error instanceof Error ? error.message : 'Simulation control action failed.');
+  }
+
+  revalidateForSimulationReset();
+  return successFormState('Simulation control action completed.');
 }
 
 export async function getWatchlistStateForUser(userId: string) {

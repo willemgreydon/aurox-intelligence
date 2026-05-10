@@ -34,15 +34,19 @@ export function AlertCenterPanel({ model }: Props) {
   }
 
   const groups: Array<keyof AlertCenterViewModel['grouped']> = ['CRITICAL', 'WARNING', 'WATCH', 'INFO'];
+  const totalAlerts = groups.reduce((sum, group) => sum + model.grouped[group].length, 0);
+  const providerAlerts = groups.reduce((sum, group) => sum + model.grouped[group].filter((item) => item.source === 'provider').length, 0);
 
   return (
     <>
       <section className="dashboard-section dashboard-section--compact">
-        <div className="observation-regime-grid">
+        <div className="observation-regime-grid alerts-kpi-rail">
           <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">Open alerts</div><div className="analytics-stat__value">{model.summary.open}</div></article>
           <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">Critical</div><div className="analytics-stat__value">{model.summary.critical}</div></article>
           <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">Warning</div><div className="analytics-stat__value">{model.summary.warning}</div></article>
+          <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">Watch</div><div className="analytics-stat__value">{model.grouped.WATCH.length}</div></article>
           <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">Snoozed</div><div className="analytics-stat__value">{model.summary.snoozed}</div></article>
+          <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">Provider alerts</div><div className="analytics-stat__value">{providerAlerts}</div></article>
           <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">Resolved today</div><div className="analytics-stat__value">{model.summary.resolvedToday}</div></article>
         </div>
         {model.persistenceDegraded ? <p className="text-muted">Alert persistence degraded. Showing fallback data when available.</p> : null}
@@ -50,8 +54,19 @@ export function AlertCenterPanel({ model }: Props) {
 
       <section className="dashboard-section dashboard-section--compact dashboard-section--tinted">
         <article className="analytics-card">
+          <div className="analytics-card__header">
+            <div>
+              <div className="section__eyebrow">Operator Command Bar</div>
+              <h3>Filter and route alerts</h3>
+            </div>
+            <div className="analytics-card__action-grid">
+              <button type="button" className="button button--secondary" onClick={() => startTransition(() => router.push('/alerts'))}>Clear filters</button>
+              <Link href="/observe" className="button button--secondary">Open Observer</Link>
+              <span className="button button--secondary" aria-disabled="true">Open Replay</span>
+            </div>
+          </div>
           <div className="analytics-card__body">
-            <div className="market-pagination__actions" style={{ marginBottom: '0.75rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <div className="market-pagination__actions alerts-command-bar" style={{ marginBottom: '0.75rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
               <select className="market-graph__selector-input" value={model.filters.severity} onChange={(event) => setFilter('severity', event.target.value)}>
                 <option value="all">All severities</option><option value="CRITICAL">Critical</option><option value="WARNING">Warning</option><option value="WATCH">Watch</option><option value="INFO">Info</option>
               </select>
@@ -67,8 +82,16 @@ export function AlertCenterPanel({ model }: Props) {
               <select className="market-graph__selector-input" value={model.filters.status} onChange={(event) => setFilter('status', event.target.value)}>
                 <option value="all">All status</option><option value="OPEN">Open</option><option value="READ">Read</option><option value="PINNED">Pinned</option><option value="SNOOZED">Snoozed</option><option value="DISMISSED">Dismissed</option><option value="RESOLVED">Resolved</option>
               </select>
-              <input className="market-graph__selector-input" defaultValue={model.filters.search} placeholder="Search title/description" onBlur={(event) => setFilter('search', event.target.value)} />
+              <input className="market-graph__selector-input" defaultValue={model.filters.search} placeholder="Search symbol/title" onBlur={(event) => setFilter('search', event.target.value)} />
             </div>
+
+            {totalAlerts === 0 ? (
+              <div className="aurox-empty-state">
+                <p className="aurox-empty-state__title">No alerts match your current filters.</p>
+                <p className="aurox-empty-state__body">Try clearing filters or open Observe for broader context.</p>
+                <Link href="/observe" className="button button--primary">Open Observer</Link>
+              </div>
+            ) : null}
 
             {groups.map((group) => (
               <div key={group} style={{ marginBottom: '1rem' }}>
@@ -90,8 +113,8 @@ export function AlertCenterPanel({ model }: Props) {
                         </p>
                         <p style={{ display: 'flex', flexWrap: 'wrap', gap: '0.55rem' }}>
                           <Link href={alert.symbol ? `/stocks/${alert.symbol}` : '/market'}>Inspect</Link>
-                          <Link href={alert.observationEventId ? `/observe/${alert.observationEventId}` : '/observe'}>Open observation</Link>
-                          <Link href={`/replay/${alert.id}`}>Replay</Link>
+                          <Link href={alert.observationEventId ? `/observe/${alert.observationEventId}` : '/observe'}>Open Observer</Link>
+                          {alert.observationEventId ? <Link href={`/replay/${alert.observationEventId}`}>Replay</Link> : <span title="Replay unavailable">Replay unavailable</span>}
                           <button type="button" className="button button--ghost" disabled={isPending || runtimeOnly} onClick={() => setAlertState(alert.id, 'pin')}>Pin</button>
                           <button type="button" className="button button--ghost" disabled={isPending || runtimeOnly} onClick={() => setAlertState(alert.id, 'snooze')}>Snooze</button>
                           <button type="button" className="button button--ghost" disabled={isPending || runtimeOnly} onClick={() => setAlertState(alert.id, 'dismiss')}>Dismiss</button>

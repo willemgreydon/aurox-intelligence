@@ -303,3 +303,23 @@ export async function pruneAlerts(retentionDays = 30): Promise<void> {
     throw error;
   }
 }
+
+export async function pruneResolvedAndDismissedAlerts(retentionDays = 30): Promise<void> {
+  const client = createDatabaseClient();
+  if (!client.isConfigured) return;
+  try {
+    await client.execute(
+      `delete from app.alerts a
+       where a.id in (
+         select s.alert_id
+         from app.alert_states s
+         where s.status in ('RESOLVED', 'DISMISSED')
+           and s.updated_at < now() - ($1::int * interval '1 day')
+       )`,
+      [retentionDays],
+    );
+  } catch (error) {
+    if (isMissingTable(error)) return;
+    throw error;
+  }
+}

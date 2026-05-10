@@ -3,6 +3,7 @@ import { listProviderMonitorConfigs } from '@repo/db';
 import { Section } from '../../../../components/ui/section';
 import { WorkstationPageHeader } from '../../../../components/asset/workstation-page-header';
 import { saveProviderMonitorConfigAction } from '../../../../server/actions/admin-monitor-actions';
+import { getProviderCapabilityRows } from '../../../../server/queries/admin-query';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,6 +41,7 @@ function statusTone(status: ProviderRuntimeStatus) {
 
 export default async function ProviderMonitoringConfigPage() {
   const configs = await listProviderMonitorConfigs();
+  const capabilityRows = getProviderCapabilityRows();
   const enabledCount = configs.filter((config) => config.enabled).length;
 
   return (
@@ -92,6 +94,72 @@ export default async function ProviderMonitoringConfigPage() {
             <Link href="/admin/monitoring" className="button button--secondary">Cancel</Link>
           </div>
         </form>
+      </Section>
+      <Section className="dashboard-section">
+        <div className="analytics-card">
+          <div className="analytics-card__header">
+            <h2>Provider capability matrix</h2>
+            <p>Shows configured status, quote mode, supported asset classes and history resolutions.</p>
+          </div>
+          <div className="analytics-card__body" style={{ overflowX: 'auto' }}>
+            <table className="table-panel__table">
+              <thead>
+                <tr>
+                  <th>Provider</th>
+                  <th>Display</th>
+                  <th>Configured</th>
+                  <th>Auth mode</th>
+                  <th>API key</th>
+                  <th>Quote mode</th>
+                  <th>WS</th>
+                  <th>REST</th>
+                  <th>Stream</th>
+                  <th>Last message</th>
+                  <th>Subscribed symbols</th>
+                  <th>Channels</th>
+                  <th>Asset classes</th>
+                  <th>1m</th>
+                  <th>5m</th>
+                  <th>15m</th>
+                  <th>30m</th>
+                  <th>60m</th>
+                  <th>1d</th>
+                  <th>Last success</th>
+                  <th>Last failure</th>
+                  <th>Rate limit</th>
+                </tr>
+              </thead>
+              <tbody>
+                {capabilityRows.map((row) => (
+                  <tr key={row.provider}>
+                    <td>{row.provider}</td>
+                    <td>{row.displayName}</td>
+                    <td>{row.configured ? 'configured' : 'missing key'}</td>
+                    <td>{row.authMode}</td>
+                    <td>{row.requiresApiKey ? 'required' : 'no key'}</td>
+                    <td>{row.quoteMode}</td>
+                    <td>{row.supportsWebSocket ? 'yes' : 'no'}</td>
+                    <td>{row.supportsRest ? 'yes' : 'no'}</td>
+                    <td>{row.streamStatus}</td>
+                    <td>{row.lastMessageAt ? new Date(row.lastMessageAt).toLocaleString() : 'n/a'}</td>
+                    <td>{row.subscribedSymbols.join(', ') || 'n/a'}</td>
+                    <td>{row.activeChannels.join(', ') || 'n/a'}</td>
+                    <td>{row.assetClasses.join(', ') || 'unsupported'}</td>
+                    <td>{row.resolutions.includes('1m') ? 'yes' : 'no'}</td>
+                    <td>{row.resolutions.includes('5m') ? 'yes' : 'no'}</td>
+                    <td>{row.resolutions.includes('15m') ? 'yes' : 'no'}</td>
+                    <td>{row.resolutions.includes('30m') ? 'yes' : 'no'}</td>
+                    <td>{row.resolutions.includes('60m') ? 'yes' : 'no'}</td>
+                    <td>{row.resolutions.includes('1d') ? 'yes' : 'no'}</td>
+                    <td>{row.lastSuccessAt ? new Date(row.lastSuccessAt).toLocaleString() : 'n/a'}</td>
+                    <td>{row.lastFailureAt ? new Date(row.lastFailureAt).toLocaleString() : 'n/a'}</td>
+                    <td>{row.rateLimitState}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </Section>
     </>
   );

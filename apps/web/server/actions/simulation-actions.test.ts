@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createSimulatedOrderAction } from './simulation-actions';
+import { createSimulatedOrderAction, runSimulationControlAction } from './simulation-actions';
 
 // ─── mocks ───────────────────────────────────────────────────────────────────
 
@@ -24,6 +24,9 @@ vi.mock('../services/simulation-service', () => ({
 
 vi.mock('@repo/db', () => ({
   resetSimulationAccount: vi.fn(),
+  resetSimulationCashBalance: vi.fn(),
+  closeAllSimulationPositions: vi.fn(),
+  clearSimulationDecisionHistory: vi.fn(),
   getUserWatchlist: vi.fn(),
   toggleWatchlistItem: vi.fn(),
 }));
@@ -292,5 +295,48 @@ describe('createSimulatedOrderAction', () => {
     expect(state.message).not.toContain('SQLSTATE');
     expect(state.message).not.toContain('syntax error');
     expect(state.errorCode).toBe('INTERNAL_ERROR');
+  });
+
+  it('never leaks raw OpenAI/provider API errors to the caller', async () => {
+    assertSimulationSessionMock.mockResolvedValue(RUNNING_SESSION);
+    executeSimulationOrderForCurrentUserMock.mockRejectedValue(
+      new Error('You exceeded your current quota, please check your plan and billing details. (HTTP 429)'),
+    );
+
+    const state = await createSimulatedOrderAction({ status: 'idle', message: null, fieldErrors: {} }, buyFormData());
+
+    expect(state.status).toBe('error');
+    expect(state.message).not.toContain('429');
+    expect(state.message).not.toContain('quota');
+    expect(state.message).not.toContain('billing');
+    // Provider errors fall through to INTERNAL_ERROR with safe message
+    expect(state.message).not.toContain('https://');
+  });
+
+  it('maps no-open-position error with symbol correctly', async () => {
+    assertSimulationSessionMock.mockResolvedValue(RUNNING_SESSION);
+    executeSimulationOrderForCurrentUserMock.mockRejectedValue(
+      new Error('No open AAPL position is available to sell.'),
+    );
+
+    const state = await createSimulatedOrderAction(
+      { status: 'idle', message: null, fieldErrors: {} },
+      sellFormData({ quantity: '1' }),
+    );
+
+    expect(state.status).toBe('error');
+    expect(state.errorCode).toBe('INSUFFICIENT_POSITION');
+    expect(state.message).toContain('AAPL');
+  });
+});
+
+describe('runSimulationControlAction', () => {
+  it('blocks control action when confirmation text mismatches', async () => {
+    const fd = new FormData();
+    fd.set('control', 'reset_all');
+    fd.set('confirmText', 'nope');
+    fd.set('expectedConfirmText', 'RESET ALL');
+    const state = await runSimulationControlAction({ status: 'idle', message: null, fieldErrors: {} }, fd);
+    expect(state.status).toBe('error');
   });
 });

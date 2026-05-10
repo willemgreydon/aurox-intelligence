@@ -8,7 +8,8 @@
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "clean": "rimraf .next"
+    "clean": "rimraf .next",
+    "i18n:check": "node scripts/i18n-check.mjs"
   },
   "dependencies": {
     "@repo/agents": "workspace:*",

@@ -25,7 +25,7 @@ export type MarketTickerReadModel = {
 };
 
 const loadTickerQuotes = unstable_cache(
-  async () => loadQuoteSnapshots(tickerUniverse.map((item) => item.symbol)),
+  async () => loadQuoteSnapshots(tickerUniverse.map((item) => item.symbol), undefined, { preferCached: true, maxSymbols: 12 }),
   ['market-ticker-quotes-v1'],
   { revalidate: 20 },
 );

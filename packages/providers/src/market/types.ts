@@ -2,6 +2,15 @@ import type { MarketDataProvider } from '../config';
 
 export type MarketAssetKind = 'stock' | 'etf' | 'crypto' | 'fx' | 'index';
 export type MarketReadKind = 'quote' | 'history' | 'metadata' | 'crypto-global';
+export type MarketHistoryResolution = '1m' | '5m' | '15m' | '30m' | '60m' | '1d';
+export type ProviderQuoteMode = 'live' | 'delayed' | 'cached' | 'none';
+export type ProviderDegradedReason =
+  | 'unsupported_resolution'
+  | 'unsupported_asset_class'
+  | 'rate_limited'
+  | 'provider_unavailable'
+  | 'cache_only'
+  | 'unknown';
 
 export type ProviderErrorCode =
   | 'missing_config'
@@ -62,6 +71,24 @@ export interface HistoricalBar {
   volume?: number | undefined;
 }
 
+export interface MarketHistoryRequest {
+  symbol: string;
+  assetKind: MarketAssetKind;
+  resolution: MarketHistoryResolution;
+  from?: string | undefined;
+  to?: string | undefined;
+}
+
+export interface MarketHistoryResponse {
+  symbol: string;
+  assetKind: MarketAssetKind;
+  resolutionRequested: MarketHistoryResolution;
+  resolutionActual: MarketHistoryResolution | null;
+  provider: MarketDataProvider;
+  bars: HistoricalBar[];
+  degradedReason?: ProviderDegradedReason | undefined;
+}
+
 export interface AssetMetadata {
   symbol: string;
   assetKind: Exclude<MarketAssetKind, 'fx' | 'index'>;
@@ -110,6 +137,8 @@ export interface ProviderCapabilityMatrix {
   crypto: boolean;
   fx: boolean;
   indexes: boolean;
+  quoteMode?: ProviderQuoteMode | undefined;
+  historyResolutionsByAsset?: Partial<Record<MarketAssetKind, MarketHistoryResolution[]>> | undefined;
 }
 
 export interface ProviderHealthStatus {
@@ -142,7 +171,8 @@ export interface FetchMarketHistoryOptions {
   symbol: string;
   from?: string;
   to?: string;
-  resolution?: 'D';
+  resolution?: MarketHistoryResolution;
+  assetKind?: MarketAssetKind;
 }
 
 export interface FetchAssetMetadataOptions {

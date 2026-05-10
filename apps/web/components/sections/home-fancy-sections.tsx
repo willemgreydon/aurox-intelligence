@@ -232,9 +232,9 @@ export function HomeFancySections({ stocks, marketGraph, portfolioSnapshot, labe
 
       <Section className="home-fancy home-fancy--ops section section--tinted">
         <header className="home-fancy__header">
-          <div className="section__eyebrow">{labels.modules.eyebrow}</div>
-          <h2 className="section__title">{labels.modules.title}</h2>
-          <p className="section__description">{labels.modules.description}</p>
+          <div className="section__eyebrow home-ops-header__eyebrow">{labels.modules.eyebrow}</div>
+          <h2 className="section__title home-ops-header__title">{labels.modules.title}</h2>
+          <p className="section__description home-ops-header__description">{labels.modules.description}</p>
         </header>
         <div className="home-ops-grid">
           <Card className="home-ops-card">

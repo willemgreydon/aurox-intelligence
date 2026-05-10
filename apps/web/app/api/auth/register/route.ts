@@ -3,8 +3,12 @@ import { EmailAlreadyInUseError } from '@repo/db';
 import { NextResponse } from 'next/server';
 import { setSessionCookie } from '../../../../server/auth/cookies';
 import { registerWithEmailPassword } from '../../../../server/auth/service';
+import { checkRateLimit } from '../../../../server/lib/rate-limit';
 
 export async function POST(request: Request) {
+  const limited = await checkRateLimit(request, 'auth:register', { max: 10, windowMs: 60_000 });
+  if (limited) return limited;
+
   const payload = await request.json().catch(() => null);
   const parsed = registerInputSchema.safeParse(payload);
 
@@ -32,9 +36,10 @@ export async function POST(request: Request) {
       },
     );
 
+    const { id, email, name, role, avatarUrl, createdAt, updatedAt } = result.user;
     const response = NextResponse.json(
       {
-        user: result.user,
+        user: { id, email, name, role, avatarUrl, createdAt, updatedAt },
         session: {
           expiresAt: result.sessionExpiresAt.toISOString(),
         },

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireCurrentSession } from '../../../../../server/auth/session';
 import { updateAlertInteraction } from '../../../../../server/services/alert-center-service';
+import { revalidateForAlertState } from '../../../../../server/lib/revalidation-targets';
 
 export async function POST(
   request: Request,
@@ -17,5 +18,6 @@ export async function POST(
     alertId: id,
     action: body.action,
   });
+  revalidateForAlertState();
   return NextResponse.json({ ok: true });
 }

@@ -12,8 +12,9 @@ import {
   type AlertSource,
   type AlertStatus,
 } from '@repo/db';
-import { getObserveViewModel, type ObserveViewModel } from './market-observation-service';
-import { generateAlertCandidates } from '../lib/alert-engine';
+import { getObserveViewModel, getObserveViewModelRequestScoped, type ObserveViewModel } from './market-observation-service';
+import { generateAlertCandidates, type AlertCandidate } from '../lib/alert-engine';
+import { listNewsIntelligenceSnapshots } from './news-intelligence-service';
 
 export type AlertCenterFilter = {
   severity?: AlertSeverity | 'all';
@@ -62,13 +63,53 @@ export async function getAlertCenterViewModel(input: {
   observeModel?: ObserveViewModel;
 }): Promise<AlertCenterViewModel> {
   const filters = normalizeFilters(input.filter);
-  const observe = input.observeModel ?? await getObserveViewModel({ userId: input.userId });
+  const observe = input.observeModel ?? await getObserveViewModelRequestScoped(input.userId);
   const candidates = generateAlertCandidates(observe, { userId: input.userId, workspaceId: input.workspaceId ?? null });
+  const newsSnapshotAlerts = await listNewsIntelligenceSnapshots({ minRiskScore: 60, limit: 40 }).catch(() => []);
+  const newsDerivedCandidates: AlertCandidate[] = newsSnapshotAlerts.map((snapshot) => {
+    const severity: AlertSeverity =
+      snapshot.riskScore > 80 && snapshot.relevanceScore > 0.7
+        ? 'CRITICAL'
+        : snapshot.riskScore > 60 || snapshot.urgencyScore > 0.7
+          ? 'WARNING'
+          : snapshot.relevanceScore > 0.5
+            ? 'WATCH'
+            : 'INFO';
+    const symbol = snapshot.article.title.match(/\b[A-Z]{2,6}\b/)?.[0] ?? null;
+    const eventType = snapshot.eventTypes[0] ?? 'news';
+    return {
+      userId: input.userId,
+      workspaceId: input.workspaceId ?? null,
+      symbol,
+      assetClass: null,
+      source: 'news' as const,
+      category: 'market' as const,
+      severity,
+      title: `News intelligence: ${snapshot.article.title}`,
+      description: `Risk ${snapshot.riskScore.toFixed(0)}/100, urgency ${(snapshot.urgencyScore * 100).toFixed(0)}%, events: ${snapshot.eventTypes.join(', ') || 'none'}.`,
+      confidence: snapshot.confidence,
+      score: snapshot.riskScore,
+      status: 'OPEN' as const,
+      assetId: null,
+      dedupeKey: `news:${snapshot.contentHash}:${symbol ?? 'all'}:${eventType}`.toLowerCase(),
+      cooldownBucket: new Date(snapshot.article.publishedAt).toISOString().slice(0, 13),
+      metadata: {
+        snapshotId: snapshot.id,
+        contentHash: snapshot.contentHash,
+        eventType,
+        sourceUrl: snapshot.article.url,
+      },
+      firstSeenAt: snapshot.article.publishedAt,
+      lastSeenAt: snapshot.article.publishedAt,
+      recommendedAction: severity === 'CRITICAL' ? 'open_replay' : 'inspect',
+    };
+  });
+  const mergedCandidates = [...candidates, ...newsDerivedCandidates];
 
   let persistenceDegraded = false;
   try {
-    await upsertAlerts(candidates.map((candidate) => ({
-      observationEventId: typeof candidate.metadata?.eventId === 'string' ? candidate.metadata.eventId : null,
+    await upsertAlerts(mergedCandidates.map((candidate) => ({
+      observationEventId: null,
       workspaceId: candidate.workspaceId ?? null,
       userId: candidate.userId ?? null,
       assetId: candidate.assetId ?? null,
@@ -105,13 +146,13 @@ export async function getAlertCenterViewModel(input: {
       status: filters.status === 'all' ? null : filters.status,
       assetClass: filters.assetClass === 'all' ? null : filters.assetClass,
       search: filters.search.trim().length > 0 ? filters.search.trim() : null,
-      limit: 600,
+      limit: 80,
     });
   } catch {
     persistenceDegraded = true;
   }
   if (rows.length === 0 && persistenceDegraded) {
-    rows = candidates.map((candidate, index) => ({
+    rows = mergedCandidates.map((candidate, index) => ({
       id: `runtime-${index}-${candidate.dedupeKey}`,
       observationEventId: null,
       workspaceId: candidate.workspaceId ?? null,

@@ -44,6 +44,16 @@ function formatQuantity(value: number) {
   return value.toFixed(4);
 }
 
+function freshQuoteRequiredMessage(assetClass: SimulationAssetClass, symbol: string) {
+  if (assetClass === 'etf') {
+    return `Fresh ETF quote required before simulation execution. (${symbol})`;
+  }
+  if (assetClass === 'crypto') {
+    return `Fresh crypto quote required before simulation execution. (${symbol})`;
+  }
+  return `Fresh stock quote required before simulation execution. (${symbol})`;
+}
+
 function isFreshQuoteTimestampForSimulation(timestamp: string | null | undefined) {
   if (!timestamp) {
     return false;
@@ -199,12 +209,12 @@ export async function executeSimulationOrderForCurrentUser(input: {
   const [observation] = await loadQuoteSnapshots([asset.symbol]);
 
   if (typeof observation?.price !== 'number' || !Number.isFinite(observation.price) || observation.price <= 0) {
-    throw new Error(`Unable to price ${asset.symbol} for simulation right now.`);
+    throw new Error(freshQuoteRequiredMessage(input.assetClass, asset.symbol));
   }
 
   const quoteTimestamp = observation.observedAt ?? observation.fetchedAt ?? null;
   if (!isFreshQuoteTimestampForSimulation(quoteTimestamp)) {
-    throw new Error(`Unable to execute ${asset.symbol} safely: a fresh quote is required for simulation trading.`);
+    throw new Error(freshQuoteRequiredMessage(input.assetClass, asset.symbol));
   }
 
   const grossAmount = roundCurrency(input.quantity * observation.price);

@@ -12,8 +12,10 @@ import { MarketAssetRow } from '../../../components/invest/market-asset-row';
 import { MarketViewToggle, type MarketViewMode } from '../../../components/invest/market-view-toggle';
 import { QuickTradeActions } from '../../../components/invest/quick-trade-actions';
 import {
-  ResetSimulationAccountForm,
+  SimulatedOrderForm,
 } from '../../../components/invest/simulation-action-form';
+import { SimulationControlsCard } from '../../../components/invest/simulation-controls-card';
+import { SimulationJournalTable } from '../../../components/invest/simulation-journal-table';
 import type { TableColumn } from '../../../lib/dashboard/analytics-fixtures';
 import { getMessages } from '../../../lib/i18n/messages';
 import { formatDateTimeLabel, formatShortDateLabel } from '../../../lib/formatters';
@@ -29,6 +31,9 @@ import { loadMiniHistorySeries } from '../../../server/services/stock-simulation
 import { checkAiSimulationAgentAvailability } from '../../../server/services/ai-simulation-agent-service';
 import { getMicroTradingGuardrailsForDisplay } from '../../../server/services/simulation-service';
 import { AiSimulationAgentPanel } from '../../../components/invest/ai-simulation-agent-panel';
+import { getSimulationJournalRowsForCurrentUser } from '../../../server/services/simulation-journal-service';
+import { parsePreparedSimulationTicket } from '../../../lib/simulation-prepare';
+import { assertSerializableProps } from '../../../lib/assert-serializable-props';
 
 export const dynamic = 'force-dynamic';
 
@@ -107,7 +112,7 @@ function getAssetDetailHref(symbol: string, assetClass: 'stock' | 'etf' | 'crypt
 export default async function SimulationPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ session?: string; lane?: string; assetView?: string }>;
+  searchParams?: Promise<{ session?: string; lane?: string; assetView?: string; intent?: string; side?: string; symbol?: string; assetClass?: string; source?: string }>;
 }) {
   const locale = await getRequestLocale();
   const messages = getMessages(locale);
@@ -117,6 +122,8 @@ export default async function SimulationPage({
 
   const workstation = await getSimulationWorkstationStateForCurrentUser({
     sessionId: resolvedSearchParams?.session ?? null,
+    assetLimit: 120,
+    watchlistLimit: 40,
   });
 
   const portfolio = workstation.workspace;
@@ -214,9 +221,38 @@ export default async function SimulationPage({
       ...workstation.tradableAssets.map((item) => item.asset.symbol),
     ]),
   ];
-  const sparklineBySymbol = await loadMiniHistorySeries(sparklineSymbols, 24);
+  // Run sparkline history and journal fetch in parallel — neither depends on
+  // the other, and both can be slow under provider or DB pressure.
+  const [sparklineBySymbol, journalRows] = await Promise.all([
+    loadMiniHistorySeries(sparklineSymbols, 24),
+    getSimulationJournalRowsForCurrentUser(60),
+  ]);
+  const heldSymbols = new Set(portfolio?.positions.map((position) => position.symbol) ?? []);
+  const heldPositionsBySymbol = new Map(portfolio?.positions.map((position) => [position.symbol, position]) ?? []);
   const aiAgentAvailability = checkAiSimulationAgentAvailability();
   const microTrading = getMicroTradingGuardrailsForDisplay();
+  const preparedTicket = parsePreparedSimulationTicket({
+    intent: resolvedSearchParams?.intent,
+    side: resolvedSearchParams?.side,
+    symbol: resolvedSearchParams?.symbol,
+    assetClass: resolvedSearchParams?.assetClass,
+    lane: resolvedSearchParams?.lane ?? workstation.session?.laneId ?? undefined,
+    source: resolvedSearchParams?.source,
+  });
+  const preparedAsset = preparedTicket
+    ? workstation.tradableAssets.find((entry) => entry.asset.symbol === preparedTicket.symbol && entry.asset.assetClass === preparedTicket.assetClass)
+    : null;
+  const aiPanelLabels = {
+    providerUnavailableSafeHold: messages.simulation.agent.providerUnavailableSafeHold,
+    rawProviderError: messages.simulation.agent.rawProviderError,
+    maxNotionalPerTrade: messages.simulation.agent.maxNotionalPerTrade,
+    maxDailyNotional: messages.simulation.agent.maxDailyNotional,
+    maxOpenExposure: messages.simulation.agent.maxOpenExposure,
+    commonAmount: messages.simulation.agent.commonAmount,
+    runAgent: messages.simulation.agent.runAgent,
+    minimumForFieldTemplate: messages.simulation.agent.minimumForField,
+  };
+  assertSerializableProps('simulation.aiPanelLabels', aiPanelLabels);
 
   if (!portfolio) {
     return (
@@ -277,6 +313,96 @@ export default async function SimulationPage({
 
   return (
     <>
+      {preparedTicket && preparedAsset ? (
+        <Section className="dashboard-section dashboard-section--tinted">
+          <Card className="analytics-card">
+            <div className="analytics-card__header">
+              <div>
+                <div className="section__eyebrow">SIMULATION / PREPARED TICKET</div>
+                <h3>{`Prepare ${preparedTicket.side === 'buy' ? 'Buy' : 'Sell'}: ${preparedAsset.asset.symbol}`}</h3>
+                <p>Review the simulated order before submitting. No real money or broker execution is involved.</p>
+              </div>
+              <div className="asset-card-actions__status-row">
+                <span className="status-pill status-pill--info">Simulation only</span>
+                <span className="status-pill status-pill--neutral">{preparedAsset.asset.assetClass.toUpperCase()}</span>
+                <span className={`status-pill ${preparedTicket.side === 'buy' ? 'status-pill--success' : 'status-pill--warning'}`}>
+                  {preparedTicket.side.toUpperCase()}
+                </span>
+                <span className="status-pill status-pill--neutral">{preparedTicket.lane.replace(/_/g, ' ')}</span>
+                {preparedTicket.source && preparedTicket.source !== 'simulation' && (
+                  <span className="status-pill status-pill--neutral">{preparedTicket.source}</span>
+                )}
+              </div>
+            </div>
+            <div className="analytics-card__body">
+              <p>
+                Quote: {formatUsdPrice(preparedAsset.quote?.price ?? null, locale, messages.common.unavailable)} · Freshness:{' '}
+                {formatFreshnessLabel(getQuoteTimestamp(preparedAsset.quote), locale, messages.common.unavailable)}
+              </p>
+              <div className="aurox-action-row" style={{ marginTop: '0.5rem', gap: '0.75rem' }}>
+                <Link href="/invest/simulation" className="journal-action-link" aria-label="Clear prepared ticket">
+                  {messages.simulation.form.clearPreparedTicket}
+                </Link>
+                <Link
+                  href={`/stocks/${encodeURIComponent(preparedAsset.asset.symbol.toLowerCase())}`}
+                  className="journal-action-link"
+                  aria-label={`Open asset detail for ${preparedAsset.asset.symbol}`}
+                >
+                  {messages.simulation.form.openAssetDetail}
+                </Link>
+                <Link href="/invest/portfolio" className="journal-action-link" aria-label="Open portfolio">
+                  {messages.simulation.form.openPortfolio}
+                </Link>
+              </div>
+            </div>
+            <div className="analytics-card__action-grid">
+              <SimulatedOrderForm
+                assetId={preparedAsset.asset.assetId}
+                symbol={preparedAsset.asset.symbol}
+                assetClass={preparedAsset.asset.assetClass}
+                side={preparedTicket.side}
+                strategyLaneId={preparedTicket.lane}
+                simulationSessionId={workstation.session?.id ?? undefined}
+                label={preparedTicket.side === 'buy' ? messages.dashboard.buySimulated : messages.dashboard.sellSimulated}
+                showQuantityInput
+                quantityLabel={messages.simulation.quantity}
+                disabled={workstation.isReadOnly || preparedAsset.quote?.price == null || (preparedTicket.side === 'sell' && !heldPositionsBySymbol.has(preparedAsset.asset.symbol))}
+                disabledReason={
+                  workstation.isReadOnly
+                    ? workstation.statusMessage
+                    : preparedAsset.quote?.price == null
+                      ? preparedAsset.asset.assetClass === 'etf'
+                        ? `${messages.simulation.validation.freshEtfQuoteRequired} (${preparedAsset.asset.symbol})`
+                        : preparedAsset.asset.assetClass === 'crypto'
+                          ? `${messages.simulation.validation.freshCryptoQuoteRequired} (${preparedAsset.asset.symbol})`
+                          : `Fresh stock quote required before simulation execution. (${preparedAsset.asset.symbol})`
+                      : preparedTicket.side === 'sell' && !heldPositionsBySymbol.has(preparedAsset.asset.symbol)
+                        ? messages.simulation.validation.noOpenPositionToSell.replace('{{symbol}}', preparedAsset.asset.symbol)
+                        : undefined
+                }
+                currentPrice={preparedAsset.quote?.price ?? null}
+                currentHeldQuantity={heldPositionsBySymbol.get(preparedAsset.asset.symbol)?.quantity ?? 0}
+                sourceContext={preparedTicket.source}
+                uiText={{
+                  quantityMode: messages.simulation.quantity,
+                  notionalMode: messages.simulation.form.notional,
+                  notionalAmount: messages.simulation.form.notionalAmount,
+                  quantityRequired: messages.simulation.validation.quantityRequired,
+                  minimumShare: messages.simulation.validation.minimumShare,
+                  minimumUnit: messages.simulation.validation.minimumUnit,
+                  minimumQuantity: (value) => messages.simulation.validation.minimumQuantity.replace('{{value}}', String(value)),
+                  wholeSharesOnly: messages.simulation.validation.wholeSharesOnly,
+                  quantityStepMismatch: (step) => messages.simulation.validation.quantityStepMismatch.replace('{{step}}', String(step)),
+                  minimumNotional: messages.simulation.validation.minimumNotional,
+                  noOpenPositionToSell: (s) => messages.simulation.validation.noOpenPositionToSell.replace('{{symbol}}', s),
+                  closePosition: messages.simulation.chips.closePosition,
+                }}
+              />
+            </div>
+          </Card>
+        </Section>
+      ) : null}
+
       <Section className="dashboard-section dashboard-section--hero">
         <WorkstationPageHeader
           eyebrow={messages.simulation.navLabel}
@@ -354,6 +480,9 @@ export default async function SimulationPage({
           <CompactStatCard label={messages.simulation.realizedPnl} value={formatSignedCurrency(portfolio.summary.realizedPnl, locale, portfolio.summary.currency)} detail="Closed-position gains and losses already locked in by simulated sells." />
           <CompactStatCard label="FX conversion" value={portfolio.summary.fxConversionAvailable ? 'Available' : 'Unavailable'} detail={portfolio.summary.fxConversionNote} />
           <CompactStatCard label="Total return" value={formatPercent(portfolioReturn)} detail="Portfolio return versus the default 100,000 USD fictive starting balance." />
+          <CompactStatCard label="Last simulated action" value={portfolio.orders[0]?.executedAt ? formatDateTimeLabel(portfolio.orders[0].executedAt, locale) : 'Unavailable'} detail="Most recent simulated order execution timestamp." />
+          <CompactStatCard label="Last reset event" value={portfolio.transactions.find((tx) => tx.transactionType === 'reset')?.createdAt ? formatDateTimeLabel(portfolio.transactions.find((tx) => tx.transactionType === 'reset')!.createdAt, locale) : 'Unavailable'} detail="Most recent reset/control event timestamp." />
+          <CompactStatCard label="Execution mode" value="Simulation only" detail="Live trading remains disabled and gated." />
         </div>
       </Section>
 
@@ -374,23 +503,7 @@ export default async function SimulationPage({
             note="Snapshots are simulation-only and marked using the latest cached stock prices."
             emptyMessage="Portfolio history will appear after the worker or trade flow records more than one snapshot."
           />
-          <Card className="analytics-card">
-            <div className="analytics-card__header">
-              <div>
-                <div className="section__eyebrow">Simulation controls</div>
-                <h3>Reset and portfolio state</h3>
-                <p>{messages.common.simulationDisclosure}</p>
-              </div>
-            </div>
-            <div className="analytics-card__body">
-              <p>Active positions: {portfolio.summary.activeInvestmentCount}</p>
-              <p>Closed positions: {portfolio.summary.closedInvestmentCount}</p>
-              <p>Recorded snapshots: {portfolio.snapshots.length}</p>
-              <p>Recent transactions: {portfolio.transactions.length}</p>
-              <p>Recent orders: {portfolio.orders.length}</p>
-            </div>
-            <ResetSimulationAccountForm label={messages.simulation.resetAccount} />
-          </Card>
+          <SimulationControlsCard />
           <Card className="analytics-card">
             <div className="analytics-card__header">
               <div>
@@ -414,6 +527,10 @@ export default async function SimulationPage({
             </div>
           </Card>
         </div>
+      </Section>
+
+      <Section className="dashboard-section">
+        <SimulationJournalTable rows={journalRows} />
       </Section>
 
       <Section className="dashboard-section">
@@ -583,6 +700,8 @@ export default async function SimulationPage({
                       disabled={workstation.isReadOnly}
                       disabledReason={workstation.isReadOnly ? workstation.statusMessage : undefined}
                       isAuthenticated
+                      hasSimulatedPosition={heldSymbols.has(item.asset.symbol)}
+                      source={`${item.asset.assetClass}-lane`}
                     />
                   )}
                 />
@@ -611,6 +730,8 @@ export default async function SimulationPage({
                         disabled={workstation.isReadOnly}
                         disabledReason={workstation.isReadOnly ? workstation.statusMessage : undefined}
                         isAuthenticated
+                        hasSimulatedPosition={heldSymbols.has(item.asset.symbol)}
+                        source={`${item.asset.assetClass}-lane`}
                       />
                     </div>
                   )}
@@ -637,7 +758,7 @@ export default async function SimulationPage({
             <div className="section__eyebrow">AI tools — experimental</div>
             <h2 className="dashboard-section-heading__title">AI Simulation Broker Agent</h2>
             <p className="dashboard-section-heading__description">
-              OpenAI-powered simulation agent that analyzes your portfolio and proposes simulated
+              AI-provider-powered simulation agent that analyzes your portfolio and proposes simulated
               trades. Simulation-only. No real money. All proposals pass existing risk guards before
               execution.
             </p>
@@ -648,8 +769,12 @@ export default async function SimulationPage({
           unavailableReason={
             aiAgentAvailability.available ? undefined : aiAgentAvailability.reason
           }
+          providerWarning={aiAgentAvailability.warning}
           isReadOnly={workstation.isReadOnly}
           readOnlyReason={workstation.isReadOnly ? workstation.statusMessage : undefined}
+          labels={{
+            ...aiPanelLabels
+          }}
         />
       </Section>
 
@@ -701,6 +826,8 @@ export default async function SimulationPage({
                     isWatched={entry.isWatched}
                     watchlistLabelAdd={messages.dashboard.addToWatchlist}
                     watchlistLabelRemove={messages.dashboard.removeFromWatchlist}
+                    hasSimulatedPosition={heldSymbols.has(entry.asset.symbol)}
+                    source={`${entry.asset.assetClass}-lane`}
                   />
                 )}
               />
@@ -739,6 +866,8 @@ export default async function SimulationPage({
                       isWatched={entry.isWatched}
                       watchlistLabelAdd={messages.dashboard.addToWatchlist}
                       watchlistLabelRemove={messages.dashboard.removeFromWatchlist}
+                      hasSimulatedPosition={heldSymbols.has(entry.asset.symbol)}
+                      source={`${entry.asset.assetClass}-lane`}
                     />
                   </div>
                 )}

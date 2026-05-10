@@ -1,10 +1,10 @@
 import { getProviderEnv, requireTwelveDataApiKey } from '../../config';
 import { buildUrl, fetchJson } from '../../shared/http-client';
-import { createMissingConfigError } from '../errors';
+import { createMissingConfigError, createUnsupportedSymbolError } from '../errors';
 import { marketHistoryPointSchema, marketObservationSchema } from '../schemas';
 import { detectAssetKind } from '../routing';
 import { resolveTwelveDataSymbol } from '../provider-symbols';
-import type { HistoricalBar, MarketQuote } from '../types';
+import type { HistoricalBar, MarketHistoryResolution, MarketQuote } from '../types';
 
 type TwelveDataQuoteResponse = {
   symbol?: string;
@@ -73,7 +73,12 @@ export async function fetchTwelveDataQuote(symbol: string): Promise<MarketQuote>
   });
 }
 
-export async function fetchTwelveDataHistory(symbol: string, from?: string, to?: string): Promise<HistoricalBar[]> {
+export async function fetchTwelveDataHistory(
+  symbol: string,
+  from?: string,
+  to?: string,
+  resolution: MarketHistoryResolution = '1d',
+): Promise<HistoricalBar[]> {
   const providerSymbol = resolveTwelveDataSymbol(symbol);
 
   if (!providerSymbol) {
@@ -82,6 +87,9 @@ export async function fetchTwelveDataHistory(symbol: string, from?: string, to?:
 
   if (!isTwelveDataConfigured()) {
     throw createMissingConfigError('twelve-data', 'Twelve Data is not configured.');
+  }
+  if (resolution !== '1d') {
+    throw createUnsupportedSymbolError('twelve-data', `Twelve Data resolution ${resolution} is not enabled in this adapter.`);
   }
 
   const apiKey = requireTwelveDataApiKey();

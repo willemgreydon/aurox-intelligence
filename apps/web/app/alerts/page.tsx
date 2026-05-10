@@ -3,6 +3,7 @@ import { WorkstationPageHeader } from '../../components/asset/workstation-page-h
 import { AlertCenterPanel } from '../../components/alerts/alert-center-panel';
 import { requireCurrentSession } from '../../server/auth/session';
 import { getAlertCenterViewModel } from '../../server/services/alert-center-service';
+import { assertSerializableProps } from '../../lib/assert-serializable-props';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,23 +28,28 @@ export default async function AlertsPage({
     },
   });
 
+  assertSerializableProps('alerts.model', model as Record<string, unknown>);
+
   return (
     <>
       <Section className="dashboard-section dashboard-section--hero dashboard-section--compact">
         <WorkstationPageHeader
-          eyebrow="Alerts"
+          eyebrow="ALERTS / INTELLIGENCE"
           title="Alert Center"
-          description="Escalated market intelligence alerts with deterministic severity, dedupe, and replay links."
+          description="Prioritized market, signal, risk, provider and simulation alerts."
           summary="Observation and simulation context only. No live trading or auto execution is enabled."
           statusLabel={model.degraded ? 'DEGRADED' : 'NOMINAL'}
           statusTone={model.degraded ? 'warning' : 'success'}
           meta={[
             { label: 'Open', value: String(model.summary.open) },
             { label: 'Critical', value: String(model.summary.critical) },
-            { label: 'Generated', value: new Date(model.generatedAt).toLocaleString('en-US') },
+            { label: 'Warning', value: String(model.summary.warning) },
+            { label: 'Snoozed', value: String(model.summary.snoozed) },
+            { label: 'Simulation only', value: 'Enabled' },
+            { label: 'Last refreshed', value: new Date(model.generatedAt).toLocaleString('en-US') },
           ]}
           actions={[
-            { href: '/observe', label: 'Observe' },
+            { href: '/observe', label: 'Open Observer' },
             { href: '/market', label: 'Market' },
             { href: '/signals', label: 'Signals' },
           ]}

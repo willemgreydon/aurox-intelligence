@@ -1,18 +1,26 @@
 import OpenAI from 'openai';
 import type { AiSimulationAgentRequest } from '@repo/api-contracts';
-import { getAiAgentEnv } from '../../env/ai-agent-env';
+import { getAiAgentEnv, hasOpenAiApiKey, resolveAiAgentProviderConfig } from '../../env/ai-agent-env';
 
 let client: OpenAI | null = null;
 
 function getOpenAiClient(): OpenAI {
   if (client) return client;
 
-  const env = getAiAgentEnv();
-  if (!env.OPENAI_API_KEY) {
-    throw new Error('OPENAI_API_KEY is not configured. AI simulation agent is unavailable.');
+  const resolved = resolveAiAgentProviderConfig();
+  if (!resolved.available) {
+    throw new Error('AI provider unavailable. The agent defaulted to HOLD for safety.');
+  }
+  if (resolved.provider !== 'openai') {
+    const env = getAiAgentEnv();
+    if (!hasOpenAiApiKey()) {
+      throw new Error('AI provider unavailable. The agent defaulted to HOLD for safety.');
+    }
+    client = new OpenAI({ apiKey: env.OPENAI_API_KEY! });
+    return client;
   }
 
-  client = new OpenAI({ apiKey: env.OPENAI_API_KEY });
+  client = new OpenAI({ apiKey: resolved.apiKey });
   return client;
 }
 

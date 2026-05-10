@@ -1,5 +1,6 @@
 {
   "shell": {
+    "brandTitle": "Aurox Intelligence",
     "brandSubtitle": "Financieel signaalplatform",
     "nav": {
       "markets": "Markten",
@@ -8,6 +9,8 @@
       "ops": "Operaties",
       "marketOverview": "Marktoverzicht",
       "stocks": "Aandelen",
+      "newsStream": "News Stream",
+      "fx": "FX",
       "dashboard": "Dashboard",
       "signals": "Signalen",
       "forecasts": "Prognoses",
@@ -17,6 +20,7 @@
       "investEtfs": "ETF lane",
       "investCrypto": "Crypto lane",
       "investAccounts": "Accounts",
+      "admin": "Admin",
       "monitoring": "Monitoring"
     },
     "auth": {
@@ -37,13 +41,666 @@
     "openMenu": "Navigatie openen",
     "closeMenu": "Navigatie sluiten",
     "closeOverlay": "Menu sluiten",
-    "closeNavigation": "Navigatie sluiten"
+    "closeNavigation": "Navigatie sluiten",
+    "preloader": {
+      "loadingStocks": "loading stocks...",
+      "loadingEtfs": "loading etfs...",
+      "loadingCrypto": "loading crypto..."
+    }
+  },
+  "ticker": {
+    "aria": "Market ticker",
+    "emptyAria": "Market ticker unavailable",
+    "sourceSummary": "Refreshable ticker snapshot from {{provider}}.",
+    "errorSummary": "Ticker snapshot unavailable: {{message}}",
+    "emptyState": "Ticker data is currently unavailable from the configured provider."
   },
   "status": {
+    "nominal": "Nominal",
     "attention": "Let op",
     "degraded": "Verlaagd"
   },
   "common": {
-    "home": "Home"
+    "home": "Home",
+    "lastUpdated": "Last updated",
+    "freshness": "Freshness",
+    "coverage": "Coverage",
+    "actionAvailability": "Action availability",
+    "providerPath": "Provider path",
+    "sourceSummary": "Source summary",
+    "quote": "Quote",
+    "move": "Move",
+    "price": "Price",
+    "historyWindow": "History window",
+    "currentQuote": "Current quote",
+    "dailyMove": "Daily move",
+    "providerSource": "Provider source",
+    "unavailable": "Unavailable",
+    "partial": "Partial",
+    "details": "Details",
+    "live": "Live",
+    "none": "None",
+    "simulationDisclosure": "Simulation only. No real money, brokerage execution, or regulated order routing is performed."
+  },
+  "auth": {
+    "loginEyebrow": "Authentication",
+    "loginTitle": "Sign in to your account",
+    "loginDescription": "Pick up your account dashboard, profile settings, and saved authenticated workspace without losing the broader platform shell.",
+    "signupEyebrow": "Account setup",
+    "signupTitle": "Create your Aurox account",
+    "signupDescription": "Start with a secure login, persistent session handling, and a dedicated account workspace that fits the platform's existing structure.",
+    "secureSession": "Secure session persistence",
+    "protectedWorkspace": "Protected account workspace",
+    "profileManagement": "Profile and password management",
+    "needAccount": "Need an account?",
+    "createOne": "Create one",
+    "alreadyRegistered": "Already registered?",
+    "signIn": "Sign in",
+    "signInShort": "Sign in",
+    "createAccount": "Create account",
+    "createAccountTitle": "Create your account",
+    "emailAddress": "Email address",
+    "password": "Password",
+    "fullName": "Full name",
+    "confirmPassword": "Confirm password",
+    "passwordHint": "Passwords must be at least 8 characters and include uppercase, lowercase, and numeric characters.",
+    "loginFormDescription": "Access your account dashboard, saved profile, and security settings.",
+    "registerFormDescription": "Set up a secure workspace for account preferences, saved sessions, and platform access.",
+    "emailPlaceholder": "you@example.com",
+    "passwordPlaceholder": "Enter your password",
+    "namePlaceholder": "Ada Lovelace",
+    "newPasswordPlaceholder": "Choose a strong password",
+    "confirmPasswordPlaceholder": "Repeat your password",
+    "signingIn": "Signing in...",
+    "creatingAccount": "Creating account...",
+    "newHere": "New here?"
+  },
+  "dashboard": {
+    "headerEyebrow": "Operational dashboard",
+    "destinations": "Dashboard destinations",
+    "controlsEyebrow": "Workstation filters",
+    "controlsTitle": "Cross-surface chart controls",
+    "controlsSubtitle": "Switch chart types, time periods, and account defaults without leaving the current workstation.",
+    "marketOverview": "Market overview",
+    "brokerTools": "Broker tools",
+    "systemObservation": "Financial system observation",
+    "watchlist": "Personal watchlist",
+    "forecastAnalysis": "Forecast and signal analysis",
+    "simulatedDisclosure": "All payment, banking, and order actions are simulated in this release.",
+    "languagePreference": "Language preference",
+    "chartType": "Chart type",
+    "timePeriod": "Time period",
+    "savePreferences": "Save preferences",
+    "preferencesSaved": "Preferences update ready",
+    "latestOrders": "Latest simulated orders",
+    "noOrders": "No simulated orders have been created yet.",
+    "addToWatchlist": "Add to watchlist",
+    "removeFromWatchlist": "Remove from watchlist",
+    "buySimulated": "Simulate buy",
+    "sellSimulated": "Simulate sell",
+    "marketSnapshotTitle": "Snapshot of the current market intelligence posture",
+    "trackedStocks": "Live tracked stocks",
+    "trackedStocksDetail": "Actual provider-backed stock quotes currently loaded into the interface.",
+    "positiveBreadth": "Positive breadth",
+    "positiveBreadthDetail": "Tracked symbols currently printing a positive session move.",
+    "negativeBreadth": "Negative breadth",
+    "negativeBreadthDetail": "Tracked symbols currently under pressure in the live quote set.",
+    "marketSourceTitle": "Live market source",
+    "providerLabel": "Provider",
+    "quoteFreshness": "Quote freshness",
+    "savedAssetsTitle": "Saved tracked assets for this account",
+    "savedAssetsEmpty": "Save assets from invest surfaces to build an account-specific monitoring lane.",
+    "simulationWorkspaceTitle": "Simulation execution",
+    "latestOrdersSubtitle": "Latest simulated buy and sell intents recorded for this account.",
+    "systemObservationSubtitle": "Operational status, provider timing, and repository-backed observation lanes.",
+    "stockColumn": "Symbol",
+    "priceColumn": "Price",
+    "moveColumn": "Move",
+    "sourceColumn": "Source",
+    "freshnessColumn": "Freshness",
+    "sideColumn": "Side",
+    "statusColumn": "Status",
+    "assetClassColumn": "Asset class",
+    "createdColumn": "Created",
+    "typeColumn": "Type",
+    "cashDeltaColumn": "Cash delta",
+    "marketPulseEyebrow": "Market Pulse",
+    "marketPulseTitle": "Live pulse snapshot",
+    "marketPulseDescription": "Top watchlist movers and freshness.",
+    "marketPulseUnavailable": "Unavailable",
+    "freshnessLive": "Live",
+    "freshnessPartial": "Partial",
+    "freshnessDelayed": "Delayed",
+    "freshnessCached": "Cached",
+    "freshnessMarketClosed": "Market closed",
+    "freshnessStale": "Stale",
+    "freshnessUnavailable": "Unavailable"
+  },
+  "account": {
+    "preferencesTitle": "Workspace preferences",
+    "preferencesDescription": "Control your locale, default chart behavior, visible dashboard modules, and tracked symbols.",
+    "trackedSymbols": "Tracked symbols",
+    "visibleModules": "Visible modules",
+    "locale": "Locale",
+    "defaultChartType": "Default chart type",
+    "defaultTimePeriod": "Default time period",
+    "trackedSymbolsHint": "Use commas to separate symbols such as AAPL, MSFT, NVDA, BINANCE:BTCUSDT.",
+    "simulationPreferencesTitle": "Simulation broker mode defaults",
+    "preferredBrokerMode": "Preferred broker mode",
+    "brokerModeCapitalLimitUsd": "Broker mode capital limit (USD)",
+    "microTradeAllocationPercent": "Micro-trade allocation (%)",
+    "defaultAssetScope": "Default asset scope",
+    "activityPreferencesTitle": "Activity preferences",
+    "orderActivityDigest": "Enable order activity digest",
+    "laneStatusAlerts": "Enable lane status alerts",
+    "trackedSymbolsFormatHint": "Use comma-separated symbols. We trim spaces, uppercase entries, and remove duplicates.",
+    "trackedSymbolsExamples": "Allowed examples: AAPL, MSFT, NVDA, SPY, BINANCE:BTCUSDT",
+    "trackedSymbolsNormalized": "Normalized",
+    "trackedSymbolsNone": "None",
+    "trackedSymbolsInvalid": "Add at least one valid symbol before saving.",
+    "trackedSymbolsIgnored": "Ignored invalid symbols",
+    "sessionControlsEyebrow": "Session controls",
+    "sessionControlsTitle": "Sign-out and session awareness",
+    "sessionControlsDescription": "You currently have {{count}} active session.",
+    "sessionControlsDescriptionPlural": "You currently have {{count}} active sessions.",
+    "brokerModeManualStock": "Manual stock lane",
+    "brokerModeManualMultiAsset": "Manual multi-asset lane",
+    "brokerModeAiCopilot": "AI copilot lane",
+    "brokerModeSignalFollow": "Signal-follow lane",
+    "brokerModeAgentSandbox": "Broker-agent sandbox lane",
+    "assetScopeStock": "Stock",
+    "assetScopeEtf": "ETF",
+    "assetScopeCrypto": "Crypto",
+    "assetScopeMultiAsset": "Multi-asset",
+    "chartTypeTrend": "Trend",
+    "chartTypeStock": "Stock",
+    "chartTypeComparison": "Comparison",
+    "chartTypeBar": "Bar",
+    "chartTypeDonut": "Donut",
+    "timePeriod1s": "1 second",
+    "timePeriod3s": "3 seconds",
+    "timePeriod5s": "5 seconds",
+    "timePeriod10s": "10 seconds",
+    "timePeriod1m": "1 minute",
+    "timePeriod1h": "1 hour",
+    "timePeriod1d": "1 day",
+    "timePeriod1w": "1 week",
+    "timePeriod1mo": "1 month",
+    "timePeriod1y": "1 year",
+    "timePeriod2y": "2 years",
+    "timePeriod5y": "5 years",
+    "moduleMarketOverview": "Market overview",
+    "moduleWatchlist": "Watchlist",
+    "moduleForecastAnalysis": "Forecast analysis",
+    "moduleBrokerTools": "Broker tools",
+    "moduleSystemObservation": "System observation"
+  },
+  "invest": {
+    "heroEyebrow": "Investment architecture",
+    "guidanceEyebrow": "AI guidance",
+    "guidanceTitle": "Explainable recommendations, not perfect predictions",
+    "featuredEyebrow": "Featured assets",
+    "featuredTitle": "Cross-asset planning board",
+    "fundingEyebrow": "Funding and accounts",
+    "fundingTitle": "Bank-connection readiness",
+    "actionModel": "Action model",
+    "planningFirst": "Planning-first"
+  },
+  "home": {
+    "heroEyebrow": "Aurox Intelligence",
+    "heroTitle": "AI-native market intelligence, simulation trading, and risk-governed execution.",
+    "heroDescription": "Aurox Intelligence combines deterministic asset ranking, explainable AI signals, and a production-grade simulation engine in one auditable workstation built for deliberate investors.",
+    "openStocks": "Open Invest Workstation",
+    "viewSimulation": "View Simulation",
+    "reviewRiskLayer": "Review Risk Layer",
+    "openDashboard": "Open dashboard",
+    "reviewAsset": "Review {{symbol}}",
+    "provider": "Provider",
+    "currentSnapshotTitle": "Live market snapshot",
+    "currentSnapshotSubtitle": "Provider-backed equity intelligence pulled through the ranking and signal pipeline.",
+    "liveTrackedStocks": "Tracked assets",
+    "liveTrackedStocksCaption": "Current provider-backed quotes active across the monitored asset universe.",
+    "positiveBreadth": "Positive breadth",
+    "positiveBreadthCaption": "Share of the tracked asset set currently printing a constructive session move.",
+    "topMover": "Top mover",
+    "topMoverCaption": "Strongest price move in the monitored set based on the latest provider snapshot.",
+    "featuredStock": "Featured asset",
+    "historyPreviewAria": "{{symbol}} price history preview",
+    "noHistory": "Historical price data is not yet available for this asset.",
+    "platformHighlights": "Platform trust signals"
+  },
+  "homeSections": {
+    "capabilities": {
+      "eyebrow": "Platform capabilities",
+      "title": "A deterministic intelligence engine beneath a financial workstation.",
+      "description": "Every output is reproducible, every signal is explainable, and every execution path is guarded by explicit risk rules before an order is ever considered.",
+      "items": [
+        {
+          "title": "Deterministic ranking engine",
+          "description": "Composite scores from signal, factor, regime, and risk inputs rank every asset deterministically — same inputs always produce the same ordered output."
+        },
+        {
+          "title": "Explainable AI signals",
+          "description": "Every recommendation surfaces a confidence score, risk notice, and reasoning trail so analysts can inspect the why, not just read the what."
+        },
+        {
+          "title": "Simulation-first execution",
+          "description": "A production-grade paper trading engine replicates real market mechanics — order routing, fills, position accounting — without touching real capital."
+        },
+        {
+          "title": "Multi-asset coverage",
+          "description": "Stocks, ETFs, and crypto tracked in a unified asset taxonomy with consistent signal derivation and explicit action availability gates per instrument."
+        },
+        {
+          "title": "Risk governance layer",
+          "description": "Exposure limits, drawdown caps, and instrument constraints are enforced before any execution path is unlocked — for simulation and future live orders alike."
+        },
+        {
+          "title": "Provider observability",
+          "description": "Market data freshness, source health, and provider fallback state are first-class product dimensions surfaced to the operator, not hidden backend details."
+        }
+      ]
+    },
+    "modules": {
+      "eyebrow": "Workstation modules",
+      "title": "Every intelligence surface in one navigable workstation.",
+      "description": "Each module owns a distinct research or execution domain with consistent data freshness indicators, risk-aware action controls, and clear simulation disclosure.",
+      "enterModule": "Enter module",
+      "items": [
+        {
+          "eyebrow": "Invest",
+          "title": "Intelligence and simulation hub",
+          "description": "AI-ranked assets, market recommendations, simulation order entry, and portfolio tracking — all in one invest workstation.",
+          "href": "/invest"
+        },
+        {
+          "eyebrow": "Stocks",
+          "title": "Equity research workspace",
+          "description": "Deep equity analysis with quote tracking, watchlist management, sparkline history, and simulation order entry per symbol.",
+          "href": "/stocks"
+        },
+        {
+          "eyebrow": "Market graph",
+          "title": "Interactive chart workstation",
+          "description": "OHLCV candlestick and line charts with signal overlays, multi-asset compare, and configurable time viewport controls.",
+          "href": "/market"
+        },
+        {
+          "eyebrow": "Dashboard",
+          "title": "Operational overview",
+          "description": "Simulation performance summary, order history, provider health status, and cross-surface workstation configuration.",
+          "href": "/dashboard"
+        }
+      ]
+    },
+    "explainability": {
+      "eyebrow": "Intelligence pipeline",
+      "title": "From raw market data to ranked, explainable investment context.",
+      "description": "Every recommendation is traceable to a signal input, a risk check, and a disclosed confidence score. No opaque outputs, no unqualified buy or sell claims.",
+      "dataFlowEyebrow": "Data flow",
+      "kpis": [
+        {
+          "label": "Why a score moved",
+          "value": "Signal influence"
+        },
+        {
+          "label": "How much to trust it",
+          "value": "Confidence bands"
+        },
+        {
+          "label": "What the risk is",
+          "value": "Risk disclosure"
+        }
+      ],
+      "flow": [
+        {
+          "title": "Ingest market data",
+          "description": "Provider adapters normalize OHLCV, quote, and macro signals into durable canonical observations with freshness tracking.",
+          "value": "providers → ingestion"
+        },
+        {
+          "title": "Derive signals",
+          "description": "Pure signal packages compute momentum, volatility, and trend features deterministically — no I/O, no hidden state, no randomness.",
+          "value": "ingestion → signals"
+        },
+        {
+          "title": "Rank and score",
+          "description": "The composite ranking engine applies weighted factors and risk penalties to produce ordered, explainable asset scores across all tracked instruments.",
+          "value": "signals → intelligence"
+        },
+        {
+          "title": "Recommend and disclose",
+          "description": "Every recommendation includes reasoning, confidence, suitability, and a risk notice — never a bare directive without context or disclosure.",
+          "value": "intelligence → workstation"
+        }
+      ]
+    },
+    "systemStatus": {
+      "eyebrow": "System readiness",
+      "title": "Production-realistic status, simulation-first by design.",
+      "description": "All system components report their operational state. Simulation is the default execution target. Live execution and autonomous trading are explicitly gated.",
+      "systemStatusTitle": "Core systems",
+      "systemStatusBody": "Ranking engine, simulation trading, and market data pipelines.",
+      "systemStatusBadge": "Operational",
+      "roadmapTitle": "Gated capabilities",
+      "roadmapBody": "Live execution and autonomous trading remain explicitly locked behind readiness, risk approval, and policy verification.",
+      "systems": [
+        {
+          "name": "Ranking engine",
+          "detail": "Deterministic composite score ranking active for all tracked assets across stocks, ETFs, and crypto.",
+          "label": "Active",
+          "tone": "success"
+        },
+        {
+          "name": "Simulation trading",
+          "detail": "Paper trading, order management, position accounting, and transaction audit running without real capital.",
+          "label": "Active",
+          "tone": "success"
+        },
+        {
+          "name": "Market data providers",
+          "detail": "Quote and OHLCV ingestion active with stale-cache fallback and provider health observation.",
+          "label": "Live",
+          "tone": "success"
+        },
+        {
+          "name": "Live broker execution",
+          "detail": "Real brokerage execution is not enabled in this release. Gated behind readiness and compliance verification.",
+          "label": "Gated",
+          "tone": "info"
+        }
+      ],
+      "roadmap": [
+        {
+          "title": "Autonomous execution lane",
+          "detail": "Autonomous trading requires explicit readiness verification, risk cap approval, and broker API connectivity before any gate is opened."
+        },
+        {
+          "title": "Live broker connectivity",
+          "detail": "Real brokerage execution will be enabled only after risk gate passage, broker validation, and compliance review are completed and signed off."
+        },
+        {
+          "title": "Historical signal backtesting",
+          "detail": "Backtesting surfaces for signal validation and strategy stress-testing are on the roadmap after simulation hardening is complete."
+        }
+      ]
+    },
+    "lanes": {
+      "eyebrow": "Intelligence lanes",
+      "title": "Five purpose-built lanes for every stage of the investment workflow.",
+      "description": "Each lane owns a distinct domain from raw data ingestion to risk-governed execution. All lanes share a unified asset taxonomy and enforce explicit risk rules.",
+      "enterLane": "Open lane",
+      "flowSteps": [
+        "Data",
+        "Signals",
+        "Risk",
+        "Simulation",
+        "Portfolio"
+      ],
+      "items": [
+        {
+          "label": "Lane 01",
+          "title": "Market Intelligence Lane",
+          "description": "Deterministic asset ranking, explainable signals, and AI-driven market context across stocks, ETFs, and crypto — all traceable to their inputs.",
+          "features": [
+            "Composite score ranking",
+            "Explainable AI signals",
+            "Regime and factor analysis"
+          ],
+          "href": "/invest",
+          "statusLabel": "Active"
+        },
+        {
+          "label": "Lane 02",
+          "title": "Simulation Trading Lane",
+          "description": "Production-grade paper trading with real market mechanics — order routing, position accounting, fee tracking, and full transaction audit history.",
+          "features": [
+            "Simulated buy and sell orders",
+            "Portfolio PnL tracking",
+            "Order and transaction audit"
+          ],
+          "href": "/invest/simulation",
+          "statusLabel": "Active"
+        },
+        {
+          "label": "Lane 03",
+          "title": "Risk Governance Lane",
+          "description": "Exposure limits, drawdown monitoring, and instrument constraints are enforced before any execution path is opened — for simulation and future live orders.",
+          "features": [
+            "Max exposure enforcement",
+            "Drawdown monitoring",
+            "Instrument constraint checks"
+          ],
+          "href": "/dashboard",
+          "statusLabel": "Active"
+        },
+        {
+          "label": "Lane 04",
+          "title": "Execution Readiness Lane",
+          "description": "Broker adapter readiness gates, asset validation, and live execution eligibility checks — all auditable before any order can be routed to a real venue.",
+          "features": [
+            "Broker readiness gate",
+            "Asset scope validation",
+            "Live execution gating"
+          ],
+          "href": "/invest",
+          "statusLabel": "Gated"
+        },
+        {
+          "label": "Lane 05",
+          "title": "Portfolio Intelligence Lane",
+          "description": "Cross-asset allocation view, factor exposure analysis, and simulation performance attribution — presenting positions in structured, explainable context.",
+          "features": [
+            "Cross-asset allocation view",
+            "Factor exposure analysis",
+            "Simulation PnL attribution"
+          ],
+          "href": "/stocks",
+          "statusLabel": "Active"
+        }
+      ]
+    }
+  },
+  "simulation": {
+    "navLabel": "Simulation",
+    "title": "Investment simulation",
+    "description": "Paper-trading workspace with fictive cash, auditable orders, portfolio tracking, and clear simulation disclosures.",
+    "cashBalance": "Cash balance",
+    "portfolioValue": "Portfolio value",
+    "unrealizedPnl": "Unrealized P&L",
+    "realizedPnl": "Realized P&L",
+    "buy": "Buy",
+    "sell": "Sell",
+    "quantity": "Quantity",
+    "resetAccount": "Reset simulation account",
+    "resetConfirmation": "Simulation account reset.",
+    "orderRecorded": "Simulation order recorded.",
+    "insufficientCash": "Insufficient fictive cash balance for this order.",
+    "insufficientQuantity": "Insufficient position quantity for this sell order.",
+    "transactions": "Transactions",
+    "positions": "Positions",
+    "orders": "Orders",
+    "snapshots": "Snapshots",
+    "assetUniverse": "Tradable simulation universe",
+    "assetUniverseDescription": "Execute deterministic paper trades across stocks, ETFs, and crypto using server-side pricing and auditable ledger updates.",
+    "assetPrice": "Market price",
+    "assetRisk": "Risk framing",
+    "statusLive": "Live",
+    "symbolColumn": "Symbol",
+    "quantityColumn": "Quantity",
+    "averageCostColumn": "Average cost",
+    "marketValueColumn": "Market value",
+    "unrealizedPnlColumn": "Unrealized P&L",
+    "sideColumn": "Side",
+    "priceColumn": "Price",
+    "createdColumn": "Created",
+    "typeColumn": "Type",
+    "cashDeltaColumn": "Cash delta",
+    "realizedPnlColumn": "Realized P&L",
+    "snapshotCount": "Snapshots",
+    "positionCount": "Open positions",
+    "emptyPositions": "No simulation positions are open yet.",
+    "emptyTransactions": "No simulation transactions are available yet.",
+    "emptyOrders": "No simulation orders are available yet.",
+    "disclosure": "Simulation only. Orders are executed with fictive money and do not interact with a real broker or payment provider.",
+    "statusEmpty": "No simulation session has been started yet. Start a lane to initialize a workstation.",
+    "statusRunning": "Session is running in simulation mode.",
+    "statusPaused": "Session is paused. Resume the lane to enable trading actions.",
+    "statusStopped": "Session is not currently running. Trading actions are read-only.",
+    "statusFailed": "Session failed and requires a manual restart.",
+    "statusError": "Observation feed is unavailable. Trading is read-only.",
+    "statusDegraded": "Observation feed is degraded. Trading is read-only until freshness recovers.",
+    "validation": {
+      "wholeSharesOnly": "Enter a whole number of shares.",
+      "minimumQuantity": "Minimum quantity: {{value}}",
+      "minimumNotional": "Minimum notional requirement not met.",
+      "insufficientCash": "Not enough cash for this simulation order.",
+      "noOpenPositionToSell": "No open {{symbol}} position is available to sell.",
+      "invalidNumber": "Enter a valid number.",
+      "quantityStepMismatch": "Use increments of {{step}}.",
+      "amountStepMismatch": "Use amount increments of {{step}}.",
+      "quantityRequired": "Quantity is required.",
+      "minimumShare": "Minimum 1 share.",
+      "minimumUnit": "Minimum 1 unit.",
+      "freshEtfQuoteRequired": "Fresh ETF quote required before simulation execution.",
+      "freshCryptoQuoteRequired": "Fresh crypto quote required before simulation execution.",
+      "noOpenEtfPositionToSell": "No open ETF position is available to sell.",
+      "noOpenCryptoPositionToSell": "No open crypto position is available to sell.",
+      "wholeEtfSharesOnly": "Whole ETF shares only in simulation.",
+      "cryptoPrecisionHint": "Crypto precision is based on provider/min-notional rules."
+    },
+    "chips": {
+      "quantityOne": "1",
+      "quantityFive": "5",
+      "quantityTen": "10",
+      "quantityTwentyFive": "25",
+      "percent25": "25%",
+      "percent50": "50%",
+      "percent100": "100%",
+      "closePosition": "Close position",
+      "cash25": "$25",
+      "cash50": "$50",
+      "cash100": "$100",
+      "cash250": "$250",
+      "cash500": "$500"
+    },
+    "agent": {
+      "providerUnavailableSafeHold": "AI provider unavailable. The agent defaulted to HOLD for safety.",
+      "rawProviderError": "Raw provider error",
+      "maxNotionalPerTrade": "Max notional / trade ($)",
+      "maxDailyNotional": "Max daily notional ($)",
+      "maxOpenExposure": "Max open exposure ($)",
+      "commonAmount": "Common amount",
+      "runAgent": "Run AI simulation agent",
+      "minimumForField": "{{field}} must be at least 1."
+    },
+    "actions": {
+      "prepareBuy": "Prepare Buy",
+      "prepareSell": "Prepare Sell",
+      "simulateBuy": "Simulate Buy",
+      "simulateSell": "Simulate Sell"
+    },
+    "errors": {
+      "quoteUnavailable": "Quote unavailable. The simulated order was not submitted.",
+      "insufficientCash": "Insufficient simulated cash for this order.",
+      "noPositionToSell": "No simulated position available to sell.",
+      "invalidQuantity": "Invalid quantity for this order.",
+      "providerUnavailable": "AI provider temporarily unavailable. No order was submitted.",
+      "dbTimeout": "Database temporarily unavailable. Please try again.",
+      "unknown": "An unexpected error occurred. The order was not submitted."
+    },
+    "success": {
+      "buySubmitted": "Simulated buy submitted.",
+      "sellSubmitted": "Simulated sell submitted."
+    },
+    "journal": {
+      "initialFunding": "Initial funding",
+      "simulatedBuy": "Simulated buy",
+      "simulatedSell": "Simulated sell",
+      "cashAdjustment": "Cash adjustment",
+      "technicalDetails": "Technical details"
+    },
+    "form": {
+      "quantity": "Quantity",
+      "notional": "Notional",
+      "notionalAmount": "Notional amount",
+      "orderValue": "Order value",
+      "estimatedQuantity": "Estimated quantity",
+      "estimatedNotional": "Estimated notional",
+      "preparedTicket": "Prepared ticket",
+      "clearPreparedTicket": "Clear prepared ticket",
+      "openAssetDetail": "Open asset detail",
+      "openPortfolio": "Open portfolio"
+    }
+  },
+  "marketGraph": {
+    "title": "Market graph",
+    "subtitle": "Fullscreen market history with timeframe controls, overlays, and comparative context.",
+    "open": "Open fullscreen market graph",
+    "timeframe": "Timeframe",
+    "graphType": "Graph type",
+    "line": "Line",
+    "candles": "Candles",
+    "movingAverage": "Moving average",
+    "signals": "Signals",
+    "compare": "Compare asset",
+    "selectAsset": "Primary asset",
+    "noCompare": "No comparison",
+    "lastPrice": "Last price",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "panLeft": "Pan left",
+    "panRight": "Pan right",
+    "resetView": "Reset view",
+    "viewport": "Viewport controls",
+    "historyRange": "History range",
+    "chartAria": "{{symbol}} market chart",
+    "noData": "No market history is available for this view.",
+    "intradayUnavailable": "Intraday bars unavailable. Showing daily history.",
+    "dailyFallback": "Using daily provider history.",
+    "providerReturnedBars": "Provider returned {{count}} bars for {{timeframe}}.",
+    "cachedHistoryShown": "Cached history shown. Last updated {{date}}.",
+    "candlesUnavailable": "Candles unavailable for this provider/timeframe.",
+    "insufficientHistory": "Insufficient history for selected timeframe.",
+    "selectedTimeframe": "Selected timeframe",
+    "pointCount": "{{count}} data points",
+    "actualResolution": "Resolution: {{resolution}}"
+  },
+  "stocks": {
+    "providerUnavailableSummary": "Live stocks snapshot is unavailable: {{message}}",
+    "trackingSummary": "Tracking {{count}} live stock quotes from {{provider}}.",
+    "noObservationsSummary": "No stock observations are currently available from the configured provider.",
+    "historyUnavailable": "No historical stock bars are currently available for this symbol.",
+    "historyRangeSeparator": "to"
+  },
+  "table": {
+    "rowDetails": "Details"
+  },
+  "footer": {
+    "groupMarkets": "Markets & Data",
+    "groupInvest": "Invest & Simulate",
+    "groupPlatform": "Platform",
+    "groupLegal": "Legal & Info",
+    "brandMeta": "Production-grade financial intelligence foundations for explainable forecasts, signal engineering, and operator-facing decision support.",
+    "disclosure": "Simulation only. No real money, brokerage execution, or regulated order routing is performed on this platform.",
+    "stocksLink": "Stocks",
+    "newsLink": "News Stream",
+    "fxLink": "FX monitor",
+    "signalsLink": "Signals",
+    "forecastsLink": "Forecasts",
+    "stockAllocationLink": "Stock allocation",
+    "etfComparisonLink": "ETF comparison",
+    "cryptoTrackingLink": "Crypto tracking",
+    "simulationLink": "Portfolio simulation",
+    "adminLink": "Admin console",
+    "monitoringLink": "Monitoring",
+    "accountLink": "Account",
+    "profileLink": "Profile & settings",
+    "legalLink": "Legal overview",
+    "termsLink": "Terms of Use",
+    "privacyLink": "Privacy Policy",
+    "riskLink": "Risk Disclosure",
+    "imprintLink": "Legal Notice",
+    "copyrightSuffix": "Designed for institutional analytics teams and internal operators."
   }
 }

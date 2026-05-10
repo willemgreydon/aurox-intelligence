@@ -1,4 +1,4 @@
-import { deriveMarketIntelligenceDigest } from '@repo/ai-market-intelligence';
+import * as aiMarketIntelligence from '@repo/ai-market-intelligence';
 import { saveMarketIntelligenceBatch } from '@repo/db';
 import { fetchMarketSnapshot } from '@repo/providers';
 import { env } from '../env.js';
@@ -20,7 +20,12 @@ export async function extractMarketIntelligenceJob() {
     sourceSummary: `${(item.source ?? env.MARKET_DATA_PROVIDER).toUpperCase()} market context`,
   }));
 
-  const digest = deriveMarketIntelligenceDigest(
+  const deriveDigest = aiMarketIntelligence.deriveMarketIntelligenceDigest;
+  if (typeof deriveDigest !== 'function') {
+    throw new Error('deriveMarketIntelligenceDigest export is unavailable. Rebuild @repo/ai-market-intelligence.');
+  }
+
+  const digest = deriveDigest(
     'Worker market intelligence digest',
     assetInputs,
     observations.length > 0 ? 'live' : 'unavailable',

@@ -153,7 +153,11 @@ export async function resolveLaneMode(laneId: SimulationLaneId): Promise<Simulat
   return laneModeByLaneId[laneId];
 }
 
-export async function getSimulationWorkstationStateForCurrentUser(options?: { sessionId?: string | null }): Promise<SimulationWorkstationState> {
+export async function getSimulationWorkstationStateForCurrentUser(options?: {
+  sessionId?: string | null;
+  assetLimit?: number;
+  watchlistLimit?: number;
+}): Promise<SimulationWorkstationState> {
   const auth = await requireCurrentSession('/invest/simulation');
   const session = await getPreferredSimulationSessionForUser(auth.user.id, options?.sessionId ?? null);
   const status = deriveWorkstationStatus(session);
@@ -176,13 +180,27 @@ export async function getSimulationWorkstationStateForCurrentUser(options?: { se
 
   await markSimulationSessionOpened(auth.user.id, session.id);
 
-  const [tradableAssets, watchlist] = await Promise.all([
+  const assetLimit =
+    options?.assetLimit && Number.isFinite(options.assetLimit)
+      ? Math.max(20, Math.floor(options.assetLimit))
+      : 140;
+  const watchlistLimit =
+    options?.watchlistLimit && Number.isFinite(options.watchlistLimit)
+      ? Math.max(10, Math.floor(options.watchlistLimit))
+      : 40;
+
+  const [tradableAssetsRaw, watchlistRaw] = await Promise.all([
     listSimulationTradableAssets(assetScope),
     getUserWatchlist(auth.user.id),
   ]);
+  const tradableAssets = tradableAssetsRaw.slice(0, assetLimit);
+  const watchlist = watchlistRaw.slice(0, watchlistLimit);
 
   const quoteCandidates = [...new Set([...tradableAssets.map((asset) => asset.symbol), ...watchlist.map((item) => item.symbol)])];
-  const quotes = await loadQuoteSnapshots(quoteCandidates);
+  const quotes = await loadQuoteSnapshots(quoteCandidates, undefined, {
+    preferCached: true,
+    maxSymbols: Math.max(assetLimit, 40),
+  });
   const quoteBySymbol = new Map(quotes.map((quote) => [quote.symbol, quote]));
 
   const workspace = await getSimulationWorkspaceIfExists(

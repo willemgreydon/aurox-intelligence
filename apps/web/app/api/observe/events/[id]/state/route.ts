@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireCurrentSession } from '../../../../../../server/auth/session';
 import { updateObservationInteraction } from '../../../../../../server/services/market-observation-service';
+import { revalidateForObservationState } from '../../../../../../server/lib/revalidation-targets';
 
 export async function POST(
   request: Request,
@@ -21,6 +22,7 @@ export async function POST(
     action,
     value: body.value,
   });
+  revalidateForObservationState();
 
   return NextResponse.json({ ok: true });
 }
