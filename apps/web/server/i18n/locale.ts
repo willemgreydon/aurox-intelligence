@@ -4,11 +4,14 @@ import { cache } from 'react';
 import { getOptionalCurrentSession } from '../auth/session';
 import { getUserDashboardPreset } from '@repo/db';
 import { supportedLocales } from '../../lib/i18n/locale-options';
+import { withTimeout } from '../lib/with-timeout';
 
 export const LOCALE_COOKIE_KEY = 'aurox-locale';
 
 // How long to wait for a DB locale preference before falling back to Accept-Language.
 const LOCALE_DB_TIMEOUT_MS = 1_500;
+// Keep initial page render snappy even if auth/session lookup is slow.
+const LOCALE_SESSION_TIMEOUT_MS = 350;
 
 function normalizeLocale(value: string | null | undefined): Locale | null {
   if (!value) {
@@ -57,7 +60,7 @@ export const getRequestLocale = cache(async (): Promise<Locale> => {
 
   // Only hit DB if authenticated. Apply a tight timeout so a slow DB does not
   // block page render for every unauthenticated visitor.
-  const session = await getOptionalCurrentSession();
+  const session = await withTimeout(getOptionalCurrentSession(), LOCALE_SESSION_TIMEOUT_MS, null);
   if (session) {
     const dbLocale = await getDbLocale(session.user.id);
     if (dbLocale) {
