@@ -566,11 +566,17 @@
       "quoteNotReady": "Simulationskurs ist noch nicht bereit.",
       "retryQuote": "Kurs erneut laden",
       "retryingInSeconds": "Erneuter Versuch in {{seconds}} s",
-      "marketClosedUsingLatestQuote": "Markt ist geschlossen - f?r die Simulation wird der letzte verf?gbare Kurs verwendet.",
+      "marketClosedUsingLatestQuote": "Markt geschlossen - f?r die Simulation wird der zuletzt verf?gbare Kurs verwendet.",
       "cachedQuoteSimulationWarning": "Zwischengespeicherter Kurs wird f?r die Simulationssch?tzung verwendet.",
       "delayedQuoteSimulationWarning": "Verz?gerter Kurs wird f?r die Simulationssch?tzung verwendet.",
       "quoteFreshnessLimited": "Kursfrische ist eingeschr?nkt - nur Simulationssch?tzung.",
-      "simulationQuoteUnavailable": "Simulationskurs ist aktuell nicht verf?gbar."
+      "simulationQuoteUnavailable": "Simulationskurs ist aktuell nicht verf?gbar.",
+      "cachedSimulationQuote": "Zwischengespeicherter Simulationskurs",
+      "cryptoMarketNeverCloses": "Kryptom?rkte laufen rund um die Uhr - Markt geschlossen gilt hier nicht.",
+      "staleDuringMarketHours": "W?hrend der Marktzeiten veraltet",
+      "delayedMarketQuote": "Verz?gerter Marktkurs",
+      "quoteUsableForSimulation": "Kurs f?r Simulation verwendbar",
+      "quoteNotUsableForSimulation": "Kurs f?r Simulation aktuell nicht verwendbar"
     },
     "validation": {
       "wholeSharesOnly": "Geben Sie eine ganze Anzahl von Aktien ein.",

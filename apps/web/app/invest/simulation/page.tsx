@@ -36,6 +36,7 @@ import { parsePreparedSimulationTicket } from '../../../lib/simulation-prepare';
 import { assertSerializableProps } from '../../../lib/assert-serializable-props';
 import { getAssetInspectHref } from '../../../lib/market-routes';
 import { getMacroIntelligenceViewModel } from '../../../server/services/macro-intelligence-service';
+import { evaluateSimulationQuoteUsability } from '../../../server/services/simulation-quote-usability';
 
 export const dynamic = 'force-dynamic';
 
@@ -279,6 +280,13 @@ export default async function SimulationPage({
       assetClass: preparedAsset.asset.assetClass,
     })
     : null;
+  const preparedQuoteUsability = preparedAsset
+    ? evaluateSimulationQuoteUsability({
+      symbol: preparedAsset.asset.symbol,
+      assetClass: preparedAsset.asset.assetClass,
+      quote: preparedAsset.quote,
+    })
+    : null;
   const aiPanelLabels = {
     providerUnavailableSafeHold: messages.simulation.agent.providerUnavailableSafeHold,
     rawProviderError: messages.simulation.agent.rawProviderError,
@@ -379,9 +387,23 @@ export default async function SimulationPage({
             </div>
             <div className="analytics-card__body">
               <p>
-                Quote: {formatUsdPrice(preparedAsset.quote?.price ?? null, locale, messages.common.unavailable)} · Freshness:{' '}
-                {formatFreshnessLabel(getQuoteTimestamp(preparedAsset.quote), locale, messages.common.unavailable)}
+                Quote: {formatUsdPrice(preparedAsset.quote?.price ?? null, locale, messages.common.unavailable)} · State:{' '}
+                {preparedQuoteUsability?.reasonCode === 'CACHED_MARKET_CLOSED'
+                  ? messages.simulation.form.cachedSimulationQuote
+                  : preparedQuoteUsability?.reasonCode === 'DELAYED_QUOTE'
+                    ? messages.simulation.form.delayedMarketQuote
+                    : preparedQuoteUsability?.reasonCode === 'STALE_DURING_MARKET_HOURS'
+                      ? messages.simulation.form.staleDuringMarketHours
+                      : formatFreshnessLabel(
+                        getQuoteTimestamp(preparedAsset.quote),
+                        locale,
+                        messages.common.unavailable,
+                        preparedAsset.asset.assetClass,
+                      )}
               </p>
+              {preparedQuoteUsability?.warning ? (
+                <p className="simulation-form__meta">{preparedQuoteUsability.warning}</p>
+              ) : null}
               <div className="aurox-action-row" style={{ marginTop: '0.5rem', gap: '0.75rem' }}>
                 <Link href="/invest/simulation" className="journal-action-link" aria-label="Clear prepared ticket">
                   {messages.simulation.form.clearPreparedTicket}
@@ -439,6 +461,16 @@ export default async function SimulationPage({
                   minimumNotional: messages.simulation.validation.minimumNotional,
                   noOpenPositionToSellTemplate: messages.simulation.validation.noOpenPositionToSell,
                   closePosition: messages.simulation.chips.closePosition,
+                  quoteReady: messages.simulation.form.quoteReady,
+                  fetchingSimulationQuote: messages.simulation.form.fetchingSimulationQuote,
+                  quoteNotReady: messages.simulation.form.quoteNotReady,
+                  retryQuote: messages.simulation.form.retryQuote,
+                  retryingInSeconds: messages.simulation.form.retryingInSeconds,
+                  marketClosedUsingLatestQuote: messages.simulation.form.marketClosedUsingLatestQuote,
+                  cachedQuoteSimulationWarning: messages.simulation.form.cachedSimulationQuote,
+                  delayedQuoteSimulationWarning: messages.simulation.form.delayedMarketQuote,
+                  quoteFreshnessLimited: messages.simulation.form.quoteFreshnessLimited,
+                  simulationQuoteUnavailable: messages.simulation.form.simulationQuoteUnavailable,
                 }}
               />
             </div>
@@ -748,7 +780,7 @@ export default async function SimulationPage({
                   thesis={item.asset.thesis}
                   priceLabel={formatUsdPrice(item.quote?.price ?? null, locale, messages.common.unavailable)}
                   changeLabel="Watchlist"
-                  freshnessLabel={formatFreshnessLabel(getQuoteTimestamp(item.quote), locale, messages.common.unavailable)}
+                  freshnessLabel={formatFreshnessLabel(getQuoteTimestamp(item.quote), locale, messages.common.unavailable, item.asset.assetClass)}
                   actionAvailability={item.asset.actionAvailability}
                   insightStance="neutral"
                   riskSummary={item.asset.riskSummary}
@@ -778,7 +810,7 @@ export default async function SimulationPage({
                   thesis={item.asset.thesis}
                   priceLabel={formatUsdPrice(item.quote?.price ?? null, locale, messages.common.unavailable)}
                   changeLabel="Watchlist"
-                  freshnessLabel={formatFreshnessLabel(getQuoteTimestamp(item.quote), locale, messages.common.unavailable)}
+                  freshnessLabel={formatFreshnessLabel(getQuoteTimestamp(item.quote), locale, messages.common.unavailable, item.asset.assetClass)}
                   actionAvailability={item.asset.actionAvailability}
                   insightStance="neutral"
                   sparkline={sparklineBySymbol[item.asset.symbol] ?? []}
@@ -863,8 +895,8 @@ export default async function SimulationPage({
                 categoryLabel={entry.asset.sector ?? entry.asset.category}
                 thesis={entry.asset.thesis}
                 priceLabel={formatUsdPrice(entry.quote?.price ?? null, locale, messages.common.unavailable)}
-                changeLabel={formatFreshnessLabel(getQuoteTimestamp(entry.quote), locale, messages.common.unavailable)}
-                freshnessLabel={formatFreshnessLabel(getQuoteTimestamp(entry.quote), locale, messages.common.unavailable)}
+                changeLabel={formatFreshnessLabel(getQuoteTimestamp(entry.quote), locale, messages.common.unavailable, entry.asset.assetClass)}
+                freshnessLabel={formatFreshnessLabel(getQuoteTimestamp(entry.quote), locale, messages.common.unavailable, entry.asset.assetClass)}
                 actionAvailability={entry.asset.actionAvailability}
                 insightStance={
                   entry.quote?.changePercent && entry.quote.changePercent < 0
@@ -904,7 +936,7 @@ export default async function SimulationPage({
                 thesis={entry.asset.thesis}
                 priceLabel={formatUsdPrice(entry.quote?.price ?? null, locale, messages.common.unavailable)}
                 changeLabel={formatPercentChange(entry.quote?.changePercent ?? null, messages.common.partial)}
-                freshnessLabel={formatFreshnessLabel(getQuoteTimestamp(entry.quote), locale, messages.common.unavailable)}
+                freshnessLabel={formatFreshnessLabel(getQuoteTimestamp(entry.quote), locale, messages.common.unavailable, entry.asset.assetClass)}
                 actionAvailability={entry.asset.actionAvailability}
                 insightStance={
                   entry.quote?.changePercent && entry.quote.changePercent < 0

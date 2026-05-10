@@ -147,7 +147,7 @@ export default async function CryptoDetailPage({ params }: CryptoDetailPageProps
                 </div>
                 <div className="side-metrics__item">
                   <span>Freshness</span>
-                  <strong>{formatFreshnessLabel(quoteTimestamp, locale, messages.common.unavailable)}</strong>
+                  <strong>{formatFreshnessLabel(quoteTimestamp, locale, messages.common.unavailable, 'crypto')}</strong>
                 </div>
               </div>
             }

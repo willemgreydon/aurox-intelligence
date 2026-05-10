@@ -2,6 +2,8 @@ import type { Locale } from '@repo/api-contracts';
 import { formatRelativeTimeLabel } from '../../lib/formatters';
 import { getFreshnessLabel, getFreshnessState } from './market-data';
 
+type AssetClassHint = 'stock' | 'etf' | 'crypto' | 'fx' | 'index' | null | undefined;
+
 function toLocaleTag(locale: Locale): string {
   switch (locale) {
     case 'de':
@@ -82,8 +84,9 @@ export function formatFreshnessLabel(
   timestamp: string | null | undefined,
   locale: Locale,
   unavailableLabel = 'Unavailable',
+  assetClass?: AssetClassHint,
 ): string {
-  const state = getFreshnessState(timestamp);
+  const state = getFreshnessState(timestamp, assetClass);
 
   if (state === 'unavailable') {
     return unavailableLabel;

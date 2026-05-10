@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import type { SimulationJournalRow } from '../../server/services/simulation-journal-service';
 import { buildSimulationPrepareHrefForAsset } from '../../lib/simulation-prepare-url';
+import { sanitizeSimulationSourceLabel } from '../../lib/simulation-source';
 
 /**
  * Client-side copy of humanizeTransactionType for display only.
@@ -25,22 +26,6 @@ function outcomeTone(status: string): 'success' | 'danger' | 'warning' | 'neutra
   if (status === 'failed' || status === 'rejected' || status === 'error') return 'danger';
   if (status === 'blocked' || status === 'cancelled') return 'warning';
   return 'neutral';
-}
-
-function humanizeSource(source: string): string {
-  const map: Record<string, string> = {
-    simulation: 'Simulation',
-    manual_ui: 'Manual',
-    'portfolio-intelligence': 'Portfolio Intel',
-    'simulation-controls': 'Controls',
-    journal: 'Journal',
-    signal: 'Signal',
-    agent: 'Agent',
-    'etf-lane': 'ETF Lane',
-    'crypto-lane': 'Crypto Lane',
-    observe: 'Observe',
-  };
-  return map[source] ?? source;
 }
 
 function humanizeSide(side: string): { label: string; tone: 'success' | 'danger' | 'neutral' } {
@@ -216,7 +201,7 @@ export function SimulationJournalTable({ rows }: Props) {
                       </td>
                       <td>
                         <span className="status-pill status-pill--neutral" style={{ fontSize: '0.7rem' }}>
-                          {humanizeSource(row.source)}
+                          {sanitizeSimulationSourceLabel(row.source)}
                         </span>
                       </td>
                       <td>

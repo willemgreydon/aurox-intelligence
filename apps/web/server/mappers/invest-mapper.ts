@@ -72,7 +72,7 @@ export function mapInvestOverview(readModel: InvestReadModel): InvestOverview {
 
   const enriched = readModel.assets.map((asset) => {
     const observation = observationBySymbol.get(asset.symbol);
-    const assetFreshness = getFreshnessState(observation?.timestamp);
+    const assetFreshness = getFreshnessState(observation?.timestamp, asset.assetClass);
     const insight = deriveMarketInsight({
       assetId: asset.assetId,
       symbol: asset.symbol,
@@ -291,7 +291,7 @@ export function mapInvestOverviewViewModel(
       ...item,
       priceLabel: formatUsdPrice(item.price, locale, messages.common.unavailable),
       changeLabel: formatPercentChange(item.changePercent, messages.common.partial),
-      freshnessLabel: formatFreshnessLabel(item.lastUpdatedAt, locale, messages.common.unavailable),
+      freshnessLabel: formatFreshnessLabel(item.lastUpdatedAt, locale, messages.common.unavailable, item.assetClass),
     })),
     groupedAssets: snapshot.groupedAssets.map((group) => ({
       ...group,
@@ -299,7 +299,7 @@ export function mapInvestOverviewViewModel(
         ...item,
         priceLabel: formatUsdPrice(item.price, locale, messages.common.unavailable),
         changeLabel: formatPercentChange(item.changePercent, messages.common.partial),
-        freshnessLabel: formatFreshnessLabel(item.lastUpdatedAt, locale, messages.common.unavailable),
+        freshnessLabel: formatFreshnessLabel(item.lastUpdatedAt, locale, messages.common.unavailable, item.assetClass),
       })),
     })),
   };

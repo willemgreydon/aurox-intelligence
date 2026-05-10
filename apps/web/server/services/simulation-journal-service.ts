@@ -1,6 +1,7 @@
 import { getSimulationWorkspace } from '@repo/db';
 import { requireCurrentSession } from '../auth/session';
 import { getObservationOutcome } from './observation-outcome-service';
+import { sanitizeSimulationSourceLabel } from '../../lib/simulation-source';
 
 export type SimulationJournalRow = {
   id: string;
@@ -46,10 +47,12 @@ export function humanizeTransactionType(type: string): string {
 
 export function parseOrderSource(notes: string | null) {
   if (!notes) return { source: 'simulation', lane: null, reason: 'Manual simulation order' };
-  const sourceMatch = notes.match(/source=([^;]+)/i);
+  const sourceMatch = notes.match(/source=([a-z0-9_-]+)/i);
   const laneMatch = notes.match(/lane=([^;]+)/i);
+  const normalizedSource = sourceMatch?.[1] ?? 'simulation';
   return {
-    source: sourceMatch?.[1] ?? 'simulation',
+    source: normalizedSource,
+    sourceLabel: sanitizeSimulationSourceLabel(normalizedSource),
     lane: laneMatch?.[1] ?? null,
     reason: notes,
   };

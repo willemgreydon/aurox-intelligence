@@ -177,7 +177,7 @@ export default async function InvestCryptoPage({
                 thesis={item.thesis}
                 priceLabel={formatUsdPrice(item.price, locale, messages.common.unavailable)}
                 changeLabel={formatPercentChange(item.changePercent, messages.common.partial)}
-                freshnessLabel={formatFreshnessLabel(item.lastUpdatedAt, locale, messages.common.unavailable)}
+                freshnessLabel={formatFreshnessLabel(item.lastUpdatedAt, locale, messages.common.unavailable, 'crypto')}
                 actionAvailability={item.actionAvailability}
                 insightStance={item.insightStance}
                 riskSummary={item.riskSummary}
@@ -222,7 +222,7 @@ export default async function InvestCryptoPage({
                 thesis={item.thesis}
                 priceLabel={formatUsdPrice(item.price, locale, messages.common.unavailable)}
                 changeLabel={formatPercentChange(item.changePercent, messages.common.partial)}
-                freshnessLabel={formatFreshnessLabel(item.lastUpdatedAt, locale, messages.common.unavailable)}
+                freshnessLabel={formatFreshnessLabel(item.lastUpdatedAt, locale, messages.common.unavailable, 'crypto')}
                 actionAvailability={item.actionAvailability}
                 insightStance={item.insightStance}
                 sparkline={sparkline}

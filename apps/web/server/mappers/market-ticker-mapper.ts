@@ -59,7 +59,7 @@ export function mapMarketTicker(
         change: observation?.change ?? null,
         changePercent: observation?.changePercent ?? null,
         direction: getTrendDirection(observation?.changePercent ?? null),
-        freshnessState: getFreshnessState(observation?.timestamp),
+        freshnessState: getFreshnessState(observation?.timestamp, item.assetClass),
         lastUpdatedAt: observation?.timestamp ?? null,
         source: observation?.source ?? null,
       };
@@ -82,7 +82,7 @@ export function mapMarketTickerViewModel(
       ...item,
       priceLabel: formatPrice(item.price, messages.common.unavailable),
       changeLabel: formatChange(item.changePercent, messages.common.partial),
-      freshnessLabel: formatFreshnessLabel(item.lastUpdatedAt, locale, messages.common.unavailable),
+      freshnessLabel: formatFreshnessLabel(item.lastUpdatedAt, locale, messages.common.unavailable, item.assetClass),
     })),
   };
 }

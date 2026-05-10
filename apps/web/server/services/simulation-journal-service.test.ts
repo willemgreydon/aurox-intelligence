@@ -41,6 +41,13 @@ describe('simulation-journal-service helpers', () => {
     expect(parsed.lane).toBe('manual_multi_asset_lane');
   });
 
+  it('sanitizes malformed source tails from legacy notes', async () => {
+    process.env.AUTH_SECRET = process.env.AUTH_SECRET ?? '01234567890123456789012345678901';
+    const { parseOrderSource } = await import('./simulation-journal-service');
+    const parsed = parseOrderSource('source=manual_ui","executionRecord":{"executionId":"abc"};lane=manual_stock_lane');
+    expect(parsed.source).toBe('manual_ui');
+  });
+
   it('escapes CSV safely', async () => {
     process.env.AUTH_SECRET = process.env.AUTH_SECRET ?? '01234567890123456789012345678901';
     const { toCsv } = await import('./simulation-journal-service');

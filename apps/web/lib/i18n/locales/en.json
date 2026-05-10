@@ -570,7 +570,13 @@
       "cachedQuoteSimulationWarning": "Using cached quote for simulation estimate.",
       "delayedQuoteSimulationWarning": "Using delayed quote for simulation estimate.",
       "quoteFreshnessLimited": "Quote freshness is limited - simulation-only estimate.",
-      "simulationQuoteUnavailable": "Simulation quote is currently unavailable."
+      "simulationQuoteUnavailable": "Simulation quote is currently unavailable.",
+      "cachedSimulationQuote": "Cached simulation quote",
+      "cryptoMarketNeverCloses": "Crypto markets run 24/7 - market closed state does not apply.",
+      "staleDuringMarketHours": "Stale during market hours",
+      "delayedMarketQuote": "Delayed market quote",
+      "quoteUsableForSimulation": "Quote usable for simulation",
+      "quoteNotUsableForSimulation": "Quote not usable for simulation yet"
     },
     "validation": {
       "wholeSharesOnly": "Enter a whole number of shares.",
