@@ -5,6 +5,7 @@ import { useMemo, useState, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { ObserveViewModel } from '../../server/services/market-observation-service';
 import { buildSimulationTicketHref } from '../../lib/observe-actions';
+import { getAssetInspectHref } from '../../lib/market-routes';
 
 type Props = { model: ObserveViewModel };
 
@@ -373,11 +374,11 @@ export function ObserveWorkstation({ model }: Props) {
                           {item.source} · {(item.confidence * 100).toFixed(0)}% confidence{item.assetSymbol ? ` · ${item.assetSymbol}` : ''}
                         </p>
                         <div className="aurox-action-row">
-                          <Link href={item.assetSymbol ? `/invest/stocks?symbol=${item.assetSymbol}` : '/market'} className="journal-action-link">
+                          <Link href={getAssetInspectHref({ symbol: item.assetSymbol, assetClass: item.assetClass })} className="journal-action-link">
                             Inspect
                           </Link>
                           <Link href="/signals" className="journal-action-link">Signals</Link>
-                          <Link href={buildSimulationTicketHref(item.assetSymbol)} className="journal-action-link">
+                          <Link href={buildSimulationTicketHref({ symbol: item.assetSymbol, assetClass: item.assetClass })} className="journal-action-link">
                             Simulate
                           </Link>
                           <button type="button" className="journal-action-link" onClick={() => setEventState(item.id, 'pin')} aria-label={`Pin: ${item.title}`}>Pin</button>

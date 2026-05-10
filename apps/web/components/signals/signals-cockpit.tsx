@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import type { SignalsPageViewModel } from '../../server/mappers/analysis-mapper';
+import { getAssetInspectHref } from '../../lib/market-routes';
+import { buildSimulationPrepareHrefForAsset } from '../../lib/simulation-prepare-url';
 
 type Props = { data: SignalsPageViewModel };
 
@@ -265,21 +267,31 @@ export function SignalsCockpit({ data }: Props) {
                             <td>
                               <div className="aurox-action-row">
                                 <Link
-                                  href={`/observe?search=${encodeURIComponent(signal.assetName)}`}
+                                  href={getAssetInspectHref({ symbol: signal.assetName, assetClass: signal.assetClass })}
                                   className="journal-action-link"
                                   aria-label={`Inspect ${signal.assetName} in Observer`}
                                 >
                                   Inspect
                                 </Link>
                                 <Link
-                                  href={`/invest/simulation?symbol=${encodeURIComponent(signal.assetName)}&side=buy&intent=prepare&source=signal`}
+                                  href={buildSimulationPrepareHrefForAsset({
+                                    symbol: signal.assetName,
+                                    assetClass: signal.assetClass,
+                                    side: 'buy',
+                                    source: 'signal',
+                                  })}
                                   className="journal-action-link"
                                   aria-label={`Prepare simulation buy for ${signal.assetName}`}
                                 >
                                   Prepare Buy
                                 </Link>
                                 <Link
-                                  href={`/invest/simulation?symbol=${encodeURIComponent(signal.assetName)}&side=sell&intent=prepare&source=signal`}
+                                  href={buildSimulationPrepareHrefForAsset({
+                                    symbol: signal.assetName,
+                                    assetClass: signal.assetClass,
+                                    side: 'sell',
+                                    source: 'signal',
+                                  })}
                                   className="journal-action-link"
                                   aria-label={`Prepare simulation sell for ${signal.assetName}`}
                                 >

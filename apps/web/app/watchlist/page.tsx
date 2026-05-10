@@ -6,18 +6,9 @@ import { MarketAssetRow } from '../../components/invest/market-asset-row';
 import { QuickTradeActions } from '../../components/invest/quick-trade-actions';
 import { requireCurrentSession } from '../../server/auth/session';
 import { getSimulationPortfolioPageData, loadMiniHistorySeries } from '../../server/services/stock-simulation-service';
+import { getAssetInspectHref } from '../../lib/market-routes';
 
 export const dynamic = 'force-dynamic';
-
-function detailHrefForAsset(assetClass: 'stock' | 'etf' | 'crypto', symbol: string) {
-  if (assetClass === 'stock') {
-    return `/stocks/${symbol}`;
-  }
-  if (assetClass === 'etf') {
-    return `/invest/etfs/${symbol}`;
-  }
-  return `/invest/crypto/${symbol}`;
-}
 
 export default async function WatchlistPage() {
   await requireCurrentSession('/login');
@@ -90,7 +81,7 @@ export default async function WatchlistPage() {
                       sparkline={miniHistory[row.asset.symbol] ?? []}
                       actions={(
                         <QuickTradeActions
-                          detailHref={detailHrefForAsset(row.asset.assetClass as 'stock' | 'etf' | 'crypto', row.asset.symbol)}
+                          detailHref={getAssetInspectHref({ symbol: row.asset.symbol, assetClass: row.asset.assetClass })}
                           assetId={row.asset.assetId}
                           symbol={row.asset.symbol}
                           assetClass={row.asset.assetClass as 'stock' | 'etf' | 'crypto'}

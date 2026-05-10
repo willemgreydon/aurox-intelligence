@@ -2,6 +2,7 @@ import { ObserveWorkstation } from '../../components/observe/observe-workstation
 import { getObserveViewModel } from '../../server/services/market-observation-service';
 import { requireCurrentSession } from '../../server/auth/session';
 import { assertSerializableProps } from '../../lib/assert-serializable-props';
+import { perfLog, perfNow } from '../../server/lib/perf';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,6 +11,7 @@ export default async function ObservePage({
 }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const pageStart = perfNow();
   const session = await requireCurrentSession('/login');
   const params = (await searchParams) ?? {};
   const pick = (value: string | string[] | undefined) => Array.isArray(value) ? value[0] : value;
@@ -37,6 +39,7 @@ export default async function ObservePage({
   });
 
   assertSerializableProps('observe.model', model as Record<string, unknown>);
+  perfLog('page:/observe total', pageStart);
 
   return (
     <>

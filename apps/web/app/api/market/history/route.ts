@@ -26,11 +26,23 @@ export async function GET(request: Request) {
   } catch (error) {
     degradedReason = normalizeProviderErrorMessage(error);
   }
-  return NextResponse.json({
-    symbol,
-    timeframe,
-    resolution,
-    bars: Array.isArray(bars) ? bars : [],
-    degradedReason,
-  });
+  // History bars change at most once per trading day for daily resolution, or every
+  // few minutes for intraday. A short public cache with stale-while-revalidate lets
+  // the client chart re-use the same bars during timeframe switches without hitting
+  // the provider again.
+  const ttl = resolution === '1d' ? 300 : 60;
+  return NextResponse.json(
+    {
+      symbol,
+      timeframe,
+      resolution,
+      bars: Array.isArray(bars) ? bars : [],
+      degradedReason,
+    },
+    {
+      headers: {
+        'Cache-Control': `public, s-maxage=${ttl}, stale-while-revalidate=${ttl * 2}`,
+      },
+    },
+  );
 }

@@ -10,9 +10,12 @@ export const revalidate = 30;
 
 export default async function MarketPage() {
   const pageStart = perfNow();
-  const locale = await getRequestLocale();
+  // locale and preferredSymbols are independent — run them in parallel
+  const [locale, preferredSymbols] = await Promise.all([
+    getRequestLocale(),
+    getWorkspaceTrackedSymbols(20),
+  ]);
   const messages = getMessages(locale);
-  const preferredSymbols = await getWorkspaceTrackedSymbols(20);
   const [graph, news] = await Promise.all([
     getMarketGraphData({
       ...(preferredSymbols.length > 0 ? { preferredSymbols } : {}),

@@ -16,6 +16,7 @@ import { InvestableAssetCard } from '../../../components/invest/investable-asset
 import { MarketAssetRow } from '../../../components/invest/market-asset-row';
 import { QuickTradeActions } from '../../../components/invest/quick-trade-actions';
 import { deriveAssetDecisionIntelligence } from '../../../server/services/decision-intelligence-service';
+import { getAssetInspectHref } from '../../../lib/market-routes';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,13 +50,7 @@ function formatPercent(value: number): string {
 }
 
 function getAssetDetailHref(symbol: string, assetClass: 'stock' | 'etf' | 'crypto') {
-  if (assetClass === 'stock') {
-    return `/stocks/${encodeURIComponent(symbol)}`;
-  }
-
-  return assetClass === 'etf'
-    ? `/invest/etfs/${encodeURIComponent(symbol)}`
-    : `/invest/crypto/${encodeURIComponent(symbol)}`;
+  return getAssetInspectHref({ symbol, assetClass });
 }
 
 function buildFilterHref(current: PortfolioFilterState, patch: Partial<PortfolioFilterState>) {

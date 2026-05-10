@@ -31,7 +31,13 @@ export async function GET(request: Request) {
     if (!quote) {
       return NextResponse.json({ error: 'Quote unavailable.' }, { status: 404 });
     }
-    return NextResponse.json({ quote });
+    return NextResponse.json({ quote }, {
+      headers: {
+        // Allow CDN/browser to serve a cached quote for up to 30 s,
+        // then revalidate in the background (stale-while-revalidate).
+        'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
+      },
+    });
   } catch (error) {
     return NextResponse.json({ error: normalizeProviderErrorMessage(error) }, { status: 503 });
   }

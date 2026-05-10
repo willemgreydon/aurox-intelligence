@@ -34,6 +34,7 @@ import { AiSimulationAgentPanel } from '../../../components/invest/ai-simulation
 import { getSimulationJournalRowsForCurrentUser } from '../../../server/services/simulation-journal-service';
 import { parsePreparedSimulationTicket } from '../../../lib/simulation-prepare';
 import { assertSerializableProps } from '../../../lib/assert-serializable-props';
+import { getAssetInspectHref } from '../../../lib/market-routes';
 
 export const dynamic = 'force-dynamic';
 
@@ -100,13 +101,7 @@ function formatPercent(value: number) {
 }
 
 function getAssetDetailHref(symbol: string, assetClass: 'stock' | 'etf' | 'crypto') {
-  if (assetClass === 'stock') {
-    return `/stocks/${encodeURIComponent(symbol)}`;
-  }
-
-  return assetClass === 'etf'
-    ? `/invest/etfs/${encodeURIComponent(symbol)}`
-    : `/invest/crypto/${encodeURIComponent(symbol)}`;
+  return getAssetInspectHref({ symbol, assetClass });
 }
 
 export default async function SimulationPage({
@@ -344,7 +339,7 @@ export default async function SimulationPage({
                   {messages.simulation.form.clearPreparedTicket}
                 </Link>
                 <Link
-                  href={`/stocks/${encodeURIComponent(preparedAsset.asset.symbol.toLowerCase())}`}
+                  href={getAssetDetailHref(preparedAsset.asset.symbol, preparedAsset.asset.assetClass)}
                   className="journal-action-link"
                   aria-label={`Open asset detail for ${preparedAsset.asset.symbol}`}
                 >

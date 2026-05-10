@@ -5,9 +5,10 @@ import type { SimulationAssetClass } from '@repo/api-contracts';
 import { WatchlistToggleForm } from './simulation-action-form';
 import { buildNoOpenPositionReason } from '../../lib/simulation-form-helpers';
 import { buildSimulationPrepareHref } from '../../lib/simulation-prepare-url';
+import { resolveInspectHref } from '../../lib/inspect-link';
 
 type QuickTradeActionsProps = {
-  detailHref: string;
+  detailHref?: string;
   detailLabel?: string;
   assetId: string;
   symbol: string;
@@ -63,14 +64,21 @@ export function QuickTradeActions({
     side: 'sell',
     source,
   });
+  const inspectHref = resolveInspectHref({ symbol, assetClass, detailHref });
 
   if (!isAuthenticated) {
     return (
       <div className="asset-card-actions">
         <div className="asset-card-actions__grid">
-          <Link href={detailHref} className="button button--secondary asset-card-action">
-            {detailLabel}
-          </Link>
+          {inspectHref ? (
+            <Link href={inspectHref} className="button button--secondary asset-card-action">
+              {detailLabel}
+            </Link>
+          ) : (
+            <button type="button" className="button button--secondary asset-card-action" disabled aria-disabled="true">
+              {detailLabel}
+            </button>
+          )}
           <Link href="/login" className="button button--secondary asset-card-action">
             Sign in
           </Link>

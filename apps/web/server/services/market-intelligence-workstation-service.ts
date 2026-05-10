@@ -1,9 +1,12 @@
 import { listCatalogAssets } from '@repo/db';
+import { unstable_cache } from 'next/cache';
 import { deriveNewsImpactExplanation, orchestrateSystemState, type SystemState } from '@repo/ai-market-intelligence';
 import { getInvestOverviewData } from './invest-service';
 import { getNewsStreamData } from './news-service';
 import { getMessages } from '../../lib/i18n/messages';
 import { getRequestLocale } from '../i18n/locale';
+import { perfLog, perfNow } from '../lib/perf';
+import type { Locale } from '@repo/api-contracts';
 
 export type MarketIntelligenceAsset = {
   symbol: string;
@@ -42,14 +45,29 @@ function normalizeAssetClass(value: string): 'stock' | 'etf' | 'crypto' | 'index
   return null;
 }
 
+// The workstation model is expensive: 140 quote symbols + 80 history symbols + news + catalog.
+// Cache it for 60 s so the observe, market, and dashboard pages share one computation per minute
+// rather than each triggering a full rebuild on every request.
+const getCachedWorkstationCore = unstable_cache(
+  async (locale: string) => {
+    const typedLocale = locale as Locale;
+    const messages = getMessages(typedLocale);
+    const [invest, newsStream, catalogAssets] = await Promise.all([
+      getInvestOverviewData(typedLocale, messages, { quoteSymbolLimit: 140, includeHistory: true, historySymbolLimit: 80, pageContext: 'markets-intelligence' }),
+      getNewsStreamData(),
+      listCatalogAssets(),
+    ]);
+    return { invest, newsStream, catalogAssets, messages };
+  },
+  ['market-intelligence-workstation-core-v1'],
+  { revalidate: 60 },
+);
+
 export async function getMarketIntelligenceWorkstationModel(): Promise<MarketIntelligenceWorkstationModel> {
+  const t0 = perfNow();
   const locale = await getRequestLocale();
-  const messages = getMessages(locale);
-  const [invest, newsStream, catalogAssets] = await Promise.all([
-    getInvestOverviewData(locale, messages, { quoteSymbolLimit: 140, includeHistory: true, historySymbolLimit: 80, pageContext: 'markets-intelligence' }),
-    getNewsStreamData(),
-    listCatalogAssets(),
-  ]);
+  const { invest, newsStream, catalogAssets, messages } = await getCachedWorkstationCore(locale);
+  perfLog('[market-intelligence] cache hit/miss + core fetch', t0);
 
   const investBySymbol = new Map(
     invest.groupedAssets.flatMap((group) => group.items).map((item) => [item.symbol, item]),
@@ -131,6 +149,8 @@ export async function getMarketIntelligenceWorkstationModel(): Promise<MarketInt
       }));
     newsBySymbol[asset.symbol] = rows;
   }
+
+  perfLog('[market-intelligence] getMarketIntelligenceWorkstationModel total', t0);
 
   return {
     assets,

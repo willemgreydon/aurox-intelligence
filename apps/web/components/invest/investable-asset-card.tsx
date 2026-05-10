@@ -9,7 +9,7 @@ import type { SignalScoreLabel, SignalVisualState } from '../signals/signal-scor
 import type { MiniIndicatorChartModel } from '../../lib/charts/mini-indicator-model';
 
 type InvestableAssetCardProps = {
-  href: string;
+  href?: string;
   title: string;
   symbol: string;
   thesis: string;
@@ -48,6 +48,7 @@ function mapTone(value: InvestableAssetCardProps['actionAvailability']) {
 }
 
 export function InvestableAssetCard(props: InvestableAssetCardProps) {
+  const inspectHref = props.symbol.trim() ? props.href ?? null : null;
   return (
     <Card className="analytics-card market-card">
       <div className="analytics-card__header">
@@ -103,9 +104,15 @@ export function InvestableAssetCard(props: InvestableAssetCardProps) {
         ) : null}
         <div className="asset-card-actions">
           <div className="asset-card-actions__primary">
-            <Link href={props.href} className="button button--secondary asset-card-action asset-card-action--inspect">
-              Inspect
-            </Link>
+            {inspectHref ? (
+              <Link href={inspectHref} className="button button--secondary asset-card-action asset-card-action--inspect">
+                Inspect
+              </Link>
+            ) : (
+              <button type="button" className="button button--secondary asset-card-action asset-card-action--inspect" disabled aria-disabled="true">
+                Inspect
+              </button>
+            )}
           </div>
           {props.actions}
         </div>

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import type { SimulationJournalRow } from '../../server/services/simulation-journal-service';
+import { buildSimulationPrepareHrefForAsset } from '../../lib/simulation-prepare-url';
 
 /**
  * Client-side copy of humanizeTransactionType for display only.
@@ -226,14 +227,24 @@ export function SimulationJournalTable({ rows }: Props) {
                       <td>
                         <div className="aurox-action-row">
                           <Link
-                            href={`/invest/simulation?symbol=${encodeURIComponent(row.symbol)}&assetClass=${encodeURIComponent(row.assetClass ?? 'stock')}&side=buy&intent=prepare&source=journal`}
+                            href={buildSimulationPrepareHrefForAsset({
+                              symbol: row.symbol,
+                              assetClass: row.assetClass ?? 'stock',
+                              side: 'buy',
+                              source: 'journal',
+                            })}
                             className="journal-action-link"
                             aria-label={`Prepare simulation buy for ${row.symbol}`}
                           >
                             Buy
                           </Link>
                           <Link
-                            href={`/invest/simulation?symbol=${encodeURIComponent(row.symbol)}&assetClass=${encodeURIComponent(row.assetClass ?? 'stock')}&side=sell&intent=prepare&source=journal`}
+                            href={buildSimulationPrepareHrefForAsset({
+                              symbol: row.symbol,
+                              assetClass: row.assetClass ?? 'stock',
+                              side: 'sell',
+                              source: 'journal',
+                            })}
                             className="journal-action-link"
                             aria-label={`Prepare simulation sell for ${row.symbol}`}
                           >

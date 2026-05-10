@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parsePreparedSimulationTicket } from './simulation-prepare';
-import { buildSimulationPrepareHref } from './simulation-prepare-url';
+import { buildSimulationPrepareHref, buildSimulationPrepareHrefForAsset } from './simulation-prepare-url';
 
 describe('simulation prepare url + parser', () => {
   it('builds etf prepare buy url', () => {
@@ -47,5 +47,30 @@ describe('simulation prepare url + parser', () => {
       lane: 'manual_multi_asset_lane',
       source: 'crypto-lane',
     });
+  });
+
+  it('builds prepare-buy href with required lane + assetClass for stocks', () => {
+    const href = buildSimulationPrepareHrefForAsset({
+      symbol: 'AAPL',
+      assetClass: 'stock',
+      side: 'buy',
+      source: 'signal',
+    });
+    expect(href).toContain('symbol=AAPL');
+    expect(href).toContain('assetClass=stock');
+    expect(href).toContain('lane=manual_stock_lane');
+    expect(href).toContain('side=buy');
+  });
+
+  it('builds prepare-sell href with required lane + assetClass for crypto', () => {
+    const href = buildSimulationPrepareHrefForAsset({
+      symbol: 'BINANCE:BTCUSDT',
+      assetClass: 'crypto',
+      side: 'sell',
+      source: 'signal',
+    });
+    expect(href).toContain('assetClass=crypto');
+    expect(href).toContain('lane=manual_multi_asset_lane');
+    expect(href).toContain('side=sell');
   });
 });
