@@ -250,6 +250,9 @@ importers:
       '@repo/api-contracts':
         specifier: workspace:*
         version: link:../api-contracts
+      zod:
+        specifier: ^4.1.5
+        version: 4.4.3
     devDependencies:
       rimraf:
         specifier: ^6.0.1
