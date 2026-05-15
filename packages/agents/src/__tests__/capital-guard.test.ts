@@ -227,4 +227,58 @@ describe('runCapitalGuard', () => {
       expect(result.code).toBe('CAPITAL_GUARD_ENVELOPE_EXHAUSTED');
     }
   });
+
+  // Sell-side tests: sells produce cash and must not be gated by buy-capital checks.
+
+  it('approves sell when cash balance is zero (sells do not need cash to proceed)', () => {
+    const result = runCapitalGuard(makeSummary({ cashBalance: 0 }), [], modeConfig, 'sell');
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      // Sell guard returns Infinity sentinels so resolveQuantity uses the intent's own sizing.
+      expect(result.value.allowedCapital).toBe(Infinity);
+      expect(result.value.allowedOrderNotional).toBe(Infinity);
+    }
+  });
+
+  it('approves sell when buy capital envelope is fully exhausted by prior buys', () => {
+    // Capital is completely used up by prior buy orders — but sells should still be allowed.
+    const tightConfig: BrokerModeConfig = {
+      ...modeConfig,
+      capital: { maxAbsolute: 100, maxPercentOfCash: 0.001, maxPerTrade: 100 },
+    };
+    const bigBuyOrder = makeOrder({ grossAmount: 10_000 }); // exhausts envelope
+    const result = runCapitalGuard(
+      makeSummary({ cashBalance: 0 }), // cash is also depleted
+      [bigBuyOrder],
+      tightConfig,
+      'sell',
+    );
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.allowedOrderNotional).toBe(Infinity);
+    }
+  });
+
+  it('sell guard still builds valid account state (for drawdown/loss checks downstream)', () => {
+    const sellOrder = makeOrder({ side: 'sell', realizedPnl: -500, grossAmount: 0 });
+    const result = runCapitalGuard(makeSummary({ cashBalance: 0 }), [sellOrder], modeConfig, 'sell');
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      // State should be populated correctly — drawdown/loss checks use it downstream.
+      expect(result.value.state.cashBalance).toBe(0);
+      expect(result.value.state.dailyLossPercent).toBeCloseTo(0.005); // 500 / 100_000
+    }
+  });
+
+  it('buy still rejects when cash is zero (buy-side behavior unchanged)', () => {
+    const result = runCapitalGuard(makeSummary({ cashBalance: 0 }), [], modeConfig, 'buy');
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.code).toBe('CAPITAL_GUARD_NO_CASH');
+    }
+  });
 });

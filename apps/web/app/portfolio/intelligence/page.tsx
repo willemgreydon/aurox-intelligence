@@ -657,56 +657,205 @@ export default async function PortfolioIntelligencePage() {
         </div>
       </header>
 
-      {/* ── Safety Notice ── */}
-      <div style={{ padding: '0 var(--space-5, 1.25rem) var(--space-3, 0.75rem)' }}>
-        <div className="alert alert--info" role="alert" aria-live="polite">
-          <strong>Simulation only</strong> — {vm.simulationOnlyNotice} Live trading is permanently locked.
+      {/* ── Simulation Safety Banner ── */}
+      <div className="sim-safety-banner" role="status" aria-label="Execution mode notice">
+        {/* Shield icon — inline SVG avoids external deps and hydration mismatch */}
+        <svg
+          className="sim-safety-banner__icon"
+          viewBox="0 0 20 20"
+          fill="none"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <path
+            d="M10 2L3 5v5c0 4.418 3.134 8.147 7 9 3.866-.853 7-4.582 7-9V5l-7-3z"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinejoin="round"
+            fill="none"
+          />
+          <path
+            d="M7.5 10l1.75 1.75L12.5 8"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+        <div className="sim-safety-banner__body">
+          <p className="sim-safety-banner__title">
+            {vm.simulationOnlyNotice}
+          </p>
+          <div className="sim-safety-banner__pills" aria-label="Execution constraints">
+            <span className="sim-safety-banner__pill sim-safety-banner__pill--sim">
+              Simulation mode
+            </span>
+            <span className="sim-safety-banner__pill sim-safety-banner__pill--locked">
+              Live trading locked
+            </span>
+            <span className="sim-safety-banner__pill sim-safety-banner__pill--safe">
+              No real capital deployed
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* ── Unified KPI Metric Rail ── */}
-      <div className="observe-metric-rail" aria-label="Portfolio intelligence key metrics">
-        <div className={`observe-metric-card${diagnostics.allocationHealth === 'healthy' ? ' observe-metric-card--success' : diagnostics.allocationHealth === 'high-risk' ? ' observe-metric-card--danger' : ' observe-metric-card--warning'}`}>
-          <div className="observe-metric-card__label">Health</div>
-          <div className="observe-metric-card__value">{diagnostics.allocationHealth.replace('-', ' ')}</div>
-        </div>
-        <div className={`observe-metric-card${diagnostics.diversificationScore > 0.6 ? ' observe-metric-card--success' : diagnostics.diversificationScore > 0.3 ? '' : ' observe-metric-card--danger'}`}>
-          <div className="observe-metric-card__label">Diversification</div>
-          <div className="observe-metric-card__value">{formatPct(diagnostics.diversificationScore)}</div>
-        </div>
-        <div className={`observe-metric-card${diagnostics.averageConfidence > 0.6 ? ' observe-metric-card--success' : diagnostics.averageConfidence > 0.35 ? '' : ' observe-metric-card--warning'}`}>
-          <div className="observe-metric-card__label">Avg Confidence</div>
-          <div className="observe-metric-card__value">{formatPct(hasActivePortfolio ? diagnostics.averageConfidence : top25AvgConfidence)}</div>
-        </div>
-        <div className={`observe-metric-card${diagnostics.averageRiskScore > 60 ? ' observe-metric-card--danger' : diagnostics.averageRiskScore > 35 ? ' observe-metric-card--warning' : ' observe-metric-card--success'}`}>
-          <div className="observe-metric-card__label">Avg Risk</div>
-          <div className="observe-metric-card__value">{diagnostics.averageRiskScore.toFixed(0)}/100</div>
-        </div>
-        <div className="observe-metric-card">
-          <div className="observe-metric-card__label">Portfolio Value</div>
-          <div className="observe-metric-card__value">{formatCurrency(portfolioContext.portfolioValue, portfolioContext.baseCurrency)}</div>
-        </div>
-        <div className="observe-metric-card">
-          <div className="observe-metric-card__label">Cash</div>
-          <div className="observe-metric-card__value">{formatCurrency(portfolioContext.cashBalance, portfolioContext.baseCurrency)}</div>
-        </div>
-        <div className="observe-metric-card">
-          <div className="observe-metric-card__label">Positions</div>
-          <div className="observe-metric-card__value">{portfolioContext.openPositionCount}</div>
-        </div>
-        <div className={`observe-metric-card${diagnostics.cryptoExposure > 0.4 ? ' observe-metric-card--warning' : ''}`}>
-          <div className="observe-metric-card__label">Crypto Exp.</div>
-          <div className="observe-metric-card__value">{formatPct(diagnostics.cryptoExposure)}</div>
-        </div>
-        <div className="observe-metric-card">
-          <div className="observe-metric-card__label">Cash Target</div>
-          <div className="observe-metric-card__value">{formatPct(diagnostics.cashTargetWeight)}</div>
-        </div>
-        <div className={`observe-metric-card${newsExposure.maxRisk > 75 ? ' observe-metric-card--danger' : newsExposure.maxRisk > 55 ? ' observe-metric-card--warning' : ''}`}>
-          <div className="observe-metric-card__label">News Risk</div>
-          <div className="observe-metric-card__value">{newsExposure.maxRisk.toFixed(0)}/100</div>
-        </div>
-      </div>
+      {/* ── KPI Grid — grouped by category ── */}
+      <section className="intel-kpi-grid" aria-label="Portfolio intelligence key metrics">
+
+        {/* Group 1 — Portfolio State */}
+        <div className="intel-kpi-group-label" aria-hidden="true">Portfolio State</div>
+
+        {/* Portfolio Value — primary */}
+        <article
+          className="intel-kpi-card intel-kpi-card--primary"
+          aria-label={`Portfolio value: ${formatCurrency(portfolioContext.portfolioValue, portfolioContext.baseCurrency)}`}
+        >
+          <div className="intel-kpi-card__label">Portfolio Value</div>
+          <div className="intel-kpi-card__value">{formatCurrency(portfolioContext.portfolioValue, portfolioContext.baseCurrency)}</div>
+          <div className="intel-kpi-card__desc">Simulation account total</div>
+        </article>
+
+        {/* Cash — primary */}
+        <article
+          className="intel-kpi-card intel-kpi-card--primary"
+          aria-label={`Cash balance: ${formatCurrency(portfolioContext.cashBalance, portfolioContext.baseCurrency)}`}
+        >
+          <div className="intel-kpi-card__label">Cash</div>
+          <div className="intel-kpi-card__value">{formatCurrency(portfolioContext.cashBalance, portfolioContext.baseCurrency)}</div>
+          <div className="intel-kpi-card__desc">Available for deployment</div>
+        </article>
+
+        {/* Open Positions — primary */}
+        <article
+          className="intel-kpi-card intel-kpi-card--primary"
+          aria-label={`Open positions: ${portfolioContext.openPositionCount}`}
+        >
+          <div className="intel-kpi-card__label">Positions</div>
+          <div className="intel-kpi-card__value">{portfolioContext.openPositionCount}</div>
+          <div className="intel-kpi-card__desc">Open simulation holdings</div>
+        </article>
+
+        {/* Health — primary */}
+        {(() => {
+          const healthVariant =
+            diagnostics.allocationHealth === 'healthy' ? 'success' :
+            diagnostics.allocationHealth === 'high-risk' ? 'danger' : 'warning';
+          return (
+            <article
+              className={`intel-kpi-card intel-kpi-card--primary intel-kpi-card--${healthVariant}`}
+              aria-label={`Portfolio health: ${diagnostics.allocationHealth.replace('-', ' ')}`}
+            >
+              <div className="intel-kpi-card__label">Health</div>
+              <div className="intel-kpi-card__value" style={{ textTransform: 'capitalize' }}>
+                {diagnostics.allocationHealth.replace('-', ' ')}
+              </div>
+              <div className="intel-kpi-card__desc">Allocation quality assessment</div>
+            </article>
+          );
+        })()}
+
+        {/* Spacer to keep 5-col row balanced on desktop */}
+        <div aria-hidden="true" style={{ display: 'contents' }} />
+
+        {/* Group 2 — Risk & Confidence */}
+        <div className="intel-kpi-group-label" aria-hidden="true">Risk &amp; Confidence</div>
+
+        {/* Avg Confidence */}
+        {(() => {
+          const confValue = hasActivePortfolio ? diagnostics.averageConfidence : top25AvgConfidence;
+          const confVariant = confValue > 0.6 ? 'success' : confValue > 0.35 ? '' : 'warning';
+          return (
+            <article
+              className={`intel-kpi-card${confVariant ? ` intel-kpi-card--${confVariant}` : ''}`}
+              aria-label={`Average confidence: ${formatPct(confValue)}`}
+            >
+              <div className="intel-kpi-card__label">Avg Confidence</div>
+              <div className="intel-kpi-card__value">{formatPct(confValue)}</div>
+              <div className="intel-kpi-card__desc">
+                {hasActivePortfolio ? 'Portfolio signal confidence' : 'Top-25 asset confidence'}
+              </div>
+            </article>
+          );
+        })()}
+
+        {/* Avg Risk */}
+        {(() => {
+          const riskVariant =
+            diagnostics.averageRiskScore > 60 ? 'danger' :
+            diagnostics.averageRiskScore > 35 ? 'warning' : 'success';
+          return (
+            <article
+              className={`intel-kpi-card intel-kpi-card--${riskVariant}`}
+              aria-label={`Average risk score: ${diagnostics.averageRiskScore.toFixed(0)} out of 100`}
+            >
+              <div className="intel-kpi-card__label">Avg Risk</div>
+              <div className="intel-kpi-card__value">{diagnostics.averageRiskScore.toFixed(0)}<span style={{ fontSize: '0.75em', fontWeight: 400, color: 'var(--text-tertiary)' }}>/100</span></div>
+              <div className="intel-kpi-card__desc">Mean composite risk score</div>
+            </article>
+          );
+        })()}
+
+        {/* Diversification */}
+        {(() => {
+          const divVariant =
+            diagnostics.diversificationScore > 0.6 ? 'success' :
+            diagnostics.diversificationScore > 0.3 ? '' : 'danger';
+          return (
+            <article
+              className={`intel-kpi-card${divVariant ? ` intel-kpi-card--${divVariant}` : ''}`}
+              aria-label={`Diversification score: ${formatPct(diagnostics.diversificationScore)}`}
+            >
+              <div className="intel-kpi-card__label">Diversification</div>
+              <div className="intel-kpi-card__value">{formatPct(diagnostics.diversificationScore)}</div>
+              <div className="intel-kpi-card__desc">Portfolio spread across assets</div>
+            </article>
+          );
+        })()}
+
+        {/* News Risk */}
+        {(() => {
+          const newsVariant =
+            newsExposure.maxRisk > 75 ? 'danger' :
+            newsExposure.maxRisk > 55 ? 'warning' : '';
+          return (
+            <article
+              className={`intel-kpi-card${newsVariant ? ` intel-kpi-card--${newsVariant}` : ''}`}
+              aria-label={`News risk: ${newsExposure.maxRisk.toFixed(0)} out of 100`}
+            >
+              <div className="intel-kpi-card__label">News Risk</div>
+              <div className="intel-kpi-card__value">{newsExposure.maxRisk.toFixed(0)}<span style={{ fontSize: '0.75em', fontWeight: 400, color: 'var(--text-tertiary)' }}>/100</span></div>
+              <div className="intel-kpi-card__desc">Peak sentiment risk exposure</div>
+            </article>
+          );
+        })()}
+
+        {/* Group 3 — Exposure */}
+        <div className="intel-kpi-group-label" aria-hidden="true">Exposure</div>
+
+        {/* Crypto Exposure */}
+        <article
+          className={`intel-kpi-card${diagnostics.cryptoExposure > 0.4 ? ' intel-kpi-card--warning' : ''}`}
+          aria-label={`Crypto exposure: ${formatPct(diagnostics.cryptoExposure)}`}
+        >
+          <div className="intel-kpi-card__label">Crypto Exp.</div>
+          <div className="intel-kpi-card__value">{formatPct(diagnostics.cryptoExposure)}</div>
+          <div className="intel-kpi-card__desc">
+            {diagnostics.cryptoExposure > 0.4 ? 'Above 40% cap — consider reducing' : 'Within concentration limit'}
+          </div>
+        </article>
+
+        {/* Cash Target */}
+        <article
+          className="intel-kpi-card"
+          aria-label={`Cash target weight: ${formatPct(diagnostics.cashTargetWeight)}`}
+        >
+          <div className="intel-kpi-card__label">Cash Target</div>
+          <div className="intel-kpi-card__value">{formatPct(diagnostics.cashTargetWeight)}</div>
+          <div className="intel-kpi-card__desc">Recommended cash allocation</div>
+        </article>
+
+      </section>
 
       {/*  3. Regime Awareness  */}
       <Section className="dashboard-section dashboard-section--tinted">

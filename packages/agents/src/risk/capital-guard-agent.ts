@@ -1,5 +1,5 @@
 import type { SimulationAccountSummary, SimulationOrder } from '@repo/api-contracts';
-import type { BrokerModeConfig, AccountCapitalState } from '../types/broker-types';
+import type { BrokerModeConfig, AccountCapitalState, OrderSide } from '../types/broker-types';
 import type { AgentResult } from '../types/agent-types';
 import { agentOk, agentError } from '../types/agent-types';
 import { computeAllowedCapital, computeAllowedOrderNotional } from '../policies/money-limit-policy';
@@ -49,7 +49,22 @@ export function runCapitalGuard(
   summary: SimulationAccountSummary,
   orders: SimulationOrder[],
   config: BrokerModeConfig,
+  side: OrderSide = 'buy',
 ): AgentResult<CapitalGuardResult> {
+  // Sells produce cash — they do not consume capital and do not require a cash balance to proceed.
+  // All capital envelope checks are buy-only concerns.
+  if (side === 'sell') {
+    const state = buildAccountCapitalState(summary, orders);
+    // For sells, allowedOrderNotional is not a buy-budget concept.
+    // Return a sentinel value (Infinity) so the workflow's resolveQuantity
+    // falls back to the intent's own quantity/notional rather than being capped.
+    return agentOk<CapitalGuardResult>({
+      state,
+      allowedCapital: Infinity,
+      allowedOrderNotional: Infinity,
+    });
+  }
+
   if (summary.cashBalance <= 0) {
     return agentError<CapitalGuardResult>('Account has no available cash.', 'CAPITAL_GUARD_NO_CASH');
   }

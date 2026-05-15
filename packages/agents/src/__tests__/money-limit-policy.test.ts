@@ -138,4 +138,59 @@ describe('checkMoneyLimitPolicy', () => {
     const budgetCheck = checks.find((c) => c.checkId === 'money.orderBudget');
     expect(budgetCheck).toBeUndefined();
   });
+
+  // Sell-side checks: sells must pass all money checks regardless of cash/capital state.
+
+  it('approves cashAvailable for a sell even when cash balance is zero', () => {
+    const sellIntent = makeIntent({ side: 'sell', notional: 1000 });
+    const checks = checkMoneyLimitPolicy(sellIntent, config, makeAccount({ cashBalance: 0 }));
+    const cashCheck = checks.find((c) => c.checkId === 'money.cashAvailable');
+    expect(cashCheck?.verdict).toBe('approved');
+  });
+
+  it('approves capitalEnvelope for a sell even when envelope is exhausted', () => {
+    // usedCapitalToday far exceeds envelope — buy would be blocked, sell must not be.
+    const sellIntent = makeIntent({ side: 'sell', notional: 500 });
+    const exhaustedAccount = makeAccount({ cashBalance: 0, usedCapitalToday: 50_000 });
+    const checks = checkMoneyLimitPolicy(sellIntent, config, exhaustedAccount);
+    const envelopeCheck = checks.find((c) => c.checkId === 'money.capitalEnvelope');
+    expect(envelopeCheck?.verdict).toBe('approved');
+  });
+
+  it('approves orderBudget for a sell even when notional exceeds the buy daily budget', () => {
+    // A sell of 10_000 notional is a capital return, not a capital outflow — should be approved.
+    const largeSellIntent = makeIntent({ side: 'sell', notional: 10_000 });
+    const checks = checkMoneyLimitPolicy(largeSellIntent, config, makeAccount());
+    const budgetCheck = checks.find((c) => c.checkId === 'money.orderBudget');
+    expect(budgetCheck?.verdict).toBe('approved');
+  });
+
+  it('approves positionCap for a sell even when position limit is at maximum', () => {
+    // Sells close positions — they do not increase position count.
+    const sellIntent = makeIntent({ side: 'sell', notional: 500 });
+    const fullAccount = makeAccount({ openPositionCount: 10 }); // at the 10-position cap
+    const checks = checkMoneyLimitPolicy(sellIntent, config, fullAccount);
+    const capCheck = checks.find((c) => c.checkId === 'money.positionCap');
+    expect(capCheck?.verdict).toBe('approved');
+  });
+
+  it('approves all checks for a sell in a worst-case depleted account', () => {
+    // Simulate an account where all cash is gone and the daily budget is exhausted.
+    const sellIntent = makeIntent({ side: 'sell', notional: 2000 });
+    const depletedAccount = makeAccount({
+      cashBalance: 0,
+      usedCapitalToday: 100_000,
+      openPositionCount: 10,
+    });
+    const checks = checkMoneyLimitPolicy(sellIntent, config, depletedAccount);
+    const rejections = checks.filter((c) => c.verdict === 'rejected');
+    expect(rejections).toHaveLength(0);
+  });
+
+  it('buy checks still reject correctly when cash is zero (buy-side behavior unchanged)', () => {
+    const buyIntent = makeIntent({ side: 'buy', notional: 1000 });
+    const checks = checkMoneyLimitPolicy(buyIntent, config, makeAccount({ cashBalance: 0 }));
+    const cashCheck = checks.find((c) => c.checkId === 'money.cashAvailable');
+    expect(cashCheck?.verdict).toBe('rejected');
+  });
 });

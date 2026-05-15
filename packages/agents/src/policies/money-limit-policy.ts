@@ -23,22 +23,27 @@ export function checkMoneyLimitPolicy(
   account: AccountCapitalState,
 ): PolicyCheckResult[] {
   const checks: PolicyCheckResult[] = [];
+  const isSell = intent.side === 'sell';
 
   const allowedCapital = computeAllowedCapital(config, account);
   const allowedOrderNotional = computeAllowedOrderNotional(config, account, allowedCapital);
 
+  // Sells produce cash — they do not require existing cash to proceed.
   checks.push(
-    account.cashBalance > 0
-      ? { checkId: 'money.cashAvailable', verdict: 'approved', reason: 'Account has available cash.' }
+    isSell || account.cashBalance > 0
+      ? { checkId: 'money.cashAvailable', verdict: 'approved', reason: isSell ? 'Sell order: no cash required.' : 'Account has available cash.' }
       : { checkId: 'money.cashAvailable', verdict: 'rejected', reason: 'Account has no available cash.' },
   );
 
+  // Sells do not consume the capital envelope — they return capital.
   checks.push(
-    allowedCapital > 0
+    isSell || allowedCapital > 0
       ? {
           checkId: 'money.capitalEnvelope',
           verdict: 'approved',
-          reason: `Allowed capital envelope: $${allowedCapital.toFixed(2)}.`,
+          reason: isSell
+            ? 'Sell order: capital envelope not applicable.'
+            : `Allowed capital envelope: $${allowedCapital.toFixed(2)}.`,
           constraintApplied: 'capital.maxAbsolute + capital.maxPercentOfCash',
         }
       : {
@@ -50,30 +55,43 @@ export function checkMoneyLimitPolicy(
   );
 
   if (intent.notional !== undefined) {
-    const withinBudget = intent.notional <= allowedOrderNotional;
-    checks.push(
-      withinBudget
-        ? {
-            checkId: 'money.orderBudget',
-            verdict: 'approved',
-            reason: `Order notional $${intent.notional.toFixed(2)} fits within allowed order budget of $${allowedOrderNotional.toFixed(2)}.`,
-          }
-        : {
-            checkId: 'money.orderBudget',
-            verdict: 'rejected',
-            reason: `Order notional $${intent.notional.toFixed(2)} exceeds allowed order budget of $${allowedOrderNotional.toFixed(2)}.`,
-            constraintApplied: 'capital.maxPerTrade + remainingModeBudget',
-          },
-    );
+    // Sells are not a capital outflow — they should not be checked against the buy daily budget.
+    if (isSell) {
+      checks.push({
+        checkId: 'money.orderBudget',
+        verdict: 'approved',
+        reason: `Sell order: daily buy budget not applicable. Notional $${intent.notional.toFixed(2)} is a capital return.`,
+      });
+    } else {
+      const withinBudget = intent.notional <= allowedOrderNotional;
+      checks.push(
+        withinBudget
+          ? {
+              checkId: 'money.orderBudget',
+              verdict: 'approved',
+              reason: `Order notional $${intent.notional.toFixed(2)} fits within allowed order budget of $${allowedOrderNotional.toFixed(2)}.`,
+            }
+          : {
+              checkId: 'money.orderBudget',
+              verdict: 'rejected',
+              reason: `Order notional $${intent.notional.toFixed(2)} exceeds allowed order budget of $${allowedOrderNotional.toFixed(2)}.`,
+              constraintApplied: 'capital.maxPerTrade + remainingModeBudget',
+            },
+      );
+    }
   }
 
-  const withinPositionCap = account.openPositionCount < config.risk.maxOpenPositions;
+  // Sells close open positions — they reduce position count, not increase it.
+  // The cap only applies when opening new positions (buys).
+  const withinPositionCap = isSell || account.openPositionCount < config.risk.maxOpenPositions;
   checks.push(
     withinPositionCap
       ? {
           checkId: 'money.positionCap',
           verdict: 'approved',
-          reason: `Open positions (${account.openPositionCount}) within limit of ${config.risk.maxOpenPositions}.`,
+          reason: isSell
+            ? 'Sell order: position cap not applicable (closing position).'
+            : `Open positions (${account.openPositionCount}) within limit of ${config.risk.maxOpenPositions}.`,
         }
       : {
           checkId: 'money.positionCap',

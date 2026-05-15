@@ -1235,8 +1235,8 @@ export async function executeSimulationOrder(input: SimulationExecutionInput): P
           set
             quantity = $2::numeric,
             realized_pnl = coalesce(realized_pnl, 0) + $3::numeric,
-            closed_at = case when $2::numeric = 0 then $4 else null end,
-            updated_at = $4
+            closed_at = case when $2::numeric = 0 then $4::timestamptz else null end,
+            updated_at = $4::timestamptz
           where id = $1
         `,
         [positionId, nextQuantity, realizedPnl, now],

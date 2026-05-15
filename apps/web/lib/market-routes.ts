@@ -33,7 +33,7 @@ export function getAssetInspectHref(asset: InspectAssetInput): string {
     return `/invest/etfs?symbol=${encodedSymbol}`;
   }
   if (assetClass === 'stock' || assetClass === 'index') {
-    return `/invest/stocks?symbol=${encodedSymbol}`;
+    return `/invest/stocks/${encodedSymbol}`;
   }
   if (assetClass === 'macro') {
     return `/market?assetClass=macro&symbol=${encodedSymbol}#macro`;

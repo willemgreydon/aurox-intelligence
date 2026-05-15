@@ -53,14 +53,14 @@ const config: BrokerModeConfig = {
   },
 };
 
-function makeIntent(symbol: string, notional?: number): TradeIntentPayload {
+function makeIntent(symbol: string, notional?: number, side: 'buy' | 'sell' = 'buy'): TradeIntentPayload {
   return {
     accountId: 'acc-1',
     modeId: 'guided_auto_simulation',
     source: 'manual',
     symbol,
     assetKind: 'stock',
-    side: 'buy',
+    side,
     sizingMode: notional !== undefined ? 'notional' : 'quantity',
     ...(notional !== undefined ? { notional } : { quantity: 5 }),
     thesis: 'Test trade.',
@@ -136,6 +136,82 @@ describe('runPositionLimitAgent', () => {
     if (result.ok) {
       const concentration = result.value.find((c) => c.checkId === 'position.concentration');
       expect(concentration).toBeUndefined();
+    }
+  });
+
+  // Sell-side tests: sells close positions and must not be blocked by open-position caps.
+
+  it('approves maxOpen for a sell even when at the position limit', () => {
+    // All 6 slots are filled — but a sell closes a position, so this should be allowed.
+    const positions = Array.from({ length: 6 }, (_, i) => makePosition(`STOCK${i}`, 500));
+    const sellIntent = makeIntent('STOCK0', 500, 'sell');
+    const result = runPositionLimitAgent(positions, config, sellIntent, 10_000);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const maxOpen = result.value.find((c) => c.checkId === 'position.maxOpen');
+      expect(maxOpen?.verdict).toBe('approved');
+    }
+  });
+
+  it('approves maxOpen for a sell when at the limit — buy of new symbol would be rejected', () => {
+    // Verify the asymmetry: sell approved, buy of a NEW symbol at limit still rejected.
+    const positions = Array.from({ length: 6 }, (_, i) => makePosition(`STOCK${i}`, 500));
+
+    const buyResult = runPositionLimitAgent(positions, config, makeIntent('NEW', 500, 'buy'), 10_000);
+    const sellResult = runPositionLimitAgent(positions, config, makeIntent('STOCK0', 500, 'sell'), 10_000);
+
+    expect(buyResult.ok).toBe(true);
+    if (buyResult.ok) {
+      const maxOpen = buyResult.value.find((c) => c.checkId === 'position.maxOpen');
+      expect(maxOpen?.verdict).toBe('rejected');
+    }
+
+    expect(sellResult.ok).toBe(true);
+    if (sellResult.ok) {
+      const maxOpen = sellResult.value.find((c) => c.checkId === 'position.maxOpen');
+      expect(maxOpen?.verdict).toBe('approved');
+    }
+  });
+
+  it('approves concentration check for a sell (selling reduces concentration)', () => {
+    // AAPL is at 700/10_000 = 7% — already within 8% limit.
+    // Selling 400 notional → projected = max(0, 700 - 400) / 10_000 = 3% — still within limit.
+    const positions = [makePosition('AAPL', 700)];
+    const sellIntent = makeIntent('AAPL', 400, 'sell');
+    const result = runPositionLimitAgent(positions, config, sellIntent, 10_000);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const concentration = result.value.find((c) => c.checkId === 'position.concentration');
+      expect(concentration?.verdict).toBe('approved');
+    }
+  });
+
+  it('approves concentration check for a sell even when existing position is over the limit', () => {
+    // AAPL is at 900/10_000 = 9% — over the 8% limit.
+    // Selling 300 notional → projected = max(0, 900 - 300) / 10_000 = 6% — now within limit.
+    const positions = [makePosition('AAPL', 900)];
+    const sellIntent = makeIntent('AAPL', 300, 'sell');
+    const result = runPositionLimitAgent(positions, config, sellIntent, 10_000);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const concentration = result.value.find((c) => c.checkId === 'position.concentration');
+      expect(concentration?.verdict).toBe('approved');
+    }
+  });
+
+  it('concentration check for sell clamps to 0 when selling more than held (full exit + overshoot guard)', () => {
+    // AAPL is at 500 market value. Selling 800 notional is more than held — projected = max(0, -300) / 10_000 = 0%.
+    const positions = [makePosition('AAPL', 500)];
+    const sellIntent = makeIntent('AAPL', 800, 'sell');
+    const result = runPositionLimitAgent(positions, config, sellIntent, 10_000);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const concentration = result.value.find((c) => c.checkId === 'position.concentration');
+      expect(concentration?.verdict).toBe('approved');
     }
   });
 });

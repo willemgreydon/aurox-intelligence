@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { getUserWatchlist } from '@repo/db';
 import { Section } from '../../../components/ui/section';
 import { WorkstationPageHeader } from '../../../components/asset/workstation-page-header';
@@ -18,12 +19,21 @@ export const dynamic = 'force-dynamic';
 export default async function InvestStocksPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ view?: string; page?: string }>;
+  searchParams?: Promise<{ view?: string; page?: string; symbol?: string }>;
 }) {
   const pageStart = perfNow();
+  const params = searchParams ? await searchParams : {};
+
+  // Backward-compatible redirect: /invest/stocks?symbol=AAPL → /invest/stocks/AAPL
+  if (params?.symbol) {
+    const normalized = decodeURIComponent(params.symbol).trim().toUpperCase();
+    if (normalized && normalized.length <= 20) {
+      redirect(`/invest/stocks/${encodeURIComponent(normalized)}`);
+    }
+  }
+
   const locale = await getRequestLocale();
   const messages = getMessages(locale);
-  const params = searchParams ? await searchParams : {};
   const viewMode: MarketViewMode = params?.view === 'list' ? 'list' : 'grid';
   const page = Number.isFinite(Number(params?.page)) && Number(params?.page) > 0
     ? Math.floor(Number(params?.page))

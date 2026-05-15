@@ -29,7 +29,7 @@ export function runBrokerSupervisor(
     sizingMode: intent.sizingMode,
   });
 
-  const capitalResult = runCapitalGuard(workspace.summary, workspace.orders, config);
+  const capitalResult = runCapitalGuard(workspace.summary, workspace.orders, config, intent.side);
   if (!capitalResult.ok) {
     audit.add('supervisor.blocked', {
       stage: 'capital_guard',

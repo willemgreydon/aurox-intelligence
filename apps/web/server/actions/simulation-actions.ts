@@ -222,11 +222,30 @@ export async function createSimulatedOrderAction(_: FormState, formData: FormDat
   const locale = await getRequestLocale();
   const messages = getMessages(locale);
 
+  // Dev-only: surface FormData contents so we can diagnose empty-payload issues.
+  if (process.env.NODE_ENV !== 'production') {
+    const entries = [...formData.entries()].map(([k, v]) => `${k}=${String(v).slice(0, 64)}`);
+    console.info('[simulation-action] createSimulatedOrderAction received', entries.length, 'field(s):', entries.join(', ') || '(empty)');
+  }
+
+  // Guard: if the form payload is entirely empty, the form was submitted without
+  // its hidden inputs (e.g. the component was unmounted before the browser could
+  // collect the form fields). Return an explicit error rather than silently
+  // proceeding with Zod defaults.
+  const hasPayload = formData.has('assetId') || formData.has('symbol') || formData.has('side');
+  if (!hasPayload) {
+    return errorFormState(
+      'Order submission was incomplete. Please reopen the ticket and try again.',
+      {},
+      'VALIDATION_ERROR',
+    );
+  }
+
   const parsed = simulationOrderInputSchema.safeParse({
     assetId: String(formData.get('assetId') ?? ''),
     symbol: String(formData.get('symbol') ?? ''),
     assetClass: String(formData.get('assetClass') ?? 'stock'),
-    side: String(formData.get('side') ?? 'buy'),
+    side: String(formData.get('side') ?? 'buy').toLowerCase(),
     quantity: formData.get('quantity') ?? 1,
     strategyLaneId: String(formData.get('strategyLaneId') ?? 'manual_stock_lane'),
     decisionSource: String(formData.get('decisionSource') ?? 'manual_ui'),
@@ -234,6 +253,10 @@ export async function createSimulatedOrderAction(_: FormState, formData: FormDat
     simulationSessionId: formData.get('simulationSessionId') ? String(formData.get('simulationSessionId')) : undefined,
     idempotencyKey: formData.get('idempotencyKey') ? String(formData.get('idempotencyKey')) : undefined,
   });
+
+  if (process.env.NODE_ENV !== 'production' && !parsed.success) {
+    console.info('[simulation-action] Zod validation failed:', JSON.stringify(parsed.error.flatten()));
+  }
 
   if (!parsed.success) {
     return formStateFromZodError(parsed.error);
@@ -292,11 +315,18 @@ export async function createSimulatedOrderAction(_: FormState, formData: FormDat
     });
   } catch (error) {
     const raw = error instanceof Error ? error.message : String(error);
+    if (process.env.NODE_ENV !== 'production') {
+      console.info('[simulation-action] executeSimulationOrderForCurrentUser threw:', raw, '| side:', parsed.data.side, 'symbol:', parsed.data.symbol);
+    }
     const { message, code } = mapSimulationOrderError(raw, parsed.data.symbol);
     if (code === 'QUOTE_NOT_READY') {
       return errorFormState('Simulation quote is not ready yet. Retry in a few seconds.', {}, 'QUOTE_NOT_READY');
     }
     return errorFormState(message, {}, code);
+  }
+
+  if (process.env.NODE_ENV !== 'production') {
+    console.info('[simulation-action] order filled successfully — side:', order.side, 'symbol:', order.symbol, 'qty:', order.quantity);
   }
 
   revalidateForSimulationOrder({ symbol: parsed.data.symbol, assetClass: parsed.data.assetClass });
