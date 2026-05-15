@@ -1,5 +1,34 @@
 import type { Locale } from '@repo/api-contracts';
 
+function trimFixed(value: number, digits: number): string {
+  return value.toFixed(digits).replace(/\.0$/, '');
+}
+
+/**
+ * Deterministic compact USD formatter safe for SSR + client hydration.
+ * Does NOT use Intl compact notation — avoids ICU version mismatches between
+ * Node and browser that produce "$9.0K" vs "$9K" hydration errors.
+ */
+export function formatCompactUsd(value: number | null | undefined): string {
+  const amount = Number.isFinite(Number(value)) ? Number(value) : 0;
+  const abs = Math.abs(amount);
+  const sign = amount < 0 ? '-' : '';
+
+  if (abs >= 1_000_000_000) {
+    return `${sign}$${trimFixed(abs / 1_000_000_000, 1)}B`;
+  }
+
+  if (abs >= 1_000_000) {
+    return `${sign}$${trimFixed(abs / 1_000_000, 1)}M`;
+  }
+
+  if (abs >= 1_000) {
+    return `${sign}$${trimFixed(abs / 1_000, 1)}K`;
+  }
+
+  return `${sign}$${trimFixed(abs, 0)}`;
+}
+
 function toLocaleTag(locale: Locale): string {
   switch (locale) {
     case 'de':

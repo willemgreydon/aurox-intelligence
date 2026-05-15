@@ -8,7 +8,7 @@ import { NewsStreamWidget } from '../components/news/news-stream-widget';
 import { getMessages } from '../lib/i18n/messages';
 import { getRequestLocale } from '../server/i18n/locale';
 import { perfLog, perfNow } from '../server/lib/perf';
-import { withDbReadFallback } from '../server/lib/db-runtime';
+import { withDbReadFallback, getHomeWidgetTimeoutMs } from '../server/lib/db-runtime';
 import type { StocksOverviewViewModel } from '../server/mappers/stocks-mapper';
 import { getNewsStreamData } from '../server/services/news-service';
 import { getWorkspaceTrackedSymbols } from '../server/services/workspace-service';
@@ -52,19 +52,25 @@ export default async function HomePage() {
     withDbReadFallback('home:news-stream', { items: [], providerHealth: [], updatedAt: new Date().toISOString(), degraded: true, message: 'Database unavailable — showing local fallback data.' }, () => getNewsStreamData()),
     getOptionalCurrentSession(),
   ]);
-  const [stocksResult, marketGraphResult] = await Promise.all([
+  const HOME_WIDGET_TIMEOUT_MS = getHomeWidgetTimeoutMs();
+  // Start portfolio fetch concurrently — it doesn't depend on stocks/graph results.
+  const portfolioPromise = auth
+    ? withDbReadFallback('home:simulation-overview', null, () => getSimulationOverviewDataForUser(auth.user.id))
+    : Promise.resolve({ value: null, degraded: false, reason: null as string | null });
+  const [stocksResult, marketGraphResult, portfolioResult] = await Promise.all([
     withDbReadFallback('home:stocks-overview', buildFallbackStocks(messages), () =>
       getStocksOverviewData(locale, messages, {
         ...(preferredSymbols.length > 0 ? { preferredSymbols } : {}),
+        preferCached: true,
       }),
+      HOME_WIDGET_TIMEOUT_MS,
     ),
     withDbReadFallback('home:market-graph', { meta: { provider: 'cache', selectedTimeframe: '1D' as const, requestedResolution: '1day', actualResolution: 'unknown' as const, pointCount: 0, minAcceptablePoints: 10, isFresh: false, isFallback: false, fallbackReason: null, isDegraded: true, degradedReason: 'Database unavailable.', lastBarTimestamp: null, totalBarsInCache: 0, requestedStart: '', actualStart: null, coverageRatio: 0 }, assets: [] }, () => getMarketGraphData({
       ...(preferredSymbols.length > 0 ? { preferredSymbols } : {}),
-    })),
+      preferCached: true,
+    }), HOME_WIDGET_TIMEOUT_MS),
+    portfolioPromise,
   ]);
-  const portfolioResult = auth
-    ? await withDbReadFallback('home:simulation-overview', null, () => getSimulationOverviewDataForUser(auth.user.id))
-    : { value: null, degraded: false, reason: null as string | null };
   const stocks = stocksResult.value;
   const marketGraph = marketGraphResult.value;
   const portfolioOverview = portfolioResult.value;

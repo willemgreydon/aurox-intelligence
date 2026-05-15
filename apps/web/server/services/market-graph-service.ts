@@ -22,6 +22,8 @@ type MarketGraphDataOptions = {
    * Defaults to '1D' when not provided.
    */
   timeframe?: MarketGraphTimeframeId;
+  /** When true, skip live provider quote fetch and use cached/DB snapshots. */
+  preferCached?: boolean;
 };
 
 export type MarketGraphBarPoint = {
@@ -144,7 +146,7 @@ export async function getMarketGraphData(options: MarketGraphDataOptions = {}): 
 
   const tData = perfNow();
   const [snapshots, historyBySymbol] = await Promise.all([
-    loadQuoteSnapshots(selectedSymbols).catch(() => []),
+    loadQuoteSnapshots(selectedSymbols, undefined, { preferCached: options.preferCached ?? false }).catch(() => []),
     getMarketHistoryBarsBySymbols(selectedSymbols, DB_HISTORY_LIMIT).catch(
       () => ({} as Record<string, PersistedMarketHistoryBar[]>),
     ),

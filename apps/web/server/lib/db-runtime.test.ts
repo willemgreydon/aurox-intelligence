@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { getDbReadTimeoutMs, isPrismaDbEnabled, withDbReadFallback } from './db-runtime';
+import { getDbReadTimeoutMs, getHomeWidgetTimeoutMs, isPrismaDbEnabled, withDbReadFallback } from './db-runtime';
 
 describe('db-runtime', () => {
   afterEach(() => {
@@ -50,6 +50,33 @@ describe('db-runtime', () => {
     expect(result.value).toBe('fallback');
     expect(result.degraded).toBe(true);
     expect(result.reason).toBe('timeout');
+  });
+
+  describe('getHomeWidgetTimeoutMs', () => {
+    it('returns 3000 by default', () => {
+      vi.unstubAllEnvs();
+      expect(getHomeWidgetTimeoutMs()).toBe(3_000);
+    });
+
+    it('honours HOME_WIDGET_TIMEOUT_MS when in valid range', () => {
+      vi.stubEnv('HOME_WIDGET_TIMEOUT_MS', '5000');
+      expect(getHomeWidgetTimeoutMs()).toBe(5_000);
+    });
+
+    it('clamps below 500 to 500', () => {
+      vi.stubEnv('HOME_WIDGET_TIMEOUT_MS', '100');
+      expect(getHomeWidgetTimeoutMs()).toBe(500);
+    });
+
+    it('clamps above 30000 to 30000', () => {
+      vi.stubEnv('HOME_WIDGET_TIMEOUT_MS', '99999');
+      expect(getHomeWidgetTimeoutMs()).toBe(30_000);
+    });
+
+    it('returns 3000 for non-numeric value', () => {
+      vi.stubEnv('HOME_WIDGET_TIMEOUT_MS', 'fast');
+      expect(getHomeWidgetTimeoutMs()).toBe(3_000);
+    });
   });
 
   it('returns live value when DB read completes within timeout', async () => {

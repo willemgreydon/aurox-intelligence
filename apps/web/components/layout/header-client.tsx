@@ -11,6 +11,7 @@ import { MobileNav } from './mobile-nav';
 import type { NavGroup } from './site-nav';
 import { AccountMenu } from './account-menu';
 import type { AppMessages } from '../../lib/i18n/messages';
+import { formatCompactUsd } from '../../lib/formatters';
 import { LocaleSwitcher } from './locale-switcher';
 import { SignOutButton } from '../auth/sign-out-button';
 import type { MarketTickerViewModel } from '../../server/mappers/market-ticker-mapper';
@@ -44,14 +45,6 @@ function isActivePath(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function formatCompactUsd(value: number) {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    notation: 'compact',
-    maximumFractionDigits: 1,
-  }).format(value);
-}
 
 export function HeaderClient({ locale, messages, ticker, auth, navGroups, portfolioSnapshot }: HeaderClientProps) {
   const pathname = usePathname();

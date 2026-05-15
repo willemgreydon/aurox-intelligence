@@ -20,6 +20,8 @@ export type StocksReadModelOptions = {
   symbolLimit?: number;
   pageContext?: string;
   preferredSymbols?: string[];
+  /** When true, skip live provider fetch and return whatever is in cache/DB. */
+  preferCached?: boolean;
 };
 
 const STOCKS_CACHE_TTL_MS = 60_000;
@@ -53,6 +55,7 @@ function resolveOptions(options: StocksReadModelOptions): Required<StocksReadMod
         : getMarketQueryInitialLimit(),
     pageContext: options.pageContext?.trim() || 'stocks',
     preferredSymbols: [...new Set((options.preferredSymbols ?? []).map((symbol) => symbol.trim().toUpperCase()).filter(Boolean))],
+    preferCached: options.preferCached ?? false,
   };
 }
 
@@ -134,7 +137,11 @@ export async function getStocksReadModel(options: StocksReadModelOptions = {}): 
 
   try {
     const t1 = perfNow();
-    const observations = await loadQuoteSnapshots(stockMetadata.map((item) => item.symbol));
+    const observations = await loadQuoteSnapshots(
+      stockMetadata.map((item) => item.symbol),
+      undefined,
+      { preferCached: resolvedOptions.preferCached },
+    );
     perfLog(`stocks-query:provider-fetch symbols=${stockMetadata.length}`, t1);
 
     const result: StocksReadModel = {
@@ -175,10 +182,11 @@ export async function getStocksReadModel(options: StocksReadModelOptions = {}): 
 }
 
 export const getStocksReadModelCached = cache(
-  async (symbolLimit: number | null, pageContext: string, preferredSymbolsKey: string): Promise<StocksReadModel> =>
+  async (symbolLimit: number | null, pageContext: string, preferredSymbolsKey: string, preferCached = false): Promise<StocksReadModel> =>
     getStocksReadModel({
       ...(typeof symbolLimit === 'number' ? { symbolLimit } : {}),
       pageContext,
       ...(preferredSymbolsKey ? { preferredSymbols: preferredSymbolsKey.split(',') } : {}),
+      preferCached,
     }),
 );

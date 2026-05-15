@@ -24,6 +24,7 @@ export async function getStocksOverviewData(
     typeof options?.symbolLimit === 'number' ? options.symbolLimit : null,
     options?.pageContext?.trim() || 'stocks',
     options?.preferredSymbols?.join(',') ?? '',
+    options?.preferCached ?? false,
   );
   perfLog('stocks-service:query', t0);
   const tMapper = perfNow();
