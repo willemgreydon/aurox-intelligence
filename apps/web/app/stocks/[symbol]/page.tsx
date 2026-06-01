@@ -1,42 +1,40 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { DetailSlotCard } from '../../../components/asset/detail-slot-card';
-import { WorkstationPageHeader } from '../../../components/asset/workstation-page-header';
-import { PriceHistoryPanel } from '../../../components/charts/price-history-panel';
-import { CompactStatCard } from '../../../components/stats/compact-stat-card';
-import { Section } from '../../../components/ui/section';
-import { Card } from '../../../components/ui/card';
 import { SimulatedOrderForm, WatchlistToggleForm } from '../../../components/invest/simulation-action-form';
-import { SignalSummary } from '../../../components/signals/signal-summary';
-import { TradeRiskOverlay } from '../../../components/invest/trade-risk-overlay';
+import { SymbolDetailView, type SymbolDetailNewsItem } from '../../../components/asset/symbol-detail-view';
+import type { SymbolDetailTabId } from '../../../components/asset/symbol-detail-tabs';
 import { getMessages } from '../../../lib/i18n/messages';
-import { formatDateTimeLabel, formatShortDateLabel } from '../../../lib/formatters';
 import { getRequestLocale } from '../../../server/i18n/locale';
-import { formatFreshnessLabel, formatPercentChange, formatUsdPrice, getQuoteTimestamp } from '../../../server/lib/quote-display';
 import { getStockDetailPageData } from '../../../server/services/stock-simulation-service';
 import { deriveAssetDecisionIntelligence } from '../../../server/services/decision-intelligence-service';
 import { getSnapshotsForAsset } from '../../../server/services/news-intelligence-service';
 
 export const dynamic = 'force-dynamic';
 
+const VALID_TABS: SymbolDetailTabId[] = ['overview', 'signals', 'risk', 'journal', 'data'];
+
+function resolveTab(value: string | undefined): SymbolDetailTabId {
+  return VALID_TABS.includes(value as SymbolDetailTabId) ? (value as SymbolDetailTabId) : 'overview';
+}
+
 type StockDetailPageProps = {
-  params: Promise<{
-    symbol: string;
-  }>;
+  params: Promise<{ symbol: string }>;
+  searchParams?: Promise<{ tab?: string }>;
 };
 
-export default async function StockDetailPage({ params }: StockDetailPageProps) {
+export default async function StockDetailPage({ params, searchParams }: StockDetailPageProps) {
   const { symbol } = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const activeTab = resolveTab(resolvedSearchParams?.tab);
+
   const locale = await getRequestLocale();
   const messages = getMessages(locale);
   const stock = await getStockDetailPageData(symbol);
   const newsSnapshots = await getSnapshotsForAsset(symbol).catch(() => []);
-  const quoteTimestamp = getQuoteTimestamp(stock?.quote);
-  const hasQuotePrice = typeof stock?.quote?.price === 'number' && Number.isFinite(stock.quote.price);
 
   if (!stock) {
     notFound();
   }
+
   const decision = deriveAssetDecisionIntelligence({
     symbol: stock.asset.symbol,
     assetClass: 'stock',
@@ -48,250 +46,92 @@ export default async function StockDetailPage({ params }: StockDetailPageProps) 
     existingExposure: stock.position?.marketValue ?? 0,
   });
 
-  return (
+  const news: SymbolDetailNewsItem[] = newsSnapshots.slice(0, 3).map((snapshot) => ({
+    id: snapshot.id,
+    title: snapshot.article.title,
+    riskScore: snapshot.riskScore,
+    opportunityScore: snapshot.opportunityScore,
+    sentimentScore: snapshot.sentimentScore,
+    eventTypes: snapshot.eventTypes,
+  }));
+
+  const orderUiText = {
+    quantityMode: messages.simulation.quantity,
+    notionalMode: 'Notional',
+    notionalAmount: 'Notional amount',
+    quantityRequired: messages.simulation.validation.quantityRequired,
+    minimumShare: messages.simulation.validation.minimumShare,
+    minimumUnit: messages.simulation.validation.minimumUnit,
+    minimumQuantityTemplate: messages.simulation.validation.minimumQuantity,
+    wholeSharesOnly: messages.simulation.validation.wholeSharesOnly,
+    quantityStepMismatchTemplate: messages.simulation.validation.quantityStepMismatch,
+    minimumNotional: messages.simulation.validation.minimumNotional,
+    noOpenPositionToSellTemplate: messages.simulation.validation.noOpenPositionToSell,
+    closePosition: messages.simulation.chips.closePosition,
+  };
+
+  // Public page: no session/lane gating (matches prior behavior). The sell form
+  // is still gated on holding a position.
+  const actions = (
     <>
-      <Section className="dashboard-section dashboard-section--hero">
-        <WorkstationPageHeader
-          eyebrow="Stock detail"
-          title={`${stock.asset.symbol} simulation workspace`}
-          description={stock.asset.name}
-          summary={messages.common.simulationDisclosure}
-          statusLabel={hasQuotePrice ? messages.status.nominal : messages.status.attention}
-          statusTone={hasQuotePrice ? 'success' : 'warning'}
-          meta={[
-            { label: messages.common.lastUpdated, value: quoteTimestamp ? formatDateTimeLabel(quoteTimestamp, locale) : messages.common.unavailable },
-            { label: messages.common.quote, value: formatUsdPrice(stock.quote?.price ?? null, locale, messages.common.unavailable) },
-            { label: messages.common.move, value: formatPercentChange(stock.quote?.changePercent ?? null, messages.common.partial) },
-          ]}
-          actions={[
-            { href: '/stocks', label: 'Back to stocks' },
-            { href: '/invest/simulation', label: messages.simulation.navLabel },
-            { href: '/dashboard', label: messages.shell.nav.dashboard },
-          ]}
-        />
-      </Section>
-
-      <Section className="dashboard-section">
-        <div className="analytics-strip">
-          <CompactStatCard label={messages.common.currentQuote} value={formatUsdPrice(stock.quote?.price ?? null, locale, messages.common.unavailable)} detail="Latest cached or live quote available for this stock." />
-          <CompactStatCard label={messages.common.dailyMove} value={formatPercentChange(stock.quote?.changePercent ?? null, messages.common.partial)} detail="Current day-over-day move from the most recent quote." />
-          <CompactStatCard label="Signal" value={`${decision.signal.label} (${decision.signal.score.toFixed(2)})`} detail={`Confidence ${(decision.signal.confidence * 100).toFixed(0)}%`} />
-          <CompactStatCard label="Risk" value={decision.risk.label} detail={`Exposure impact ${decision.risk.exposureImpactPercent.toFixed(2)}%`} />
-          <CompactStatCard label="Tradability" value={stock.asset.isTradable ? 'Paper tradable' : 'Browse only'} detail="This launch supports simulation trading for stocks only." />
-          <CompactStatCard label="Position" value={stock.position ? `${stock.position.quantity.toFixed(4)} shares` : 'No holding'} detail="Current holding context for the signed-in simulation account." />
-        </div>
-      </Section>
-
-      <Section className="dashboard-section dashboard-section--tinted">
-        <div className="analytics-main-grid">
-          <PriceHistoryPanel
-            title="Price history"
-            subtitle="Daily bars rendered from the cached market-data store."
-            points={stock.history.map((point) => ({
-              label: formatShortDateLabel(point.timestamp, locale),
-              timestamp: point.timestamp,
-              open: point.open,
-              high: point.high,
-              low: point.low,
-              close: point.close,
-              volume: point.volume,
-            }))}
-            note="Historical data is provider-backed and cached for reuse across the product."
-            emptyMessage={messages.stocks.historyUnavailable}
-            rail={
-              <div className="side-metrics">
-                <div className="side-metrics__item">
-                  <span>Source</span>
-                  <strong>{stock.quote?.source ?? messages.common.unavailable}</strong>
-                </div>
-                <div className="side-metrics__item">
-                  <span>Bars</span>
-                  <strong>{String(stock.history.length)}</strong>
-                </div>
-                <div className="side-metrics__item">
-                  <span>Freshness</span>
-                  <strong>{formatFreshnessLabel(quoteTimestamp, locale, messages.common.unavailable)}</strong>
-                </div>
-              </div>
-            }
-          />
-          <div className="analytics-side-stack">
-            <Card className="analytics-card">
-              <div className="analytics-card__header">
-                <div>
-                  <div className="section__eyebrow">Simulation actions</div>
-                  <h3>Buy, sell, and watch</h3>
-                  <p>{messages.common.simulationDisclosure}</p>
-                </div>
-              </div>
-              <div className="analytics-card__body">
-                <p>{stock.asset.thesis}</p>
-                <p>{stock.asset.riskSummary}</p>
-                <SignalSummary
-                  score={decision.signal.score}
-                  label={decision.signal.label}
-                  confidence={decision.signal.confidence}
-                  explanation={decision.signal.explanation}
-                  indicators={decision.signal.contributingIndicators}
-                  visualState={decision.signal.visualState}
-                />
-                {stock.position ? (
-                  <p>
-                    Current holding: {stock.position.quantity.toFixed(4)} shares at an average cost of {formatUsdPrice(stock.position.averageCost, locale, messages.common.unavailable)}.
-                  </p>
-                ) : (
-                  <p>No shares are currently held in the paper portfolio.</p>
-                )}
-              </div>
-              <div className="stock-detail-actions">
-                <div className="stock-detail-actions__watchlist">
-                  <WatchlistToggleForm
-                    assetId={stock.asset.assetId}
-                    symbol={stock.asset.symbol}
-                    assetClass="stock"
-                    active={stock.isWatched}
-                    label={stock.isWatched ? messages.dashboard.removeFromWatchlist : messages.dashboard.addToWatchlist}
-                  />
-                </div>
-                <div className="stock-detail-actions__orders">
-                  <SimulatedOrderForm
-                    assetId={stock.asset.assetId}
-                    symbol={stock.asset.symbol}
-                    assetClass="stock"
-                    side="buy"
-                    label={messages.dashboard.buySimulated}
-                    showQuantityInput
-                    quantityLabel={messages.simulation.quantity}
-                    currentPrice={stock.quote?.price ?? null}
-                    currentHeldQuantity={stock.position?.quantity ?? 0}
-                    uiText={{
-                      quantityMode: messages.simulation.quantity,
-                      notionalMode: 'Notional',
-                      notionalAmount: 'Notional amount',
-                      quantityRequired: messages.simulation.validation.quantityRequired,
-                      minimumShare: messages.simulation.validation.minimumShare,
-                      minimumUnit: messages.simulation.validation.minimumUnit,
-                      minimumQuantityTemplate: messages.simulation.validation.minimumQuantity,
-                      wholeSharesOnly: messages.simulation.validation.wholeSharesOnly,
-                      quantityStepMismatchTemplate: messages.simulation.validation.quantityStepMismatch,
-                      minimumNotional: messages.simulation.validation.minimumNotional,
-                      noOpenPositionToSellTemplate: messages.simulation.validation.noOpenPositionToSell,
-                      closePosition: messages.simulation.chips.closePosition,
-                    }}
-                  />
-                  <SimulatedOrderForm
-                    assetId={stock.asset.assetId}
-                    symbol={stock.asset.symbol}
-                    assetClass="stock"
-                    side="sell"
-                    label={messages.dashboard.sellSimulated}
-                    showQuantityInput
-                    quantityLabel={messages.simulation.quantity}
-                    currentPrice={stock.quote?.price ?? null}
-                    currentHeldQuantity={stock.position?.quantity ?? 0}
-                    disabled={!stock.position || stock.position.quantity <= 0}
-                    disabledReason={messages.simulation.validation.noOpenPositionToSell.replace('{{symbol}}', stock.asset.symbol)}
-                    uiText={{
-                      quantityMode: messages.simulation.quantity,
-                      notionalMode: 'Notional',
-                      notionalAmount: 'Notional amount',
-                      quantityRequired: messages.simulation.validation.quantityRequired,
-                      minimumShare: messages.simulation.validation.minimumShare,
-                      minimumUnit: messages.simulation.validation.minimumUnit,
-                      minimumQuantityTemplate: messages.simulation.validation.minimumQuantity,
-                      wholeSharesOnly: messages.simulation.validation.wholeSharesOnly,
-                      quantityStepMismatchTemplate: messages.simulation.validation.quantityStepMismatch,
-                      minimumNotional: messages.simulation.validation.minimumNotional,
-                      noOpenPositionToSellTemplate: messages.simulation.validation.noOpenPositionToSell,
-                      closePosition: messages.simulation.chips.closePosition,
-                    }}
-                  />
-                </div>
-              </div>
-            </Card>
-            <DetailSlotCard
-              eyebrow="Stock profile"
-              title="Why this stock is in the launch universe"
-              description="The current stock catalog is intentionally curated so the simulation product stays coherent, testable, and trustworthy."
-              items={[
-                `Category: ${stock.asset.category}`,
-                `Sector: ${stock.asset.sector ?? 'Unclassified'}`,
-                `Geography: ${stock.asset.geography ?? 'Unavailable'}`,
-                `Quote source: ${stock.quote?.source ?? messages.common.unavailable}`,
-              ]}
-            />
-            <TradeRiskOverlay
-              maxPositionSizeSuggestion={Math.max(stock.position?.marketValue ?? 0, 5000)}
-              estimatedVolatility={Math.max(0.001, decision.risk.exposureImpactPercent / 100)}
-              drawdownWarning={decision.risk.drawdownWarning}
-              liquidityWarning={decision.risk.liquidityWarning}
-              stopLossSuggestion={decision.risk.stopLossSuggestion}
-              exposureImpactPercent={decision.risk.exposureImpactPercent}
-              concentrationWarning={decision.risk.concentrationWarning}
-              riskLevel={decision.risk.label}
-            />
-            <Card className="analytics-card">
-              <div className="analytics-card__header">
-                <div>
-                  <div className="section__eyebrow">News Intelligence</div>
-                  <h3>Snapshot-driven news context</h3>
-                  <p>Deterministic event extraction and risk/opportunity scoring from recent headlines.</p>
-                </div>
-              </div>
-              <div className="analytics-card__body">
-                {newsSnapshots.slice(0, 3).length === 0 ? (
-                  <p>No news intelligence snapshots available for this symbol yet.</p>
-                ) : (
-                  newsSnapshots.slice(0, 3).map((snapshot) => (
-                    <article key={snapshot.id} style={{ marginBottom: '0.6rem' }}>
-                      <p><strong>{snapshot.article.title}</strong></p>
-                      <p>Risk {snapshot.riskScore.toFixed(0)} / Opportunity {snapshot.opportunityScore.toFixed(0)} / Sentiment {snapshot.sentimentScore.toFixed(2)}</p>
-                      <p>{snapshot.eventTypes.length > 0 ? `Events: ${snapshot.eventTypes.join(', ')}` : 'No major event type detected.'}</p>
-                    </article>
-                  ))
-                )}
-              </div>
-            </Card>
-          </div>
-        </div>
-      </Section>
-
-      <Section className="dashboard-section">
-        <div className="analytics-two-grid">
-          <Card className="analytics-card">
-            <div className="analytics-card__header">
-              <div>
-                <div className="section__eyebrow">Holding context</div>
-                <h3>Portfolio impact</h3>
-                <p>Signed-in users see their live-marked holding context directly on the stock detail page.</p>
-              </div>
-            </div>
-            <div className="analytics-card__body">
-              <p>Market value: {formatUsdPrice(stock.position?.marketValue ?? null, locale, messages.common.unavailable)}</p>
-              <p>Unrealized P&amp;L: {stock.position ? formatUsdPrice(stock.position.unrealizedPnl, locale, messages.common.unavailable) : messages.common.none}</p>
-              <p>Watchlist: {stock.isWatched ? 'Saved' : 'Not saved'}</p>
-            </div>
-          </Card>
-          <Card className="analytics-card">
-            <div className="analytics-card__header">
-              <div>
-                <div className="section__eyebrow">Next steps</div>
-                <h3>Move from research to simulation</h3>
-                <p>Use the stock workspace to compare names, then come back here for chart review and paper-trade execution.</p>
-              </div>
-            </div>
-            <div className="analytics-card__action-grid">
-              <Link href="/stocks" className="button button--secondary">
-                Browse more stocks
-              </Link>
-              <Link href="/invest/simulation" className="button button--secondary">
-                Open paper portfolio
-              </Link>
-            </div>
-          </Card>
-        </div>
-      </Section>
+      <WatchlistToggleForm
+        assetId={stock.asset.assetId}
+        symbol={stock.asset.symbol}
+        assetClass="stock"
+        active={stock.isWatched}
+        label={stock.isWatched ? messages.dashboard.removeFromWatchlist : messages.dashboard.addToWatchlist}
+      />
+      <SimulatedOrderForm
+        assetId={stock.asset.assetId}
+        symbol={stock.asset.symbol}
+        assetClass="stock"
+        side="buy"
+        label={messages.dashboard.buySimulated}
+        showQuantityInput
+        quantityLabel={messages.simulation.quantity}
+        currentPrice={stock.quote?.price ?? null}
+        currentHeldQuantity={stock.position?.quantity ?? 0}
+        uiText={orderUiText}
+      />
+      <SimulatedOrderForm
+        assetId={stock.asset.assetId}
+        symbol={stock.asset.symbol}
+        assetClass="stock"
+        side="sell"
+        label={messages.dashboard.sellSimulated}
+        showQuantityInput
+        quantityLabel={messages.simulation.quantity}
+        currentPrice={stock.quote?.price ?? null}
+        currentHeldQuantity={stock.position?.quantity ?? 0}
+        disabled={!stock.position || stock.position.quantity <= 0}
+        disabledReason={messages.simulation.validation.noOpenPositionToSell.replace('{{symbol}}', stock.asset.symbol)}
+        uiText={orderUiText}
+      />
     </>
   );
-}
 
+  return (
+    <SymbolDetailView
+      asset={stock.asset}
+      quote={stock.quote}
+      history={stock.history}
+      position={stock.position}
+      isWatched={stock.isWatched}
+      decision={decision}
+      assetClass="stock"
+      locale={locale}
+      messages={messages}
+      activeTab={activeTab}
+      historyEmptyMessage={messages.stocks.historyUnavailable}
+      basePath={`/stocks/${encodeURIComponent(stock.asset.symbol)}`}
+      backHref="/stocks"
+      backLabel="Back to stocks"
+      simulationHref="/invest/simulation"
+      eyebrow="Stock detail"
+      title={`${stock.asset.symbol} simulation workspace`}
+      positionUnitLabel="shares"
+      actions={actions}
+      news={news}
+    />
+  );
+}

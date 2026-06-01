@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "_comment": "Dev-only resolution. tsx runs the worker as a Node ESM process. The compiled package dist/ uses extensionless ESM imports (module=ESNext, moduleResolution=Bundler) which only a bundler can consume — not raw Node ESM. So in dev we resolve internal @repo/* packages directly from their TypeScript source, which tsx executes natively. Production (pnpm build + node dist/index.js) is unaffected and still consumes built output.",
+  "compilerOptions": {
+    "paths": {
+      "@repo/api-contracts": ["../../packages/api-contracts/src/index.ts"],
+      "@repo/ai-market-intelligence": ["../../packages/ai-market-intelligence/src/index.ts"],
+      "@repo/db": ["../../packages/db/src/index.ts"],
+      "@repo/forecasting": ["../../packages/forecasting/src/index.ts"],
+      "@repo/observability": ["../../packages/observability/src/index.ts"],
+      "@repo/providers": ["../../packages/providers/src/index.ts"],
+      "@repo/signals": ["../../packages/signals/src/index.ts"]
+    }
+  }
+}

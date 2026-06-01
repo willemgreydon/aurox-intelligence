@@ -4,6 +4,7 @@ import { getUserWatchlist } from '@repo/db';
 import { Section } from '../../components/ui/section';
 import { WorkstationPageHeader } from '../../components/asset/workstation-page-header';
 import { Card } from '../../components/ui/card';
+import { Disclosure } from '../../components/ui/disclosure';
 import { CompactStatCard } from '../../components/stats/compact-stat-card';
 import { InvestmentCapabilityCard } from '../../components/invest/investment-capability-card';
 import { InvestableAssetCard } from '../../components/invest/investable-asset-card';
@@ -532,36 +533,6 @@ export default async function InvestPage({
         </div>
       </Section>
 
-      {/* ── Capabilities (renders immediately — static content) ───────────── */}
-      <Section className="dashboard-section dashboard-section--tinted">
-        <div className="analytics-two-grid">
-          <InvestmentCapabilityCard
-            title="Paper trading"
-            description="Simulation-only buy and sell execution with auditable order and transaction history."
-            statusLabel="Ready"
-            statusTone="success"
-          />
-          <InvestmentCapabilityCard
-            title="Live brokerage"
-            description="Real broker execution is not enabled in this release."
-            statusLabel="Disabled"
-            statusTone="info"
-          />
-          <InvestmentCapabilityCard
-            title="Stocks"
-            description="Supported in research, watchlist, detail pages, and manual simulation."
-            statusLabel="Supported"
-            statusTone="success"
-          />
-          <InvestmentCapabilityCard
-            title="ETFs and crypto"
-            description="Browse, research, and guarded simulation execution are supported for ETFs and crypto in the manual multi-asset lane with fictive cash only."
-            statusLabel="Supported"
-            statusTone="success"
-          />
-        </div>
-      </Section>
-
       {/* ── Recommendations (streams in) ──────────────────────────────────── */}
       <Section className="dashboard-section">
         <header className="dashboard-section-heading">
@@ -619,40 +590,50 @@ export default async function InvestPage({
         </Suspense>
       </Section>
 
-      {/* ── Bank/safety (renders immediately — static content) ────────────── */}
+      {/* ── Platform & safety (reference material, collapsed by default) ───── */}
       <Section className="dashboard-section dashboard-section--tinted">
-        <div className="analytics-two-grid">
-          <LiveReadinessWidget
-            status="WARNING"
-            whyLocked="Live execution is policy-locked. Complete readiness checks before any unlock request."
-          />
-          <Card className="analytics-card">
-            <div className="analytics-card__header">
-              <div>
-                <div className="section__eyebrow">Bank connectivity</div>
-                <h3>Bank and broker connections</h3>
-                <p>
-                  Connection surfaces for real-world brokerage remain intentionally disabled in this
-                  simulation-first release.
-                </p>
+        <Disclosure summary="Platform capabilities & safety model" hint="Reference">
+          <div className="analytics-two-grid" style={{ marginBottom: 'var(--space-4)' }}>
+            <InvestmentCapabilityCard
+              title="Paper trading"
+              description="Simulation-only buy and sell execution with auditable order and transaction history."
+              statusLabel="Ready"
+              statusTone="success"
+            />
+            <InvestmentCapabilityCard
+              title="Live brokerage"
+              description="Real broker execution is not enabled in this release."
+              statusLabel="Disabled"
+              statusTone="info"
+            />
+            <InvestmentCapabilityCard
+              title="Stocks, ETFs & crypto"
+              description="Browse, research, and guarded simulation execution are supported across stocks, ETFs, and crypto with fictive cash only."
+              statusLabel="Supported"
+              statusTone="success"
+            />
+          </div>
+          <div className="analytics-two-grid">
+            <LiveReadinessWidget
+              status="WARNING"
+              whyLocked="Live execution is policy-locked. Complete readiness checks before any unlock request."
+            />
+            <Card className="analytics-card">
+              <div className="analytics-card__header">
+                <div>
+                  <div className="section__eyebrow">Safety model</div>
+                  <h3>No live execution</h3>
+                  <p>All trade actions in this release are restricted to simulated paper trading.</p>
+                </div>
+                <span className="status-pill status-pill--info">Simulation-first</span>
               </div>
-              <span className="status-pill status-pill--info">Simulation-first</span>
-            </div>
-          </Card>
-          <Card className="analytics-card">
-            <div className="analytics-card__header">
-              <div>
-                <div className="section__eyebrow">Safety model</div>
-                <h3>No live execution</h3>
-                <p>All trade actions in this release are restricted to simulated paper trading.</p>
+              <div className="analytics-card__body">
+                <p>Real brokerage APIs are not connected.</p>
+                <p>Simulation sessions can be started, resumed, reset, and audited without touching real capital.</p>
               </div>
-            </div>
-            <div className="analytics-card__body">
-              <p>Real brokerage APIs are not connected.</p>
-              <p>Simulation sessions can be started, resumed, reset, and audited without touching real capital.</p>
-            </div>
-          </Card>
-        </div>
+            </Card>
+          </div>
+        </Disclosure>
       </Section>
     </>
   );

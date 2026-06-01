@@ -160,6 +160,17 @@ export default async function HomePage() {
           lanes: messages.homeSections.lanes,
           capabilities: messages.homeSections.capabilities,
           modules: messages.homeSections.modules,
+          explainability: messages.homeSections.explainability,
+          home: {
+            viewAllMarkets: messages.home.viewAllMarkets,
+            featuredModuleCta: messages.home.featuredModuleCta,
+            showMoreLanes: messages.home.showMoreLanes,
+            showAllCapabilities: messages.home.showAllCapabilities,
+            finalCtaTitle: messages.home.finalCtaTitle,
+            finalCtaSubtitle: messages.home.finalCtaSubtitle,
+            workflowEyebrow: messages.home.workflowEyebrow,
+            trustLineLabel: messages.home.trustLineLabel,
+          },
         }}
         common={{ unavailable: messages.common.unavailable }}
       />

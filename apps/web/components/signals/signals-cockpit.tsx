@@ -20,6 +20,8 @@ const TABS: { id: TabId; label: string }[] = [
 
 type ActionFilter = 'all' | 'bullish' | 'neutral' | 'bearish';
 type AssetClassFilter = 'all' | 'stock' | 'etf' | 'crypto';
+type SortKey = 'symbol' | 'score' | 'confidence' | 'price';
+type SortDir = 'asc' | 'desc';
 
 function interpretationChipClass(interp: string) {
   if (interp === 'bullish') return 'observe-chip observe-chip--success';
@@ -38,18 +40,44 @@ export function SignalsCockpit({ data }: Props) {
   const [actionFilter, setActionFilter] = useState<ActionFilter>('all');
   const [assetClassFilter, setAssetClassFilter] = useState<AssetClassFilter>('all');
   const [search, setSearch] = useState('');
+  const [sortKey, setSortKey] = useState<SortKey>('score');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
 
   const signals = data.signals;
 
-  const filtered = useMemo(() => signals.filter((s) => {
-    if (actionFilter !== 'all' && s.interpretation !== actionFilter) return false;
-    if (assetClassFilter !== 'all' && s.assetClass !== assetClassFilter) return false;
-    if (search.trim()) {
-      const q = search.trim().toUpperCase();
-      if (!s.assetName.toUpperCase().includes(q)) return false;
+  const filtered = useMemo(() => {
+    const rows = signals.filter((s) => {
+      if (actionFilter !== 'all' && s.interpretation !== actionFilter) return false;
+      if (assetClassFilter !== 'all' && s.assetClass !== assetClassFilter) return false;
+      if (search.trim()) {
+        const q = search.trim().toUpperCase();
+        if (!s.assetName.toUpperCase().includes(q)) return false;
+      }
+      return true;
+    });
+
+    const dir = sortDir === 'asc' ? 1 : -1;
+    return [...rows].sort((a, b) => {
+      if (sortKey === 'symbol') return dir * a.assetName.localeCompare(b.assetName);
+      if (sortKey === 'confidence') return dir * (a.confidenceScore - b.confidenceScore);
+      if (sortKey === 'price') return dir * ((a.latestPrice ?? 0) - (b.latestPrice ?? 0));
+      return dir * ((a.score ?? 0) - (b.score ?? 0));
+    });
+  }, [signals, actionFilter, assetClassFilter, search, sortKey, sortDir]);
+
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir(key === 'symbol' ? 'asc' : 'desc');
     }
-    return true;
-  }), [signals, actionFilter, assetClassFilter, search]);
+  }
+
+  function sortIndicator(key: SortKey) {
+    if (sortKey !== key) return '';
+    return sortDir === 'asc' ? ' ▲' : ' ▼';
+  }
 
   const hasFilters = actionFilter !== 'all' || assetClassFilter !== 'all' || search.trim().length > 0;
 
@@ -224,16 +252,32 @@ export function SignalsCockpit({ data }: Props) {
                     <button type="button" className="button button--secondary" onClick={clearFilters}>Clear filters</button>
                   </div>
                 ) : (
-                  <div style={{ overflowX: 'auto' }}>
-                    <table className="data-table" style={{ width: '100%' }}>
+                  <div className="signals-table-wrap">
+                    <table className="data-table signals-rank-table">
                       <thead>
                         <tr>
-                          <th scope="col">Symbol</th>
+                          <th scope="col">
+                            <button type="button" className="signals-sort-btn" onClick={() => toggleSort('symbol')} aria-label="Sort by symbol">
+                              Symbol{sortIndicator('symbol')}
+                            </button>
+                          </th>
                           <th scope="col">Class</th>
                           <th scope="col">Direction</th>
-                          <th scope="col" style={{ textAlign: 'right' }}>Score</th>
-                          <th scope="col" style={{ textAlign: 'right' }}>Confidence</th>
-                          <th scope="col" style={{ textAlign: 'right' }}>Price</th>
+                          <th scope="col">
+                            <button type="button" className="signals-sort-btn" onClick={() => toggleSort('score')} aria-label="Sort by score">
+                              Score{sortIndicator('score')}
+                            </button>
+                          </th>
+                          <th scope="col">
+                            <button type="button" className="signals-sort-btn" onClick={() => toggleSort('confidence')} aria-label="Sort by confidence">
+                              Confidence{sortIndicator('confidence')}
+                            </button>
+                          </th>
+                          <th scope="col" style={{ textAlign: 'right' }}>
+                            <button type="button" className="signals-sort-btn signals-sort-btn--right" onClick={() => toggleSort('price')} aria-label="Sort by price">
+                              Price{sortIndicator('price')}
+                            </button>
+                          </th>
                           <th scope="col">Reason</th>
                           <th scope="col">Actions</th>
                         </tr>
@@ -252,11 +296,29 @@ export function SignalsCockpit({ data }: Props) {
                                 {signal.interpretationLabel}
                               </span>
                             </td>
-                            <td style={{ textAlign: 'right', fontFamily: 'var(--font-family-mono)', color: scoreColor(signal.score ?? 0) }}>
-                              {signal.scoreLabel}
+                            <td>
+                              <div className="signals-score-cell">
+                                <span className="signals-score-cell__value" style={{ color: scoreColor(signal.score ?? 0) }}>
+                                  {signal.scoreLabel}
+                                </span>
+                                <span className="signals-score-bar" aria-hidden="true">
+                                  <span
+                                    className={`signals-score-bar__fill signals-score-bar__fill--${signal.interpretation}`}
+                                    style={{ width: `${Math.min(100, Math.abs(signal.score ?? 0) * 100)}%` }}
+                                  />
+                                </span>
+                              </div>
                             </td>
-                            <td style={{ textAlign: 'right', fontFamily: 'var(--font-family-mono)' }}>
-                              {Math.round(signal.confidenceScore * 100)}%
+                            <td>
+                              <div className="signals-conf-cell">
+                                <span className="signals-conf-cell__value">{Math.round(signal.confidenceScore * 100)}%</span>
+                                <span className="signals-conf-bar" aria-hidden="true">
+                                  <span
+                                    className={`signals-conf-bar__fill${signal.confidenceScore >= 0.7 ? ' signals-conf-bar__fill--high' : signal.confidenceScore < 0.4 ? ' signals-conf-bar__fill--low' : ''}`}
+                                    style={{ width: `${Math.round(signal.confidenceScore * 100)}%` }}
+                                  />
+                                </span>
+                              </div>
                             </td>
                             <td style={{ textAlign: 'right', fontFamily: 'var(--font-family-mono)' }}>
                               {signal.latestPriceLabel}

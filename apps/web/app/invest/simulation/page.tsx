@@ -32,7 +32,10 @@ import { checkAiSimulationAgentAvailability } from '../../../server/services/ai-
 import { getMicroTradingGuardrailsForDisplay } from '../../../server/services/simulation-service';
 import { AiSimulationAgentPanel } from '../../../components/invest/ai-simulation-agent-panel';
 import { getSimulationJournalRowsForCurrentUser } from '../../../server/services/simulation-journal-service';
-import { parsePreparedSimulationTicket } from '../../../lib/simulation-prepare';
+import { parsePreparedSimulationTicket, resolveTradeDisabledReason } from '../../../lib/simulation-prepare';
+import { Disclosure } from '../../../components/ui/disclosure';
+import { IntelligenceAnalysisTabs, type IntelligenceTab } from '../../../components/portfolio/intelligence-analysis-tabs';
+import { SectionHeader } from '../../../components/ui/section-header';
 import { assertSerializableProps } from '../../../lib/assert-serializable-props';
 import { getAssetInspectHref } from '../../../lib/market-routes';
 import { getMacroIntelligenceViewModel } from '../../../server/services/macro-intelligence-service';
@@ -76,11 +79,8 @@ type LaneRow = {
   recentOrders: string;
 };
 
-function laneSupportsAssetClass(laneId: SimulationLaneId, assetClass: 'stock' | 'etf' | 'crypto') {
-  if (laneId === 'manual_stock_lane') {
-    return assetClass === 'stock';
-  }
-
+function laneSupportsAssetClass(_laneId: SimulationLaneId, assetClass: 'stock' | 'etf' | 'crypto') {
+  // Manual simulation lanes support stocks, ETFs, and crypto.
   return assetClass === 'stock' || assetClass === 'etf' || assetClass === 'crypto';
 }
 
@@ -142,7 +142,7 @@ function getAssetDetailHref(symbol: string, assetClass: 'stock' | 'etf' | 'crypt
 export default async function SimulationPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ session?: string; lane?: string; assetView?: string; intent?: string; side?: string; symbol?: string; assetClass?: string; source?: string }>;
+  searchParams?: Promise<{ session?: string; lane?: string; assetView?: string; tab?: string; intent?: string; side?: string; symbol?: string; assetClass?: string; source?: string }>;
 }) {
   const locale = await getRequestLocale();
   const messages = getMessages(locale);
@@ -356,8 +356,191 @@ export default async function SimulationPage({
     );
   }
 
+  // ── Ledger tab panels (pre-rendered server JSX passed as ReactNode) ─────────
+  // Built here so the secondary ledger content (holdings / journal / orders &
+  // transactions / activity) can live behind one accessible tab group instead
+  // of seven stacked full-width Sections. No data refetch — all rows are the
+  // same server-computed values rendered once.
+  const holdingsPanel = (
+    <div className="analytics-two-grid analytics-two-grid--tables">
+      <AnalyticsTable
+        title={messages.simulation.positions}
+        subtitle="Holdings are valued with the latest cached stock quote when available."
+        columns={positionColumns}
+        rows={portfolio.positions.map((position) => ({
+          symbol: position.symbol,
+          quantity: position.quantity.toFixed(4),
+          averageCost: formatUsdPrice(position.averageCost, locale, messages.common.unavailable),
+          marketPrice:
+            position.marketPrice === null
+              ? messages.common.unavailable
+              : formatUsdPrice(position.marketPrice, locale, messages.common.unavailable),
+          allocation:
+            portfolio.summary.portfolioValue > 0
+              ? formatPercent((position.marketValue / portfolio.summary.portfolioValue) * 100)
+              : '0.00%',
+          unrealizedPnl: formatSignedCurrency(position.unrealizedPnl, locale, portfolio.summary.currency),
+        }))}
+        emptyMessage="No positions are open yet. Use the tradable universe below to start your paper portfolio."
+        rowDetailsLabel={messages.table.rowDetails}
+      />
+      <AnalyticsTable
+        title="Closed investments"
+        subtitle="Fully exited positions with realized PnL history."
+        columns={positionColumns}
+        rows={portfolio.closedPositions.map((position) => ({
+          symbol: position.symbol,
+          quantity: position.quantity.toFixed(4),
+          averageCost: formatUsdPrice(position.averageCost, locale, messages.common.unavailable),
+          marketPrice: messages.common.unavailable,
+          allocation: '0.00%',
+          unrealizedPnl: formatSignedCurrency(position.realizedPnl, locale, portfolio.summary.currency),
+        }))}
+        emptyMessage="No closed investments yet."
+        rowDetailsLabel={messages.table.rowDetails}
+      />
+    </div>
+  );
+
+  const journalPanel = <SimulationJournalTable rows={journalRows} />;
+
+  const ordersPanel = (
+    <div className="analytics-two-grid analytics-two-grid--tables">
+      <AnalyticsTable
+        title="Recent simulated orders"
+        subtitle="Order journal separated from cash transactions for clearer trading-activity auditing."
+        columns={orderColumns}
+        rows={portfolio.orders.map((order) => ({
+          side: order.side.toUpperCase(),
+          symbol: order.symbol,
+          quantity: order.quantity.toFixed(4),
+          executedPrice: formatUsdPrice(order.executedPrice, locale, messages.common.unavailable),
+          grossAmount: formatSignedCurrency(order.cashEffect, locale, portfolio.summary.currency),
+          createdAt: formatDateTimeLabel(order.createdAt, locale),
+        }))}
+        emptyMessage="No simulated orders yet."
+        rowDetailsLabel={messages.table.rowDetails}
+      />
+      <AnalyticsTable
+        title={messages.simulation.transactions}
+        subtitle="Every simulated cash movement is recorded in the portfolio journal."
+        columns={transactionColumns}
+        rows={portfolio.transactions.map((transaction) => ({
+          type: transaction.transactionType,
+          symbol: transaction.symbol ?? 'USD',
+          cashDelta: formatSignedCurrency(transaction.cashDelta, locale, portfolio.summary.currency),
+          realizedPnl: formatSignedCurrency(transaction.realizedPnl, locale, portfolio.summary.currency),
+          createdAt: formatDateTimeLabel(transaction.createdAt, locale),
+        }))}
+        emptyMessage={messages.simulation.emptyTransactions}
+        rowDetailsLabel={messages.table.rowDetails}
+      />
+    </div>
+  );
+
+  const activityPanel = (
+    <div className="analytics-main-grid">
+      <PriceHistoryPanel
+        title="Equity curve"
+        subtitle="Snapshot history of total paper-portfolio equity."
+        points={workstation.equityCurve.map((point) => ({
+          label: formatShortDateLabel(point.timestamp, locale),
+          timestamp: point.timestamp,
+          open: point.close,
+          high: point.close,
+          low: point.close,
+          close: point.close,
+          volume: null,
+        }))}
+        note="Snapshots are simulation-only and marked using the latest cached stock prices."
+        emptyMessage="Portfolio history will appear after the worker or trade flow records more than one snapshot."
+      />
+      <SimulationControlsCard />
+      <Card className="analytics-card">
+        <div className="analytics-card__header">
+          <div>
+            <div className="section__eyebrow">Micro trading mode</div>
+            <h3>Simulation-only micro order guardrails</h3>
+            <p>
+              {microTrading.enabled ? 'Enabled via feature flag.' : 'Disabled by default. Enable FEATURE_SIM_MICRO_TRADING=true for simulation.'}
+            </p>
+          </div>
+        </div>
+        <div className="analytics-card__body">
+          <p>Minimum simulated order size: {formatUsdPrice(microTrading.minimumSimulatedOrderNotional, locale, messages.common.unavailable)}</p>
+          <p>Estimated fee impact: {microTrading.estimatedFeeImpactBps} bps</p>
+          <p>Estimated spread impact: {microTrading.estimatedSpreadImpactBps} bps</p>
+          <p>Estimated slippage impact: {microTrading.estimatedSlippageImpactBps} bps</p>
+          <p>Max daily simulated trades: {microTrading.maxDailySimulatedTrades}</p>
+          <p>Min confidence threshold: {(microTrading.minConfidenceThreshold * 100).toFixed(0)}%</p>
+          <p>Max spread threshold: {microTrading.maxSpreadBpsThreshold} bps</p>
+          <p>Max volatility threshold: {(microTrading.maxVolatilityThreshold * 100).toFixed(1)}%</p>
+          <p><strong>Warning:</strong> {microTrading.highFrequencyRiskWarning}</p>
+        </div>
+      </Card>
+    </div>
+  );
+
+  const ledgerTabParam = resolvedSearchParams?.tab;
+  const ledgerDefaultTab =
+    ledgerTabParam === 'journal' || ledgerTabParam === 'orders' || ledgerTabParam === 'activity'
+      ? ledgerTabParam
+      : 'holdings';
+
+  const ledgerTabs: IntelligenceTab[] = [
+    { id: 'holdings', label: 'Holdings', hint: String(portfolio.positions.length), panel: holdingsPanel },
+    { id: 'journal', label: 'Journal', panel: journalPanel },
+    { id: 'orders', label: 'Orders & transactions', hint: String(portfolio.orders.length), panel: ordersPanel },
+    { id: 'activity', label: 'Activity', panel: activityPanel },
+  ];
+
   return (
     <>
+      <Section className="dashboard-section dashboard-section--hero">
+        <WorkstationPageHeader
+          eyebrow={messages.simulation.navLabel}
+          title="Paper portfolio"
+          description="Track fictive cash, live-marked stock holdings, and an auditable transaction journal in one simulation workspace."
+          summary={messages.common.simulationDisclosure}
+          statusLabel={workstation.workstationStatus}
+          statusTone={statusTone}
+          meta={[
+            {
+              label: messages.common.lastUpdated,
+              value: formatDateTimeLabel(portfolio.summary.updatedAt, locale),
+            },
+            {
+              label: 'Total equity',
+              value: formatCashCurrency(portfolio.summary.equityValue, locale, portfolio.summary.currency),
+            },
+            {
+              label: 'Available cash',
+              value: formatCashCurrency(portfolio.summary.availableCash, locale, portfolio.summary.currency),
+            },
+            { label: 'Cash currency', value: portfolio.summary.currency },
+          ]}
+          actions={[
+            { href: '/stocks', label: 'Browse stocks' },
+            { href: '/invest', label: messages.shell.nav.investHome },
+            { href: '/dashboard', label: messages.shell.nav.dashboard },
+          ]}
+        />
+      </Section>
+
+      <Section className="dashboard-section">
+        <BrokerModeLaunchpad
+          baseCapitalUsd={portfolio.summary.initialCashBalance}
+          isAuthenticated
+          simulationHref="/invest/simulation"
+          returnTo="/invest/simulation"
+          defaultLaneId={defaultLaneId}
+          activeSessionId={activeSessionId}
+          activeLaneId={activeLaneId}
+          title="Current simulation lane"
+          description="You can resume the current lane, switch to another supported lane, or adjust lane-level capital before continuing simulated trading."
+        />
+      </Section>
+
       {preparedTicket && preparedAsset ? (
         <Section className="dashboard-section dashboard-section--tinted">
           <Card className="analytics-card">
@@ -432,19 +615,18 @@ export default async function SimulationPage({
                 showQuantityInput
                 quantityLabel={messages.simulation.quantity}
                 disabled={workstation.isReadOnly || preparedAsset.quote?.price == null || (preparedTicket.side === 'sell' && !heldPositionsBySymbol.has(preparedAsset.asset.symbol))}
-                disabledReason={
-                  workstation.isReadOnly
-                    ? workstation.statusMessage
-                    : preparedAsset.quote?.price == null
-                      ? preparedAsset.asset.assetClass === 'etf'
-                        ? `${messages.simulation.validation.freshEtfQuoteRequired} (${preparedAsset.asset.symbol})`
-                        : preparedAsset.asset.assetClass === 'crypto'
-                          ? `${messages.simulation.validation.freshCryptoQuoteRequired} (${preparedAsset.asset.symbol})`
-                          : `Fresh stock quote required before simulation execution. (${preparedAsset.asset.symbol})`
-                      : preparedTicket.side === 'sell' && !heldPositionsBySymbol.has(preparedAsset.asset.symbol)
-                        ? messages.simulation.validation.noOpenPositionToSell.replace('{{symbol}}', preparedAsset.asset.symbol)
-                        : undefined
-                }
+                disabledReason={resolveTradeDisabledReason({
+                  isReadOnly: workstation.isReadOnly,
+                  statusMessage: workstation.statusMessage,
+                  price: preparedAsset.quote?.price ?? null,
+                  assetClass: preparedAsset.asset.assetClass,
+                  symbol: preparedAsset.asset.symbol,
+                  side: preparedTicket.side,
+                  hasPosition: heldPositionsBySymbol.has(preparedAsset.asset.symbol),
+                  freshEtfQuoteRequired: messages.simulation.validation.freshEtfQuoteRequired,
+                  freshCryptoQuoteRequired: messages.simulation.validation.freshCryptoQuoteRequired,
+                  noOpenPositionToSellTemplate: messages.simulation.validation.noOpenPositionToSell,
+                })}
                 currentPrice={preparedAsset.quote?.price ?? null}
                 currentHeldQuantity={heldPositionsBySymbol.get(preparedAsset.asset.symbol)?.quantity ?? 0}
                 sourceContext={preparedTicket.source}
@@ -478,274 +660,92 @@ export default async function SimulationPage({
         </Section>
       ) : null}
 
-      <Section className="dashboard-section">
-        <Card className="analytics-card">
-          <div className="analytics-card__header">
-            <div>
-              <div className="section__eyebrow">Macro regime panel</div>
-              <h3>Simulation context only</h3>
-              <p>{macroContext.simulationOnlyLabel}</p>
-            </div>
-          </div>
-          <div className="analytics-card__body">
-            <div className="observation-regime-grid">
-              <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">Inflation pressure</div><div className="analytics-stat__value">{macroContext.regime.inflationRegime.score.toFixed(2)}</div></article>
-              <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">Rates pressure</div><div className="analytics-stat__value">{macroContext.regime.ratesRegime.score.toFixed(2)}</div></article>
-              <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">Growth backdrop</div><div className="analytics-stat__value">{macroContext.regime.growthRegime.score.toFixed(2)}</div></article>
-              <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">Risk-on / risk-off</div><div className="analytics-stat__value">{macroContext.regime.riskRegime.score.toFixed(2)}</div></article>
-            </div>
-            <p className="simulation-form__meta">Sources: {macroContext.providerStatus.map((item) => `${item.provider}:${item.freshness}`).join(' | ') || 'unavailable'}</p>
-          </div>
-        </Card>
-      </Section>
-
-      <Section className="dashboard-section dashboard-section--hero">
-        <WorkstationPageHeader
-          eyebrow={messages.simulation.navLabel}
-          title="Paper portfolio"
-          description="Track fictive cash, live-marked stock holdings, and an auditable transaction journal in one simulation workspace."
-          summary={messages.common.simulationDisclosure}
-          statusLabel={workstation.workstationStatus}
-          statusTone={statusTone}
-          meta={[
-            {
-              label: messages.common.lastUpdated,
-              value: formatDateTimeLabel(portfolio.summary.updatedAt, locale),
-            },
-            {
-              label: 'Total equity',
-              value: formatCashCurrency(portfolio.summary.equityValue, locale, portfolio.summary.currency),
-            },
-            {
-              label: 'Available cash',
-              value: formatCashCurrency(portfolio.summary.availableCash, locale, portfolio.summary.currency),
-            },
-            { label: 'Cash currency', value: portfolio.summary.currency },
-          ]}
-          actions={[
-            { href: '/stocks', label: 'Browse stocks' },
-            { href: '/invest', label: messages.shell.nav.investHome },
-            { href: '/dashboard', label: messages.shell.nav.dashboard },
-          ]}
-        />
-      </Section>
-
-      <Section className="dashboard-section">
-        <BrokerModeLaunchpad
-          baseCapitalUsd={portfolio.summary.initialCashBalance}
-          isAuthenticated
-          simulationHref="/invest/simulation"
-          returnTo="/invest/simulation"
-          defaultLaneId={defaultLaneId}
-          activeSessionId={activeSessionId}
-          activeLaneId={activeLaneId}
-          title="Current simulation lane"
-          description="You can resume the current lane, switch to another supported lane, or adjust lane-level capital before continuing simulated trading."
-        />
-      </Section>
-
-      <Section className="dashboard-section">
-        <Card className="analytics-card">
-          <div className="analytics-card__header">
-            <div>
-              <div className="section__eyebrow">Session state</div>
-              <h3>Session status: {workstation.workstationStatus}</h3>
-              <p>{localizedStatusMessage}</p>
-            </div>
-          </div>
-          <div className="analytics-card__body">
-            <p>Session: {workstation.session?.id ?? messages.common.unavailable}</p>
-            <p>Lane: {workstation.session?.laneId ?? messages.common.unavailable}</p>
-            <p>Observation: {workstation.session?.observationStatus ?? messages.common.unavailable}</p>
-            <p>Trading actions: {workstation.isReadOnly ? 'Read-only' : 'Enabled in simulation'}</p>
-          </div>
-        </Card>
-      </Section>
-
+      {/* Headline metrics — the 5-6 figures a trader needs at a glance. The
+          remaining metrics stay one click away in the disclosure below. */}
       <Section className="dashboard-section">
         <div className="analytics-strip">
           <CompactStatCard label={messages.simulation.cashBalance} value={formatCashCurrency(portfolio.summary.cashBalance, locale, portfolio.summary.currency)} detail="Total cash in the simulation account before reserve allocation." />
           <CompactStatCard label="Available cash" value={formatCashCurrency(portfolio.summary.availableCash, locale, portfolio.summary.currency)} detail="Cash currently available for new simulated orders." />
-          <CompactStatCard label="Reserved cash" value={formatCashCurrency(portfolio.summary.reservedCash, locale, portfolio.summary.currency)} detail="Reserved lane capital (currently 0 in this release)." />
-          <CompactStatCard label="Invested capital" value={formatCashCurrency(portfolio.summary.investedCapital, locale, portfolio.summary.currency)} valueTone={portfolio.summary.investedCapital > 0 ? 'positive' : portfolio.summary.investedCapital < 0 ? 'negative' : 'neutral'} detail="Cost basis of all currently active simulated positions." />
           <CompactStatCard label="Total equity" value={formatCashCurrency(portfolio.summary.equityValue, locale, portfolio.summary.currency)} detail="Cash plus the current market value of all open simulated positions." />
-          <CompactStatCard label={messages.simulation.portfolioValue} value={formatCashCurrency(portfolio.summary.portfolioValue, locale, portfolio.summary.currency)} valueTone={portfolio.summary.portfolioValue > 0 ? 'positive' : portfolio.summary.portfolioValue < 0 ? 'negative' : 'neutral'} detail="Current market value of open simulated positions." />
-          <CompactStatCard label="Active investments" value={String(portfolio.summary.activeInvestmentCount)} detail="Open simulated positions currently running." />
-          <CompactStatCard label="Closed investments" value={String(portfolio.summary.closedInvestmentCount)} detail="Previously open positions now fully closed." />
+          <CompactStatCard label="Total return" value={formatPercent(portfolioReturn)} detail="Portfolio return versus the default 100,000 USD fictive starting balance." />
           <CompactStatCard label={messages.simulation.unrealizedPnl} value={formatSignedCurrency(portfolio.summary.unrealizedPnl, locale, portfolio.summary.currency)} detail="Open-position gain or loss versus average cost." />
           <CompactStatCard label={messages.simulation.realizedPnl} value={formatSignedCurrency(portfolio.summary.realizedPnl, locale, portfolio.summary.currency)} detail="Closed-position gains and losses already locked in by simulated sells." />
-          <CompactStatCard label="FX conversion" value={portfolio.summary.fxConversionAvailable ? 'Available' : 'Unavailable'} detail={portfolio.summary.fxConversionNote} />
-          <CompactStatCard label="Total return" value={formatPercent(portfolioReturn)} detail="Portfolio return versus the default 100,000 USD fictive starting balance." />
-          <CompactStatCard label="Last simulated action" value={portfolio.orders[0]?.executedAt ? formatDateTimeLabel(portfolio.orders[0].executedAt, locale) : 'Unavailable'} detail="Most recent simulated order execution timestamp." />
-          <CompactStatCard label="Last reset event" value={portfolio.transactions.find((tx) => tx.transactionType === 'reset')?.createdAt ? formatDateTimeLabel(portfolio.transactions.find((tx) => tx.transactionType === 'reset')!.createdAt, locale) : 'Unavailable'} detail="Most recent reset/control event timestamp." />
-          <CompactStatCard label="Execution mode" value="Simulation only" detail="Live trading remains disabled and gated." />
         </div>
+      </Section>
+
+      <Section className="dashboard-section">
+        <Disclosure summary="All portfolio metrics" hint="9 more">
+          <div className="analytics-strip">
+            <CompactStatCard label="Reserved cash" value={formatCashCurrency(portfolio.summary.reservedCash, locale, portfolio.summary.currency)} detail="Reserved lane capital (currently 0 in this release)." />
+            <CompactStatCard label="Invested capital" value={formatCashCurrency(portfolio.summary.investedCapital, locale, portfolio.summary.currency)} valueTone={portfolio.summary.investedCapital > 0 ? 'positive' : portfolio.summary.investedCapital < 0 ? 'negative' : 'neutral'} detail="Cost basis of all currently active simulated positions." />
+            <CompactStatCard label={messages.simulation.portfolioValue} value={formatCashCurrency(portfolio.summary.portfolioValue, locale, portfolio.summary.currency)} valueTone={portfolio.summary.portfolioValue > 0 ? 'positive' : portfolio.summary.portfolioValue < 0 ? 'negative' : 'neutral'} detail="Current market value of open simulated positions." />
+            <CompactStatCard label="Active investments" value={String(portfolio.summary.activeInvestmentCount)} detail="Open simulated positions currently running." />
+            <CompactStatCard label="Closed investments" value={String(portfolio.summary.closedInvestmentCount)} detail="Previously open positions now fully closed." />
+            <CompactStatCard label="FX conversion" value={portfolio.summary.fxConversionAvailable ? 'Available' : 'Unavailable'} detail={portfolio.summary.fxConversionNote} />
+            <CompactStatCard label="Last simulated action" value={portfolio.orders[0]?.executedAt ? formatDateTimeLabel(portfolio.orders[0].executedAt, locale) : 'Unavailable'} detail="Most recent simulated order execution timestamp." />
+            <CompactStatCard label="Last reset event" value={portfolio.transactions.find((tx) => tx.transactionType === 'reset')?.createdAt ? formatDateTimeLabel(portfolio.transactions.find((tx) => tx.transactionType === 'reset')!.createdAt, locale) : 'Unavailable'} detail="Most recent reset/control event timestamp." />
+            <CompactStatCard label="Execution mode" value="Simulation only" detail="Live trading remains disabled and gated." />
+          </div>
+        </Disclosure>
+      </Section>
+
+      {/* Secondary ledger content behind one accessible tab group. */}
+      <Section className="dashboard-section">
+        <IntelligenceAnalysisTabs tabs={ledgerTabs} defaultTabId={ledgerDefaultTab} />
       </Section>
 
       <Section className="dashboard-section dashboard-section--tinted">
-        <div className="analytics-main-grid">
-          <PriceHistoryPanel
-            title="Equity curve"
-            subtitle="Snapshot history of total paper-portfolio equity."
-            points={workstation.equityCurve.map((point) => ({
-              label: formatShortDateLabel(point.timestamp, locale),
-              timestamp: point.timestamp,
-              open: point.close,
-              high: point.close,
-              low: point.close,
-              close: point.close,
-              volume: null,
-            }))}
-            note="Snapshots are simulation-only and marked using the latest cached stock prices."
-            emptyMessage="Portfolio history will appear after the worker or trade flow records more than one snapshot."
-          />
-          <SimulationControlsCard />
-          <Card className="analytics-card">
-            <div className="analytics-card__header">
-              <div>
-                <div className="section__eyebrow">Micro trading mode</div>
-                <h3>Simulation-only micro order guardrails</h3>
-                <p>
-                  {microTrading.enabled ? 'Enabled via feature flag.' : 'Disabled by default. Enable FEATURE_SIM_MICRO_TRADING=true for simulation.'}
-                </p>
+        <Disclosure summary="Lanes & exposure" hint={String(workstation.activityLanes.length)}>
+          <div className="analytics-two-grid analytics-two-grid--tables">
+            <AnalyticsTable
+              title="Broker and strategy lanes"
+              subtitle="Simulation-only activity buckets. Planned lanes do not execute any autonomous live trades."
+              columns={laneColumns}
+              rows={workstation.activityLanes.map((lane) => ({
+                lane: lane.label,
+                status:
+                  lane.status === 'active'
+                    ? 'Active (simulation)'
+                    : lane.status === 'limited'
+                      ? 'Limited support'
+                      : 'Planned',
+                capitalLimit: formatUsdPrice(lane.capitalLimit, locale, messages.common.unavailable),
+                allocated: formatUsdPrice(lane.allocatedCapital, locale, messages.common.unavailable),
+                available: formatUsdPrice(lane.availableCapital, locale, messages.common.unavailable),
+                activePositions: String(lane.activePositions),
+                recentOrders: String(lane.recentOrders),
+              }))}
+              emptyMessage="No lane activity is available."
+              rowDetailsLabel={messages.table.rowDetails}
+            />
+            <Card className="analytics-card">
+              <div className="analytics-card__header">
+                <div>
+                  <div className="section__eyebrow">Asset exposure</div>
+                  <h3>Active exposure by asset class</h3>
+                  <p>Watchlist symbols are separate from active investments and do not affect PnL totals.</p>
+                </div>
               </div>
-            </div>
-            <div className="analytics-card__body">
-              <p>Minimum simulated order size: {formatUsdPrice(microTrading.minimumSimulatedOrderNotional, locale, messages.common.unavailable)}</p>
-              <p>Estimated fee impact: {microTrading.estimatedFeeImpactBps} bps</p>
-              <p>Estimated spread impact: {microTrading.estimatedSpreadImpactBps} bps</p>
-              <p>Estimated slippage impact: {microTrading.estimatedSlippageImpactBps} bps</p>
-              <p>Max daily simulated trades: {microTrading.maxDailySimulatedTrades}</p>
-              <p>Min confidence threshold: {(microTrading.minConfidenceThreshold * 100).toFixed(0)}%</p>
-              <p>Max spread threshold: {microTrading.maxSpreadBpsThreshold} bps</p>
-              <p>Max volatility threshold: {(microTrading.maxVolatilityThreshold * 100).toFixed(1)}%</p>
-              <p><strong>Warning:</strong> {microTrading.highFrequencyRiskWarning}</p>
-            </div>
-          </Card>
-        </div>
-      </Section>
-
-      <Section className="dashboard-section">
-        <SimulationJournalTable rows={journalRows} />
-      </Section>
-
-      <Section className="dashboard-section">
-        <div className="analytics-two-grid analytics-two-grid--tables">
-          <AnalyticsTable
-            title={messages.simulation.positions}
-            subtitle="Holdings are valued with the latest cached stock quote when available."
-            columns={positionColumns}
-            rows={portfolio.positions.map((position) => ({
-              symbol: position.symbol,
-              quantity: position.quantity.toFixed(4),
-              averageCost: formatUsdPrice(position.averageCost, locale, messages.common.unavailable),
-              marketPrice:
-                position.marketPrice === null
-                  ? messages.common.unavailable
-                  : formatUsdPrice(position.marketPrice, locale, messages.common.unavailable),
-              allocation:
-                portfolio.summary.portfolioValue > 0
-                  ? formatPercent((position.marketValue / portfolio.summary.portfolioValue) * 100)
-                  : '0.00%',
-              unrealizedPnl: formatSignedCurrency(position.unrealizedPnl, locale, portfolio.summary.currency),
-            }))}
-            emptyMessage="No positions are open yet. Use the tradable universe below to start your paper portfolio."
-            rowDetailsLabel={messages.table.rowDetails}
-          />
-          <AnalyticsTable
-            title="Closed investments"
-            subtitle="Fully exited positions with realized PnL history."
-            columns={positionColumns}
-            rows={portfolio.closedPositions.map((position) => ({
-              symbol: position.symbol,
-              quantity: position.quantity.toFixed(4),
-              averageCost: formatUsdPrice(position.averageCost, locale, messages.common.unavailable),
-              marketPrice: messages.common.unavailable,
-              allocation: '0.00%',
-              unrealizedPnl: formatSignedCurrency(position.realizedPnl, locale, portfolio.summary.currency),
-            }))}
-            emptyMessage="No closed investments yet."
-            rowDetailsLabel={messages.table.rowDetails}
-          />
-        </div>
-      </Section>
-
-      <Section className="dashboard-section">
-        <div className="analytics-two-grid analytics-two-grid--tables">
-          <AnalyticsTable
-            title="Recent simulated orders"
-            subtitle="Order journal separated from cash transactions for clearer trading-activity auditing."
-            columns={orderColumns}
-            rows={portfolio.orders.map((order) => ({
-              side: order.side.toUpperCase(),
-              symbol: order.symbol,
-              quantity: order.quantity.toFixed(4),
-              executedPrice: formatUsdPrice(order.executedPrice, locale, messages.common.unavailable),
-              grossAmount: formatSignedCurrency(order.cashEffect, locale, portfolio.summary.currency),
-              createdAt: formatDateTimeLabel(order.createdAt, locale),
-            }))}
-            emptyMessage="No simulated orders yet."
-            rowDetailsLabel={messages.table.rowDetails}
-          />
-          <AnalyticsTable
-            title={messages.simulation.transactions}
-            subtitle="Every simulated cash movement is recorded in the portfolio journal."
-            columns={transactionColumns}
-            rows={portfolio.transactions.map((transaction) => ({
-              type: transaction.transactionType,
-              symbol: transaction.symbol ?? 'USD',
-              cashDelta: formatSignedCurrency(transaction.cashDelta, locale, portfolio.summary.currency),
-              realizedPnl: formatSignedCurrency(transaction.realizedPnl, locale, portfolio.summary.currency),
-              createdAt: formatDateTimeLabel(transaction.createdAt, locale),
-            }))}
-            emptyMessage={messages.simulation.emptyTransactions}
-            rowDetailsLabel={messages.table.rowDetails}
-          />
-        </div>
-      </Section>
-
-      <Section className="dashboard-section dashboard-section--tinted">
-        <div className="analytics-two-grid analytics-two-grid--tables">
-          <AnalyticsTable
-            title="Broker and strategy lanes"
-            subtitle="Simulation-only activity buckets. Planned lanes do not execute any autonomous live trades."
-            columns={laneColumns}
-            rows={workstation.activityLanes.map((lane) => ({
-              lane: lane.label,
-              status:
-                lane.status === 'active'
-                  ? 'Active (simulation)'
-                  : lane.status === 'limited'
-                    ? 'Limited support'
-                    : 'Planned',
-              capitalLimit: formatUsdPrice(lane.capitalLimit, locale, messages.common.unavailable),
-              allocated: formatUsdPrice(lane.allocatedCapital, locale, messages.common.unavailable),
-              available: formatUsdPrice(lane.availableCapital, locale, messages.common.unavailable),
-              activePositions: String(lane.activePositions),
-              recentOrders: String(lane.recentOrders),
-            }))}
-            emptyMessage="No lane activity is available."
-            rowDetailsLabel={messages.table.rowDetails}
-          />
-          <Card className="analytics-card">
-            <div className="analytics-card__header">
-              <div>
-                <div className="section__eyebrow">Asset exposure</div>
-                <h3>Active exposure by asset class</h3>
-                <p>Watchlist symbols are separate from active investments and do not affect PnL totals.</p>
+              <div className="analytics-card__body">
+                {workstation.positionsByAssetClass.map((entry) => (
+                  <p key={entry.assetClass}>
+                    {entry.assetClass.toUpperCase()}: {entry.activeCount} active positions,{' '}
+                    {formatUsdPrice(entry.marketValue, locale, messages.common.unavailable)} market value
+                  </p>
+                ))}
+                <p>{messages.common.simulationDisclosure}</p>
               </div>
-            </div>
-            <div className="analytics-card__body">
-              {workstation.positionsByAssetClass.map((entry) => (
-                <p key={entry.assetClass}>
-                  {entry.assetClass.toUpperCase()}: {entry.activeCount} active positions,{' '}
-                  {formatUsdPrice(entry.marketValue, locale, messages.common.unavailable)} market value
-                </p>
-              ))}
-              <p>{messages.common.simulationDisclosure}</p>
-            </div>
-          </Card>
-        </div>
+            </Card>
+          </div>
+        </Disclosure>
+      </Section>
+
+      <Section className="dashboard-section">
+        <SectionHeader
+          eyebrow="Markets"
+          title="Observe & trade"
+          description="Your watchlist and the tradable simulation universe — quote, freshness, and one-click simulated actions across stocks, ETFs, and crypto."
+        />
       </Section>
 
       <Section className="dashboard-section">
@@ -848,32 +848,6 @@ export default async function SimulationPage({
         </div>
       </Section>
 
-      <Section className="dashboard-section">
-        <header className="dashboard-section-heading">
-          <div>
-            <div className="section__eyebrow">AI tools — experimental</div>
-            <h2 className="dashboard-section-heading__title">AI Simulation Broker Agent</h2>
-            <p className="dashboard-section-heading__description">
-              AI-provider-powered simulation agent that analyzes your portfolio and proposes simulated
-              trades. Simulation-only. No real money. All proposals pass existing risk guards before
-              execution.
-            </p>
-          </div>
-        </header>
-        <AiSimulationAgentPanel
-          isAvailable={aiAgentAvailability.available}
-          unavailableReason={
-            aiAgentAvailability.available ? undefined : aiAgentAvailability.reason
-          }
-          providerWarning={aiAgentAvailability.warning}
-          isReadOnly={workstation.isReadOnly}
-          readOnlyReason={workstation.isReadOnly ? workstation.statusMessage : undefined}
-          labels={{
-            ...aiPanelLabels
-          }}
-        />
-      </Section>
-
       <Section className="dashboard-section dashboard-section--tinted">
         <header className="dashboard-section-heading">
           <div>
@@ -971,6 +945,80 @@ export default async function SimulationPage({
             )
           ))}
         </div>
+      </Section>
+
+      {/* Context & experimental tools — demoted below the action surface so they
+          stop competing with the trade ticket and ledger for attention. */}
+      <Section className="dashboard-section">
+        <SectionHeader eyebrow="Context & tools" title="Insights and experimental tools" as="h2" />
+        <Disclosure summary="Macro regime context" hint="simulation only">
+          <Card className="analytics-card">
+            <div className="analytics-card__header">
+              <div>
+                <div className="section__eyebrow">Macro regime panel</div>
+                <h3>Simulation context only</h3>
+                <p>{macroContext.simulationOnlyLabel}</p>
+              </div>
+            </div>
+            <div className="analytics-card__body">
+              <div className="observation-regime-grid">
+                <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">Inflation pressure</div><div className="analytics-stat__value">{macroContext.regime.inflationRegime.score.toFixed(2)}</div></article>
+                <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">Rates pressure</div><div className="analytics-stat__value">{macroContext.regime.ratesRegime.score.toFixed(2)}</div></article>
+                <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">Growth backdrop</div><div className="analytics-stat__value">{macroContext.regime.growthRegime.score.toFixed(2)}</div></article>
+                <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">Risk-on / risk-off</div><div className="analytics-stat__value">{macroContext.regime.riskRegime.score.toFixed(2)}</div></article>
+              </div>
+              <p className="simulation-form__meta">Sources: {macroContext.providerStatus.map((item) => `${item.provider}:${item.freshness}`).join(' | ') || 'unavailable'}</p>
+            </div>
+          </Card>
+        </Disclosure>
+
+        <Disclosure summary="Session diagnostics" hint={workstation.workstationStatus}>
+          <Card className="analytics-card">
+            <div className="analytics-card__header">
+              <div>
+                <div className="section__eyebrow">Session state</div>
+                <h3>Session status: {workstation.workstationStatus}</h3>
+                <p>{localizedStatusMessage}</p>
+              </div>
+            </div>
+            <div className="analytics-card__body">
+              <p>Session: {workstation.session?.id ?? messages.common.unavailable}</p>
+              <p>Lane: {workstation.session?.laneId ?? messages.common.unavailable}</p>
+              <p>Observation: {workstation.session?.observationStatus ?? messages.common.unavailable}</p>
+              <p>Trading actions: {workstation.isReadOnly ? 'Read-only' : 'Enabled in simulation'}</p>
+            </div>
+          </Card>
+        </Disclosure>
+
+        <Disclosure summary="AI broker agent (experimental)">
+          <Card className="analytics-card">
+            <div className="analytics-card__header">
+              <div>
+                <div className="section__eyebrow">AI tools — experimental</div>
+                <h3>AI Simulation Broker Agent</h3>
+                <p>
+                  AI-provider-powered simulation agent that analyzes your portfolio and proposes simulated
+                  trades. Simulation-only. No real money. All proposals pass existing risk guards before
+                  execution.
+                </p>
+              </div>
+            </div>
+            <div className="analytics-card__body">
+              <AiSimulationAgentPanel
+                isAvailable={aiAgentAvailability.available}
+                unavailableReason={
+                  aiAgentAvailability.available ? undefined : aiAgentAvailability.reason
+                }
+                providerWarning={aiAgentAvailability.warning}
+                isReadOnly={workstation.isReadOnly}
+                readOnlyReason={workstation.isReadOnly ? workstation.statusMessage : undefined}
+                labels={{
+                  ...aiPanelLabels
+                }}
+              />
+            </div>
+          </Card>
+        </Disclosure>
       </Section>
     </>
   );

@@ -615,6 +615,74 @@ export async function insertSimulationAgentDecision(
   return { id: row.id };
 }
 
+export type SimulationAgentDecisionSummaryRow = {
+  id: string;
+  symbol: string | null;
+  action: string;
+  confidence: number | null;
+  proposedNotional: number | null;
+  decisionJson: Record<string, unknown> | null;
+  createdAt: string;
+};
+
+/**
+ * Read the most recent agent decision audit rows for a user. Used to surface
+ * saved Claude Finance previews back in the cockpit. Resilient to a missing
+ * table / unconfigured DB — returns [] rather than throwing so the page still
+ * boots (see CLAUDE.md §9 and the stub-client doctrine).
+ */
+export async function getRecentSimulationAgentDecisionsForUser(
+  userId: string,
+  limit = 8,
+): Promise<SimulationAgentDecisionSummaryRow[]> {
+  const client = createDatabaseClient();
+  if (!client.isConfigured) {
+    return [];
+  }
+
+  const safeLimit = Math.max(1, Math.min(50, Math.trunc(limit)));
+
+  try {
+    const rows = await client.query<{
+      id: string;
+      symbol: string | null;
+      action: string;
+      confidence: number | string | null;
+      proposedNotional: number | string | null;
+      decisionJson: Record<string, unknown> | null;
+      createdAt: string | Date;
+    }>(
+      `
+        select
+          id,
+          symbol,
+          action,
+          confidence,
+          proposed_notional as "proposedNotional",
+          decision_json as "decisionJson",
+          created_at as "createdAt"
+        from ${simulationAgentDecisionsTable}
+        where user_id = $1::uuid
+        order by created_at desc
+        limit ${safeLimit}
+      `,
+      [userId],
+    );
+
+    return rows.map((row) => ({
+      id: row.id,
+      symbol: row.symbol,
+      action: row.action,
+      confidence: row.confidence === null ? null : toNumber(row.confidence),
+      proposedNotional: row.proposedNotional === null ? null : toNumber(row.proposedNotional),
+      decisionJson: row.decisionJson ?? null,
+      createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt),
+    }));
+  } catch {
+    return [];
+  }
+}
+
 export async function linkSimulationAgentDecisionToOrder(
   input: LinkSimulationAgentDecisionToOrderInput,
 ): Promise<void> {

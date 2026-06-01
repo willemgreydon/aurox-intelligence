@@ -1,18 +1,18 @@
 import { WorkstationPageHeader } from '../../components/asset/workstation-page-header';
 import { InsightCallout } from '../../components/analytics/insight-callout';
 import { ForecastSummaryCard } from '../../components/dashboard/forecast-summary-card';
-import { AnalysisToolbar } from '../../components/filters/analysis-toolbar';
 import { HorizonComparisonBlock } from '../../components/forecasting/horizon-comparison-block';
 import { ScenarioCard } from '../../components/forecasting/scenario-card';
+import { ForecastWorkstation } from '../../components/forecasting/forecast-workstation';
 import { Section } from '../../components/ui/section';
 import { getMessages } from '../../lib/i18n/messages';
 import { getRequestLocale } from '../../server/i18n/locale';
-import { getForecastsPageData } from '../../server/services/analysis-service';
+import { getForecastWorkstationData } from '../../server/services/forecast-workstation-service';
 
 export const dynamic = 'force-dynamic';
 
 export default async function ForecastsPage() {
-  const [data, locale] = await Promise.all([getForecastsPageData(), getRequestLocale()]);
+  const [data, locale] = await Promise.all([getForecastWorkstationData(), getRequestLocale()]);
   const messages = getMessages(locale);
   const lead = data.forecasts[0];
   const horizonItems = lead
@@ -25,6 +25,26 @@ export default async function ForecastsPage() {
         },
       ]
     : [];
+
+  const forecastStack =
+    data.forecasts.length > 0 ? (
+      <div className="dashboard-forecast-grid">
+        {data.forecasts.map((forecast) => (
+          <ForecastSummaryCard
+            key={forecast.assetId}
+            forecast={{
+              ...forecast,
+              assetClass: 'stock',
+              symbol: forecast.assetId,
+              keyDriverSummary: forecast.keyDrivers.join(' | '),
+              riskSummary: forecast.riskFactors.join(' | '),
+            }}
+          />
+        ))}
+      </div>
+    ) : (
+      <div className="table-panel__empty">No tracked assets currently have sufficient history to derive forecasts.</div>
+    );
 
   return (
     <>
@@ -39,41 +59,16 @@ export default async function ForecastsPage() {
           meta={[
             { label: messages.common.lastUpdated, value: data.overview.lastUpdatedLabel },
             { label: 'Tracked forecasts', value: String(data.forecasts.length) },
+            { label: 'Lanes compared', value: String(data.lanes.length) },
           ]}
           actions={[
             { href: '/signals', label: `View ${messages.shell.nav.signals.toLowerCase()}` },
-            { href: '/dashboard', label: messages.home.openDashboard },
+            { href: '/invest/simulation', label: 'Open simulation' },
           ]}
         />
       </Section>
 
-      <Section className="dashboard-section">
-        <AnalysisToolbar
-          title="Explainable forecast stack"
-          subtitle="Forecast outputs are deterministic, signal-driven, and explicitly transparent about calibration maturity and risk assumptions."
-        />
-      </Section>
-
-      <Section className="dashboard-section">
-        {data.forecasts.length > 0 ? (
-          <div className="dashboard-forecast-grid">
-              {data.forecasts.map((forecast) => (
-              <ForecastSummaryCard
-                key={forecast.assetId}
-                forecast={{
-                  ...forecast,
-                  assetClass: 'stock',
-                  symbol: forecast.assetId,
-                  keyDriverSummary: forecast.keyDrivers.join(' | '),
-                  riskSummary: forecast.riskFactors.join(' | '),
-                }}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="table-panel__empty">No tracked assets currently have sufficient history to derive forecasts.</div>
-        )}
-      </Section>
+      <ForecastWorkstation data={data} forecastStack={forecastStack} />
 
       {lead ? (
         <Section className="dashboard-section dashboard-section--tinted">
@@ -90,9 +85,7 @@ export default async function ForecastsPage() {
               risks={lead.riskFactors}
             />
             <div className="analytics-side-stack">
-              <HorizonComparisonBlock
-                items={horizonItems}
-              />
+              <HorizonComparisonBlock items={horizonItems} />
               <InsightCallout
                 title="Forecasts remain explainable by design"
                 body="Each forecast is derived from observable signal inputs and disclosed with confidence and scenario weights, so interpretation stays auditable."

@@ -4,6 +4,11 @@ import Link from 'next/link';
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { ObserveViewModel } from '../../server/services/market-observation-service';
+import {
+  sortAndFilterWatchlist,
+  type WatchlistSort,
+  type WatchlistFilter,
+} from '../../server/lib/watchlist-intelligence';
 import { buildSimulationTicketHref } from '../../lib/observe-actions';
 import { getAssetInspectHref } from '../../lib/market-routes';
 
@@ -64,6 +69,45 @@ export function ObserveWorkstation({ model }: Props) {
     setSeverityFilter('all');
     setAssetClassFilter('all');
     setSymbolSearch('');
+  }
+
+  // Apply watchlist sort + filters on the client so the table reacts immediately
+  // to control changes. Reuses the same pure sortAndFilterWatchlist helper the
+  // server uses, so client and server results stay consistent. The Apply button
+  // still syncs state to the URL for shareable/deep-linkable views.
+  const filteredWatchlist = useMemo(
+    () =>
+      sortAndFilterWatchlist(model.watchlistIntelligence, watchlistSort as WatchlistSort, {
+        assetClass: watchlistAssetClass as WatchlistFilter['assetClass'],
+        signalAction: watchlistSignalAction as WatchlistFilter['signalAction'],
+        risk: watchlistRisk as WatchlistFilter['risk'],
+        news: watchlistNews as WatchlistFilter['news'],
+        search: watchlistSearch,
+      }),
+    [
+      model.watchlistIntelligence,
+      watchlistSort,
+      watchlistAssetClass,
+      watchlistSignalAction,
+      watchlistRisk,
+      watchlistNews,
+      watchlistSearch,
+    ],
+  );
+
+  const watchlistHasFilters =
+    watchlistAssetClass !== 'all' ||
+    watchlistSignalAction !== 'all' ||
+    watchlistRisk !== 'all' ||
+    watchlistNews !== 'all' ||
+    watchlistSearch.trim().length > 0;
+
+  function clearWatchlistControls() {
+    setWatchlistAssetClass('all');
+    setWatchlistSignalAction('all');
+    setWatchlistRisk('all');
+    setWatchlistNews('all');
+    setWatchlistSearch('');
   }
 
   function applyWatchlistControls() {
@@ -212,7 +256,7 @@ export function ObserveWorkstation({ model }: Props) {
 
         {model.persistenceDegraded && (
           <p className="observe-metric-rail__notice" role="alert">
-            ⚠ Persistence degraded — runtime-only fallback. Events won't be saved.
+            ⚠ Persistence degraded — runtime-only fallback. Events won&apos;t be saved.
           </p>
         )}
       </section>
@@ -529,8 +573,13 @@ export function ObserveWorkstation({ model }: Props) {
                     placeholder="Search symbol/name"
                     aria-label="Search watchlist"
                   />
-                  <button type="button" className="button" onClick={applyWatchlistControls} disabled={isPending} aria-label="Apply watchlist filters">
-                    {isPending ? 'Applying…' : 'Apply'}
+                  {watchlistHasFilters ? (
+                    <button type="button" className="button button--secondary" onClick={clearWatchlistControls} aria-label="Clear watchlist filters">
+                      Clear
+                    </button>
+                  ) : null}
+                  <button type="button" className="button" onClick={applyWatchlistControls} disabled={isPending} aria-label="Save watchlist filters to URL">
+                    {isPending ? 'Saving…' : 'Save view'}
                   </button>
                 </div>
 
@@ -541,6 +590,14 @@ export function ObserveWorkstation({ model }: Props) {
                       Add assets from Stocks, ETFs, or Crypto lanes to see intelligence here.
                     </p>
                     <Link href="/invest/stocks" className="button button--secondary">Browse stocks</Link>
+                  </div>
+                ) : filteredWatchlist.length === 0 ? (
+                  <div className="aurox-empty-state aurox-empty-state--inline">
+                    <p className="aurox-empty-state__title">No assets match these filters</p>
+                    <p className="text-muted" style={{ fontSize: '0.8rem' }}>
+                      Adjust or clear the filters to see watchlist intelligence.
+                    </p>
+                    <button type="button" className="button button--secondary" onClick={clearWatchlistControls}>Clear filters</button>
                   </div>
                 ) : (
                   <div style={{ overflowX: 'auto' }}>
@@ -559,7 +616,7 @@ export function ObserveWorkstation({ model }: Props) {
                         </tr>
                       </thead>
                       <tbody>
-                        {model.watchlistIntelligence.map((item) => (
+                        {filteredWatchlist.map((item) => (
                           <tr key={item.symbol}>
                             <td style={{ fontFamily: 'var(--font-family-mono)', fontWeight: 600 }}>{item.symbol}</td>
                             <td style={{ fontFamily: 'var(--font-family-mono)', textAlign: 'right' }}>{item.priceLabel}</td>

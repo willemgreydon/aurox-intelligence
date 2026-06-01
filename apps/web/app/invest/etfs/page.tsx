@@ -78,15 +78,11 @@ export default async function InvestEtfsPage({
     }
 
     if (!sessionContext || !sessionContext.sessionId) {
-      return 'Start the manual multi-asset simulation lane to place ETF simulation orders.';
+      return 'Start a manual simulation lane to place ETF simulation orders.';
     }
 
     if (sessionContext.isReadOnly) {
       return sessionContext.statusMessage;
-    }
-
-    if (sessionContext.laneId !== 'manual_multi_asset_lane') {
-      return 'Switch to the manual multi-asset lane to simulate ETF orders.';
     }
 
     if (sessionContext.assetScope !== 'multi-asset' && sessionContext.assetScope !== 'etf') {

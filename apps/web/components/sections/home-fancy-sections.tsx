@@ -4,6 +4,7 @@ import type { getMarketGraphData } from '../../server/services/market-graph-serv
 import { Card } from '../ui/card';
 import { Section } from '../ui/section';
 import { StatusBadge } from '../ui/status-badge';
+import { Disclosure } from '../ui/disclosure';
 import { CompactStatCard } from '../stats/compact-stat-card';
 
 type HomeFancySectionsProps = {
@@ -50,6 +51,24 @@ type HomeFancySectionsProps = {
         description: string;
         href: string;
       }>;
+    };
+    explainability: {
+      eyebrow: string;
+      title: string;
+      description: string;
+      dataFlowEyebrow: string;
+      kpis: Array<{ label: string; value: string }>;
+      flow: Array<{ title: string; description: string; value: string }>;
+    };
+    home: {
+      viewAllMarkets: string;
+      featuredModuleCta: string;
+      showMoreLanes: string;
+      showAllCapabilities: string;
+      finalCtaTitle: string;
+      finalCtaSubtitle: string;
+      workflowEyebrow: string;
+      trustLineLabel: string;
     };
   };
   common: {
@@ -102,10 +121,15 @@ function toSparklinePath(values: number[]): string {
     .join(' ');
 }
 
-export function HomeFancySections({ stocks, marketGraph, portfolioSnapshot, labels, common }: HomeFancySectionsProps) {
+export function HomeFancySections({ marketGraph, portfolioSnapshot, labels, common }: HomeFancySectionsProps) {
   const movers = [...marketGraph.assets]
     .sort((left, right) => (right.snapshot?.changePercent ?? -Infinity) - (left.snapshot?.changePercent ?? -Infinity))
     .slice(0, 6);
+
+  const featureCards = labels.capabilities.items.slice(0, 3);
+  const extraCapabilities = labels.capabilities.items.slice(3);
+  const featuredModule = labels.modules.items[0];
+  const flowSteps = labels.explainability.flow.slice(0, 4);
 
   return (
     <>
@@ -147,18 +171,24 @@ export function HomeFancySections({ stocks, marketGraph, portfolioSnapshot, labe
         </Section>
       ) : null}
 
+      {/* Market Pulse Preview — compact proof the system is live, one outbound link. */}
       <Section className="home-fancy home-fancy--pulse section section--tinted">
         <header className="home-fancy__header">
           <div className="section__eyebrow">Live pulse</div>
-          <h2 className="section__title">Momentum radar and top movers</h2>
+          <h2 className="section__title">Top movers right now</h2>
           <p className="section__description">
-            Fast scan of the strongest live moves loaded into the market workspace.
+            A fast scan of the strongest live moves loaded into the workspace.
           </p>
         </header>
 
         <div className="home-fancy-pulse-grid">
           {movers.map((asset) => {
             const tone = toTone(asset.snapshot?.changePercent ?? null);
+            const moveLabel =
+              typeof asset.snapshot?.changePercent === 'number'
+                ? `${asset.snapshot.changePercent > 0 ? '+' : ''}${asset.snapshot.changePercent.toFixed(2)}%`
+                : common.unavailable;
+            const directionWord = tone === 'up' ? 'up' : tone === 'down' ? 'down' : 'unchanged';
             const sparklinePath = toSparklinePath(
               asset.history.slice(-20).map((point: { close: number }) => point.close),
             );
@@ -171,10 +201,11 @@ export function HomeFancySections({ stocks, marketGraph, portfolioSnapshot, labe
                       <div className="home-pulse-card__symbol">{asset.symbol}</div>
                       <h3>{asset.name}</h3>
                     </div>
-                    <span className={`home-pulse-card__move home-pulse-card__move--${tone}`}>
-                      {typeof asset.snapshot?.changePercent === 'number'
-                        ? `${asset.snapshot.changePercent > 0 ? '+' : ''}${asset.snapshot.changePercent.toFixed(2)}%`
-                        : common.unavailable}
+                    <span
+                      className={`home-pulse-card__move home-pulse-card__move--${tone}`}
+                      aria-label={`${asset.symbol} ${directionWord} ${moveLabel}`}
+                    >
+                      {moveLabel}
                     </span>
                   </div>
                   <div className="home-pulse-card__price">
@@ -196,74 +227,130 @@ export function HomeFancySections({ stocks, marketGraph, portfolioSnapshot, labe
             );
           })}
         </div>
+
+        <div className="home-fancy__footer-link">
+          <Link href="/market" className="module-card__link">
+            {labels.home.viewAllMarkets}
+          </Link>
+        </div>
       </Section>
 
-      <Section className="home-fancy home-fancy--lanes">
+      {/* What Aurox Does — 3 feature cards, rest behind a disclosure. */}
+      <Section className="home-fancy home-fancy--capabilities">
         <header className="home-fancy__header">
-          <div className="section__eyebrow">{labels.lanes.eyebrow}</div>
-          <h2 className="section__title">{labels.lanes.title}</h2>
-          <p className="section__description">{labels.lanes.description}</p>
+          <div className="section__eyebrow">{labels.capabilities.eyebrow}</div>
+          <h2 className="section__title">{labels.capabilities.title}</h2>
+          <p className="section__description">{labels.capabilities.description}</p>
         </header>
-        <div className="home-lane-mosaic">
-          {labels.lanes.items.slice(0, 3).map((lane) => (
-            <Card key={lane.title} className="home-lane-card" tone="ghost">
+
+        <div className="home-feature-grid">
+          {featureCards.map((item) => (
+            <Card key={item.title} className="home-feature-card">
               <article>
-                <div className="home-lane-card__head">
-                  <div className="module-card__eyebrow">{lane.label}</div>
-                  <StatusBadge tone={toStatusTone(lane.statusLabel)}>{lane.statusLabel}</StatusBadge>
-                </div>
-                <h3 className="home-lane-card__title">{lane.title}</h3>
-                <p className="home-lane-card__body">{lane.description}</p>
-                <div className="home-lane-card__pills">
-                  {lane.features.slice(0, 3).map((feature) => (
-                    <span key={feature} className="pill">
-                      {feature}
-                    </span>
-                  ))}
-                </div>
-                <Link href={lane.href} className="module-card__link">
-                  {labels.lanes.enterLane}
-                </Link>
+                <h3 className="home-feature-card__title">{item.title}</h3>
+                <p className="home-feature-card__body">{item.description}</p>
               </article>
             </Card>
           ))}
         </div>
-      </Section>
 
-      <Section className="home-fancy home-fancy--ops section section--tinted">
-        <header className="home-fancy__header">
-          <div className="section__eyebrow home-ops-header__eyebrow">{labels.modules.eyebrow}</div>
-          <h2 className="section__title home-ops-header__title">{labels.modules.title}</h2>
-          <p className="section__description home-ops-header__description">{labels.modules.description}</p>
-        </header>
-        <div className="home-ops-grid">
-          <Card className="home-ops-card">
-            <h3 className="home-ops-card__title">{labels.capabilities.title}</h3>
-            <p className="home-ops-card__body">{labels.capabilities.description}</p>
-            <div className="home-ops-card__list">
-              {labels.capabilities.items.slice(0, 4).map((item) => (
-                <article key={item.title} className="home-ops-card__item">
-                  <strong>{item.title}</strong>
-                  <p>{item.description}</p>
-                </article>
+        {extraCapabilities.length > 0 ? (
+          <Disclosure summary={labels.home.showAllCapabilities} className="home-fancy__disclosure">
+            <div className="home-feature-grid">
+              {extraCapabilities.map((item) => (
+                <Card key={item.title} className="home-feature-card" tone="ghost">
+                  <article>
+                    <h3 className="home-feature-card__title">{item.title}</h3>
+                    <p className="home-feature-card__body">{item.description}</p>
+                  </article>
+                </Card>
               ))}
             </div>
+          </Disclosure>
+        ) : null}
+      </Section>
+
+      {/* Workflow strip — Data → Signals → Risk → Decision. */}
+      <Section className="home-fancy home-fancy--workflow section section--tinted">
+        <header className="home-fancy__header">
+          <div className="section__eyebrow">{labels.home.workflowEyebrow}</div>
+          <h2 className="section__title">{labels.explainability.title}</h2>
+        </header>
+        <ol className="home-workflow-strip">
+          {flowSteps.map((step, index) => (
+            <li key={step.title} className="home-workflow-step">
+              <span className="home-workflow-step__index" aria-hidden="true">
+                {index + 1}
+              </span>
+              <h3 className="home-workflow-step__title">{step.title}</h3>
+              <span className="home-workflow-step__value">{step.value}</span>
+            </li>
+          ))}
+        </ol>
+      </Section>
+
+      {/* One featured module — a single guided next step, not a competing grid. */}
+      {featuredModule ? (
+        <Section className="home-fancy home-fancy--featured">
+          <Card tone="accent" className="home-featured-band">
+            <div className="home-featured-band__content">
+              <div className="module-card__eyebrow">{featuredModule.eyebrow}</div>
+              <h2 className="section__title">{featuredModule.title}</h2>
+              <p className="home-featured-band__body">{featuredModule.description}</p>
+            </div>
+            <div className="home-featured-band__action">
+              <Link href={featuredModule.href} className="button button--primary">
+                {labels.home.featuredModuleCta}
+              </Link>
+            </div>
           </Card>
-          <div className="home-ops-module-list">
-            {labels.modules.items.slice(0, 4).map((module) => (
-              <Card key={module.title} className="home-ops-module" tone="ghost">
+        </Section>
+      ) : null}
+
+      {/* Compact trust line — one claim + 3 method chips, full method behind disclosure. */}
+      <Section className="home-fancy home-fancy--trust section section--tinted">
+        <div className="home-trust-line">
+          <span className="home-trust-line__label">{labels.home.trustLineLabel}</span>
+          <div className="home-trust-line__chips">
+            {labels.explainability.kpis.map((kpi) => (
+              <span key={kpi.value} className="home-trust-line__chip">
+                <strong>{kpi.value}</strong>
+                <span>{kpi.label}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <Disclosure summary={labels.lanes.eyebrow} className="home-fancy__disclosure">
+          <div className="home-lane-mosaic">
+            {labels.lanes.items.map((lane) => (
+              <Card key={lane.title} className="home-lane-card" tone="ghost">
                 <article>
-                  <div className="module-card__eyebrow">{module.eyebrow}</div>
-                  <h3>{module.title}</h3>
-                  <p>{module.description}</p>
-                  <Link href={module.href} className="module-card__link">
-                    {labels.modules.enterModule}
+                  <div className="home-lane-card__head">
+                    <div className="module-card__eyebrow">{lane.label}</div>
+                    <StatusBadge tone={toStatusTone(lane.statusLabel)}>{lane.statusLabel}</StatusBadge>
+                  </div>
+                  <h3 className="home-lane-card__title">{lane.title}</h3>
+                  <p className="home-lane-card__body">{lane.description}</p>
+                  <Link href={lane.href} className="module-card__link">
+                    {labels.lanes.enterLane}
                   </Link>
                 </article>
               </Card>
             ))}
           </div>
-        </div>
+        </Disclosure>
+      </Section>
+
+      {/* Single closing CTA. */}
+      <Section className="home-fancy home-fancy--final">
+        <Card tone="accent" className="home-final-cta">
+          <h2 className="section__title">{labels.home.finalCtaTitle}</h2>
+          <p className="home-final-cta__body">{labels.home.finalCtaSubtitle}</p>
+          <Link href="/invest/simulation" className="button button--primary">
+            {labels.home.featuredModuleCta}
+          </Link>
+        </Card>
       </Section>
     </>
   );

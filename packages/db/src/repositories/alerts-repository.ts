@@ -233,11 +233,36 @@ export async function listAlerts(filters: AlertFilters = {}): Promise<AlertRecor
         filters.search ? `%${filters.search}%` : null,
       ],
     );
-    return rows.map((row) => ({ ...row, metadata: row.metadata ?? {} }));
+    return rows.map((row) => ({
+      ...row,
+      metadata: row.metadata ?? {},
+      // The postgres driver parses timestamp columns as Date objects. AlertRecord
+      // is consumed by a server component that asserts serializable props before
+      // passing the model to a client component, where Date is not allowed.
+      // Normalize to ISO strings at the repository boundary so the declared
+      // `string` types are truthful and RSC serialization succeeds.
+      firstSeenAt: toIsoString(row.firstSeenAt),
+      lastSeenAt: toIsoString(row.lastSeenAt),
+      createdAt: toIsoString(row.createdAt),
+      updatedAt: toIsoString(row.updatedAt),
+    }));
   } catch (error) {
     if (isMissingTable(error)) return [];
     throw error;
   }
+}
+
+function toIsoString(value: unknown): string {
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number') {
+    return new Date(value).toISOString();
+  }
+  return '';
 }
 
 export async function getAlert(id: string, userId?: string | null): Promise<AlertRecord | null> {

@@ -186,10 +186,8 @@ export async function executeSimulationOrderForCurrentUser(input: {
     throw new Error('Order quantity must be greater than zero.');
   }
 
-  if (input.strategyLaneId === 'manual_stock_lane' && input.assetClass !== 'stock') {
-    throw new Error('The manual stock lane only supports stock orders.');
-  }
-
+  // Manual simulation lanes support stocks, ETFs, and crypto. The session asset
+  // scope below remains the per-session safety boundary.
   if (input.sessionAssetScope && input.sessionAssetScope !== 'multi-asset' && input.sessionAssetScope !== input.assetClass) {
     throw new Error(`The active session only allows ${input.sessionAssetScope.toUpperCase()} orders.`);
   }

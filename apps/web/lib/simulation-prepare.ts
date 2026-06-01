@@ -65,3 +65,50 @@ export function parsePreparedSimulationTicket(input: Record<string, string | und
   };
 }
 
+/**
+ * Resolve the human-readable reason a simulation trade ticket is disabled.
+ *
+ * Extracted verbatim from the inline ternary that previously lived in the
+ * simulation page so the prepared-ticket form (and any future inline ticket)
+ * share one legible code path. Returns `undefined` when the trade is enabled.
+ *
+ * The localized strings are passed in (this module must stay free of the i18n
+ * `messages` dependency). The STOCK fresh-quote message remains a hardcoded
+ * English literal exactly as it was in the page — the etf/crypto branches use
+ * the provided localized strings, the stock branch does not have an i18n key.
+ */
+export function resolveTradeDisabledReason(input: {
+  isReadOnly: boolean;
+  statusMessage: string;
+  price: number | null | undefined;
+  assetClass: SimulationAssetClass;
+  symbol: string;
+  side: 'buy' | 'sell';
+  hasPosition: boolean;
+  /** Pre-resolved localized strings (the page passes these from `messages`). */
+  freshEtfQuoteRequired: string;
+  freshCryptoQuoteRequired: string;
+  noOpenPositionToSellTemplate: string;
+}): string | undefined {
+  if (input.isReadOnly) {
+    return input.statusMessage;
+  }
+
+  if (input.price == null) {
+    if (input.assetClass === 'etf') {
+      return `${input.freshEtfQuoteRequired} (${input.symbol})`;
+    }
+    if (input.assetClass === 'crypto') {
+      return `${input.freshCryptoQuoteRequired} (${input.symbol})`;
+    }
+    // Stock branch: preserved verbatim — there is no i18n key for this string.
+    return `Fresh stock quote required before simulation execution. (${input.symbol})`;
+  }
+
+  if (input.side === 'sell' && !input.hasPosition) {
+    return input.noOpenPositionToSellTemplate.replace('{{symbol}}', input.symbol);
+  }
+
+  return undefined;
+}
+

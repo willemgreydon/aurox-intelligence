@@ -3,6 +3,8 @@ import { requireCurrentSession } from '../../../server/auth/session';
 import { getPortfolioIntelligenceViewModel } from '../../../server/services/portfolio-intelligence-service';
 import { Section } from '../../../components/ui/section';
 import { Card } from '../../../components/ui/card';
+import { Disclosure } from '../../../components/ui/disclosure';
+import { IntelligenceAnalysisTabs } from '../../../components/portfolio/intelligence-analysis-tabs';
 import type {
   PortfolioAllocation,
   AssetRanking,
@@ -63,12 +65,6 @@ function riskTone(level: string): 'positive' | 'negative' | 'neutral' {
   return 'neutral';
 }
 
-function healthTone(health: string): string {
-  if (health === 'healthy') return 'success';
-  if (health === 'concentrated') return 'warning';
-  if (health === 'high-risk') return 'error';
-  return 'neutral';
-}
 
 function regimeTone(regime: string): string {
   if (regime === 'bull') return 'success';
@@ -439,7 +435,7 @@ function DiagnosticsSummary({ diagnostics }: { diagnostics: PortfolioDiagnostics
   );
 }
 
-function BrokerPreviewSection({
+function BrokerPreviewCard({
   brokerReadiness,
   brokerPreviews,
 }: {
@@ -447,8 +443,7 @@ function BrokerPreviewSection({
   brokerPreviews: Array<{ symbol: string; side: 'buy' | 'sell'; decision: BrokerDecision }>;
 }) {
   return (
-    <Section className="dashboard-section">
-      <Card className="analytics-card">
+    <Card className="analytics-card">
         <div className="analytics-card__header">
           <div>
             <div className="section__eyebrow">Broker preview</div>
@@ -494,15 +489,13 @@ function BrokerPreviewSection({
             <p className="text-muted">No rebalance trades to preview.</p>
           )}
         </div>
-      </Card>
-    </Section>
+    </Card>
   );
 }
 
-function ExplanationSection({ explanation }: { explanation: string }) {
+function ExplanationCard({ explanation }: { explanation: string }) {
   return (
-    <Section className="dashboard-section dashboard-section--tinted">
-      <Card className="analytics-card">
+    <Card className="analytics-card">
         <div className="analytics-card__header">
           <div>
             <div className="section__eyebrow">Intelligence explanation</div>
@@ -535,14 +528,12 @@ function ExplanationSection({ explanation }: { explanation: string }) {
             Past performance does not guarantee future results. This is not financial advice.
           </p>
         </div>
-      </Card>
-    </Section>
+    </Card>
   );
 }
 
-function ExecutePlanSection() {
+function ExecutePlanActions() {
   return (
-    <Section className="dashboard-section">
       <Card className="analytics-card">
         <div className="analytics-card__header">
           <div>
@@ -571,8 +562,7 @@ function ExecutePlanSection() {
             All execution occurs within the deterministic simulation engine.
           </p>
         </div>
-      </Card>
-    </Section>
+    </Card>
   );
 }
 
@@ -648,11 +638,11 @@ export default async function PortfolioIntelligencePage() {
             </div>
           </div>
           <nav className="observe-command-header__actions" aria-label="Portfolio intelligence primary actions">
-            <a href="/observe" className="button button--secondary observe-command-action">Observer</a>
-            <a href="/signals" className="button button--secondary observe-command-action">Signals</a>
-            <a href="/invest/simulation" className="button button--secondary observe-command-action">Simulation</a>
-            <a href="/portfolio" className="button button--secondary observe-command-action">Portfolio</a>
-            <a href="/alerts" className="button button--secondary observe-command-action">Alerts</a>
+            <Link href="/observe" className="button button--secondary observe-command-action">Observer</Link>
+            <Link href="/signals" className="button button--secondary observe-command-action">Signals</Link>
+            <Link href="/invest/simulation" className="button button--secondary observe-command-action">Simulation</Link>
+            <Link href="/portfolio" className="button button--secondary observe-command-action">Portfolio</Link>
+            <Link href="/alerts" className="button button--secondary observe-command-action">Alerts</Link>
           </nav>
         </div>
       </header>
@@ -914,131 +904,158 @@ export default async function PortfolioIntelligencePage() {
         </Section>
       )}
 
-      {/*  4. Cross-Asset Ranking  */}
+      {/*  4-9. Analytical deep-dives, grouped behind tabs (one view at a time)  */}
       <Section className="dashboard-section">
-        <Card className="analytics-card">
-          <div className="analytics-card__header">
-            <div>
-              <div className="section__eyebrow">Cross-asset ranking</div>
-              <h3>Assets ranked by target attractiveness</h3>
-              <p>Sorted by factor-adjusted score descending. Lower risk breaks ties.</p>
-            </div>
-          </div>
-          <div className="analytics-card__body">
-            <RankingTable ranking={ranking} />
-          </div>
-        </Card>
+        <IntelligenceAnalysisTabs
+          tabs={[
+            {
+              id: 'ranking',
+              label: 'Ranking',
+              panel: (
+                <Card className="analytics-card">
+                  <div className="analytics-card__header">
+                    <div>
+                      <div className="section__eyebrow">Cross-asset ranking</div>
+                      <h3>Assets ranked by target attractiveness</h3>
+                      <p>Sorted by factor-adjusted score descending. Lower risk breaks ties.</p>
+                    </div>
+                  </div>
+                  <div className="analytics-card__body">
+                    <RankingTable ranking={ranking} />
+                  </div>
+                </Card>
+              ),
+            },
+            {
+              id: 'allocation',
+              label: 'Allocation',
+              panel: (
+                <Card className="analytics-card">
+                  <div className="analytics-card__header">
+                    <div>
+                      <div className="section__eyebrow">Allocation matrix</div>
+                      <h3>Current vs target allocation</h3>
+                      <p>{portfolioSummary.explanation}</p>
+                    </div>
+                  </div>
+                  <div className="analytics-card__body">
+                    <AllocationMatrix allocations={allocations} />
+                  </div>
+                </Card>
+              ),
+            },
+            {
+              id: 'factors',
+              label: 'Factors',
+              panel: (
+                <Card className="analytics-card">
+                  <div className="analytics-card__header">
+                    <div>
+                      <div className="section__eyebrow">Factor decomposition</div>
+                      <h3>Per-asset score driver breakdown</h3>
+                      <p>Each bar shows the contribution or penalty each factor applied to the final allocation score.</p>
+                    </div>
+                  </div>
+                  <div className="analytics-card__body">
+                    <FactorDecompositionPanel allocations={allocations} />
+                  </div>
+                </Card>
+              ),
+            },
+            {
+              id: 'risk',
+              label: 'Risk overlay',
+              panel: (
+                <Card className="analytics-card">
+                  <div className="analytics-card__header">
+                    <div>
+                      <div className="section__eyebrow">Risk overlay</div>
+                      <h3>Per-asset composite risk scores</h3>
+                      <p>Volatility, news, correlation, and provider reliability components combined into a 0-100 risk score.</p>
+                    </div>
+                  </div>
+                  <div className="analytics-card__body">
+                    <RiskOverlayPanel allocations={allocations} />
+                  </div>
+                </Card>
+              ),
+            },
+            {
+              id: 'rebalance',
+              label: 'Rebalance',
+              hint: rebalancePlan.length > 0 ? String(rebalancePlan.length) : undefined,
+              panel: (
+                <Card className="analytics-card">
+                  <div className="analytics-card__header">
+                    <div>
+                      <div className="section__eyebrow">Rebalance plan</div>
+                      <h3>Suggested simulation trades</h3>
+                      <p>
+                        {rebalancePlan.length > 0
+                          ? `${rebalancePlan.length} trade${rebalancePlan.length !== 1 ? 's' : ''} required to reach target allocation.`
+                          : 'Portfolio is within rebalance threshold — no trades required.'}
+                      </p>
+                    </div>
+                  </div>
+                  {rebalancePlan.length > 0 && (
+                    <div className="analytics-card__body">
+                      <table className="data-table" style={{ width: '100%' }}>
+                        <thead>
+                          <tr>
+                            <th scope="col" style={{ textAlign: 'left' }}>Symbol</th>
+                            <th scope="col" style={{ textAlign: 'left' }}>Side</th>
+                            <th scope="col" style={{ textAlign: 'right' }}>Weight delta</th>
+                            <th scope="col" style={{ textAlign: 'right' }}>Notional %</th>
+                            <th scope="col" style={{ textAlign: 'left' }}>Reasoning</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {rebalancePlan.map((trade) => (
+                            <tr key={trade.symbol}>
+                              <td style={{ fontWeight: 600 }}>{trade.symbol}</td>
+                              <td>
+                                <span className={`status-pill status-pill--${trade.side === 'buy' ? 'success' : 'warning'}`}>
+                                  {trade.side.toUpperCase()}
+                                </span>
+                              </td>
+                              <td className="tabular-nums" style={{ textAlign: 'right' }}>
+                                {trade.targetWeightDelta >= 0 ? '+' : ''}{formatPct(trade.targetWeightDelta)}
+                              </td>
+                              <td className="tabular-nums" style={{ textAlign: 'right' }}>
+                                {trade.estimatedNotionalPct.toFixed(1)}%
+                              </td>
+                              <td style={{ fontSize: '0.75rem', color: 'var(--color-muted-foreground)' }}>
+                                {trade.reasoning.slice(0, 120)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </Card>
+              ),
+            },
+            {
+              id: 'broker',
+              label: 'Broker preview',
+              panel: <BrokerPreviewCard brokerReadiness={brokerReadiness} brokerPreviews={brokerPreviews} />,
+            },
+          ]}
+        />
       </Section>
 
-      {/*  5. Allocation Matrix  */}
-      <Section className="dashboard-section">
-        <Card className="analytics-card">
-          <div className="analytics-card__header">
-            <div>
-              <div className="section__eyebrow">Allocation matrix</div>
-              <h3>Current vs target allocation</h3>
-              <p>{portfolioSummary.explanation}</p>
-            </div>
-          </div>
-          <div className="analytics-card__body">
-            <AllocationMatrix allocations={allocations} />
-          </div>
-        </Card>
-      </Section>
-
-      {/*  6. Factor Decomposition  */}
+      {/*  10. Explanation / Audit Trail (collapsed by default)  */}
       <Section className="dashboard-section dashboard-section--tinted">
-        <Card className="analytics-card">
-          <div className="analytics-card__header">
-            <div>
-              <div className="section__eyebrow">Factor decomposition</div>
-              <h3>Per-asset score driver breakdown</h3>
-              <p>Each bar shows the contribution or penalty each factor applied to the final allocation score.</p>
-            </div>
-          </div>
-          <div className="analytics-card__body">
-            <FactorDecompositionPanel allocations={allocations} />
-          </div>
-        </Card>
+        <Disclosure summary="How these allocations are computed" hint="Methodology & constraints">
+          <ExplanationCard explanation={intelligence.explanation} />
+        </Disclosure>
       </Section>
-
-      {/*  7. Risk Overlay Panel  */}
-      <Section className="dashboard-section">
-        <Card className="analytics-card">
-          <div className="analytics-card__header">
-            <div>
-              <div className="section__eyebrow">Risk overlay</div>
-              <h3>Per-asset composite risk scores</h3>
-              <p>Volatility, news, correlation, and provider reliability components combined into a 0100 risk score.</p>
-            </div>
-          </div>
-          <div className="analytics-card__body">
-            <RiskOverlayPanel allocations={allocations} />
-          </div>
-        </Card>
-      </Section>
-
-      {/*  8. Rebalance Plan  */}
-      <Section className="dashboard-section dashboard-section--tinted">
-        <Card className="analytics-card">
-          <div className="analytics-card__header">
-            <div>
-              <div className="section__eyebrow">Rebalance plan</div>
-              <h3>Suggested simulation trades</h3>
-              <p>
-                {rebalancePlan.length > 0
-                  ? `${rebalancePlan.length} trade${rebalancePlan.length !== 1 ? 's' : ''} required to reach target allocation.`
-                  : 'Portfolio is within rebalance threshold  no trades required.'}
-              </p>
-            </div>
-          </div>
-          {rebalancePlan.length > 0 && (
-            <div className="analytics-card__body">
-              <table className="data-table" style={{ width: '100%' }}>
-                <thead>
-                  <tr>
-                    <th scope="col" style={{ textAlign: 'left' }}>Symbol</th>
-                    <th scope="col" style={{ textAlign: 'left' }}>Side</th>
-                    <th scope="col" style={{ textAlign: 'right' }}>Weight delta</th>
-                    <th scope="col" style={{ textAlign: 'right' }}>Notional %</th>
-                    <th scope="col" style={{ textAlign: 'left' }}>Reasoning</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rebalancePlan.map((trade) => (
-                    <tr key={trade.symbol}>
-                      <td style={{ fontWeight: 600 }}>{trade.symbol}</td>
-                      <td>
-                        <span className={`status-pill status-pill--${trade.side === 'buy' ? 'success' : 'warning'}`}>
-                          {trade.side.toUpperCase()}
-                        </span>
-                      </td>
-                      <td className="tabular-nums" style={{ textAlign: 'right' }}>
-                        {trade.targetWeightDelta >= 0 ? '+' : ''}{formatPct(trade.targetWeightDelta)}
-                      </td>
-                      <td className="tabular-nums" style={{ textAlign: 'right' }}>
-                        {trade.estimatedNotionalPct.toFixed(1)}%
-                      </td>
-                      <td style={{ fontSize: '0.75rem', color: 'var(--color-muted-foreground)' }}>
-                        {trade.reasoning.slice(0, 120)}{trade.reasoning.length > 120 ? '' : ''}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </Card>
-      </Section>
-
-      {/*  9. Broker Preview Panel  */}
-      <BrokerPreviewSection brokerReadiness={brokerReadiness} brokerPreviews={brokerPreviews} />
-
-      {/*  10. Explanation / Audit Trail  */}
-      <ExplanationSection explanation={intelligence.explanation} />
 
       {/*  Simulation CTA  */}
-      <ExecutePlanSection />
+      <Section className="dashboard-section">
+        <ExecutePlanActions />
+      </Section>
     </>
   );
 }

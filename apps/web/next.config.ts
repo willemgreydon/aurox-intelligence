@@ -1,6 +1,18 @@
 import path from 'node:path';
 import type { NextConfig } from 'next';
 
+// ---------------------------------------------------------------------------
+// Monorepo root env loading
+//
+// Next.js only auto-loads env files from its OWN project directory (apps/web),
+// and config-time process.env mutations do not propagate to Turbopack's render
+// workers. Shared runtime secrets (AUTH_SECRET, DATABASE_URL, ...) live in the
+// repository ROOT `.env`, so they are injected into the real process env by
+// dotenv-cli in the `dev` / `build` / `start` scripts (see apps/web/package.json).
+// Real process env vars DO propagate to workers, which is why that approach is
+// used instead of loading env here. Production uses platform-provided env vars.
+// ---------------------------------------------------------------------------
+
 const isProduction = process.env.NODE_ENV === 'production';
 
 const securityHeaders = [

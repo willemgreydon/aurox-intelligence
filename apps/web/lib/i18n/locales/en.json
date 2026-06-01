@@ -80,7 +80,12 @@
     "details": "Details",
     "live": "Live",
     "none": "None",
-    "simulationDisclosure": "Simulation only. No real money, brokerage execution, or regulated order routing is performed."
+    "simulationDisclosure": "Simulation only. No real money, brokerage execution, or regulated order routing is performed.",
+    "overview": "Overview",
+    "signals": "Signals",
+    "risk": "Risk",
+    "journal": "Journal",
+    "data": "Data"
   },
   "auth": {
     "loginEyebrow": "Authentication",
@@ -267,7 +272,15 @@
     "featuredStock": "Featured asset",
     "historyPreviewAria": "{{symbol}} price history preview",
     "noHistory": "Historical price data is not yet available for this asset.",
-    "platformHighlights": "Platform trust signals"
+    "platformHighlights": "Platform trust signals",
+    "viewAllMarkets": "View all markets",
+    "featuredModuleCta": "Open Invest workstation",
+    "showMoreLanes": "Explore all intelligence lanes",
+    "showAllCapabilities": "See the full capability set",
+    "finalCtaTitle": "Start in simulation. Zero capital at risk.",
+    "finalCtaSubtitle": "Rank assets, inspect explainable signals, and place simulated orders inside one auditable workstation.",
+    "workflowEyebrow": "How it works",
+    "trustLineLabel": "Every output is traceable"
   },
   "homeSections": {
     "capabilities": {
@@ -453,9 +466,9 @@
         {
           "label": "Lane 02",
           "title": "Simulation Trading Lane",
-          "description": "Production-grade paper trading with real market mechanics — order routing, position accounting, fee tracking, and full transaction audit history.",
+          "description": "Production-grade paper trading across stocks, ETFs, and crypto with real market mechanics — order routing, position accounting, fee tracking, and full transaction audit history.",
           "features": [
-            "Simulated buy and sell orders",
+            "Stocks, ETFs, and crypto orders",
             "Portfolio PnL tracking",
             "Order and transaction audit"
           ],

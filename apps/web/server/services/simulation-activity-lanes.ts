@@ -75,7 +75,7 @@ export function buildSimulationActivityLanes(workspace: Awaited<ReturnType<typeo
   return [
     {
       id: 'manual-core',
-      label: 'Manual stock lane',
+      label: 'Manual trading lane',
       mode: 'manual',
       status: 'active',
       capitalLimit: manualCapitalLimit,
@@ -83,7 +83,7 @@ export function buildSimulationActivityLanes(workspace: Awaited<ReturnType<typeo
       availableCapital: roundCurrency(Math.max(0, manualCapitalLimit - manualAllocatedCapital)),
       activePositions: workspace.positions.length,
       recentOrders: manualRecentOrders,
-      note: 'Manual stock simulation is active. Stock orders are executed with deterministic accounting, auditable history, and lane-tagged order context.',
+      note: 'Manual simulation across stocks, ETFs, and crypto. Orders execute with deterministic accounting, auditable history, and lane-tagged order context.',
     },
     {
       id: 'manual-multi',

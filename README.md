@@ -201,21 +201,67 @@ Windows PowerShell:
 Copy-Item .env.example .env
 ```
 
-3. Run DB migrations
+> The repository-root `.env` is the single source of truth for shared runtime
+> config and secrets. Both `apps/web` and `apps/worker` read from it during
+> development — you do not need per-app `.env` files. `.env` is git-ignored and
+> must never be committed.
+
+3. Generate a strong `AUTH_SECRET`
+
+`AUTH_SECRET` signs session tokens and is required for the web app to boot. The
+placeholder in `.env.example` is intentionally too short. Generate a real one:
+
+```bash
+openssl rand -base64 32
+```
+
+Set it in the root `.env`:
+
+```bash
+AUTH_SECRET=<paste-the-generated-value>
+```
+
+4. Verify the environment is loaded
+
+```bash
+pnpm env:check
+```
+
+This prints which env files were found and confirms `AUTH_SECRET` presence
+(yes/no only — it never prints secret values). It exits non-zero if a required
+variable is missing.
+
+5. Run DB migrations
 
 ```bash
 node packages/db/scripts/migrate.mjs
 ```
 
-4. Start development
+6. Start development
 
 ```bash
 pnpm dev
 ```
 
-5. Open the app
+7. Open the app
 
 - `http://localhost:3000`
+
+### How env loading works in development
+
+- `pnpm dev` runs Turborepo, which first builds the internal `@repo/*` packages
+  that the web app consumes as compiled `dist/`, then starts the persistent dev
+  servers.
+- The **web** dev/build/start scripts use [`dotenv-cli`](https://www.npmjs.com/package/dotenv-cli)
+  to inject the root `.env` (and an optional root `.env.local` override) into the
+  process. Next.js then propagates those real env vars to its render workers —
+  which is why a config-file loader is not sufficient here.
+- `NODE_ENV` is forced per command (`dev` → development, `build`/`start` →
+  production) via `cross-env`, so a `NODE_ENV` value accidentally left in `.env`
+  cannot corrupt a production build. Do not set `NODE_ENV` in `.env`.
+- The **worker** loads the root `.env` itself (via `@next/env`) and consumes the
+  `@repo/*` packages directly from their TypeScript source through `tsx`, so it
+  does not depend on prebuilt `dist/` during development.
 
 ---
 
@@ -410,6 +456,62 @@ PR summary should include:
 ---
 
 ## Troubleshooting
+
+### `AUTH_SECRET` undefined / "Invalid or missing authentication environment configuration"
+
+The web app reads `AUTH_SECRET` from the repository-root `.env`. If it is missing
+or shorter than 32 characters the app fails fast with an actionable message.
+
+1. Confirm the value is present and visible:
+   ```bash
+   pnpm env:check
+   ```
+2. If missing, generate one and add it to the **root** `.env`:
+   ```bash
+   echo "AUTH_SECRET=$(openssl rand -base64 32)" >> .env
+   ```
+3. Start fresh — `next dev` caches env at process start:
+   ```bash
+   pnpm dev
+   ```
+
+Notes:
+- The value must live in the root `.env` (preferred) or `apps/web/.env.local`.
+- Never prefix it with `NEXT_PUBLIC_` — that would expose the signing key to the
+  browser bundle.
+- There is intentionally **no** insecure development fallback for `AUTH_SECRET`.
+
+### `Cannot find module @repo/db/dist/index.js` (worker)
+
+This means a workspace package has not been built where a consumer expected
+compiled output. The web app consumes `@repo/*` as built `dist/`; `pnpm dev`
+builds those packages first via Turborepo (`dev` depends on `^build`). The
+worker consumes the same packages from source through `tsx`, so it does not need
+`dist/` in development.
+
+If you still hit this:
+```bash
+pnpm build            # builds all internal package dist/ once
+# or just the one package:
+pnpm --filter @repo/db build
+```
+Then re-run `pnpm dev`.
+
+### Node version mismatch
+
+This repo targets the Node version used in CI (Node 24.x at time of writing).
+If you see syntax or ESM resolution errors that nobody else hits, check:
+```bash
+node -v
+```
+and switch with your version manager (e.g. `nvm use`) to match.
+
+### Turborepo `--parallel` warning about task dependencies
+
+`pnpm dev` runs `turbo run dev` (no `--parallel`). In Turborepo 2.x, `--parallel`
+ignores task dependencies, which would skip the `^build` step the web app needs.
+The default `turbo run dev` already runs the dev tasks concurrently **and**
+respects `dependsOn`, so do not re-add `--parallel`.
 
 ### EPERM / sandbox / path errors when running scripts
 

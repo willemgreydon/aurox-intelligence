@@ -27,10 +27,10 @@ export function getAssetInspectHref(asset: InspectAssetInput): string {
   const encodedSymbol = encodeURIComponent(symbol);
 
   if (assetClass === 'crypto') {
-    return `/invest/crypto?symbol=${encodedSymbol}`;
+    return `/invest/crypto/${encodedSymbol}`;
   }
   if (assetClass === 'etf') {
-    return `/invest/etfs?symbol=${encodedSymbol}`;
+    return `/invest/etfs/${encodedSymbol}`;
   }
   if (assetClass === 'stock' || assetClass === 'index') {
     return `/invest/stocks/${encodedSymbol}`;

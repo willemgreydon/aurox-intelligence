@@ -190,26 +190,37 @@ describe('executeSimulationOrderForCurrentUser', () => {
   });
 
   it('accepts cached/stale ETF quote outside market hours for simulation', async () => {
-    mockHappyPath('etf');
-    loadQuoteSnapshotsMock.mockResolvedValue([
-      {
-        symbol: 'SPY',
-        price: 101,
-        observedAt: new Date(Date.now() - 16 * 60 * 1000).toISOString(),
-        fetchedAt: new Date(Date.now() - 16 * 60 * 1000).toISOString(),
-      },
-    ]);
+    // Pin the clock to a Sunday so the US market is unambiguously closed,
+    // regardless of when the suite runs. A cached ETF quote (even 16 min old)
+    // must be usable for simulation while the market is closed. Without pinning,
+    // this test is time-dependent and fails during real US market hours, where
+    // a 16-min-old quote is correctly rejected as STALE_DURING_MARKET_HOURS.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2024-01-07T12:00:00Z')); // Sunday
+    try {
+      mockHappyPath('etf');
+      loadQuoteSnapshotsMock.mockResolvedValue([
+        {
+          symbol: 'SPY',
+          price: 101,
+          observedAt: new Date(Date.now() - 16 * 60 * 1000).toISOString(),
+          fetchedAt: new Date(Date.now() - 16 * 60 * 1000).toISOString(),
+        },
+      ]);
 
-    await expect(
-      executeSimulationOrderForCurrentUser({
-        assetId: 'etf-1',
-        symbol: 'SPY',
-        assetClass: 'etf',
-        side: 'buy',
-        quantity: 1,
-        strategyLaneId: 'manual_multi_asset_lane',
-      }),
-    ).resolves.toEqual({ id: 'order-1' });
+      await expect(
+        executeSimulationOrderForCurrentUser({
+          assetId: 'etf-1',
+          symbol: 'SPY',
+          assetClass: 'etf',
+          side: 'buy',
+          quantity: 1,
+          strategyLaneId: 'manual_multi_asset_lane',
+        }),
+      ).resolves.toEqual({ id: 'order-1' });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('rejects wrong lane scope for multi-asset orders', async () => {

@@ -124,19 +124,15 @@ function mapSimulationOrderError(raw: string, symbol: string): MappedOrderError 
   };
 }
 
-function laneSupportsAssetClass(laneId: SimulationLaneId, assetClass: SimulationAssetClass) {
-  if (laneId === 'manual_stock_lane') {
-    return assetClass === 'stock';
-  }
-
+function laneSupportsAssetClass(_laneId: SimulationLaneId, assetClass: SimulationAssetClass) {
+  // Manual simulation lanes support every tradable asset class (stocks, ETFs,
+  // and crypto). The simulation engine, quote loading, and risk checks are all
+  // asset-class agnostic; the session asset scope (checked separately) remains
+  // the safety boundary for scope-restricted sessions.
   return assetClass === 'stock' || assetClass === 'etf' || assetClass === 'crypto';
 }
 
-function buildUnsupportedLaneMessage(laneId: SimulationLaneId, assetClass: SimulationAssetClass) {
-  if (laneId === 'manual_stock_lane') {
-    return `The manual stock lane only supports stock orders. Switch to the manual multi-asset lane to simulate ${assetClass.toUpperCase()} orders.`;
-  }
-
+function buildUnsupportedLaneMessage(_laneId: SimulationLaneId, assetClass: SimulationAssetClass) {
   return `${assetClass.toUpperCase()} is not enabled for the selected simulation lane.`;
 }
 
@@ -161,7 +157,7 @@ export async function startSimulationSessionAction(formData: FormData): Promise<
 
   const parsed = startSimulationSessionInputSchema.safeParse({
     laneId: String(formData.get('laneId') ?? ''),
-    assetScope: String(formData.get('assetScope') ?? 'stock'),
+    assetScope: String(formData.get('assetScope') ?? 'multi-asset'),
     maxCapitalUsd: formData.get('maxCapitalUsd') ?? 0,
     microAllocationPercent: formData.get('microAllocationPercent') ?? 0,
     returnTo: String(formData.get('returnTo') ?? '/invest/simulation'),

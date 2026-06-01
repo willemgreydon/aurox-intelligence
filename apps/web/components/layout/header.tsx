@@ -62,6 +62,7 @@ export async function Header({ locale, messages }: HeaderProps) {
         { href: '/alerts', label: 'Alerts', icon: 'AL', description: 'Escalated intelligence alerts with replay links.' },
         { href: '/signals', label: messages.shell.nav.signals, icon: 'SG', description: 'Signal interpretation and explainability views.' },
         { href: '/portfolio/intelligence', label: 'Portfolio Intelligence', icon: 'PI', description: 'Allocation, risk overlay, and portfolio diagnostics.' },
+        { href: '/finance', label: 'Claude Finance', icon: 'CF', description: 'Simulation-only finance cockpit: starred lanes and preview-only simulated activity.' },
         { href: '/invest/simulation', label: messages.shell.nav.simulation, icon: 'SM', description: 'Simulation-only order preparation and execution lab.' },
       ],
     },
