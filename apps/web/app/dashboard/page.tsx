@@ -10,6 +10,7 @@ import { DashboardProviderHealth } from '../../components/dashboard/dashboard-pr
 import { DashboardSignalSnapshot } from '../../components/dashboard/dashboard-signal-snapshot';
 import { DashboardAssetClassSnapshot } from '../../components/dashboard/dashboard-asset-class-snapshot';
 import { DashboardPanel } from '../../components/dashboard/dashboard-panel';
+import { DashboardGroup } from '../../components/dashboard/dashboard-group';
 import { DashboardMissionControl } from '../../components/dashboard/dashboard-mission-control';
 import { requireCurrentSession } from '../../server/auth/session';
 import { getDashboardExecutiveViewModel } from '../../server/services/dashboard-executive-service';
@@ -64,19 +65,32 @@ export default async function DashboardPage() {
       hero={<DashboardHero model={model} />}
       kpis={<DashboardKpiStrip model={model} />}
       topBand={missionControl}
-      main={(
+      body={(
         <>
-          <div className="dashboard-exec-main-grid__left">
-            <DashboardMarketPulse
-              model={model}
-              labels={{
-                eyebrow: messages.dashboard.marketPulseEyebrow,
-                title: messages.dashboard.marketPulseTitle,
-                description: messages.dashboard.marketPulseDescription,
-                unavailable: messages.dashboard.marketPulseUnavailable,
-              }}
-            />
-            <DashboardObservationSummary model={model} />
+          <DashboardGroup
+            title="Portfolio Overview"
+            subtitle="Your simulated book value, state, and trade-readiness guardrails."
+            lead
+          >
+            <DashboardPanel eyebrow="Portfolio Intelligence" title="Portfolio snapshot" description="Allocation and risk state." href="/portfolio/intelligence">
+              <div className="dashboard-exec-list">
+                <article className="dashboard-exec-list__item"><strong>Portfolio value</strong><span>{model.portfolioSnapshot.value}</span></article>
+                <article className="dashboard-exec-list__item"><strong>State</strong><span>{model.portfolioSnapshot.state}</span></article>
+                <article className="dashboard-exec-list__item">
+                  <strong>Open positions</strong>
+                  <span className="num-bubble num-bubble--info num-bubble--small" aria-label={`${model.portfolioSnapshot.openPositions} open positions`}>{model.portfolioSnapshot.openPositions}</span>
+                </article>
+                <article className="dashboard-exec-list__item"><strong>Risk score</strong><span>{model.portfolioSnapshot.riskScore}</span></article>
+              </div>
+            </DashboardPanel>
+            <DashboardSimulationReadiness model={model} />
+          </DashboardGroup>
+
+          <DashboardGroup
+            title="Risk Overview"
+            subtitle="Escalations and cross-asset dependencies that change your risk picture."
+          >
+            <DashboardAlertQueue model={model} />
             <DashboardPanel eyebrow="Cross-Asset Intelligence" title="Relationship engine" description="Cross-asset dependencies, correlations, and narrative context derived from live observations." href="/observe">
               <div className="dashboard-exec-list">
                 {model.relationships.length === 0 ? (
@@ -97,39 +111,54 @@ export default async function DashboardPage() {
                 ))}
               </div>
             </DashboardPanel>
-          </div>
+          </DashboardGroup>
 
-          <div className="dashboard-exec-main-grid__right">
-            <DashboardAlertQueue model={model} />
-            <DashboardSimulationReadiness model={model} />
-            <DashboardProviderHealth model={model} />
-          </div>
-        </>
-      )}
-      lower={(
-        <>
-          <DashboardSignalSnapshot model={model} />
-          <DashboardPanel eyebrow="Portfolio Intelligence" title="Portfolio snapshot" description="Allocation and risk state." href="/portfolio/intelligence">
-            <div className="dashboard-exec-list">
-              <article className="dashboard-exec-list__item"><strong>Portfolio value</strong><span>{model.portfolioSnapshot.value}</span></article>
-              <article className="dashboard-exec-list__item"><strong>State</strong><span>{model.portfolioSnapshot.state}</span></article>
-              <article className="dashboard-exec-list__item"><strong>Open positions</strong><span>{model.portfolioSnapshot.openPositions}</span></article>
-              <article className="dashboard-exec-list__item"><strong>Risk score</strong><span>{model.portfolioSnapshot.riskScore}</span></article>
-            </div>
-          </DashboardPanel>
-          <DashboardPanel eyebrow="News Impact" title="News shock snapshot" description="Top headlines and sentiment shocks." href="/news">
-            <div className="dashboard-exec-list">
-              <article className="dashboard-exec-list__item"><strong>Shock count</strong><span>{model.newsSnapshot.shockCount}</span></article>
-              {model.newsSnapshot.headlines.map((item) => (
-                <article key={item.id} className="dashboard-exec-list__item">
-                  <strong>{item.title}</strong>
-                  <span className="text-muted">{item.source}</span>
-                  {item.href ? <a href={item.href} target="_blank" rel="noreferrer noopener">Open source</a> : <span className="text-muted">No source URL</span>}
+          <DashboardGroup
+            title="Market Overview"
+            subtitle="Live market pulse and coverage across stocks, ETFs, and crypto."
+            lead
+          >
+            <DashboardMarketPulse
+              model={model}
+              labels={{
+                eyebrow: messages.dashboard.marketPulseEyebrow,
+                title: messages.dashboard.marketPulseTitle,
+                description: messages.dashboard.marketPulseDescription,
+                unavailable: messages.dashboard.marketPulseUnavailable,
+              }}
+            />
+            <DashboardAssetClassSnapshot model={model} />
+          </DashboardGroup>
+
+          <DashboardGroup
+            title="AI Overview"
+            subtitle="Explainable signal distribution and the most relevant observer outputs."
+          >
+            <DashboardSignalSnapshot model={model} />
+            <DashboardObservationSummary model={model} />
+          </DashboardGroup>
+
+          <DashboardGroup
+            title="Research Overview"
+            subtitle="News shocks and the health of the data providers behind every number."
+          >
+            <DashboardPanel eyebrow="News Impact" title="News shock snapshot" description="Top headlines and sentiment shocks." href="/news">
+              <div className="dashboard-exec-list">
+                <article className="dashboard-exec-list__item">
+                  <strong>Shock count</strong>
+                  <span className="num-bubble num-bubble--warning num-bubble--small" aria-label={`${model.newsSnapshot.shockCount} news shocks`}>{model.newsSnapshot.shockCount}</span>
                 </article>
-              ))}
-            </div>
-          </DashboardPanel>
-          <DashboardAssetClassSnapshot model={model} />
+                {model.newsSnapshot.headlines.map((item) => (
+                  <article key={item.id} className="dashboard-exec-list__item">
+                    <strong>{item.title}</strong>
+                    <span className="text-muted">{item.source}</span>
+                    {item.href ? <a href={item.href} target="_blank" rel="noreferrer noopener">Open source</a> : <span className="text-muted">No source URL</span>}
+                  </article>
+                ))}
+              </div>
+            </DashboardPanel>
+            <DashboardProviderHealth model={model} />
+          </DashboardGroup>
         </>
       )}
       ctas={(

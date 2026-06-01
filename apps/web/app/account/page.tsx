@@ -22,9 +22,19 @@ export default async function AccountOverviewPage() {
       <dl className="account-stats">
         <div><dt>Member since</dt><dd>{overview.memberSinceLabel}</dd></div>
         <div><dt>Signed in as</dt><dd>{overview.user.email}</dd></div>
-        <div><dt>Account role</dt><dd>{overview.user.role}</dd></div>
+        <div><dt>Account role</dt><dd><span className="status-pill status-pill--xs status-pill--info">{overview.user.role}</span></dd></div>
         <div><dt>Session expires</dt><dd>{overview.sessionExpiresLabel}</dd></div>
-        <div><dt>Active sessions</dt><dd>{String(overview.activeSessionCount)}</dd></div>
+        <div>
+          <dt>Active sessions</dt>
+          <dd>
+            <span
+              className="num-bubble num-bubble--info num-bubble--small"
+              aria-label={`${overview.activeSessionCount} active sessions`}
+            >
+              {overview.activeSessionCount}
+            </span>
+          </dd>
+        </div>
         <div><dt>Last activity</dt><dd>{overview.recentSessions[0]?.lastSeenLabel ?? 'Pending activity'}</dd></div>
       </dl>
       <p className="account-muted">

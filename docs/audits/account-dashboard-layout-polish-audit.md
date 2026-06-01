@@ -121,3 +121,91 @@ both `:root` (light) and `[data-theme="dark"]` define every token referenced.
   exec band feels cramped at large counts; left unchanged to preserve density.
 - `--surface-hover` / `--surface-2` are referenced-but-undefined in legacy rules;
   worth defining or removing in a future tokens pass (out of scope here).
+
+---
+
+# Pass 2 — Premium Executive Terminal UX (2026-06-01)
+
+## P1 — Global bubble rollout
+- Counts → `.num-bubble` (rule: money never, counts always, status → pills):
+  - market-graph candle count (pass 1), asset-flow count (pass 1)
+  - signal snapshot BUY/SELL/HOLD → success/danger/neutral bubbles
+  - asset-class `N assets` → info bubble
+  - provider-health healthy/degraded/total → bubbles
+  - portfolio "open positions", news "shock count" → bubbles
+  - account membership "active sessions" → bubble
+- Fix: `.num-bubble` gained `justify-self:start; width:fit-content` so it never
+  stretches when used as a direct grid child of `.dashboard-exec-list__item`.
+
+## P2 — Executive KPI cards
+`CompactStatCard` extended with optional `icon`, `status` (pill), and `spark`
+slots (backward compatible). Topline = icon + truncating label + status pill;
+value wraps (`overflow-wrap:anywhere`) so it never overlaps. Account hero
+headline card now carries a `SIMULATION` status pill. Grid stays 3/2/1
+(`.account-metric-grid`, pass 1).
+
+## P3 — Dashboard width
+Evaluated 1320 / 1440 / 1480px. Chose **1440px** (`--layout-dashboard-width:
+90rem`) for the executive terminal: the dense multi-panel groups (2–3 up) read
+better with the extra width, while the per-group `auto-fit minmax(280px)` keeps
+line lengths sane. 1480 felt loose for 2-up lead groups; 1320 (pass 1) was tight
+for 3-up. Single reusable container: `.dashboard-page-container` /
+`.aurox-page-container` (used by every dashboard band).
+
+## P4 — Dashboard information architecture
+New `DashboardGroup` component (heading + subheading + spacing + separator via
+`.dashboard-group + .dashboard-group` border-top). `DashboardShell` now takes one
+grouped `body` slot (removed `main`/`lower`). Dashboard page reorganised into five
+named overviews: **Portfolio · Risk · Market · AI · Research** (2 panels each;
+Portfolio & Market use the `--lead` 1.5fr/1fr layout).
+
+## P5 — Provider status pills
+`.status-pill--{live,delayed,degraded,offline,simulation,neutral}` with dedicated
+theme-aware colours. `DashboardProviderHealth` derives a single state pill
+(OFFLINE if no providers, DEGRADED if any degraded, else LIVE).
+
+## P6 — Account sidebar polish
+`account/layout.tsx` Email/Role/Status converted to `.account-meta-row`
+structured rows; Role → info pill, Status → `SIMULATION` pill. Membership
+disclosure (`account/page.tsx`) Role → pill, Active sessions → count bubble.
+Added specificity-safe overrides so pills/bubbles keep their colour inside
+element-qualified containers (`.account-stats dd`, `.account-sidebar__summary span`).
+
+## P7 — Mobile pass
+- `100vh` → `100dvh` (with `100vh` fallback) on `.loading-workspace`,
+  `.market-loading`, and `--market-workstation-height` (via `@supports`).
+  (Body/app-shell already had `100svh`; mobile-drawer already `100dvh`.)
+- Safe-area padding: `.page-main` bottom inset; `.shell-container` and
+  `.dashboard-page-container` inline insets (landscape notch). Covers dashboard /
+  account / portfolio / simulation / market (all built on these containers).
+
+## P8 — Validation (pass 2)
+- `vitest run lib/layout-polish.test.ts` → **PASS (11 tests)**
+- `pnpm --filter @repo/web typecheck` → changed files clean; same pre-existing
+  baseline failures in `app/api/auth/register/route.test.ts` and
+  `next.config.test.ts` (unmodified, unrelated).
+- `pnpm build:web` → **✓ Compiled successfully**
+
+## Files changed (pass 2)
+- `apps/web/app/globals.css` — width token, dvh/safe-area, provider pills,
+  executive KPI slots, dashboard groups, account meta rows, bubble no-stretch fix.
+- `apps/web/components/stats/compact-stat-card.tsx` — icon/status/spark slots.
+- `apps/web/components/dashboard/dashboard-group.tsx` — **new** group primitive.
+- `apps/web/components/dashboard/dashboard-shell.tsx` — single grouped `body` slot.
+- `apps/web/app/dashboard/page.tsx` — five named overview groups + count bubbles.
+- `apps/web/components/dashboard/dashboard-signal-snapshot.tsx` — count bubbles.
+- `apps/web/components/dashboard/dashboard-asset-class-snapshot.tsx` — count bubble.
+- `apps/web/components/dashboard/dashboard-provider-health.tsx` — state pill + bubbles.
+- `apps/web/components/account/account-intelligence-cockpit.tsx` — headline status pill.
+- `apps/web/app/account/page.tsx` — role pill + sessions bubble.
+- `apps/web/app/account/layout.tsx` — structured meta rows + pills.
+- `apps/web/lib/layout-polish.test.ts` — expanded static guards.
+
+## Remaining opportunities (pass 2)
+- Roll bubbles/pills into remaining surfaces: watchlist counts, alert-center
+  counters, portfolio positions table, market rankings counts.
+- Wire real sparklines into KPI `spark` slot (server-provided series).
+- Remove now-dead `.dashboard-exec-main-grid` / `__left` / `__right` /
+  `-lower-grid` CSS (superseded by `.dashboard-group`).
+- Provider pills currently derive LIVE/DEGRADED/OFFLINE from counts; surface a
+  true DELAYED state when freshness/staleness metadata is threaded through.

@@ -20,14 +20,18 @@ export default async function AccountLayout({ children }: { children: ReactNode 
               </p>
             </div>
 
-            <div className="account-sidebar__summary">
-              <div>
+            <div className="account-sidebar__summary account-meta-list">
+              <div className="account-meta-row">
                 <span>Email</span>
-                <strong>{auth.user.email}</strong>
+                <strong title={auth.user.email}>{auth.user.email}</strong>
               </div>
-              <div>
+              <div className="account-meta-row">
                 <span>Role</span>
-                <strong>{auth.user.role}</strong>
+                <span className="status-pill status-pill--xs status-pill--info">{auth.user.role}</span>
+              </div>
+              <div className="account-meta-row">
+                <span>Status</span>
+                <span className="status-pill status-pill--xs status-pill--simulation">SIMULATION</span>
               </div>
             </div>
 

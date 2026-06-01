@@ -38,7 +38,12 @@ export function AccountIntelligenceCockpit({ vm, membershipDisclosure }: Props) 
           </div>
 
           <div className="analytics-strip account-metric-grid">
-            <CompactStatCard label="Total simulated value" value={vm.hero.totalValueLabel} detail="Cash plus current market value of open simulated positions." />
+            <CompactStatCard
+              label="Total simulated value"
+              value={vm.hero.totalValueLabel}
+              detail="Cash plus current market value of open simulated positions."
+              status={{ label: 'SIMULATION', tone: 'simulation' }}
+            />
             <CompactStatCard
               label="Today's P/L (est.)"
               value={vm.hero.todayPnl.label}

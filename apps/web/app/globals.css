@@ -4,6 +4,10 @@
 :root {
   --site-header-offset: calc(var(--header-height) + 3.5rem + env(safe-area-inset-top));
   --page-arrival-offset: calc(var(--site-header-offset) + var(--space-3));
+  /* Executive terminal width — wider than the reading shell (76rem) so dense
+     multi-column dashboard grids can breathe. See Phase 3 evaluation in the
+     account-dashboard-layout-polish audit. */
+  --layout-dashboard-width: 90rem;
 }
 
 *,
@@ -177,11 +181,15 @@ code,
 .page-main {
   position: relative;
   overflow-x: clip;
+  /* Mobile safe-area: keep content clear of the home indicator / bottom bar. */
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 .shell-container {
   width: min(calc(100% - var(--space-8)), var(--layout-max-width));
   margin: 0 auto;
+  /* Respect notch/curved-edge safe areas in landscape on mobile. */
+  padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
 }
 
 .site-header {
@@ -3843,6 +3851,7 @@ code,
 
 .loading-workspace {
   min-height: calc(100vh - var(--site-header-offset, 7.5rem));
+  min-height: calc(100dvh - var(--site-header-offset, 7.5rem));
   padding: clamp(2rem, 5vw, 4.5rem) clamp(1rem, 2.6vw, 2rem);
   display: grid;
   gap: clamp(0.9rem, 2vw, 1.3rem);
@@ -3959,6 +3968,7 @@ code,
 
 .market-loading {
   min-height: calc(100vh - var(--site-header-offset, 7.5rem));
+  min-height: calc(100dvh - var(--site-header-offset, 7.5rem));
   padding: clamp(2rem, 5vw, 4.5rem) clamp(1rem, 2.4vw, 2rem);
   display: grid;
   gap: clamp(0.9rem, 2vw, 1.3rem);
@@ -5030,6 +5040,14 @@ code,
 :root {
   --market-workstation-height: clamp(35rem, calc(100vh - 11.25rem), 47.5rem);
   --market-sidebar-width: clamp(21.25rem, 28vw, 28.75rem);
+}
+
+/* Prefer the dynamic viewport unit where supported so the market workstation
+   sizes to the *visible* viewport (excludes mobile browser chrome). */
+@supports (height: 100dvh) {
+  :root {
+    --market-workstation-height: clamp(35rem, calc(100dvh - 11.25rem), 47.5rem);
+  }
 }
 
 .market-workstation {
@@ -10324,8 +10342,10 @@ code,
    gutters scale 16px (mobile) → ~24px (tablet) → ~36px (desktop). */
 .aurox-page-container,
 .dashboard-page-container {
-  width: min(100% - clamp(2rem, 5vw, 4.5rem), 82.5rem);
+  width: min(100% - clamp(2rem, 5vw, 4.5rem), var(--layout-dashboard-width));
   margin-inline: auto;
+  /* Notch-safe in landscape; gutters already provided by the clamp() above. */
+  padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
 }
 
 /* Wider money/value KPI grid for the account + mission-control surfaces.
@@ -10379,6 +10399,9 @@ code,
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  /* Never stretch when used as a grid/flex child (e.g. .dashboard-exec-list__item). */
+  justify-self: start;
+  width: fit-content;
   min-width: 1.65rem;
   height: 1.65rem;
   padding: 0 0.55rem;
@@ -10441,4 +10464,178 @@ code,
   font-size: 0.66rem;
   font-weight: 600;
   vertical-align: baseline;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Provider / data-state status pills (LIVE · DELAYED · DEGRADED · OFFLINE ·
+   SIMULATION). Dedicated, theme-aware colours; reuse the base .status-pill.
+   ────────────────────────────────────────────────────────────────────────── */
+.status-pill--neutral {
+  color: var(--text-tertiary);
+  background: color-mix(in srgb, var(--surface-base) 60%, transparent);
+}
+.status-pill--live {
+  color: var(--status-success-text);
+  background: var(--status-success-bg);
+}
+.status-pill--delayed {
+  color: var(--status-warning-text);
+  background: var(--status-warning-bg);
+}
+.status-pill--degraded {
+  /* red text on amber field — visually "degrading", distinct from delayed/offline */
+  color: var(--status-danger-text);
+  background: var(--status-warning-bg);
+}
+.status-pill--offline {
+  color: var(--status-danger-text);
+  background: var(--status-danger-bg);
+}
+.status-pill--simulation {
+  color: var(--status-info-text);
+  background: var(--status-info-bg);
+}
+
+/* Compact pill for inline metadata rows (sidebar, KPI topline). */
+.status-pill--xs {
+  min-height: 1.5rem;
+  padding: 0 var(--space-2);
+  font-size: var(--font-size-2xs);
+  letter-spacing: 0.06em;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Executive KPI card — icon slot + status pill + value + delta + sparkline.
+   Layered on top of .analytics-card--compact; values never overlap.
+   ────────────────────────────────────────────────────────────────────────── */
+.analytics-kpi__topline {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.analytics-kpi__topline .analytics-stat__label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.analytics-kpi__topline .status-pill {
+  flex: 0 0 auto;
+}
+.analytics-kpi__icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--text-accent) 14%, transparent);
+  color: var(--text-accent);
+  font-size: 0.85rem;
+  line-height: 1;
+}
+.analytics-kpi .analytics-stat__value {
+  /* Wrap rather than overflow when a value is unusually long. */
+  overflow-wrap: anywhere;
+}
+.analytics-kpi__spark {
+  display: block;
+  width: 100%;
+  margin-top: var(--space-2);
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Dashboard information architecture — named overview groups with heading,
+   subheading, spacing, and a visual separator between groups.
+   ────────────────────────────────────────────────────────────────────────── */
+.dashboard-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.dashboard-group + .dashboard-group {
+  margin-top: clamp(1.5rem, 3vw, 2.5rem);
+  padding-top: clamp(1.5rem, 3vw, 2.5rem);
+  border-top: var(--border-width-thin) solid var(--border-subtle);
+}
+.dashboard-group__head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.dashboard-group__title {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  line-height: var(--line-height-heading);
+}
+.dashboard-group__subtitle {
+  margin: 0;
+  color: var(--text-tertiary);
+  font-size: 0.82rem;
+  max-width: 72ch;
+}
+.dashboard-group__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-3);
+  align-items: start;
+}
+.dashboard-group__grid > * {
+  min-width: 0;
+}
+/* Wider lead column for groups with one primary + supporting panels. */
+.dashboard-group__grid--lead {
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+}
+@media (max-width: 900px) {
+  .dashboard-group__grid--lead {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Account sidebar metadata rows + role/status pills. */
+.account-meta-list {
+  display: grid;
+  gap: var(--space-2);
+}
+.account-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-width: 0;
+}
+.account-meta-row > span:not(.status-pill) {
+  color: var(--text-tertiary);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  flex: 0 0 auto;
+}
+.account-meta-row > strong {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-medium);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+}
+
+/* Pills/bubbles must keep their own colour inside metadata containers whose
+   element-qualified rules (.account-stats dd, .account-sidebar__summary span)
+   would otherwise win over single-class pill/bubble selectors. */
+.account-meta-row .status-pill--info,
+.account-stats dd .status-pill--info {
+  color: var(--status-info-text);
+}
+.account-meta-row .status-pill--simulation,
+.account-stats dd .status-pill--simulation {
+  color: var(--status-info-text);
+}
+.account-stats dd .num-bubble {
+  color: var(--bubble-fg);
 }

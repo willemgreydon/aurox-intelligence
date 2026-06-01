@@ -44,15 +44,63 @@ describe('globals.css layout-polish primitives', () => {
     // Theme-aware via custom properties, not hardcoded colours.
     expect(css).toMatch(/\.num-bubble\s*\{[^}]*--bubble-bg/s);
   });
+
+  it('defines the provider/data-state status pills', () => {
+    for (const variant of [
+      '.status-pill--live',
+      '.status-pill--delayed',
+      '.status-pill--degraded',
+      '.status-pill--offline',
+      '.status-pill--simulation',
+      '.status-pill--neutral',
+    ]) {
+      expect(css).toContain(variant);
+    }
+  });
+
+  it('defines the executive KPI card slots and dashboard overview groups', () => {
+    expect(css).toContain('.analytics-kpi__topline');
+    expect(css).toContain('.analytics-kpi__icon');
+    expect(css).toContain('.analytics-kpi__spark');
+    expect(css).toContain('.dashboard-group');
+    expect(css).toContain('.dashboard-group__title');
+    expect(css).toContain('.dashboard-group__grid--lead');
+  });
+
+  it('uses the dashboard width token and dynamic viewport units for mobile', () => {
+    expect(css).toContain('--layout-dashboard-width');
+    expect(css).toMatch(/\.dashboard-page-container\s*\{[^}]*--layout-dashboard-width/s);
+    expect(css).toContain('100dvh');
+    expect(css).toContain('env(safe-area-inset-bottom)');
+  });
 });
 
 describe('components are wired to the layout-polish primitives', () => {
-  it('DashboardShell wraps every band in the page container', () => {
+  it('DashboardShell wraps every band in the page container and groups the body', () => {
     const shell = read('../components/dashboard/dashboard-shell.tsx');
     expect(shell).toContain('dashboard-page-container');
-    // Grid bands keep their grid class on the inner container.
-    expect(shell).toContain('dashboard-page-container dashboard-exec-main-grid');
-    expect(shell).toContain('dashboard-page-container dashboard-exec-lower-grid');
+    expect(shell).toContain('dashboard-groups');
+  });
+
+  it('dashboard page composes the five named overview groups', () => {
+    const page = read('../app/dashboard/page.tsx');
+    for (const group of [
+      'Portfolio Overview',
+      'Risk Overview',
+      'Market Overview',
+      'AI Overview',
+      'Research Overview',
+    ]) {
+      expect(page).toContain(group);
+    }
+  });
+
+  it('CompactStatCard exposes icon + status + spark slots', () => {
+    const card = read('../components/stats/compact-stat-card.tsx');
+    expect(card).toContain('icon?');
+    expect(card).toContain('status?');
+    expect(card).toContain('spark?');
+    expect(card).toContain('analytics-kpi__topline');
   });
 
   it('account cockpit hero uses the wider metric grid, not raw 4-up', () => {
