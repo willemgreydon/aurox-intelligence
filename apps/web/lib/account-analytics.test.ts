@@ -2,9 +2,12 @@ import { describe, expect, it } from 'vitest';
 import {
   computeAccountInsights,
   computeActivitySummary,
+  computeConcentration,
   computeDailyPerformance,
+  computeJournalCoverageRate,
   computeMoneyflowSummary,
   computePeriodPnL,
+  type AnalyticsPosition,
   type AnalyticsSnapshot,
   type AnalyticsTransaction,
 } from './account-analytics';
@@ -171,5 +174,53 @@ describe('computeAccountInsights', () => {
   it('suggests a first trade for an empty account', () => {
     const insights = computeAccountInsights([], computeMoneyflowSummary([]), computeActivitySummary([], 0));
     expect(insights.reviewSuggestions.some((s) => s.toLowerCase().includes('first paper trade'))).toBe(true);
+  });
+});
+
+describe('computeConcentration', () => {
+  const positions: AnalyticsPosition[] = [
+    { symbol: 'AMD', marketValue: 6000, unrealizedPnl: 400 },
+    { symbol: 'AAPL', marketValue: 3000, unrealizedPnl: -100 },
+    { symbol: 'BTC-USD', marketValue: 1000, unrealizedPnl: 250 },
+  ];
+
+  it('returns unknown for no open positions', () => {
+    const c = computeConcentration([]);
+    expect(c.level).toBe('unknown');
+    expect(c.largestWeight).toBeNull();
+  });
+
+  it('computes largest weight, top-3 weight, HHI and level', () => {
+    const c = computeConcentration(positions);
+    expect(c.largestSymbol).toBe('AMD');
+    expect(c.largestWeight).toBeCloseTo(0.6, 5); // 6000 / 10000
+    expect(c.topThreeWeight).toBeCloseTo(1, 5);
+    expect(c.hhi).toBeCloseTo(0.36 + 0.09 + 0.01, 5);
+    expect(c.level).toBe('high'); // largest >= 0.5
+  });
+
+  it('identifies best/worst unrealized performer', () => {
+    const c = computeConcentration(positions);
+    expect(c.bestUnrealized?.symbol).toBe('AMD'); // +400
+    expect(c.worstUnrealized?.symbol).toBe('AAPL'); // -100
+  });
+
+  it('ignores zero/negative market-value positions', () => {
+    const c = computeConcentration([
+      { symbol: 'X', marketValue: 0, unrealizedPnl: 0 },
+      { symbol: 'Y', marketValue: 100, unrealizedPnl: 5 },
+    ]);
+    expect(c.positionCount).toBe(1);
+    expect(c.largestSymbol).toBe('Y');
+  });
+});
+
+describe('computeJournalCoverageRate', () => {
+  it('is null with no trades', () => {
+    expect(computeJournalCoverageRate(0, 5)).toBeNull();
+  });
+  it('clamps to [0,1]', () => {
+    expect(computeJournalCoverageRate(4, 2)).toBe(0.5);
+    expect(computeJournalCoverageRate(2, 5)).toBe(1);
   });
 });

@@ -80,7 +80,12 @@
     "details": "Details",
     "live": "Live",
     "none": "None",
-    "simulationDisclosure": "Simulation only. No real money, brokerage execution, or regulated order routing is performed."
+    "simulationDisclosure": "Simulation only. No real money, brokerage execution, or regulated order routing is performed.",
+    "overview": "Visão geral",
+    "signals": "Sinais",
+    "risk": "Risco",
+    "journal": "Diário",
+    "data": "Dados"
   },
   "auth": {
     "loginEyebrow": "Authentication",

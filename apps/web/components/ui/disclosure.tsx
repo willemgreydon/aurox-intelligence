@@ -6,8 +6,8 @@ type DisclosureProps = {
   summary: string;
   children: ReactNode;
   className?: string;
-  /** Optional short hint rendered next to the summary (e.g. a count). */
-  hint?: string;
+  /** Optional short hint rendered next to the summary (e.g. a count bubble). */
+  hint?: ReactNode;
   /** Render expanded by default. Defaults to collapsed (reveal-on-intent). */
   defaultOpen?: boolean;
 };

@@ -80,7 +80,12 @@
     "details": "Details",
     "live": "Live",
     "none": "Keine",
-    "simulationDisclosure": "Nur Simulation. Es wird kein echtes Geld eingesetzt, keine Brokerausführung oder reguliertes Orderrouting durchgeführt."
+    "simulationDisclosure": "Nur Simulation. Es wird kein echtes Geld eingesetzt, keine Brokerausführung oder reguliertes Orderrouting durchgeführt.",
+    "overview": "Übersicht",
+    "signals": "Signale",
+    "risk": "Risiko",
+    "journal": "Journal",
+    "data": "Daten"
   },
   "auth": {
     "loginEyebrow": "Authentifizierung",

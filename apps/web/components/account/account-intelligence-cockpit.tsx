@@ -37,7 +37,7 @@ export function AccountIntelligenceCockpit({ vm, membershipDisclosure }: Props) 
             </div>
           </div>
 
-          <div className="analytics-strip">
+          <div className="analytics-strip account-metric-grid">
             <CompactStatCard label="Total simulated value" value={vm.hero.totalValueLabel} detail="Cash plus current market value of open simulated positions." />
             <CompactStatCard
               label="Today's P/L (est.)"
@@ -91,7 +91,17 @@ export function AccountIntelligenceCockpit({ vm, membershipDisclosure }: Props) 
                 </p>
               ) : null}
 
-              <Disclosure summary="Asset-level moneyflow" hint={String(vm.moneyflow.assetFlows.length)}>
+              <Disclosure
+                summary="Asset-level moneyflow"
+                hint={
+                  <span
+                    className="num-bubble num-bubble--info num-bubble--small"
+                    aria-label={`${vm.moneyflow.assetFlows.length} assets with recorded flow`}
+                  >
+                    {vm.moneyflow.assetFlows.length}
+                  </span>
+                }
+              >
                 <table className="data-table">
                   <thead>
                     <tr>
@@ -154,6 +164,64 @@ export function AccountIntelligenceCockpit({ vm, membershipDisclosure }: Props) 
                 <li className="account-muted">Insights appear as you record more simulated activity.</li>
               ) : null}
             </ul>
+            <p className="account-disclaimer">Based on available simulation data. Estimated. Not financial advice.</p>
+          </Card>
+        </div>
+      </Section>
+
+      <Section>
+        <div className="account-two-col">
+          <Card>
+            <SectionHeader
+              eyebrow="Contribution"
+              title="Asset contribution to realized P/L"
+              as="h3"
+              description="Estimated, based on simulated sells."
+            />
+            {vm.assetContributions.hasData ? (
+              <ul className="account-contrib-list" aria-label="Realized P/L by asset">
+                {vm.assetContributions.items.map((item) => {
+                  const widthPct = vm.assetContributions.maxAbsolute > 0
+                    ? Math.round((Math.abs(item.realizedPnl) / vm.assetContributions.maxAbsolute) * 100)
+                    : 0;
+                  return (
+                    <li key={item.symbol} className="account-contrib">
+                      <span className="account-contrib__symbol">{item.symbol}</span>
+                      <span className="account-contrib__track">
+                        <span className={`account-contrib__bar account-contrib__bar--${item.tone}`} style={{ width: `${widthPct}%` }} />
+                      </span>
+                      <span className={`account-contrib__value account-pnl--${item.tone}`}>{item.label}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="account-empty">Asset contribution appears after you close simulated positions with realized gains or losses.</p>
+            )}
+          </Card>
+
+          <Card>
+            <SectionHeader eyebrow="Risk" title="Concentration & behaviour" as="h3" />
+            {vm.risk.hasPositions ? (
+              <dl className="account-stats">
+                <div><dt>Concentration</dt><dd className={`account-risk-badge account-risk-badge--${vm.risk.concentrationLevel}`}>{vm.risk.concentrationLevel}</dd></div>
+                <div><dt>Largest position</dt><dd>{vm.risk.largestPositionLabel ?? '—'}</dd></div>
+                <div><dt>Top 3 weight</dt><dd>{vm.risk.topThreeWeightLabel ?? '—'}</dd></div>
+                <div><dt>Cash deployment</dt><dd>{vm.risk.cashDeploymentLabel}</dd></div>
+                <div><dt>Journal coverage (est.)</dt><dd>{vm.risk.journalCoverageLabel}</dd></div>
+                <div><dt>Best unrealized</dt><dd className="account-pnl--positive">{vm.risk.bestUnrealizedLabel ?? '—'}</dd></div>
+                <div><dt>Worst unrealized</dt><dd className="account-pnl--negative">{vm.risk.worstUnrealizedLabel ?? '—'}</dd></div>
+              </dl>
+            ) : (
+              <p className="account-empty">No open simulated positions yet. Risk and concentration insights appear once you hold positions.</p>
+            )}
+            {vm.risk.warnings.length > 0 ? (
+              <ul className="account-insight-list">
+                {vm.risk.warnings.map((w, i) => (
+                  <li key={`risk-${i}`}><span className="account-insight__tag account-insight__tag--bad">Review</span> {w}</li>
+                ))}
+              </ul>
+            ) : null}
             <p className="account-disclaimer">Based on available simulation data. Estimated. Not financial advice.</p>
           </Card>
         </div>

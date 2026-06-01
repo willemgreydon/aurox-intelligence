@@ -10,8 +10,11 @@ import { DashboardProviderHealth } from '../../components/dashboard/dashboard-pr
 import { DashboardSignalSnapshot } from '../../components/dashboard/dashboard-signal-snapshot';
 import { DashboardAssetClassSnapshot } from '../../components/dashboard/dashboard-asset-class-snapshot';
 import { DashboardPanel } from '../../components/dashboard/dashboard-panel';
+import { DashboardMissionControl } from '../../components/dashboard/dashboard-mission-control';
 import { requireCurrentSession } from '../../server/auth/session';
 import { getDashboardExecutiveViewModel } from '../../server/services/dashboard-executive-service';
+import { getAccountIntelligenceViewModel } from '../../server/services/account-intelligence-service';
+import { computeNextBestActions } from '../../lib/dashboard-next-actions';
 import { getMessages } from '../../lib/i18n/messages';
 import { getRequestLocale } from '../../server/i18n/locale';
 
@@ -21,12 +24,46 @@ export default async function DashboardPage() {
   const session = await requireCurrentSession('/login');
   const locale = await getRequestLocale();
   const messages = getMessages(locale);
-  const model = await getDashboardExecutiveViewModel({ userId: session.user.id });
+  // Executive (market) intelligence + personal (account) intelligence in parallel.
+  // The account band is optional: if it fails, the dashboard still renders.
+  const [model, accountVm] = await Promise.all([
+    getDashboardExecutiveViewModel({ userId: session.user.id }),
+    getAccountIntelligenceViewModel().catch(() => null),
+  ]);
+
+  // Mission Control band (account/simulation dimension), derived from real state.
+  const missionControl = accountVm
+    ? (() => {
+        const providerOk = model.providerHealth.total > 0 && model.providerHealth.degraded === 0 && !model.degraded;
+        const freshness = {
+          label: providerOk ? 'Data nominal' : 'Data degraded',
+          tone: providerOk ? ('positive' as const) : ('warning' as const),
+          detail: model.providerHealth.summary,
+        };
+        const journalRatio =
+          accountVm.activity.totalTrades > 0
+            ? Math.min(1, accountVm.activity.journalEntryCount / accountVm.activity.totalTrades)
+            : null;
+        const nextActions = computeNextBestActions({
+          hasTrades: accountVm.hasTrades,
+          totalTrades: accountVm.hero.tradeCount,
+          journalCoverageRatio: journalRatio,
+          concentrationLevel: accountVm.risk.concentrationLevel,
+          largestPositionLabel: accountVm.risk.largestPositionLabel,
+          cashDeploymentRatio: accountVm.risk.cashDeploymentRatio,
+          watchlistCount: accountVm.activity.watchlistCount,
+          staleData: model.degraded,
+          openPositions: accountVm.hero.positionCount,
+        }).slice(0, 4);
+        return <DashboardMissionControl vm={accountVm} nextActions={nextActions} freshness={freshness} />;
+      })()
+    : undefined;
 
   return (
     <DashboardShell
       hero={<DashboardHero model={model} />}
       kpis={<DashboardKpiStrip model={model} />}
+      topBand={missionControl}
       main={(
         <>
           <div className="dashboard-exec-main-grid__left">

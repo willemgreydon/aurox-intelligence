@@ -3,7 +3,7 @@ import { resolveInspectHref } from './inspect-link';
 
 describe('resolveInspectHref', () => {
   it('returns inspect link when symbol exists', () => {
-    expect(resolveInspectHref({ symbol: 'AAPL', assetClass: 'stock' })).toBe('/invest/stocks?symbol=AAPL');
+    expect(resolveInspectHref({ symbol: 'AAPL', assetClass: 'stock' })).toBe('/invest/stocks/AAPL');
   });
 
   it('returns null when symbol is missing', () => {

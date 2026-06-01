@@ -80,7 +80,12 @@
     "details": "详情",
     "live": "实时",
     "none": "无",
-    "simulationDisclosure": "仅用于模拟。不会执行真实资金、真实券商下单或受监管的订单路由。"
+    "simulationDisclosure": "仅用于模拟。不会执行真实资金、真实券商下单或受监管的订单路由。",
+    "overview": "概览",
+    "signals": "信号",
+    "risk": "风险",
+    "journal": "日志",
+    "data": "数据"
   },
   "auth": {
     "loginEyebrow": "Authentication",

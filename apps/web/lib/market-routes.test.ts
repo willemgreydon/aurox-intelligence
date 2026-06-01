@@ -2,16 +2,19 @@ import { describe, expect, it } from 'vitest';
 import { getAssetInspectHref } from './market-routes';
 
 describe('getAssetInspectHref', () => {
-  it('routes crypto symbols to invest crypto lane', () => {
-    expect(getAssetInspectHref({ symbol: 'BTC', assetClass: 'crypto' })).toBe('/invest/crypto?symbol=BTC');
+  // Asset classes with dedicated detail routes link to the per-symbol detail
+  // page (not the list page with a ?symbol= highlight) so clicks land on the
+  // exact asset, not a generic overview.
+  it('routes crypto symbols to the crypto detail page', () => {
+    expect(getAssetInspectHref({ symbol: 'BTC', assetClass: 'crypto' })).toBe('/invest/crypto/BTC');
   });
 
-  it('routes stocks to invest stocks lane', () => {
-    expect(getAssetInspectHref({ symbol: 'AAPL', assetClass: 'stock' })).toBe('/invest/stocks?symbol=AAPL');
+  it('routes stocks to the stock detail page', () => {
+    expect(getAssetInspectHref({ symbol: 'AAPL', assetClass: 'stock' })).toBe('/invest/stocks/AAPL');
   });
 
-  it('routes etfs to invest etf lane', () => {
-    expect(getAssetInspectHref({ symbol: 'SPY', assetClass: 'etf' })).toBe('/invest/etfs?symbol=SPY');
+  it('routes etfs to the etf detail page', () => {
+    expect(getAssetInspectHref({ symbol: 'SPY', assetClass: 'etf' })).toBe('/invest/etfs/SPY');
   });
 
   it('falls back to market for unknown classes', () => {

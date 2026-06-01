@@ -4,7 +4,9 @@ import { getSimulationJournalRowsForCurrentUser } from './simulation-journal-ser
 import {
   computeAccountInsights,
   computeActivitySummary,
+  computeConcentration,
   computeDailyPerformance,
+  computeJournalCoverageRate,
   computeMoneyflowSummary,
   computePeriodPnL,
   type DailyAccountPoint,
@@ -99,6 +101,25 @@ export type AccountIntelligenceViewModel = {
     bestAssetLabel: string | null;
     worstAssetLabel: string | null;
   };
+  /** Realized P/L contribution per traded asset, for a diverging-bar chart. */
+  assetContributions: {
+    hasData: boolean;
+    maxAbsolute: number;
+    items: Array<{ symbol: string; realizedPnl: number; label: string; tone: Tone }>;
+  };
+  /** Risk / concentration / behaviour intelligence from open positions. */
+  risk: {
+    hasPositions: boolean;
+    concentrationLevel: 'low' | 'moderate' | 'high' | 'unknown';
+    largestPositionLabel: string | null;
+    topThreeWeightLabel: string | null;
+    cashDeploymentLabel: string;
+    cashDeploymentRatio: number;
+    journalCoverageLabel: string;
+    bestUnrealizedLabel: string | null;
+    worstUnrealizedLabel: string | null;
+    warnings: string[];
+  };
   recentActions: Array<{
     id: string;
     label: string;
@@ -170,12 +191,43 @@ export async function getAccountIntelligenceViewModel(): Promise<AccountIntellig
   const activity = computeActivitySummary(transactions, journalEntryCount);
   const daily = computeDailyPerformance(snapshots);
   const insights = computeAccountInsights(daily, moneyflow, activity);
+  const positions = (workspace?.positions ?? []).map((p) => ({
+    symbol: p.symbol,
+    marketValue: p.marketValue,
+    unrealizedPnl: p.unrealizedPnl,
+  }));
+  const concentration = computeConcentration(positions);
+  const journalCoverage = computeJournalCoverageRate(activity.totalTrades, journalEntryCount);
+  const summary = workspace?.summary ?? null;
+
+  // Asset realized-P/L contributions (only assets actually sold).
+  const contributionItems = moneyflow.assetFlows
+    .filter((flow) => flow.sellVolume > 0)
+    .map((flow) => ({ symbol: flow.symbol, realizedPnl: flow.realizedPnl }))
+    .sort((a, b) => Math.abs(b.realizedPnl) - Math.abs(a.realizedPnl))
+    .slice(0, 8);
+  const maxAbsContribution = contributionItems.reduce((m, c) => Math.max(m, Math.abs(c.realizedPnl)), 0);
+
+  const cashDeploymentRatio =
+    summary && summary.equityValue > 0 ? Math.min(1, Math.max(0, summary.investedCapital / summary.equityValue)) : 0;
+
+  const riskWarnings: string[] = [];
+  if (concentration.level === 'high' && concentration.largestSymbol) {
+    riskWarnings.push(
+      `Your largest simulated exposure is ${concentration.largestSymbol} (${Math.round((concentration.largestWeight ?? 0) * 100)}% of positions). Review position weight before adding more.`,
+    );
+  }
+  if (cashDeploymentRatio > 0.85) {
+    riskWarnings.push('Cash deployment is high — most simulated capital is invested. Consider reviewing concentration.');
+  }
+  if (journalCoverage !== null && journalCoverage < 0.5 && activity.totalTrades >= 3) {
+    riskWarnings.push('Several paper trades have no journal rationale yet. Documenting decisions improves review quality.');
+  }
 
   const todayPnl = computePeriodPnL(daily, 1);
   const sevenDayPnl = computePeriodPnL(daily, 7);
   const thirtyDayPnl = computePeriodPnL(daily, 30);
 
-  const summary = workspace?.summary ?? null;
   const hasAccount = workspace !== null;
   const hasTrades = activity.totalTrades > 0;
 
@@ -264,6 +316,35 @@ export async function getAccountIntelligenceViewModel(): Promise<AccountIntellig
       reviewSuggestions: insights.reviewSuggestions,
       bestAssetLabel: insights.bestAsset ? `${insights.bestAsset.symbol} · ${signedCurrency(insights.bestAsset.realizedPnl, code)}` : null,
       worstAssetLabel: insights.worstAsset ? `${insights.worstAsset.symbol} · ${signedCurrency(insights.worstAsset.realizedPnl, code)}` : null,
+    },
+    assetContributions: {
+      hasData: contributionItems.length > 0,
+      maxAbsolute: maxAbsContribution,
+      items: contributionItems.map((c) => ({
+        symbol: c.symbol,
+        realizedPnl: c.realizedPnl,
+        label: signedCurrency(c.realizedPnl, code),
+        tone: toneOf(c.realizedPnl),
+      })),
+    },
+    risk: {
+      hasPositions: concentration.positionCount > 0,
+      concentrationLevel: concentration.level,
+      largestPositionLabel:
+        concentration.largestSymbol !== null && concentration.largestWeight !== null
+          ? `${concentration.largestSymbol} · ${Math.round(concentration.largestWeight * 100)}%`
+          : null,
+      topThreeWeightLabel: concentration.topThreeWeight !== null ? `${Math.round(concentration.topThreeWeight * 100)}%` : null,
+      cashDeploymentLabel: `${Math.round(cashDeploymentRatio * 100)}%`,
+      cashDeploymentRatio,
+      journalCoverageLabel: journalCoverage !== null ? `${Math.round(journalCoverage * 100)}%` : '—',
+      bestUnrealizedLabel: concentration.bestUnrealized
+        ? `${concentration.bestUnrealized.symbol} · ${signedCurrency(concentration.bestUnrealized.unrealizedPnl, code)}`
+        : null,
+      worstUnrealizedLabel: concentration.worstUnrealized
+        ? `${concentration.worstUnrealized.symbol} · ${signedCurrency(concentration.worstUnrealized.unrealizedPnl, code)}`
+        : null,
+      warnings: riskWarnings,
     },
     recentActions,
   };

@@ -1,10 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { formatChartMonthRange } from '../../lib/chart-date-format';
 import { decodeHtmlEntities } from '../../lib/text/decode-html-entities';
 import {
-  MARKET_GRAPH_TIMEFRAME_ORDER,
   MARKET_GRAPH_TIMEFRAMES,
   formatAxisTimestamp,
   formatTooltipTimestamp,
@@ -16,6 +16,7 @@ import {
 } from '../../lib/market-graph-timeframes';
 import { getQuoteRefreshIntervalMs, shouldPollQuotes } from '../../lib/market-refresh';
 import type { MarketGraphDataMeta } from '../../server/services/market-graph-service';
+import { TimeframeSelect } from './timeframe-select';
 
 type HistoryPoint = {
   timestamp: string;
@@ -91,6 +92,10 @@ type HoverState = {
   index: number;
   panelX: number;
   panelY: number;
+  // Canvas size captured at hover time (in the event handler, where reading the
+  // ref is safe) so tooltip clamping never reads canvasRef during render.
+  canvasWidth: number;
+  canvasHeight: number;
 };
 
 // --- Pure geometry helpers ---
@@ -593,13 +598,13 @@ export function MarketGraphWorkspace({
 
   const tooltipWidth = 188;
   const tooltipHeight = graphType === 'candles' ? 140 : 108;
-  const canvasWidth = canvasRef.current?.clientWidth ?? 980;
-  const canvasHeight = canvasRef.current?.clientHeight ?? 420;
+  // Tooltip clamping uses the canvas size captured in the hover handler (where
+  // reading the ref is allowed), so nothing reads canvasRef during render.
   const tooltipLeft = hoverState
-    ? Math.max(8, Math.min(hoverState.panelX + 14, canvasWidth - tooltipWidth - 8))
+    ? Math.max(8, Math.min(hoverState.panelX + 14, hoverState.canvasWidth - tooltipWidth - 8))
     : 8;
   const tooltipTop = hoverState
-    ? Math.max(8, Math.min(hoverState.panelY - tooltipHeight - 12, canvasHeight - tooltipHeight - 8))
+    ? Math.max(8, Math.min(hoverState.panelY - tooltipHeight - 12, hoverState.canvasHeight - tooltipHeight - 8))
     : 8;
 
   // Y-axis ticks: based on padded price bounds.
@@ -648,7 +653,13 @@ export function MarketGraphWorkspace({
     const canvasRect = canvasRef.current?.getBoundingClientRect();
     const panelX = canvasRect ? event.clientX - canvasRect.left : 0;
     const panelY = canvasRect ? event.clientY - canvasRect.top : 0;
-    setHoverState({ index: nextIndex, panelX, panelY });
+    setHoverState({
+      index: nextIndex,
+      panelX,
+      panelY,
+      canvasWidth: canvasRect?.width ?? 980,
+      canvasHeight: canvasRect?.height ?? 420,
+    });
   }
 
   function handleChartPointerMove(event: React.PointerEvent<SVGSVGElement>) {
@@ -660,7 +671,13 @@ export function MarketGraphWorkspace({
     const canvasRect = canvasRef.current?.getBoundingClientRect();
     const panelX = canvasRect ? event.clientX - canvasRect.left : 0;
     const panelY = canvasRect ? event.clientY - canvasRect.top : 0;
-    setHoverState({ index: nextIndex, panelX, panelY });
+    setHoverState({
+      index: nextIndex,
+      panelX,
+      panelY,
+      canvasWidth: canvasRect?.width ?? 980,
+      canvasHeight: canvasRect?.height ?? 420,
+    });
   }
 
   function handleChartMouseLeave() {
@@ -729,41 +746,15 @@ export function MarketGraphWorkspace({
 
               <div className="market-graph__toolbar-zone market-graph__toolbar-zone--center">
                 <div className="chart-toolbar__group market-graph__control-group" aria-label={labels.timeframe}>
-                  <div className="chart-toolbar market-graph__pill-group">
-                    {MARKET_GRAPH_TIMEFRAME_ORDER.map((tfId) => {
-                      const tfConfig = MARKET_GRAPH_TIMEFRAMES[tfId];
-                      const isActive = tfId === timeframe;
-                      const isIntraday = tfId === '1m' || tfId === '1h';
-                      const isDisabled = isIntraday && meta !== undefined && meta.actualResolution === 'daily';
-                      const pointCount = isActive ? visibleMeta.pointCount : null;
-                      return (
-                        <button
-                          key={tfId}
-                          type="button"
-                          className={[
-                            'control-pill market-graph__pill',
-                            isActive ? 'market-graph__pill--active' : '',
-                            isDisabled ? 'market-graph__pill--disabled' : '',
-                          ]
-                            .join(' ')
-                            .trim()}
-                          aria-pressed={isActive}
-                          aria-label={`${tfConfig.displayLabel} range`}
-                          title={
-                            isDisabled
-                              ? 'Intraday unavailable from configured provider.'
-                              : tfConfig.displayLabel
-                          }
-                          onClick={() => setTimeframe(tfId)}
-                        >
-                          {tfConfig.label}
-                          {isActive && pointCount !== null
-                            ? <span className="market-graph__pill-meta">{pointCount}</span>
-                            : null}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <TimeframeSelect
+                    value={timeframe}
+                    onChange={setTimeframe}
+                    label={labels.timeframe}
+                    activePointCount={visibleMeta.pointCount}
+                    isDisabled={(tfId) =>
+                      (tfId === '1m' || tfId === '1h') && meta !== undefined && meta.actualResolution === 'daily'
+                    }
+                  />
                 </div>
               </div>
 
@@ -1251,7 +1242,7 @@ export function MarketGraphWorkspace({
             {modulesOpen.safety ? (
             <>
             <p>Simulation only. No live execution and no real brokerage routing.</p>
-            <a href="/invest/simulation" className="button button--secondary">Open simulation</a>
+            <Link href="/invest/simulation" className="button button--secondary">Open simulation</Link>
             </>
             ) : null}
           </section>
@@ -1263,9 +1254,9 @@ export function MarketGraphWorkspace({
             </button>
             {modulesOpen.cta ? (
             <div className="broker-observer__cta-grid">
-              <a href="/observe" className="button button--secondary">Open full observer</a>
-              <a href="/invest/simulation" className="button button--secondary">Open simulation</a>
-              <a href="/signals" className="button button--secondary">Open signals</a>
+              <Link href="/observe" className="button button--secondary">Open full observer</Link>
+              <Link href="/invest/simulation" className="button button--secondary">Open simulation</Link>
+              <Link href="/signals" className="button button--secondary">Open signals</Link>
             </div>
             ) : null}
           </section>

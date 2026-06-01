@@ -80,7 +80,12 @@
     "details": "Details",
     "live": "Live",
     "none": "None",
-    "simulationDisclosure": "Simulation only. No real money, brokerage execution, or regulated order routing is performed."
+    "simulationDisclosure": "Simulation only. No real money, brokerage execution, or regulated order routing is performed.",
+    "overview": "अवलोकन",
+    "signals": "संकेत",
+    "risk": "जोखिम",
+    "journal": "जर्नल",
+    "data": "डेटा"
   },
   "auth": {
     "loginEyebrow": "Authentication",

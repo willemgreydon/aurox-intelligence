@@ -80,7 +80,12 @@
     "details": "Details",
     "live": "Live",
     "none": "None",
-    "simulationDisclosure": "Simulation only. No real money, brokerage execution, or regulated order routing is performed."
+    "simulationDisclosure": "Simulation only. No real money, brokerage execution, or regulated order routing is performed.",
+    "overview": "개요",
+    "signals": "신호",
+    "risk": "위험",
+    "journal": "저널",
+    "data": "데이터"
   },
   "auth": {
     "loginEyebrow": "Authentication",

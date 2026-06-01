@@ -283,6 +283,83 @@ export type AccountInsightSummary = {
   reviewSuggestions: string[];
 };
 
+// ── Concentration / risk (from open positions) ──────────────────────────────
+
+export type AnalyticsPosition = {
+  symbol: string;
+  marketValue: number;
+  unrealizedPnl: number;
+};
+
+export type ConcentrationSummary = {
+  positionCount: number;
+  largestSymbol: string | null;
+  largestWeight: number | null; // 0..1
+  topThreeWeight: number | null; // 0..1
+  /** Herfindahl–Hirschman index of position weights (0..1; higher = more concentrated). */
+  hhi: number | null;
+  level: 'low' | 'moderate' | 'high' | 'unknown';
+  bestUnrealized: AnalyticsPosition | null;
+  worstUnrealized: AnalyticsPosition | null;
+};
+
+export function computeConcentration(positions: AnalyticsPosition[]): ConcentrationSummary {
+  const live = positions.filter((p) => Number.isFinite(p.marketValue) && p.marketValue > 0);
+  const total = live.reduce((sum, p) => sum + p.marketValue, 0);
+
+  if (live.length === 0 || total <= 0) {
+    return {
+      positionCount: live.length,
+      largestSymbol: null,
+      largestWeight: null,
+      topThreeWeight: null,
+      hhi: null,
+      level: 'unknown',
+      bestUnrealized: null,
+      worstUnrealized: null,
+    };
+  }
+
+  const weighted = live
+    .map((p) => ({ position: p, weight: p.marketValue / total }))
+    .sort((a, b) => b.weight - a.weight);
+
+  const largestWeight = weighted[0]!.weight;
+  const topThreeWeight = weighted.slice(0, 3).reduce((s, w) => s + w.weight, 0);
+  const hhi = weighted.reduce((s, w) => s + w.weight * w.weight, 0);
+
+  const level: ConcentrationSummary['level'] =
+    largestWeight >= 0.5 || hhi >= 0.5 ? 'high' : largestWeight >= 0.3 || hhi >= 0.3 ? 'moderate' : 'low';
+
+  let bestUnrealized: AnalyticsPosition | null = null;
+  let worstUnrealized: AnalyticsPosition | null = null;
+  for (const p of live) {
+    if (!bestUnrealized || p.unrealizedPnl > bestUnrealized.unrealizedPnl) bestUnrealized = p;
+    if (!worstUnrealized || p.unrealizedPnl < worstUnrealized.unrealizedPnl) worstUnrealized = p;
+  }
+
+  return {
+    positionCount: live.length,
+    largestSymbol: weighted[0]!.position.symbol,
+    largestWeight,
+    topThreeWeight,
+    hhi,
+    level,
+    bestUnrealized,
+    worstUnrealized,
+  };
+}
+
+/**
+ * Estimated journal coverage: share of simulated trades that have a recorded
+ * journal entry. This is an estimate — journal entries are counted independently
+ * of trades, so the ratio is clamped to [0, 1].
+ */
+export function computeJournalCoverageRate(totalTrades: number, journalEntryCount: number): number | null {
+  if (totalTrades <= 0) return null;
+  return Math.min(1, Math.max(0, journalEntryCount / totalTrades));
+}
+
 export function computeAccountInsights(
   daily: DailyAccountPoint[],
   moneyflow: MoneyflowSummary,

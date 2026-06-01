@@ -10048,3 +10048,397 @@ code,
 @media (max-width: 720px) {
   .account-two-col { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Compact timeframe dropdown (replaces the wide 1m…2Y pill group in dense
+   chart/cockpit headers). Inherits the existing .market-graph__selector look.
+   ────────────────────────────────────────────────────────────────────────── */
+.market-graph__selector--timeframe { min-width: 0; }
+
+.market-graph__timeframe-control {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.market-graph__timeframe-input {
+  min-width: 96px;
+  max-width: 150px;
+}
+
+.market-graph__timeframe-meta {
+  font-family: var(--font-family-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.62rem;
+  color: var(--text-tertiary);
+  padding: 0.05rem 0.3rem;
+  border-radius: var(--radius-sm);
+  background: var(--surface-hover);
+}
+
+/* ── Account timeline range buttons + asset contribution bars + risk badge ── */
+.account-timeline__head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: space-between;
+  align-items: center;
+}
+.account-timeline__ranges { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.account-range-btn {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.22rem 0.55rem;
+  border-radius: var(--radius-sm);
+  border: var(--border-width-thin) solid var(--border-default);
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.account-range-btn:hover { color: var(--text-primary); }
+.account-range-btn--active {
+  color: var(--action-primary-text);
+  background: var(--action-primary-bg);
+  border-color: var(--action-primary-bg);
+}
+
+.account-contrib-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.account-contrib {
+  display: grid;
+  grid-template-columns: 72px 1fr auto;
+  gap: var(--space-2);
+  align-items: center;
+}
+.account-contrib__symbol { font-family: var(--font-family-mono); font-weight: 600; font-size: 0.8rem; }
+.account-contrib__track {
+  height: 10px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-hover);
+  overflow: hidden;
+}
+.account-contrib__bar { display: block; height: 100%; border-radius: var(--radius-pill); }
+.account-contrib__bar--positive { background: var(--chart-positive); }
+.account-contrib__bar--negative { background: var(--chart-negative); }
+.account-contrib__bar--neutral { background: var(--text-tertiary); }
+.account-contrib__value { font-family: var(--font-family-mono); font-variant-numeric: tabular-nums; font-size: 0.78rem; text-align: right; }
+
+.account-risk-badge {
+  display: inline-block;
+  text-transform: capitalize;
+  font-size: 0.72rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: var(--radius-pill);
+  border: var(--border-width-thin) solid var(--border-default);
+}
+.account-risk-badge--low { color: var(--status-success-text); border-color: var(--status-success-text); }
+.account-risk-badge--moderate { color: var(--status-warning-text); border-color: var(--status-warning); }
+.account-risk-badge--high { color: var(--status-danger-text); border-color: var(--status-danger-text); }
+.account-risk-badge--unknown { color: var(--text-tertiary); }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Dashboard Mission Control band — personal/simulation intelligence layer.
+   Uses existing tokens; motion is opt-out via prefers-reduced-motion.
+   ────────────────────────────────────────────────────────────────────────── */
+.mission-control { display: flex; flex-direction: column; gap: var(--space-4); }
+.mission-control__head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.mission-control__title { font-size: var(--font-size-2xl, 1.5rem); margin: var(--space-1) 0 0; }
+.mission-control__subtitle { color: var(--text-tertiary); font-size: 0.78rem; margin: 0; max-width: 60ch; }
+.mission-control__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.mission-control__freshness {
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-pill);
+  border: var(--border-width-thin) solid var(--border-default);
+}
+.mission-control__freshness--positive { color: var(--status-success-text); border-color: var(--status-success-text); }
+.mission-control__freshness--warning { color: var(--status-warning-text); border-color: var(--status-warning); }
+.mission-control__freshness--neutral { color: var(--text-tertiary); }
+
+.mission-control__kpis { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+
+.mission-control__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.mission-action-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.mission-action {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-3);
+  border: var(--border-width-thin) solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+}
+.mission-action--primary { border-color: var(--action-primary-bg); }
+.mission-action--review { border-color: var(--status-warning); }
+.mission-action__text { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+.mission-action__text strong { font-size: 0.88rem; }
+.mission-action__text span { font-size: 0.78rem; color: var(--text-secondary); }
+
+.mission-mini { display: flex; flex-direction: column; gap: var(--space-2); }
+.mission-mini__row { display: flex; justify-content: space-between; gap: var(--space-2); align-items: baseline; font-size: 0.82rem; }
+.mission-mini__row span { color: var(--text-tertiary); }
+.mission-mini__row strong { font-family: var(--font-family-mono); font-variant-numeric: tabular-nums; }
+
+.mission-buysell {
+  display: flex;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  margin-top: var(--space-1);
+  background: var(--surface-hover);
+}
+.mission-buysell__buy { background: var(--chart-neutral); }
+.mission-buysell__sell { background: var(--chart-positive); }
+
+.mission-link {
+  display: inline-block;
+  margin-top: var(--space-3);
+  font-size: 0.78rem;
+  color: var(--text-accent);
+}
+.mission-link:hover { color: var(--text-primary); }
+
+/* Calm entrance stagger — disabled for reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .mission-stagger {
+    opacity: 0;
+    transform: translateY(6px);
+    animation: mission-stagger-in var(--duration-base, 240ms) var(--ease-standard, ease) forwards;
+    animation-delay: calc(var(--stagger-index, 0) * 60ms);
+  }
+  @keyframes mission-stagger-in {
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
+
+@media (max-width: 720px) {
+  .mission-control__grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Dashboard / account motion + information-graphics polish.
+   All motion is gated behind prefers-reduced-motion: no-preference.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* Daily P/L bar strip */
+.account-timeline__bars-label {
+  margin: var(--space-2) 0 0;
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-tertiary);
+}
+.account-timeline__bars {
+  width: 100%;
+  height: 52px;
+  display: block;
+}
+
+/* Animated meters/bars — width/transform transitions feel like movement. */
+.account-contrib__bar,
+.mission-buysell__buy,
+.mission-buysell__sell,
+.pulse-meter__fill,
+.pulse-range__marker { transition: width var(--duration-base, 240ms) var(--ease-standard, ease); }
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Value line draws in (pathLength normalized to 1). */
+  .account-timeline__line {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: account-line-draw 700ms var(--ease-standard, ease) forwards;
+  }
+  @keyframes account-line-draw { to { stroke-dashoffset: 0; } }
+
+  /* Daily P/L bars grow from the baseline, gently staggered. */
+  .account-timeline__bar {
+    transform-box: fill-box;
+    transform-origin: center;
+    transform: scaleY(0);
+    animation: account-bar-grow 320ms var(--ease-standard, ease) forwards;
+    animation-delay: calc(var(--bar-index, 0) * 12ms);
+  }
+  @keyframes account-bar-grow { to { transform: scaleY(1); } }
+
+  /* Contribution bars grow horizontally. */
+  .account-contrib__bar {
+    transform-origin: left center;
+    animation: account-contrib-grow 360ms var(--ease-standard, ease) forwards;
+  }
+  @keyframes account-contrib-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+  /* Mission Control card reveal stagger. */
+  .mission-control__performance,
+  .mission-control__grid > * {
+    opacity: 0;
+    transform: translateY(8px);
+    animation: mission-card-reveal var(--duration-base, 240ms) var(--ease-standard, ease) forwards;
+  }
+  .mission-control__performance { animation-delay: 40ms; }
+  .mission-control__grid > *:nth-child(1) { animation-delay: 80ms; }
+  .mission-control__grid > *:nth-child(2) { animation-delay: 120ms; }
+  .mission-control__grid > *:nth-child(3) { animation-delay: 160ms; }
+  .mission-control__grid > *:nth-child(4) { animation-delay: 200ms; }
+  @keyframes mission-card-reveal { to { opacity: 1; transform: translateY(0); } }
+}
+
+/* Hover lift for interactive cards (transform-only; no layout shift). */
+.mission-control__grid > .surface,
+.mission-control__performance.surface {
+  transition: transform var(--duration-fast, 140ms) var(--ease-standard, ease),
+    border-color var(--duration-fast, 140ms) var(--ease-standard, ease);
+}
+@media (prefers-reduced-motion: no-preference) and (hover: hover) {
+  .mission-control__grid > .surface:hover,
+  .mission-control__performance.surface:hover { transform: translateY(-2px); }
+}
+.mission-action {
+  transition: transform var(--duration-fast, 140ms) var(--ease-standard, ease),
+    border-color var(--duration-fast, 140ms) var(--ease-standard, ease);
+}
+@media (prefers-reduced-motion: no-preference) and (hover: hover) {
+  .mission-action:hover { transform: translateY(-1px); }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Layout polish: dashboard page container, wider account KPI grid, and the
+   reusable numeric-bubble indicator system. All theme-aware (token-driven).
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* Responsive page shell for the executive dashboard. Slightly wider than the
+   reading shell-container because the exec grid is information-dense. Side
+   gutters scale 16px (mobile) → ~24px (tablet) → ~36px (desktop). */
+.aurox-page-container,
+.dashboard-page-container {
+  width: min(100% - clamp(2rem, 5vw, 4.5rem), 82.5rem);
+  margin-inline: auto;
+}
+
+/* Wider money/value KPI grid for the account + mission-control surfaces.
+   Never four-up for large value cards: 3-up desktop → 2-up tablet → 1-up
+   mobile, with a comfortable minimum so values/descriptions never crowd.
+   Applied as a modifier alongside .analytics-strip (overrides its 4-col rule
+   by source order). Named aliases exist for reuse + static guards. */
+.account-metric-grid,
+.account-overview__metrics,
+.simulation-summary-grid,
+.analytics-strip--wide {
+  display: grid;
+  gap: var(--space-5);
+  margin-top: var(--space-6);
+  grid-template-columns: repeat(3, minmax(240px, 1fr));
+}
+.account-metric-grid > *,
+.account-overview__metrics > *,
+.simulation-summary-grid > *,
+.analytics-strip--wide > * {
+  min-width: 0;
+}
+
+@media (max-width: 1100px) {
+  .account-metric-grid,
+  .account-overview__metrics,
+  .simulation-summary-grid,
+  .analytics-strip--wide {
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .account-metric-grid,
+  .account-overview__metrics,
+  .simulation-summary-grid,
+  .analytics-strip--wide {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Reusable numeric bubble — small rounded count/status indicators (candle
+   counts, asset-flow counts, alert counters …). NOT for money values or
+   large KPI numbers. Theme-aware via the --bubble-* custom properties. */
+.num-bubble {
+  --bubble-bg: color-mix(in srgb, var(--surface-base) 78%, transparent);
+  --bubble-fg: var(--text-secondary);
+  --bubble-border: var(--border-default);
+  --bubble-shadow: 0 1px 2px color-mix(in srgb, var(--text-primary) 8%, transparent);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.65rem;
+  height: 1.65rem;
+  padding: 0 0.55rem;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-family-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  border: var(--border-width-thin) solid var(--bubble-border);
+  background: var(--bubble-bg);
+  color: var(--bubble-fg);
+  box-shadow: var(--bubble-shadow);
+}
+
+.num-bubble--neutral {
+  --bubble-bg: color-mix(in srgb, var(--surface-base) 78%, transparent);
+  --bubble-fg: var(--text-secondary);
+  --bubble-border: var(--border-default);
+}
+.num-bubble--info {
+  --bubble-bg: var(--status-info-bg);
+  --bubble-fg: var(--status-info-text);
+  --bubble-border: color-mix(in srgb, var(--status-info-text) 40%, transparent);
+}
+.num-bubble--success {
+  --bubble-bg: var(--status-success-bg);
+  --bubble-fg: var(--status-success-text);
+  --bubble-border: color-mix(in srgb, var(--status-success-text) 40%, transparent);
+}
+.num-bubble--warning {
+  --bubble-bg: var(--status-warning-bg);
+  --bubble-fg: var(--status-warning-text);
+  --bubble-border: color-mix(in srgb, var(--status-warning-text) 40%, transparent);
+}
+.num-bubble--danger {
+  --bubble-bg: var(--status-danger-bg);
+  --bubble-fg: var(--status-danger-text);
+  --bubble-border: color-mix(in srgb, var(--status-danger-text) 40%, transparent);
+}
+.num-bubble--muted {
+  --bubble-bg: color-mix(in srgb, var(--surface-base) 60%, transparent);
+  --bubble-fg: var(--text-tertiary);
+  --bubble-border: var(--border-subtle);
+  --bubble-shadow: none;
+}
+
+/* Size + flow modifiers. */
+.num-bubble--small {
+  min-width: 1.35rem;
+  height: 1.35rem;
+  padding: 0 0.4rem;
+  font-size: 0.65rem;
+}
+.num-bubble--inline {
+  min-width: 1.35rem;
+  height: 1.25rem;
+  padding: 0 0.4rem;
+  font-size: 0.66rem;
+  font-weight: 600;
+  vertical-align: baseline;
+}
