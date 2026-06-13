@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { cn } from '../../lib/utils';
 import type { MarketTickerViewModel } from '../../server/mappers/market-ticker-mapper';
 
@@ -10,6 +11,15 @@ type MarketTickerProps = {
 };
 
 type MarketTickerDisplayItem = MarketTickerViewModel['items'][number];
+
+function tickerItemHref(item: MarketTickerDisplayItem): string {
+  const encoded = encodeURIComponent(item.symbol);
+  const ac = item.assetClass?.toLowerCase();
+  if (ac === 'crypto' || ac === 'digital_asset') return `/invest/crypto?symbol=${encoded}`;
+  if (ac === 'etf') return `/invest/etfs?symbol=${encoded}`;
+  if (ac === 'stock' || ac === 'equity' || ac === 'index') return `/invest/stocks/${encoded}`;
+  return `/market?symbol=${encoded}`;
+}
 
 export function MarketTicker({ ticker, labels }: MarketTickerProps) {
   const displayItems: MarketTickerDisplayItem[] = ticker.items;
@@ -38,7 +48,14 @@ export function MarketTicker({ ticker, labels }: MarketTickerProps) {
       <div className="market-ticker__track">
         <div className="market-ticker__marquee">
           {displayItems.map((item) => (
-            <div key={item.symbol} className="market-ticker__item" title={item.source ?? undefined}>
+            <Link
+              key={item.symbol}
+              href={tickerItemHref(item)}
+              className="market-ticker__item market-ticker__item--link"
+              title={`${item.label}${item.source ? ` · ${item.source}` : ''}`}
+              aria-label={`${item.label} — ${item.priceLabel} ${item.changeLabel}`}
+              prefetch={false}
+            >
               <span className="market-ticker__symbol">{item.label}</span>
               <span className="market-ticker__price">{item.priceLabel}</span>
               <span
@@ -52,7 +69,7 @@ export function MarketTicker({ ticker, labels }: MarketTickerProps) {
                 {item.changeLabel}
               </span>
               <span className="market-ticker__meta">{item.freshnessLabel}</span>
-            </div>
+            </Link>
           ))}
         </div>
       </div>

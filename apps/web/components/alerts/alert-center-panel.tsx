@@ -1,18 +1,43 @@
-﻿'use client';
+'use client';
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useTransition } from 'react';
+import { useTransition, useState } from 'react';
 import type { AlertCenterViewModel } from '../../server/services/alert-center-service';
 
 type Props = {
   model: AlertCenterViewModel;
 };
 
+type AlertGroup = keyof AlertCenterViewModel['grouped'];
+
+const SEVERITY_META: Record<AlertGroup, { tone: string; icon: string; label: string }> = {
+  CRITICAL: { tone: 'danger',  icon: '⚑', label: 'Critical' },
+  WARNING:  { tone: 'warning', icon: '▲', label: 'Warning' },
+  WATCH:    { tone: 'info',    icon: '◎', label: 'Watch' },
+  INFO:     { tone: 'success', icon: '●', label: 'Info' },
+};
+
+function timeAgo(isoDate: string): string {
+  const diff = Date.now() - new Date(isoDate).getTime();
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 1)  return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24)  return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
 export function AlertCenterPanel({ model }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
+  const [expandedGroups, setExpandedGroups] = useState<Record<AlertGroup, boolean>>({
+    CRITICAL: true,
+    WARNING:  true,
+    WATCH:    false,
+    INFO:     false,
+  });
 
   function setFilter(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -33,102 +58,358 @@ export function AlertCenterPanel({ model }: Props) {
     router.refresh();
   }
 
-  const groups: Array<keyof AlertCenterViewModel['grouped']> = ['CRITICAL', 'WARNING', 'WATCH', 'INFO'];
-  const totalAlerts = groups.reduce((sum, group) => sum + model.grouped[group].length, 0);
-  const providerAlerts = groups.reduce((sum, group) => sum + model.grouped[group].filter((item) => item.source === 'provider').length, 0);
+  function toggleGroup(group: AlertGroup) {
+    setExpandedGroups((prev) => ({ ...prev, [group]: !prev[group] }));
+  }
+
+  const groups: AlertGroup[] = ['CRITICAL', 'WARNING', 'WATCH', 'INFO'];
+  const totalAlerts = groups.reduce((sum, g) => sum + model.grouped[g].length, 0);
+  const providerAlerts = groups.reduce(
+    (sum, g) => sum + model.grouped[g].filter((a) => a.source === 'provider').length,
+    0,
+  );
 
   return (
     <>
+      {/* KPI rail */}
       <section className="dashboard-section dashboard-section--compact">
-        <div className="observation-regime-grid alerts-kpi-rail">
-          <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">Open alerts</div><div className="analytics-stat__value">{model.summary.open}</div></article>
-          <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">Critical</div><div className="analytics-stat__value">{model.summary.critical}</div></article>
-          <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">Warning</div><div className="analytics-stat__value">{model.summary.warning}</div></article>
-          <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">Watch</div><div className="analytics-stat__value">{model.grouped.WATCH.length}</div></article>
-          <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">Snoozed</div><div className="analytics-stat__value">{model.summary.snoozed}</div></article>
-          <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">Provider alerts</div><div className="analytics-stat__value">{providerAlerts}</div></article>
-          <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">Resolved today</div><div className="analytics-stat__value">{model.summary.resolvedToday}</div></article>
+        <div className="shell-container">
+          <div className="alert-kpi-rail">
+            <article className="alert-kpi-card alert-kpi-card--open">
+              <span className="alert-kpi-card__icon" aria-hidden="true">☰</span>
+              <div>
+                <div className="alert-kpi-card__value">{model.summary.open}</div>
+                <div className="alert-kpi-card__label">Open</div>
+              </div>
+            </article>
+            <article className="alert-kpi-card alert-kpi-card--critical">
+              <span className="alert-kpi-card__icon" aria-hidden="true">⚑</span>
+              <div>
+                <div className="alert-kpi-card__value">{model.summary.critical}</div>
+                <div className="alert-kpi-card__label">Critical</div>
+              </div>
+            </article>
+            <article className="alert-kpi-card alert-kpi-card--warning">
+              <span className="alert-kpi-card__icon" aria-hidden="true">▲</span>
+              <div>
+                <div className="alert-kpi-card__value">{model.summary.warning}</div>
+                <div className="alert-kpi-card__label">Warning</div>
+              </div>
+            </article>
+            <article className="alert-kpi-card alert-kpi-card--watch">
+              <span className="alert-kpi-card__icon" aria-hidden="true">◎</span>
+              <div>
+                <div className="alert-kpi-card__value">{model.grouped.WATCH.length}</div>
+                <div className="alert-kpi-card__label">Watch</div>
+              </div>
+            </article>
+            <article className="alert-kpi-card alert-kpi-card--info">
+              <span className="alert-kpi-card__icon" aria-hidden="true">◑</span>
+              <div>
+                <div className="alert-kpi-card__value">{model.grouped.INFO.length}</div>
+                <div className="alert-kpi-card__label">Info</div>
+              </div>
+            </article>
+            <article className="alert-kpi-card alert-kpi-card--snoozed">
+              <span className="alert-kpi-card__icon" aria-hidden="true">⏱</span>
+              <div>
+                <div className="alert-kpi-card__value">{model.summary.snoozed}</div>
+                <div className="alert-kpi-card__label">Snoozed</div>
+              </div>
+            </article>
+            <article className="alert-kpi-card alert-kpi-card--provider">
+              <span className="alert-kpi-card__icon" aria-hidden="true">⚡</span>
+              <div>
+                <div className="alert-kpi-card__value">{providerAlerts}</div>
+                <div className="alert-kpi-card__label">Provider</div>
+              </div>
+            </article>
+            <article className="alert-kpi-card alert-kpi-card--resolved">
+              <span className="alert-kpi-card__icon" aria-hidden="true">✓</span>
+              <div>
+                <div className="alert-kpi-card__value">{model.summary.resolvedToday}</div>
+                <div className="alert-kpi-card__label">Resolved today</div>
+              </div>
+            </article>
+          </div>
+
+          {model.persistenceDegraded ? (
+            <div className="alert-degraded-banner" role="alert">
+              <span aria-hidden="true">⚠</span>
+              Alert persistence degraded. Showing runtime fallback data. Actions will not persist.
+            </div>
+          ) : null}
         </div>
-        {model.persistenceDegraded ? <p className="text-muted">Alert persistence degraded. Showing fallback data when available.</p> : null}
       </section>
 
-      <section className="dashboard-section dashboard-section--compact dashboard-section--tinted">
-        <article className="analytics-card">
-          <div className="analytics-card__header">
-            <div>
-              <div className="section__eyebrow">Operator Command Bar</div>
-              <h3>Filter and route alerts</h3>
+      {/* Command bar */}
+      <section className="dashboard-section dashboard-section--compact">
+        <div className="shell-container">
+          <div className="alert-command-bar">
+            <div className="alert-command-bar__filters">
+              <select
+                className="alert-command-bar__select"
+                value={model.filters.severity}
+                onChange={(e) => setFilter('severity', e.target.value)}
+                aria-label="Filter by severity"
+              >
+                <option value="all">All severities</option>
+                <option value="CRITICAL">Critical</option>
+                <option value="WARNING">Warning</option>
+                <option value="WATCH">Watch</option>
+                <option value="INFO">Info</option>
+              </select>
+              <select
+                className="alert-command-bar__select"
+                value={model.filters.category}
+                onChange={(e) => setFilter('category', e.target.value)}
+                aria-label="Filter by category"
+              >
+                <option value="all">All categories</option>
+                <option value="market">Market</option>
+                <option value="signal">Signal</option>
+                <option value="anomaly">Anomaly</option>
+                <option value="provider">Provider</option>
+                <option value="liquidity">Liquidity</option>
+                <option value="volatility">Volatility</option>
+                <option value="portfolio">Portfolio</option>
+                <option value="simulation">Simulation</option>
+                <option value="cross_asset">Cross-asset</option>
+              </select>
+              <select
+                className="alert-command-bar__select"
+                value={model.filters.assetClass}
+                onChange={(e) => setFilter('assetClass', e.target.value)}
+                aria-label="Filter by asset class"
+              >
+                <option value="all">All asset classes</option>
+                <option value="stock">Stocks</option>
+                <option value="etf">ETFs</option>
+                <option value="crypto">Crypto</option>
+                <option value="other">Other</option>
+              </select>
+              <select
+                className="alert-command-bar__select"
+                value={model.filters.source}
+                onChange={(e) => setFilter('source', e.target.value)}
+                aria-label="Filter by source"
+              >
+                <option value="all">All sources</option>
+                <option value="signal">Signal</option>
+                <option value="news">News</option>
+                <option value="risk">Risk</option>
+                <option value="provider">Provider</option>
+                <option value="portfolio">Portfolio</option>
+                <option value="anomaly">Anomaly</option>
+                <option value="broker">Broker</option>
+                <option value="simulation">Simulation</option>
+                <option value="regime">Regime</option>
+                <option value="relationship">Relationship</option>
+              </select>
+              <select
+                className="alert-command-bar__select"
+                value={model.filters.status}
+                onChange={(e) => setFilter('status', e.target.value)}
+                aria-label="Filter by status"
+              >
+                <option value="all">All statuses</option>
+                <option value="OPEN">Open</option>
+                <option value="READ">Read</option>
+                <option value="PINNED">Pinned</option>
+                <option value="SNOOZED">Snoozed</option>
+                <option value="DISMISSED">Dismissed</option>
+                <option value="RESOLVED">Resolved</option>
+              </select>
+              <input
+                className="alert-command-bar__search"
+                defaultValue={model.filters.search}
+                placeholder="Search symbol or title…"
+                onBlur={(e) => setFilter('search', e.target.value)}
+                aria-label="Search alerts"
+              />
             </div>
-            <div className="analytics-card__action-grid">
-              <button type="button" className="button button--secondary" onClick={() => startTransition(() => router.push('/alerts'))}>Clear filters</button>
-              <Link href="/observe" className="button button--secondary">Open Observer</Link>
-              <span className="button button--secondary" aria-disabled="true">Open Replay</span>
+            <div className="alert-command-bar__actions">
+              <button
+                type="button"
+                className="button button--secondary"
+                onClick={() => startTransition(() => router.push('/alerts'))}
+                disabled={isPending}
+              >
+                Clear filters
+              </button>
+              <Link href="/observe" className="button button--secondary">Observer</Link>
+              <Link href="/signals" className="button button--secondary">Signals</Link>
             </div>
           </div>
-          <div className="analytics-card__body">
-            <div className="market-pagination__actions alerts-command-bar" style={{ marginBottom: '0.75rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-              <select className="market-graph__selector-input" value={model.filters.severity} onChange={(event) => setFilter('severity', event.target.value)}>
-                <option value="all">All severities</option><option value="CRITICAL">Critical</option><option value="WARNING">Warning</option><option value="WATCH">Watch</option><option value="INFO">Info</option>
-              </select>
-              <select className="market-graph__selector-input" value={model.filters.category} onChange={(event) => setFilter('category', event.target.value)}>
-                <option value="all">All categories</option><option value="market">Market</option><option value="signal">Signal</option><option value="anomaly">Anomaly</option><option value="provider">Provider</option><option value="liquidity">Liquidity</option><option value="volatility">Volatility</option><option value="portfolio">Portfolio</option><option value="simulation">Simulation</option><option value="cross_asset">Cross-asset</option>
-              </select>
-              <select className="market-graph__selector-input" value={model.filters.assetClass} onChange={(event) => setFilter('assetClass', event.target.value)}>
-                <option value="all">All asset classes</option><option value="stock">Stocks</option><option value="etf">ETFs</option><option value="crypto">Crypto</option><option value="other">Other</option>
-              </select>
-              <select className="market-graph__selector-input" value={model.filters.source} onChange={(event) => setFilter('source', event.target.value)}>
-                <option value="all">All sources</option><option value="signal">Signal</option><option value="news">News</option><option value="risk">Risk</option><option value="provider">Provider</option><option value="portfolio">Portfolio</option><option value="anomaly">Anomaly</option><option value="broker">Broker</option><option value="simulation">Simulation</option><option value="regime">Regime</option><option value="relationship">Relationship</option>
-              </select>
-              <select className="market-graph__selector-input" value={model.filters.status} onChange={(event) => setFilter('status', event.target.value)}>
-                <option value="all">All status</option><option value="OPEN">Open</option><option value="READ">Read</option><option value="PINNED">Pinned</option><option value="SNOOZED">Snoozed</option><option value="DISMISSED">Dismissed</option><option value="RESOLVED">Resolved</option>
-              </select>
-              <input className="market-graph__selector-input" defaultValue={model.filters.search} placeholder="Search symbol/title" onBlur={(event) => setFilter('search', event.target.value)} />
-            </div>
-
-            {totalAlerts === 0 ? (
-              <div className="aurox-empty-state">
-                <p className="aurox-empty-state__title">No alerts match your current filters.</p>
-                <p className="aurox-empty-state__body">Try clearing filters or open Observe for broader context.</p>
-                <Link href="/observe" className="button button--primary">Open Observer</Link>
-              </div>
-            ) : null}
-
-            {groups.map((group) => (
-              <div key={group} style={{ marginBottom: '1rem' }}>
-                <h3 style={{ marginBottom: '0.45rem' }}>{group}</h3>
-                <div className="observe-feed" style={{ maxHeight: '22rem' }}>
-                  {model.grouped[group].length === 0 ? (
-                    <p className="text-muted">No {group.toLowerCase()} alerts.</p>
-                  ) : model.grouped[group].map((alert) => {
-                    const runtimeOnly = alert.id.startsWith('runtime-');
-                    return (
-                      <article key={alert.id} className="observe-feed__item">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem', alignItems: 'center' }}>
-                          <strong>{alert.title}</strong>
-                          <span className={`status-pill status-pill--${group === 'CRITICAL' ? 'danger' : group === 'WARNING' ? 'warning' : group === 'WATCH' ? 'info' : 'success'}`}>{alert.severity}</span>
-                        </div>
-                        <p className="text-muted">{alert.description}</p>
-                        <p className="text-muted" style={{ fontSize: '0.75rem' }}>
-                          {alert.symbol ?? 'n/a'} · {alert.assetClass ?? 'n/a'} · {alert.source} / {alert.category} · confidence {alert.confidence === null || alert.confidence === undefined ? 'n/a' : `${(alert.confidence * 100).toFixed(0)}%`} · last seen {new Date(alert.lastSeenAt).toLocaleString('en-US')}
-                        </p>
-                        <p style={{ display: 'flex', flexWrap: 'wrap', gap: '0.55rem' }}>
-                          <Link href={alert.symbol ? `/stocks/${alert.symbol}` : '/market'}>Inspect</Link>
-                          <Link href={alert.observationEventId ? `/observe/${alert.observationEventId}` : '/observe'}>Open Observer</Link>
-                          {alert.observationEventId ? <Link href={`/replay/${alert.observationEventId}`}>Replay</Link> : <span title="Replay unavailable">Replay unavailable</span>}
-                          <button type="button" className="button button--ghost" disabled={isPending || runtimeOnly} onClick={() => setAlertState(alert.id, 'pin')}>Pin</button>
-                          <button type="button" className="button button--ghost" disabled={isPending || runtimeOnly} onClick={() => setAlertState(alert.id, 'snooze')}>Snooze</button>
-                          <button type="button" className="button button--ghost" disabled={isPending || runtimeOnly} onClick={() => setAlertState(alert.id, 'dismiss')}>Dismiss</button>
-                          <button type="button" className="button button--ghost" disabled={isPending || runtimeOnly} onClick={() => setAlertState(alert.id, 'resolve')}>Resolve</button>
-                        </p>
-                      </article>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-        </article>
+        </div>
       </section>
+
+      {/* Empty state */}
+      {totalAlerts === 0 ? (
+        <section className="dashboard-section">
+          <div className="shell-container">
+            <div className="aurox-empty-state">
+              <div className="aurox-empty-state__icon" aria-hidden="true">◎</div>
+              <p className="aurox-empty-state__title">No alerts match your current filters</p>
+              <p className="aurox-empty-state__body">
+                Try broadening your filters or check the Observer for broader context.
+              </p>
+              <div className="aurox-empty-state__actions">
+                <button
+                  type="button"
+                  className="button button--primary"
+                  onClick={() => startTransition(() => router.push('/alerts'))}
+                >
+                  Clear all filters
+                </button>
+                <Link href="/observe" className="button button--secondary">Open Observer</Link>
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {/* Alert groups */}
+      {groups.map((group) => {
+        const alerts = model.grouped[group];
+        const meta = SEVERITY_META[group];
+        const isExpanded = expandedGroups[group];
+
+        return (
+          <section key={group} className="dashboard-section dashboard-section--compact">
+            <div className="shell-container">
+              <div className={`alert-group alert-group--${meta.tone}`}>
+                <button
+                  type="button"
+                  className="alert-group__header"
+                  onClick={() => toggleGroup(group)}
+                  aria-expanded={isExpanded}
+                >
+                  <div className="alert-group__header-left">
+                    <span className={`alert-group__severity-dot alert-group__severity-dot--${meta.tone}`} aria-hidden="true">{meta.icon}</span>
+                    <span className="alert-group__title">{meta.label}</span>
+                    <span className={`alert-group__count status-pill status-pill--${meta.tone}`}>{alerts.length}</span>
+                  </div>
+                  <span className="alert-group__chevron" aria-hidden="true">
+                    {isExpanded ? '▲' : '▼'}
+                  </span>
+                </button>
+
+                {isExpanded ? (
+                  <div className="alert-group__body">
+                    {alerts.length === 0 ? (
+                      <p className="alert-group__empty">No {meta.label.toLowerCase()} alerts.</p>
+                    ) : (
+                      <div className="alert-feed">
+                        {alerts.map((alert) => {
+                          const runtimeOnly = alert.id.startsWith('runtime-');
+                          const isPinned = alert.status === 'PINNED';
+                          const isSnoozed = alert.status === 'SNOOZED';
+                          return (
+                            <article
+                              key={alert.id}
+                              className={`alert-card alert-card--${meta.tone}${isPinned ? ' alert-card--pinned' : ''}${isSnoozed ? ' alert-card--snoozed' : ''}`}
+                            >
+                              <div className="alert-card__header">
+                                <div className="alert-card__title-row">
+                                  <span className={`alert-card__severity-marker alert-card__severity-marker--${meta.tone}`} aria-hidden="true" />
+                                  <strong className="alert-card__title">{alert.title}</strong>
+                                  {isPinned ? <span className="alert-card__badge" aria-label="Pinned">📌</span> : null}
+                                  {isSnoozed ? <span className="alert-card__badge" aria-label="Snoozed">⏱</span> : null}
+                                </div>
+                                <div className="alert-card__chips">
+                                  {alert.symbol ? (
+                                    <span className="alert-card__chip alert-card__chip--symbol">{alert.symbol}</span>
+                                  ) : null}
+                                  {alert.assetClass ? (
+                                    <span className="alert-card__chip">{alert.assetClass}</span>
+                                  ) : null}
+                                  <span className="alert-card__chip">{alert.source}</span>
+                                  <span className="alert-card__chip">{alert.category}</span>
+                                  {alert.confidence !== null && alert.confidence !== undefined ? (
+                                    <span className="alert-card__chip alert-card__chip--confidence">
+                                      {(alert.confidence * 100).toFixed(0)}% conf
+                                    </span>
+                                  ) : null}
+                                </div>
+                              </div>
+
+                              <p className="alert-card__description">{alert.description}</p>
+
+                              <div className="alert-card__footer">
+                                <span className="alert-card__time" title={new Date(alert.lastSeenAt).toLocaleString('en-US')}>
+                                  {timeAgo(alert.lastSeenAt)}
+                                </span>
+                                <div className="alert-card__actions">
+                                  <Link
+                                    href={alert.symbol ? `/invest/stocks/${alert.symbol}` : '/market'}
+                                    className="alert-card__action-link"
+                                  >
+                                    Inspect
+                                  </Link>
+                                  <Link
+                                    href={alert.observationEventId ? `/observe/${alert.observationEventId}` : '/observe'}
+                                    className="alert-card__action-link"
+                                  >
+                                    Observer
+                                  </Link>
+                                  {alert.observationEventId ? (
+                                    <Link href={`/replay/${alert.observationEventId}`} className="alert-card__action-link">
+                                      Replay
+                                    </Link>
+                                  ) : null}
+                                  <button
+                                    type="button"
+                                    className="alert-card__action-btn"
+                                    disabled={isPending || runtimeOnly}
+                                    onClick={() => setAlertState(alert.id, 'pin')}
+                                    title="Pin alert"
+                                    aria-label={`Pin alert: ${alert.title}`}
+                                  >
+                                    Pin
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="alert-card__action-btn"
+                                    disabled={isPending || runtimeOnly}
+                                    onClick={() => setAlertState(alert.id, 'snooze')}
+                                    title="Snooze for 1 hour"
+                                    aria-label={`Snooze alert: ${alert.title}`}
+                                  >
+                                    Snooze
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="alert-card__action-btn alert-card__action-btn--dismiss"
+                                    disabled={isPending || runtimeOnly}
+                                    onClick={() => setAlertState(alert.id, 'dismiss')}
+                                    aria-label={`Dismiss alert: ${alert.title}`}
+                                  >
+                                    Dismiss
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="alert-card__action-btn alert-card__action-btn--resolve"
+                                    disabled={isPending || runtimeOnly}
+                                    onClick={() => setAlertState(alert.id, 'resolve')}
+                                    aria-label={`Resolve alert: ${alert.title}`}
+                                  >
+                                    Resolve
+                                  </button>
+                                </div>
+                              </div>
+                            </article>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </section>
+        );
+      })}
     </>
   );
 }

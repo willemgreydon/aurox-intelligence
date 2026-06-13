@@ -1,6 +1,12 @@
 import { createHash } from 'node:crypto';
 import { createDatabaseClient } from '../client';
 
+function toIsoString(value: unknown): string {
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === 'string') return value;
+  return String(value);
+}
+
 export type AlertSource =
   | 'signal'
   | 'news'
@@ -236,11 +242,14 @@ export async function listAlerts(filters: AlertFilters = {}): Promise<AlertRecor
     return rows.map((row) => ({
       ...row,
       metadata: row.metadata ?? {},
+<<<<<<< HEAD
       // The postgres driver parses timestamp columns as Date objects. AlertRecord
       // is consumed by a server component that asserts serializable props before
       // passing the model to a client component, where Date is not allowed.
       // Normalize to ISO strings at the repository boundary so the declared
       // `string` types are truthful and RSC serialization succeeds.
+=======
+>>>>>>> 713c5ec (fix alert center)
       firstSeenAt: toIsoString(row.firstSeenAt),
       lastSeenAt: toIsoString(row.lastSeenAt),
       createdAt: toIsoString(row.createdAt),

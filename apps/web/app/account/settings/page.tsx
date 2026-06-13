@@ -17,12 +17,29 @@ export default async function AccountSettingsPage() {
   assertSerializableProps('account.preferences', overview.preferences as Record<string, unknown>);
 
   const count = overview.activeSessionCount;
-  const sessionDescription = count === 1
-    ? messages.account.sessionControlsDescription.replace('{{count}}', String(count))
-    : messages.account.sessionControlsDescriptionPlural.replace('{{count}}', String(count));
+  const sessionDescription =
+    count === 1
+      ? messages.account.sessionControlsDescription.replace('{{count}}', String(count))
+      : messages.account.sessionControlsDescriptionPlural.replace('{{count}}', String(count));
 
   return (
     <div className="account-stack">
+      {/* Page section header */}
+      <div className="account-page-header">
+        <div className="account-page-header__eyebrow">Settings</div>
+        <h2 className="account-page-header__title">Workspace &amp; Account Settings</h2>
+        <p className="account-page-header__description">
+          Configure your trading preferences, secure your account, and manage active sessions.
+        </p>
+        <div className="account-page-header__meta">
+          <span className="status-pill status-pill--info">
+            {count === 1 ? '1 active session' : `${count} active sessions`}
+          </span>
+          <span className="status-pill status-pill--success">Simulation mode</span>
+        </div>
+      </div>
+
+      {/* Workspace preferences */}
       <Card>
         <WorkspacePreferencesForm
           preset={overview.preferences}
@@ -95,16 +112,25 @@ export default async function AccountSettingsPage() {
         />
       </Card>
 
+      {/* Password / security */}
       <Card>
+        <div className="account-panel__header">
+          <div className="section__eyebrow">Security</div>
+          <h3 className="account-panel__title">Change Password</h3>
+          <p className="account-panel__description">
+            Update your password to keep your account secure. Use a strong passphrase.
+          </p>
+        </div>
         <PasswordForm />
       </Card>
 
+      {/* Session controls */}
       <Card>
         <div className="account-panel">
           <div className="account-panel__header">
             <div>
               <div className="section__eyebrow">{messages.account.sessionControlsEyebrow}</div>
-              <h2 className="account-panel__title">{messages.account.sessionControlsTitle}</h2>
+              <h3 className="account-panel__title">{messages.account.sessionControlsTitle}</h3>
               <p className="account-panel__description">{sessionDescription}</p>
             </div>
           </div>

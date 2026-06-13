@@ -1153,13 +1153,19 @@ export function MarketGraphWorkspace({
           aria-expanded={!sidebarCollapsed}
           aria-controls="market-workstation-sidebar-content"
           onClick={() => setSidebarCollapsed((value) => !value)}
+          title={sidebarCollapsed ? 'Open cockpit' : 'Close cockpit'}
         >
-          {sidebarCollapsed ? 'Open cockpit' : 'Collapse cockpit'}
+          <span className="broker-observer__desktop-toggle-icon" aria-hidden="true">
+            {sidebarCollapsed ? '›' : '‹'}
+          </span>
+          <span className="broker-observer__desktop-toggle-label">
+            {sidebarCollapsed ? 'Open cockpit' : 'Close cockpit'}
+          </span>
         </button>
 
         <div
           id="market-workstation-sidebar-content"
-          className={`broker-observer__collapsible${sidebarOpen ? ' broker-observer__collapsible--open' : ''}`}
+          className={`broker-observer__collapsible${!sidebarCollapsed || sidebarOpen ? ' broker-observer__collapsible--open' : ''}`}
         >
           <div className="broker-observer__scroll">
           <section className="broker-observer__panel">

@@ -182,18 +182,18 @@ export function HeaderClient({ locale, messages, ticker, auth, navGroups, portfo
 
             <div className="site-header__actions">
               <div className="site-nav__meta site-nav__meta--desktop">
-                {auth && portfolioSnapshot ? (
+                {auth ? (
                   <div className="nav-portfolio-mini" aria-label="Portfolio summary">
                     <span className="nav-portfolio-mini__item">
                       <span className="nav-portfolio-mini__label">Portfolio</span>
                       <strong className="nav-portfolio-mini__value">
-                        {formatCompactUsd(portfolioSnapshot.portfolioValue)}
+                        {portfolioSnapshot ? formatCompactUsd(portfolioSnapshot.portfolioValue) : '—'}
                       </strong>
                     </span>
                     <span className="nav-portfolio-mini__item">
                       <span className="nav-portfolio-mini__label">Invested</span>
                       <strong className="nav-portfolio-mini__value">
-                        {formatCompactUsd(portfolioSnapshot.investedCapital)}
+                        {portfolioSnapshot ? formatCompactUsd(portfolioSnapshot.investedCapital) : '—'}
                       </strong>
                     </span>
                   </div>
