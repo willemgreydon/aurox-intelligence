@@ -9307,7 +9307,6 @@ code,
   }
 }
 
-<<<<<<< HEAD
 /* ──────────────────────────────────────────────────────────────────────────
    Claude Finance cockpit (/finance)
    Simulation-only finance cockpit surfaces. Uses existing design tokens.
@@ -9316,7 +9315,8 @@ code,
 .finance-cockpit__grid {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-=======
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    ALERT CENTER — Enriched UX
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -9739,12 +9739,10 @@ code,
 .news-workspace {
   display: grid;
   grid-template-columns: 1fr 380px;
->>>>>>> 713c5ec (fix alert center)
   gap: var(--space-6);
   align-items: start;
 }
 
-<<<<<<< HEAD
 .finance-cockpit__main,
 .finance-cockpit__aside {
   display: flex;
@@ -11146,7 +11144,8 @@ code,
 }
 .account-stats dd .num-bubble {
   color: var(--bubble-fg);
-=======
+}
+
 .news-workspace__primary,
 .news-workspace__secondary {
   display: flex;
@@ -11787,5 +11786,4 @@ code,
   .watchlist-table-header {
     display: none;
   }
->>>>>>> 713c5ec (fix alert center)
 }
