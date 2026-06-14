@@ -13,7 +13,7 @@ type FooterLinkGroup = {
 function buildFooterGroups(messages: AppMessages): FooterLinkGroup[] {
   return [
     {
-      title: 'Platform',
+      title: messages.footer.groupPlatform,
       links: [
         { label: messages.shell.nav.dashboard, href: '/dashboard' },
         { label: messages.shell.nav.investHome, href: '/invest/portfolio' },
@@ -23,37 +23,37 @@ function buildFooterGroups(messages: AppMessages): FooterLinkGroup[] {
       ],
     },
     {
-      title: 'Markets',
+      title: messages.footer.groupMarkets,
       links: [
-        { label: 'Stocks', href: '/invest/stocks' },
-        { label: 'ETFs', href: '/invest/etfs' },
-        { label: 'Crypto', href: '/invest/crypto' },
-        { label: 'Macro', href: '/fx' },
-        { label: 'Watchlist', href: '/watchlist' },
+        { label: messages.footer.stocksLink, href: '/invest/stocks' },
+        { label: messages.footer.etfsLink, href: '/invest/etfs' },
+        { label: messages.footer.cryptoLink, href: '/invest/crypto' },
+        { label: messages.footer.macroLink, href: '/fx' },
+        { label: messages.footer.watchlistLink, href: '/watchlist' },
       ],
     },
     {
-      title: 'Intelligence',
+      title: messages.footer.groupIntelligence,
       links: [
-        { label: 'AI Broker', href: '/invest/broker-modes' },
-        { label: 'Risk Engine', href: '/legal/risk-disclosure' },
-        { label: 'Signal Framework', href: '/signals' },
-        { label: 'Simulation', href: '/invest/simulation' },
-        { label: 'Admin Monitor', href: '/admin/monitoring' },
+        { label: messages.footer.aiBrokerLink, href: '/invest/broker-modes' },
+        { label: messages.footer.riskEngineLink, href: '/legal/risk-disclosure' },
+        { label: messages.footer.signalFrameworkLink, href: '/signals' },
+        { label: messages.footer.simulationShortLink, href: '/invest/simulation' },
+        { label: messages.footer.adminMonitorLink, href: '/admin/monitoring' },
       ],
     },
     {
-      title: 'Legal & Resources',
+      title: messages.footer.groupLegal,
       links: [
         { label: messages.footer.termsLink, href: '/legal/terms' },
         { label: messages.footer.privacyLink, href: '/legal/privacy' },
-        { label: 'Cookie Notice', href: '/legal/cookie-notice' },
+        { label: messages.footer.cookieNoticeLink, href: '/legal/cookie-notice' },
         { label: messages.footer.riskLink, href: '/legal/risk-disclosure' },
-        { label: 'AI Disclaimer', href: '/legal/ai-disclaimer' },
-        { label: 'Market Data Disclaimer', href: '/legal/market-data-disclaimer' },
-        { label: 'Simulation Disclaimer', href: '/legal/simulation-disclaimer' },
-        { label: 'Contact & Support', href: '/legal/contact-support' },
-        { label: 'Documentation', href: '/legal' },
+        { label: messages.footer.aiDisclaimerLink, href: '/legal/ai-disclaimer' },
+        { label: messages.footer.marketDataDisclaimerLink, href: '/legal/market-data-disclaimer' },
+        { label: messages.footer.simulationDisclaimerLink, href: '/legal/simulation-disclaimer' },
+        { label: messages.footer.contactSupportLink, href: '/legal/contact-support' },
+        { label: messages.footer.documentationLink, href: '/legal' },
       ],
     },
   ];

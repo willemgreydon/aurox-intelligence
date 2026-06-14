@@ -780,6 +780,22 @@
     "privacyLink": "Privacy Policy",
     "riskLink": "Risk Disclosure",
     "imprintLink": "Legal Notice",
+    "groupIntelligence": "Intelligence",
+    "etfsLink": "ETFs",
+    "cryptoLink": "Crypto",
+    "macroLink": "Macro",
+    "watchlistLink": "Watchlist",
+    "aiBrokerLink": "AI Broker",
+    "riskEngineLink": "Risk Engine",
+    "signalFrameworkLink": "Signal Framework",
+    "simulationShortLink": "Simulation",
+    "adminMonitorLink": "Admin Monitor",
+    "cookieNoticeLink": "Cookie Notice",
+    "aiDisclaimerLink": "AI Disclaimer",
+    "marketDataDisclaimerLink": "Market Data Disclaimer",
+    "simulationDisclaimerLink": "Simulation Disclaimer",
+    "contactSupportLink": "Contact & Support",
+    "documentationLink": "Documentation",
     "copyrightSuffix": "Designed for institutional analytics teams and internal operators."
   }
 }

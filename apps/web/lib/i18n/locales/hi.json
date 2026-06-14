@@ -780,6 +780,22 @@
     "privacyLink": "गोपनीयता नीति",
     "riskLink": "जोखिम प्रकटीकरण",
     "imprintLink": "कानूनी सूचना",
-    "copyrightSuffix": "संस्थागत एनालिटिक्स टीमों और आंतरिक ऑपरेटरों के लिए डिज़ाइन किया गया।"
+    "copyrightSuffix": "संस्थागत एनालिटिक्स टीमों और आंतरिक ऑपरेटरों के लिए डिज़ाइन किया गया।",
+    "groupIntelligence": "इंटेलिजेंस",
+    "etfsLink": "ETF",
+    "cryptoLink": "क्रिप्टो",
+    "macroLink": "मैक्रो",
+    "watchlistLink": "वॉचलिस्ट",
+    "aiBrokerLink": "एआई ब्रोकर",
+    "riskEngineLink": "रिस्क इंजन",
+    "signalFrameworkLink": "सिग्नल फ्रेमवर्क",
+    "simulationShortLink": "सिमुलेशन",
+    "adminMonitorLink": "एडमिन मॉनिटर",
+    "cookieNoticeLink": "कुकी सूचना",
+    "aiDisclaimerLink": "एआई अस्वीकरण",
+    "marketDataDisclaimerLink": "मार्केट डेटा अस्वीकरण",
+    "simulationDisclaimerLink": "सिमुलेशन अस्वीकरण",
+    "contactSupportLink": "संपर्क और सहायता",
+    "documentationLink": "दस्तावेज़ीकरण"
   }
 }

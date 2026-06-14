@@ -780,6 +780,22 @@
     "privacyLink": "سياسة الخصوصية",
     "riskLink": "الإفصاح عن المخاطر",
     "imprintLink": "إشعار قانوني",
-    "copyrightSuffix": "مصمَّم لفِرق التحليلات المؤسسية والمشغّلين الداخليين."
+    "copyrightSuffix": "مصمَّم لفِرق التحليلات المؤسسية والمشغّلين الداخليين.",
+    "groupIntelligence": "الذكاء",
+    "etfsLink": "ETF",
+    "cryptoLink": "العملات المشفرة",
+    "macroLink": "الاقتصاد الكلي",
+    "watchlistLink": "قائمة المتابعة",
+    "aiBrokerLink": "وسيط الذكاء الاصطناعي",
+    "riskEngineLink": "محرك المخاطر",
+    "signalFrameworkLink": "إطار الإشارات",
+    "simulationShortLink": "المحاكاة",
+    "adminMonitorLink": "مراقبة المشرف",
+    "cookieNoticeLink": "إشعار ملفات تعريف الارتباط",
+    "aiDisclaimerLink": "إخلاء مسؤولية الذكاء الاصطناعي",
+    "marketDataDisclaimerLink": "إخلاء مسؤولية بيانات السوق",
+    "simulationDisclaimerLink": "إخلاء مسؤولية المحاكاة",
+    "contactSupportLink": "الاتصال والدعم",
+    "documentationLink": "الوثائق"
   }
 }

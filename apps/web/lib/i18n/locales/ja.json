@@ -780,6 +780,22 @@
     "privacyLink": "プライバシーポリシー",
     "riskLink": "リスク開示",
     "imprintLink": "法的通知",
-    "copyrightSuffix": "機関投資家向けアナリティクスチームと社内オペレーター向けに設計。"
+    "copyrightSuffix": "機関投資家向けアナリティクスチームと社内オペレーター向けに設計。",
+    "groupIntelligence": "インテリジェンス",
+    "etfsLink": "ETF",
+    "cryptoLink": "暗号資産",
+    "macroLink": "マクロ",
+    "watchlistLink": "ウォッチリスト",
+    "aiBrokerLink": "AIブローカー",
+    "riskEngineLink": "リスクエンジン",
+    "signalFrameworkLink": "シグナルフレームワーク",
+    "simulationShortLink": "シミュレーション",
+    "adminMonitorLink": "管理モニター",
+    "cookieNoticeLink": "Cookie に関する通知",
+    "aiDisclaimerLink": "AI に関する免責事項",
+    "marketDataDisclaimerLink": "市場データに関する免責事項",
+    "simulationDisclaimerLink": "シミュレーションに関する免責事項",
+    "contactSupportLink": "お問い合わせとサポート",
+    "documentationLink": "ドキュメント"
   }
 }

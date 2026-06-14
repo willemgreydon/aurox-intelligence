@@ -774,6 +774,22 @@
     "privacyLink": "隐私政策",
     "riskLink": "风险披露",
     "imprintLink": "法律声明",
-    "copyrightSuffix": "为机构分析团队与内部运营人员而设计。"
+    "copyrightSuffix": "为机构分析团队与内部运营人员而设计。",
+    "groupIntelligence": "智能",
+    "etfsLink": "ETF",
+    "cryptoLink": "加密货币",
+    "macroLink": "宏观",
+    "watchlistLink": "自选列表",
+    "aiBrokerLink": "AI 经纪",
+    "riskEngineLink": "风险引擎",
+    "signalFrameworkLink": "信号框架",
+    "simulationShortLink": "模拟",
+    "adminMonitorLink": "管理员监控",
+    "cookieNoticeLink": "Cookie 声明",
+    "aiDisclaimerLink": "AI 免责声明",
+    "marketDataDisclaimerLink": "市场数据免责声明",
+    "simulationDisclaimerLink": "模拟免责声明",
+    "contactSupportLink": "联系与支持",
+    "documentationLink": "文档"
   }
 }
