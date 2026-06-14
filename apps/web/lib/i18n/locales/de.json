@@ -285,14 +285,14 @@
     "historyPreviewAria": "{{symbol}} Preishistorie-Vorschau",
     "noHistory": "Historische Preisdaten sind für diesen Asset noch nicht verfügbar.",
     "platformHighlights": "Plattformvertrauenssignale",
-    "viewAllMarkets": "View all markets",
-    "featuredModuleCta": "Open Invest workstation",
-    "showMoreLanes": "Explore all intelligence lanes",
-    "showAllCapabilities": "See the full capability set",
-    "finalCtaTitle": "Start in simulation. Zero capital at risk.",
-    "finalCtaSubtitle": "Rank assets, inspect explainable signals, and place simulated orders inside one auditable workstation.",
-    "workflowEyebrow": "How it works",
-    "trustLineLabel": "Every output is traceable"
+    "viewAllMarkets": "Alle Märkte anzeigen",
+    "featuredModuleCta": "Invest-Workstation öffnen",
+    "showMoreLanes": "Alle Intelligence-Lanes erkunden",
+    "showAllCapabilities": "Gesamtes Funktionsspektrum ansehen",
+    "finalCtaTitle": "In der Simulation starten. Kein Kapital im Risiko.",
+    "finalCtaSubtitle": "Bewerten Sie Assets, prüfen Sie erklärbare Signale und platzieren Sie simulierte Orders in einer prüfbaren Workstation.",
+    "workflowEyebrow": "So funktioniert es",
+    "trustLineLabel": "Jedes Ergebnis ist nachvollziehbar"
   },
   "homeSections": {
     "capabilities": {
@@ -686,7 +686,7 @@
       "positionHeld": "Im Bestand",
       "positionNotHeld": "Nicht im Bestand",
       "summaryHeld": "Im Bestand",
-      "summaryWatchlist": "Watchlist",
+      "summaryWatchlist": "Beobachtungsliste",
       "summarySellable": "Verkaufbar",
       "summaryStale": "Veraltet / teilweise",
       "summaryUnavailable": "Nicht verfügbar"
