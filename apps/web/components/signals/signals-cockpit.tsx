@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import type { SignalsPageViewModel } from '../../server/mappers/analysis-mapper';
 import { getAssetInspectHref } from '../../lib/market-routes';
 import { buildSimulationPrepareHrefForAsset } from '../../lib/simulation-prepare-url';
@@ -37,6 +37,26 @@ function scoreColor(score: number) {
 
 export function SignalsCockpit({ data }: Props) {
   const [activeTab, setActiveTab] = useState<TabId>('current');
+  const tablistBaseId = useId();
+  const tabButtonId = (id: TabId) => `${tablistBaseId}-tab-${id}`;
+  const tabPanelId = (id: TabId) => `${tablistBaseId}-panel-${id}`;
+
+  // Roving-tabindex keyboard navigation across the tablist (WAI-ARIA tabs pattern).
+  function onTabKeyDown(event: React.KeyboardEvent<HTMLButtonElement>, index: number) {
+    if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft' && event.key !== 'Home' && event.key !== 'End') {
+      return;
+    }
+    event.preventDefault();
+    let nextIndex = index;
+    if (event.key === 'ArrowRight') nextIndex = (index + 1) % TABS.length;
+    if (event.key === 'ArrowLeft') nextIndex = (index - 1 + TABS.length) % TABS.length;
+    if (event.key === 'Home') nextIndex = 0;
+    if (event.key === 'End') nextIndex = TABS.length - 1;
+    const next = TABS[nextIndex];
+    if (!next) return;
+    setActiveTab(next.id);
+    document.getElementById(tabButtonId(next.id))?.focus();
+  }
   const [actionFilter, setActionFilter] = useState<ActionFilter>('all');
   const [assetClassFilter, setAssetClassFilter] = useState<AssetClassFilter>('all');
   const [search, setSearch] = useState('');
@@ -106,18 +126,25 @@ export function SignalsCockpit({ data }: Props) {
         <div className="observe-command-bar__inner">
           {/* Tab selector */}
           <div className="observe-command-bar__group" role="tablist" aria-label="Signal intelligence tabs">
-            {TABS.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                role="tab"
-                aria-selected={activeTab === tab.id}
-                className={`observe-mode-btn${activeTab === tab.id ? ' observe-mode-btn--active' : ''}`}
-                onClick={() => setActiveTab(tab.id)}
-              >
-                {tab.label}
-              </button>
-            ))}
+            {TABS.map((tab, index) => {
+              const selected = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  id={tabButtonId(tab.id)}
+                  type="button"
+                  role="tab"
+                  aria-selected={selected}
+                  aria-controls={tabPanelId(tab.id)}
+                  tabIndex={selected ? 0 : -1}
+                  className={`observe-mode-btn${selected ? ' observe-mode-btn--active' : ''}`}
+                  onClick={() => setActiveTab(tab.id)}
+                  onKeyDown={(event) => onTabKeyDown(event, index)}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
           </div>
 
           <div className="observe-command-bar__divider" role="separator" />
@@ -223,8 +250,9 @@ export function SignalsCockpit({ data }: Props) {
 
         {/* CURRENT SIGNALS */}
         <div
+          id={tabPanelId('current')}
           role="tabpanel"
-          aria-label="Current Signals"
+          aria-labelledby={tabButtonId('current')}
           hidden={activeTab !== 'current'}
         >
           <div className="observe-cockpit__row--full">
@@ -377,7 +405,7 @@ export function SignalsCockpit({ data }: Props) {
         </div>
 
         {/* DECISION HISTORY */}
-        <div role="tabpanel" aria-label="Decision History" hidden={activeTab !== 'history'}>
+        <div id={tabPanelId('history')} role="tabpanel" aria-labelledby={tabButtonId('history')} hidden={activeTab !== 'history'}>
           <div className="observe-cockpit__row--full">
             <div className="observe-panel">
               <div className="observe-panel__header">
@@ -405,7 +433,7 @@ export function SignalsCockpit({ data }: Props) {
         </div>
 
         {/* PREDICTION ACCURACY */}
-        <div role="tabpanel" aria-label="Prediction Accuracy" hidden={activeTab !== 'accuracy'}>
+        <div id={tabPanelId('accuracy')} role="tabpanel" aria-labelledby={tabButtonId('accuracy')} hidden={activeTab !== 'accuracy'}>
           <div className="observe-cockpit__row--full">
             <div className="observe-panel">
               <div className="observe-panel__header">
@@ -432,7 +460,7 @@ export function SignalsCockpit({ data }: Props) {
         </div>
 
         {/* ROI BY SIGNAL TYPE */}
-        <div role="tabpanel" aria-label="ROI by Signal Type" hidden={activeTab !== 'roi'}>
+        <div id={tabPanelId('roi')} role="tabpanel" aria-labelledby={tabButtonId('roi')} hidden={activeTab !== 'roi'}>
           <div className="observe-cockpit__row--full">
             <div className="observe-panel">
               <div className="observe-panel__header">
@@ -459,7 +487,7 @@ export function SignalsCockpit({ data }: Props) {
         </div>
 
         {/* NEWS IMPACT */}
-        <div role="tabpanel" aria-label="News Impact" hidden={activeTab !== 'news'}>
+        <div id={tabPanelId('news')} role="tabpanel" aria-labelledby={tabButtonId('news')} hidden={activeTab !== 'news'}>
           <div className="observe-cockpit__row--full">
             <div className="observe-panel">
               <div className="observe-panel__header">

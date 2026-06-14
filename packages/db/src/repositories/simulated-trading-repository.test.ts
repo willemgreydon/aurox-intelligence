@@ -3,6 +3,7 @@ import {
   executeSimulationOrder,
   getTodayAiSimulationOrderNotionalForUser,
   insertSimulationAgentDecision,
+  resetSimulationAccount,
 } from './simulated-trading-repository';
 
 const createDatabaseClientMock = vi.fn();
@@ -295,5 +296,132 @@ describe('executeSimulationOrder — sell path', () => {
     const [firstSql] = client.execute.mock.calls[0] as [string, unknown[]];
     // Buy INSERT path — should not contain a CASE expression for closed_at
     expect(firstSql).not.toMatch(/case when.*closed_at/i);
+  });
+});
+
+// ─── executeSimulationOrder — buy success + guards ────────────────────────────
+
+describe('executeSimulationOrder — buy path', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  function makeBuyClient(opts: { cashBalance?: number } = {}): MockClient {
+    const { cashBalance = 50000 } = opts;
+    const client = makeClient();
+    // 1. ensureSimulationAccount
+    client.query.mockResolvedValueOnce([accountRow]);
+    // 2. lock account FOR UPDATE
+    client.query.mockResolvedValueOnce([{ cashBalance: String(cashBalance), allowNegativeBalance: false }]);
+    // 3. lock position — none held yet
+    client.query.mockResolvedValueOnce([]);
+    client.execute.mockResolvedValue(undefined);
+    // captureSnapshot reads
+    client.query.mockResolvedValueOnce([{ cashBalance: String(cashBalance - 401.07), realizedPnl: '0' }]);
+    client.query.mockResolvedValueOnce([{ marketValue: '401.07', costBasis: '401.07', positionCount: 1 }]);
+    // final select: created order
+    client.query.mockResolvedValueOnce([orderRow]);
+    return client;
+  }
+
+  it('executes a buy: returns a filled order and atomically writes account/order/transaction', async () => {
+    const client = makeBuyClient();
+    createDatabaseClientMock.mockReturnValue(client);
+
+    const order = await executeSimulationOrder({ ...baseInput, side: 'buy' });
+
+    expect(order.side).toBe('buy');
+    expect(order.symbol).toBe(SYMBOL);
+    expect(order.status).toBe('filled');
+
+    const executeSql = client.execute.mock.calls.map((c) => String(c[0]));
+
+    // Cash is deducted on the account update (cash_balance set below the prior balance).
+    const accountUpdate = client.execute.mock.calls.find((c) => String(c[0]).includes('cash_balance = $2'));
+    expect(accountUpdate).toBeDefined();
+    const nextCash = (accountUpdate![1] as unknown[])[1] as number;
+    expect(nextCash).toBeLessThan(50000);
+    expect(nextCash).toBeGreaterThan(0);
+
+    // Order row is inserted (audit trail), with side 'buy'.
+    const orderInsert = client.execute.mock.calls.find((c) => String(c[0]).includes('order_type'));
+    expect(orderInsert).toBeDefined();
+    expect(orderInsert![1] as unknown[]).toContain('buy');
+
+    // A transaction row is inserted (auditability) — multi-table atomic write.
+    expect(executeSql.some((sql) => /insert into .*transaction/i.test(sql))).toBe(true);
+  });
+
+  it('rejects a buy when cash balance is insufficient (fail-closed, no state mutation)', async () => {
+    const client = makeClient();
+    createDatabaseClientMock.mockReturnValue(client);
+
+    client.query.mockResolvedValueOnce([accountRow]); // ensure account
+    client.query.mockResolvedValueOnce([{ cashBalance: '100', allowNegativeBalance: false }]); // locked account
+    client.query.mockResolvedValueOnce([]); // no position
+
+    await expect(
+      executeSimulationOrder({ ...baseInput, side: 'buy' }),
+    ).rejects.toThrow(/insufficient fictive cash/i);
+
+    // No mutation may occur on a rejected order.
+    expect(client.execute).not.toHaveBeenCalled();
+  });
+
+  it('rejects an order whose quantity rounds to zero (minimum order size guard)', async () => {
+    // NOTE: executeSimulationOrder enforces a quantity>0 floor; true min_notional
+    // sizing is enforced upstream (position-sizing). A sub-precision quantity
+    // passes the positive() schema but rounds to 0 and must be rejected here.
+    const client = makeClient();
+    createDatabaseClientMock.mockReturnValue(client);
+    client.query.mockResolvedValueOnce([accountRow]); // ensure account
+
+    await expect(
+      // 1e-9 passes the positive() schema but rounds to 0 at the 1e-8 quantity grid.
+      executeSimulationOrder({ ...baseInput, side: 'buy', quantity: 1e-9 }),
+    ).rejects.toThrow(/greater than zero/i);
+
+    expect(client.execute).not.toHaveBeenCalled();
+  });
+});
+
+// ─── resetSimulationAccount — archive, not delete ─────────────────────────────
+
+describe('resetSimulationAccount', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('archives positions (UPDATE quantity=0/closed_at), resets cash, and logs a reset transaction — never deletes', async () => {
+    const client = makeClient();
+    createDatabaseClientMock.mockReturnValue(client);
+
+    client.query.mockResolvedValueOnce([existingAccountRow]); // ensureSimulationAccount
+    client.execute.mockResolvedValue(undefined);
+    // captureSnapshot reads
+    client.query.mockResolvedValueOnce([{ cashBalance: '100000', realizedPnl: '0' }]);
+    client.query.mockResolvedValueOnce([{ marketValue: '0', costBasis: '0', positionCount: 0 }]);
+
+    await expect(resetSimulationAccount(USER_ID)).resolves.toBeUndefined();
+
+    const executeSql = client.execute.mock.calls.map((c) => String(c[0]));
+
+    // Positions are ARCHIVED, not deleted: the first execute is an UPDATE that
+    // zeroes quantity and stamps closed_at.
+    const positionsArchive = executeSql[0]!;
+    expect(positionsArchive).toMatch(/update/i);
+    expect(positionsArchive).toContain('quantity = 0');
+    expect(positionsArchive).toContain('closed_at');
+
+    // Account cash is reset to the initial balance.
+    const accountReset = client.execute.mock.calls.find((c) => String(c[0]).includes('cash_balance = $2'));
+    expect(accountReset).toBeDefined();
+    expect((accountReset![1] as unknown[])[1]).toBe(100000);
+
+    // A 'reset' transaction is appended (auditability).
+    expect(executeSql.some((sql) => sql.includes("'reset'"))).toBe(true);
+
+    // Auditability invariant: the reset must NEVER delete or truncate history.
+    expect(executeSql.some((sql) => /delete\s+from|truncate/i.test(sql))).toBe(false);
   });
 });

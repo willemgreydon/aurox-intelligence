@@ -65,11 +65,12 @@ const loadCatalogAssets = unstable_cache(
   { revalidate: 300 },
 );
 
-const loadLinkedAccounts = unstable_cache(
-  async () => getLinkedInvestmentAccounts(),
-  ['invest-linked-accounts-v1'],
-  { revalidate: 30 },
-);
+// Linked investment accounts are user-specific connected-account data. They must
+// never be served from a shared cross-request cache (user-specific-cache-rule.md):
+// a `unstable_cache` entry populated by one user could be read by another. Read
+// fresh on every request. When this becomes a per-user repository query, it must
+// be scoped by the authenticated user id and remain uncached (or keyed by user id).
+const loadLinkedAccounts = async () => getLinkedInvestmentAccounts();
 
 function resolveOptions(options: InvestReadModelOptions): ResolvedInvestReadModelOptions {
   return {

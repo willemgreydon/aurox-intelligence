@@ -118,7 +118,15 @@
     "confirmPasswordPlaceholder": "Repeat your password",
     "signingIn": "Signing in...",
     "creatingAccount": "Creating account...",
-    "newHere": "New here?"
+    "newHere": "New here?",
+    "forgotPassword": "Esqueceu a senha?",
+    "forgotEyebrow": "Recuperação de conta",
+    "forgotTitle": "Redefina sua senha",
+    "forgotDescription": "Insira o e-mail da sua conta e enviaremos instruções de redefinição de senha se houver uma conta correspondente.",
+    "forgotSubmit": "Enviar instruções",
+    "forgotSending": "Enviando...",
+    "forgotCheckEmail": "Verifique sua caixa de entrada",
+    "backToLogin": "Voltar para o login"
   },
   "dashboard": {
     "headerEyebrow": "Operational dashboard",
@@ -272,7 +280,15 @@
     "featuredStock": "Featured asset",
     "historyPreviewAria": "{{symbol}} price history preview",
     "noHistory": "Historical price data is not yet available for this asset.",
-    "platformHighlights": "Platform trust signals"
+    "platformHighlights": "Platform trust signals",
+    "viewAllMarkets": "View all markets",
+    "featuredModuleCta": "Open Invest workstation",
+    "showMoreLanes": "Explore all intelligence lanes",
+    "showAllCapabilities": "See the full capability set",
+    "finalCtaTitle": "Start in simulation. Zero capital at risk.",
+    "finalCtaSubtitle": "Rank assets, inspect explainable signals, and place simulated orders inside one auditable workstation.",
+    "workflowEyebrow": "How it works",
+    "trustLineLabel": "Every output is traceable"
   },
   "homeSections": {
     "capabilities": {
@@ -603,7 +619,14 @@
       "prepareBuy": "Prepare Buy",
       "prepareSell": "Prepare Sell",
       "simulateBuy": "Simulate Buy",
-      "simulateSell": "Simulate Sell"
+      "simulateSell": "Simulate Sell",
+      "reviewRisk": "Review Risk",
+      "signIn": "Sign in",
+      "simulationOnly": "Simulation only",
+      "liveLocked": "Live locked",
+      "planned": "Planned — simulation trading not yet available.",
+      "unavailable": "Not available for simulation.",
+      "noOpenPosition": "No open {{symbol}} position to sell."
     },
     "errors": {
       "quoteUnavailable": "Quote unavailable. The simulated order was not submitted.",
@@ -652,6 +675,37 @@
       "delayedMarketQuote": "Delayed market quote",
       "quoteUsableForSimulation": "Quote usable for simulation",
       "quoteNotUsableForSimulation": "Quote not usable for simulation yet"
+    },
+    "universe": {
+      "searchPlaceholder": "Search symbol or name",
+      "sortLabel": "Sort",
+      "sortSymbol": "Symbol",
+      "sortFreshness": "Quote freshness",
+      "sortSupport": "Support status",
+      "clearFilters": "Clear filters",
+      "resultsTemplate": "{{shown}} of {{total}}",
+      "emptyFiltered": "No assets match the current filters.",
+      "groupAssetClass": "Asset class",
+      "groupSupport": "Support",
+      "groupPosition": "Position",
+      "groupFreshness": "Freshness",
+      "classStock": "Stocks",
+      "classEtf": "ETFs",
+      "classCrypto": "Crypto",
+      "supportAvailable": "Available",
+      "supportSimulated": "Simulated",
+      "supportPlanned": "Planned",
+      "supportUnavailable": "Unavailable",
+      "positionHeld": "Held",
+      "positionNotHeld": "Not held",
+      "summaryHeld": "Held",
+      "summaryWatchlist": "Watchlist",
+      "summarySellable": "Sellable",
+      "summaryStale": "Stale / partial",
+      "summaryUnavailable": "Unavailable",
+      "paginationTemplate": "Page {{page}} of {{total}} · {{count}} assets",
+      "paginationPrevious": "Previous",
+      "paginationNext": "Next"
     }
   },
   "marketGraph": {

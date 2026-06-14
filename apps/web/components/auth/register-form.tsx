@@ -25,37 +25,70 @@ export function RegisterForm({ nextPath, messages }: RegisterFormProps) {
       <input type="hidden" name="next" value={nextPath ?? ''} />
 
       {state.message ? (
-        <div className={`form-banner form-banner--${state.status === 'error' ? 'error' : 'success'}`}>{state.message}</div>
+        <div
+          role="alert"
+          aria-live="polite"
+          className={`form-banner form-banner--${state.status === 'error' ? 'error' : 'success'}`}
+        >
+          {state.message}
+        </div>
       ) : null}
 
       <label className="form-field">
         <span>{messages.fullName}</span>
-        <input name="name" type="text" autoComplete="name" placeholder={messages.namePlaceholder} />
-        {state.fieldErrors.name ? <span className="form-field__error">{state.fieldErrors.name}</span> : null}
+        <input
+          id="register-name"
+          name="name"
+          type="text"
+          autoComplete="name"
+          placeholder={messages.namePlaceholder}
+          aria-invalid={state.fieldErrors.name ? true : undefined}
+          aria-describedby={state.fieldErrors.name ? 'register-name-error' : undefined}
+        />
+        {state.fieldErrors.name ? <span id="register-name-error" className="form-field__error">{state.fieldErrors.name}</span> : null}
       </label>
 
       <label className="form-field">
         <span>{messages.emailAddress}</span>
-        <input name="email" type="email" autoComplete="email" placeholder={messages.emailPlaceholder} />
-        {state.fieldErrors.email ? <span className="form-field__error">{state.fieldErrors.email}</span> : null}
+        <input
+          id="register-email"
+          name="email"
+          type="email"
+          autoComplete="email"
+          placeholder={messages.emailPlaceholder}
+          aria-invalid={state.fieldErrors.email ? true : undefined}
+          aria-describedby={state.fieldErrors.email ? 'register-email-error' : undefined}
+        />
+        {state.fieldErrors.email ? <span id="register-email-error" className="form-field__error">{state.fieldErrors.email}</span> : null}
       </label>
 
       <div className="form-grid form-grid--two">
         <label className="form-field">
           <span>{messages.password}</span>
-          <input name="password" type="password" autoComplete="new-password" placeholder={messages.newPasswordPlaceholder} />
-          {state.fieldErrors.password ? <span className="form-field__error">{state.fieldErrors.password}</span> : null}
+          <input
+            id="register-password"
+            name="password"
+            type="password"
+            autoComplete="new-password"
+            placeholder={messages.newPasswordPlaceholder}
+            aria-invalid={state.fieldErrors.password ? true : undefined}
+            aria-describedby={state.fieldErrors.password ? 'register-password-error' : undefined}
+          />
+          {state.fieldErrors.password ? <span id="register-password-error" className="form-field__error">{state.fieldErrors.password}</span> : null}
         </label>
 
         <label className="form-field">
           <span>{messages.confirmPassword}</span>
           <input
+            id="register-confirm-password"
             name="confirmPassword"
             type="password"
             autoComplete="new-password"
             placeholder={messages.confirmPasswordPlaceholder}
+            aria-invalid={state.fieldErrors.confirmPassword ? true : undefined}
+            aria-describedby={state.fieldErrors.confirmPassword ? 'register-confirm-password-error' : undefined}
           />
-          {state.fieldErrors.confirmPassword ? <span className="form-field__error">{state.fieldErrors.confirmPassword}</span> : null}
+          {state.fieldErrors.confirmPassword ? <span id="register-confirm-password-error" className="form-field__error">{state.fieldErrors.confirmPassword}</span> : null}
         </label>
       </div>
 

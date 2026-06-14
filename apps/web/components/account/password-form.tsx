@@ -16,26 +16,53 @@ export function PasswordForm() {
       </div>
 
       {state.message ? (
-        <div className={`form-banner form-banner--${state.status === 'error' ? 'error' : 'success'}`}>{state.message}</div>
+        <div
+          role="alert"
+          aria-live="polite"
+          className={`form-banner form-banner--${state.status === 'error' ? 'error' : 'success'}`}
+        >
+          {state.message}
+        </div>
       ) : null}
 
       <label className="form-field">
         <span>Current password</span>
-        <input name="currentPassword" type="password" autoComplete="current-password" />
-        {state.fieldErrors.currentPassword ? <span className="form-field__error">{state.fieldErrors.currentPassword}</span> : null}
+        <input
+          id="account-current-password"
+          name="currentPassword"
+          type="password"
+          autoComplete="current-password"
+          aria-invalid={state.fieldErrors.currentPassword ? true : undefined}
+          aria-describedby={state.fieldErrors.currentPassword ? 'account-current-password-error' : undefined}
+        />
+        {state.fieldErrors.currentPassword ? <span id="account-current-password-error" className="form-field__error">{state.fieldErrors.currentPassword}</span> : null}
       </label>
 
       <div className="form-grid form-grid--two">
         <label className="form-field">
           <span>New password</span>
-          <input name="nextPassword" type="password" autoComplete="new-password" />
-          {state.fieldErrors.nextPassword ? <span className="form-field__error">{state.fieldErrors.nextPassword}</span> : null}
+          <input
+            id="account-new-password"
+            name="nextPassword"
+            type="password"
+            autoComplete="new-password"
+            aria-invalid={state.fieldErrors.nextPassword ? true : undefined}
+            aria-describedby={state.fieldErrors.nextPassword ? 'account-new-password-error' : undefined}
+          />
+          {state.fieldErrors.nextPassword ? <span id="account-new-password-error" className="form-field__error">{state.fieldErrors.nextPassword}</span> : null}
         </label>
 
         <label className="form-field">
           <span>Confirm new password</span>
-          <input name="confirmPassword" type="password" autoComplete="new-password" />
-          {state.fieldErrors.confirmPassword ? <span className="form-field__error">{state.fieldErrors.confirmPassword}</span> : null}
+          <input
+            id="account-confirm-password"
+            name="confirmPassword"
+            type="password"
+            autoComplete="new-password"
+            aria-invalid={state.fieldErrors.confirmPassword ? true : undefined}
+            aria-describedby={state.fieldErrors.confirmPassword ? 'account-confirm-password-error' : undefined}
+          />
+          {state.fieldErrors.confirmPassword ? <span id="account-confirm-password-error" className="form-field__error">{state.fieldErrors.confirmPassword}</span> : null}
         </label>
       </div>
 

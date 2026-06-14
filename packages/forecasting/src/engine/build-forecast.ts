@@ -25,7 +25,11 @@ function computeScenarioWeights(
   return { bullish: wing, base: Math.max(0, 1 - 2 * wing), bearish: wing };
 }
 
-export function buildForecast(assetId: string): Forecast {
+// `producedAt` is passed in (never `Date.now()`/`new Date()` internally) so that
+// forecasting stays a pure, deterministic package per forecasting-purity-rule.md:
+// the same inputs always yield the same forecast, which makes it reproducible for
+// audit and unit-testable for determinism.
+export function buildForecast(assetId: string, producedAt: string): Forecast {
   return {
     assetId,
     horizon: 'short',
@@ -35,11 +39,11 @@ export function buildForecast(assetId: string): Forecast {
     scenarioWeights: computeScenarioWeights('neutral', 0.5),
     keyDrivers: ['insufficient live data wired yet'],
     riskFactors: ['forecast engine not fully calibrated'],
-    producedAt: new Date().toISOString(),
+    producedAt,
   };
 }
 
-export function buildForecastFromSignal(signal: SignalSnapshot): Forecast {
+export function buildForecastFromSignal(signal: SignalSnapshot, producedAt: string): Forecast {
   const directionalBias =
     signal.interpretation === 'bullish' ? 'bullish' : signal.interpretation === 'bearish' ? 'bearish' : 'neutral';
   const confidenceScore = Math.max(0.35, Math.min(0.9, Math.abs(signal.compositeScoreValue) + Math.min(signal.volatilityValue / 100, 0.15)));
@@ -66,6 +70,6 @@ export function buildForecastFromSignal(signal: SignalSnapshot): Forecast {
       `Observed volatility: ${signal.volatilityValue.toFixed(2)}`,
       'Signal is based on provider-returned history and not yet persistence-backed scenario calibration.',
     ],
-    producedAt: new Date().toISOString(),
+    producedAt,
   };
 }

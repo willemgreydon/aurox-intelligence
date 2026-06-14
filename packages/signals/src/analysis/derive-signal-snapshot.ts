@@ -27,7 +27,8 @@ function clamp(value: number, min: number, max: number) {
 }
 
 export function deriveSignalSnapshot(assetId: string, values: number[]): SignalSnapshot {
-  const latestPrice = values.at(-1) ?? null;
+  const lastValue = values.at(-1);
+  const latestPrice = lastValue !== undefined && Number.isFinite(lastValue) ? lastValue : null;
   const shortMovingAverage = movingAverage(values, Math.min(5, values.length));
   const longMovingAverage = movingAverage(values, Math.min(20, values.length));
   const momentumValue = momentum(values);

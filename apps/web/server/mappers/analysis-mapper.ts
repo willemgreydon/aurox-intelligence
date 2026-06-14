@@ -174,7 +174,10 @@ export function mapForecastsPage(readModel: AnalysisReadModel): ForecastsPageVie
       lastUpdatedLabel: formatOptionalDateTimeLabel(lastUpdated),
     },
     forecasts: signals.map((signal) => {
-      const forecast = buildForecastFromSignal(deriveSignalSnapshot(signal.assetId, readModel.assets.find((asset) => asset.assetId === signal.assetId)?.history.map((point) => point.close) ?? []));
+      const forecast = buildForecastFromSignal(
+        deriveSignalSnapshot(signal.assetId, readModel.assets.find((asset) => asset.assetId === signal.assetId)?.history.map((point) => point.close) ?? []),
+        new Date().toISOString(),
+      );
 
       return {
         ...forecast,

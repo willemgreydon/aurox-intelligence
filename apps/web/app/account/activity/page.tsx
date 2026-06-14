@@ -9,6 +9,9 @@ import { getRequestLocale } from '../../../server/i18n/locale';
 import { formatUsdPrice } from '../../../server/lib/quote-display';
 import { getSimulationOverviewDataForUser } from '../../../server/services/stock-simulation-service';
 
+// User-specific simulation activity — never cached at the route level.
+export const dynamic = 'force-dynamic';
+
 export default async function AccountActivityPage() {
   const auth = await requireCurrentSession('/account/activity');
   const locale = await getRequestLocale();
