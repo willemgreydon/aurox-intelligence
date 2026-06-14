@@ -242,7 +242,7 @@ export default async function SimulationPage({
     { key: 'quantity', label: messages.simulation.quantityColumn, align: 'right' },
     { key: 'averageCost', label: messages.simulation.averageCostColumn, align: 'right' },
     { key: 'marketPrice', label: messages.simulation.priceColumn, align: 'right' },
-    { key: 'allocation', label: 'Allocation', align: 'right' },
+    { key: 'allocation', label: messages.simulation.allocationColumn, align: 'right' },
     { key: 'unrealizedPnl', label: messages.simulation.unrealizedPnlColumn, align: 'right' },
   ];
 
@@ -262,22 +262,22 @@ export default async function SimulationPage({
   ];
 
   const orderColumns: Array<TableColumn<OrderRow>> = [
-    { key: 'side', label: 'Side' },
+    { key: 'side', label: messages.simulation.sideColumn },
     { key: 'symbol', label: messages.simulation.symbolColumn },
     { key: 'quantity', label: messages.simulation.quantityColumn, align: 'right' },
-    { key: 'executedPrice', label: 'Executed', align: 'right' },
-    { key: 'grossAmount', label: 'Gross', align: 'right' },
+    { key: 'executedPrice', label: messages.simulation.executedColumn, align: 'right' },
+    { key: 'grossAmount', label: messages.simulation.grossColumn, align: 'right' },
     { key: 'createdAt', label: messages.simulation.createdColumn, align: 'right' },
   ];
 
   const laneColumns: Array<TableColumn<LaneRow>> = [
-    { key: 'lane', label: 'Broker / strategy lane' },
-    { key: 'status', label: 'Status' },
-    { key: 'capitalLimit', label: 'Lane limit', align: 'right' },
-    { key: 'allocated', label: 'Allocated', align: 'right' },
-    { key: 'available', label: 'Available', align: 'right' },
-    { key: 'activePositions', label: 'Active positions', align: 'right' },
-    { key: 'recentOrders', label: 'Recent orders', align: 'right' },
+    { key: 'lane', label: messages.simulation.laneColumn },
+    { key: 'status', label: messages.simulation.statusColumn },
+    { key: 'capitalLimit', label: messages.simulation.laneLimitColumn, align: 'right' },
+    { key: 'allocated', label: messages.simulation.allocatedColumn, align: 'right' },
+    { key: 'available', label: messages.simulation.availableColumn, align: 'right' },
+    { key: 'activePositions', label: messages.simulation.activePositionsColumn, align: 'right' },
+    { key: 'recentOrders', label: messages.simulation.recentOrdersColumn, align: 'right' },
   ];
 
   const portfolioReturn =
@@ -352,18 +352,18 @@ export default async function SimulationPage({
         <Section className="dashboard-section dashboard-section--hero">
           <WorkstationPageHeader
             eyebrow={messages.simulation.navLabel}
-            title="Paper portfolio"
-            description="Track fictive cash, live-marked stock holdings, and an auditable transaction journal in one simulation workspace."
+            title={messages.simulation.paperPortfolioTitle}
+            description={messages.simulation.paperPortfolioDescription}
             summary={messages.common.simulationDisclosure}
             statusLabel={workstation.workstationStatus}
             statusTone={statusTone}
             meta={[
               { label: messages.common.lastUpdated, value: messages.common.unavailable },
-              { label: 'Total equity', value: messages.common.unavailable },
-              { label: 'Available cash', value: messages.common.unavailable },
+              { label: messages.simulation.totalEquityLabel, value: messages.common.unavailable },
+              { label: messages.simulation.availableCashLabel, value: messages.common.unavailable },
             ]}
             actions={[
-              { href: '/stocks', label: 'Browse stocks' },
+              { href: '/stocks', label: messages.simulation.browseStocks },
               { href: '/invest', label: messages.shell.nav.investHome },
               { href: '/dashboard', label: messages.shell.nav.dashboard },
             ]}
@@ -379,8 +379,8 @@ export default async function SimulationPage({
             defaultLaneId={defaultLaneId}
             activeSessionId={activeSessionId}
             activeLaneId={activeLaneId}
-            title="Choose a simulation lane and start it"
-            description="This page becomes fully interactive after you start or resume a simulation lane. The selected lane will be opened immediately and attached to this workstation."
+            title={messages.simulation.chooseLaneTitle}
+            description={messages.simulation.chooseLaneDescription}
           />
         </Section>
 
@@ -388,14 +388,14 @@ export default async function SimulationPage({
           <Card className="analytics-card">
             <div className="analytics-card__header">
               <div>
-                <div className="section__eyebrow">Session state</div>
-                <h3>Simulation session required</h3>
+                <div className="section__eyebrow">{messages.simulation.sessionStateEyebrow}</div>
+                <h3>{messages.simulation.sessionRequiredTitle}</h3>
                 <p>{localizedStatusMessage}</p>
               </div>
             </div>
             <div className="analytics-card__body">
-              <p>No active simulation workspace is attached yet.</p>
-              <p>Click <strong>Start simulation</strong> above to create or resume a lane session and unlock trading actions.</p>
+              <p>{messages.simulation.noActiveWorkspace}</p>
+              <p>{messages.simulation.startSimulationHintBefore}<strong>{messages.simulation.startSimulationHintAction}</strong>{messages.simulation.startSimulationHintAfter}</p>
             </div>
           </Card>
         </Section>
@@ -412,7 +412,7 @@ export default async function SimulationPage({
     <div className="analytics-two-grid analytics-two-grid--tables">
       <AnalyticsTable
         title={messages.simulation.positions}
-        subtitle="Holdings are valued with the latest cached stock quote when available."
+        subtitle={messages.simulation.holdingsSubtitle}
         columns={positionColumns}
         rows={portfolio.positions.map((position) => ({
           symbol: position.symbol,
@@ -428,12 +428,12 @@ export default async function SimulationPage({
               : '0.00%',
           unrealizedPnl: formatSignedCurrency(position.unrealizedPnl, locale, portfolio.summary.currency),
         }))}
-        emptyMessage="No positions are open yet. Use the tradable universe below to start your paper portfolio."
+        emptyMessage={messages.simulation.holdingsEmptyMessage}
         rowDetailsLabel={messages.table.rowDetails}
       />
       <AnalyticsTable
-        title="Closed investments"
-        subtitle="Fully exited positions with realized PnL history."
+        title={messages.simulation.closedInvestmentsTitle}
+        subtitle={messages.simulation.closedInvestmentsSubtitle}
         columns={closedPositionColumns}
         rows={portfolio.closedPositions.map((position) => ({
           symbol: position.symbol,
@@ -441,7 +441,7 @@ export default async function SimulationPage({
           averageCost: formatUsdPrice(position.averageCost, locale, messages.common.unavailable),
           realizedPnl: formatSignedCurrency(position.realizedPnl, locale, portfolio.summary.currency),
         }))}
-        emptyMessage="No closed investments yet."
+        emptyMessage={messages.simulation.closedInvestmentsEmptyMessage}
         rowDetailsLabel={messages.table.rowDetails}
       />
     </div>
@@ -452,8 +452,8 @@ export default async function SimulationPage({
   const ordersPanel = (
     <div className="analytics-two-grid analytics-two-grid--tables">
       <AnalyticsTable
-        title="Recent simulated orders"
-        subtitle="Order journal separated from cash transactions for clearer trading-activity auditing."
+        title={messages.simulation.recentOrdersTitle}
+        subtitle={messages.simulation.recentOrdersSubtitle}
         columns={orderColumns}
         rows={portfolio.orders.map((order) => ({
           side: order.side.toUpperCase(),
@@ -463,12 +463,12 @@ export default async function SimulationPage({
           grossAmount: formatSignedCurrency(order.cashEffect, locale, portfolio.summary.currency),
           createdAt: formatDateTimeLabel(order.createdAt, locale),
         }))}
-        emptyMessage="No simulated orders yet."
+        emptyMessage={messages.simulation.recentOrdersEmptyMessage}
         rowDetailsLabel={messages.table.rowDetails}
       />
       <AnalyticsTable
         title={messages.simulation.transactions}
-        subtitle="Every simulated cash movement is recorded in the portfolio journal."
+        subtitle={messages.simulation.transactionsSubtitle}
         columns={transactionColumns}
         rows={portfolio.transactions.map((transaction) => ({
           type: transaction.transactionType,
@@ -486,8 +486,8 @@ export default async function SimulationPage({
   const activityPanel = (
     <div className="analytics-main-grid">
       <PriceHistoryPanel
-        title="Equity curve"
-        subtitle="Snapshot history of total paper-portfolio equity."
+        title={messages.simulation.equityCurveTitle}
+        subtitle={messages.simulation.equityCurveSubtitle}
         points={workstation.equityCurve.map((point) => ({
           label: formatShortDateLabel(point.timestamp, locale),
           timestamp: point.timestamp,
@@ -497,30 +497,30 @@ export default async function SimulationPage({
           close: point.close,
           volume: null,
         }))}
-        note="Snapshots are simulation-only and marked using the latest cached stock prices."
-        emptyMessage="Portfolio history will appear after the worker or trade flow records more than one snapshot."
+        note={messages.simulation.equityCurveNote}
+        emptyMessage={messages.simulation.equityCurveEmptyMessage}
       />
       <SimulationControlsCard />
       <Card className="analytics-card">
         <div className="analytics-card__header">
           <div>
-            <div className="section__eyebrow">Micro trading mode</div>
-            <h3>Simulation-only micro order guardrails</h3>
+            <div className="section__eyebrow">{messages.simulation.microTradingEyebrow}</div>
+            <h3>{messages.simulation.microTradingTitle}</h3>
             <p>
-              {microTrading.enabled ? 'Enabled via feature flag.' : 'Disabled by default. Enable FEATURE_SIM_MICRO_TRADING=true for simulation.'}
+              {microTrading.enabled ? messages.simulation.microTradingEnabled : messages.simulation.microTradingDisabled}
             </p>
           </div>
         </div>
         <div className="analytics-card__body">
-          <p>Minimum simulated order size: {formatUsdPrice(microTrading.minimumSimulatedOrderNotional, locale, messages.common.unavailable)}</p>
-          <p>Estimated fee impact: {microTrading.estimatedFeeImpactBps} bps</p>
-          <p>Estimated spread impact: {microTrading.estimatedSpreadImpactBps} bps</p>
-          <p>Estimated slippage impact: {microTrading.estimatedSlippageImpactBps} bps</p>
-          <p>Max daily simulated trades: {microTrading.maxDailySimulatedTrades}</p>
-          <p>Min confidence threshold: {(microTrading.minConfidenceThreshold * 100).toFixed(0)}%</p>
-          <p>Max spread threshold: {microTrading.maxSpreadBpsThreshold} bps</p>
-          <p>Max volatility threshold: {(microTrading.maxVolatilityThreshold * 100).toFixed(1)}%</p>
-          <p><strong>Warning:</strong> {microTrading.highFrequencyRiskWarning}</p>
+          <p>{messages.simulation.microMinOrderSize} {formatUsdPrice(microTrading.minimumSimulatedOrderNotional, locale, messages.common.unavailable)}</p>
+          <p>{messages.simulation.microFeeImpact} {microTrading.estimatedFeeImpactBps} bps</p>
+          <p>{messages.simulation.microSpreadImpact} {microTrading.estimatedSpreadImpactBps} bps</p>
+          <p>{messages.simulation.microSlippageImpact} {microTrading.estimatedSlippageImpactBps} bps</p>
+          <p>{messages.simulation.microMaxDailyTrades} {microTrading.maxDailySimulatedTrades}</p>
+          <p>{messages.simulation.microMinConfidence} {(microTrading.minConfidenceThreshold * 100).toFixed(0)}%</p>
+          <p>{messages.simulation.microMaxSpread} {microTrading.maxSpreadBpsThreshold} bps</p>
+          <p>{messages.simulation.microMaxVolatility} {(microTrading.maxVolatilityThreshold * 100).toFixed(1)}%</p>
+          <p><strong>{messages.simulation.microWarningLabel}</strong> {microTrading.highFrequencyRiskWarning}</p>
         </div>
       </Card>
     </div>
@@ -533,10 +533,10 @@ export default async function SimulationPage({
       : 'holdings';
 
   const ledgerTabs: IntelligenceTab[] = [
-    { id: 'holdings', label: 'Holdings', hint: String(portfolio.positions.length), panel: holdingsPanel },
-    { id: 'journal', label: 'Journal', panel: journalPanel },
-    { id: 'orders', label: 'Orders & transactions', hint: String(portfolio.orders.length), panel: ordersPanel },
-    { id: 'activity', label: 'Activity', panel: activityPanel },
+    { id: 'holdings', label: messages.simulation.tabHoldings, hint: String(portfolio.positions.length), panel: holdingsPanel },
+    { id: 'journal', label: messages.simulation.tabJournal, panel: journalPanel },
+    { id: 'orders', label: messages.simulation.tabOrdersTransactions, hint: String(portfolio.orders.length), panel: ordersPanel },
+    { id: 'activity', label: messages.simulation.tabActivity, panel: activityPanel },
   ];
 
   // Localized labels for the tradable-universe explorer (controls + summary).
@@ -677,7 +677,7 @@ export default async function SimulationPage({
           categoryLabel={item.asset.category}
           thesis={item.asset.thesis}
           priceLabel={formatUsdPrice(item.quote?.price ?? null, locale, messages.common.unavailable)}
-          changeLabel="Watchlist"
+          changeLabel={messages.simulation.universe.summaryWatchlist}
           freshnessLabel={formatFreshnessLabel(getQuoteTimestamp(item.quote), locale, messages.common.unavailable, item.asset.assetClass)}
           actionAvailability={item.asset.actionAvailability}
           insightStance="neutral"
@@ -708,7 +708,7 @@ export default async function SimulationPage({
           category={item.asset.category}
           thesis={item.asset.thesis}
           priceLabel={formatUsdPrice(item.quote?.price ?? null, locale, messages.common.unavailable)}
-          changeLabel="Watchlist"
+          changeLabel={messages.simulation.universe.summaryWatchlist}
           freshnessLabel={formatFreshnessLabel(getQuoteTimestamp(item.quote), locale, messages.common.unavailable, item.asset.assetClass)}
           actionAvailability={item.asset.actionAvailability}
           insightStance="neutral"
@@ -747,8 +747,8 @@ export default async function SimulationPage({
       <Section className="dashboard-section dashboard-section--hero">
         <WorkstationPageHeader
           eyebrow={messages.simulation.navLabel}
-          title="Paper portfolio"
-          description="Track fictive cash, live-marked stock holdings, and an auditable transaction journal in one simulation workspace."
+          title={messages.simulation.paperPortfolioTitle}
+          description={messages.simulation.paperPortfolioDescription}
           summary={messages.common.simulationDisclosure}
           statusLabel={workstation.workstationStatus}
           statusTone={statusTone}
@@ -758,17 +758,17 @@ export default async function SimulationPage({
               value: formatDateTimeLabel(portfolio.summary.updatedAt, locale),
             },
             {
-              label: 'Total equity',
+              label: messages.simulation.totalEquityLabel,
               value: formatCashCurrency(portfolio.summary.equityValue, locale, portfolio.summary.currency),
             },
             {
-              label: 'Available cash',
+              label: messages.simulation.availableCashLabel,
               value: formatCashCurrency(portfolio.summary.availableCash, locale, portfolio.summary.currency),
             },
-            { label: 'Cash currency', value: portfolio.summary.currency },
+            { label: messages.simulation.cashCurrencyLabel, value: portfolio.summary.currency },
           ]}
           actions={[
-            { href: '/stocks', label: 'Browse stocks' },
+            { href: '/stocks', label: messages.simulation.browseStocks },
             { href: '/invest', label: messages.shell.nav.investHome },
             { href: '/dashboard', label: messages.shell.nav.dashboard },
           ]}
@@ -784,8 +784,8 @@ export default async function SimulationPage({
           defaultLaneId={defaultLaneId}
           activeSessionId={activeSessionId}
           activeLaneId={activeLaneId}
-          title="Current simulation lane"
-          description="You can resume the current lane, switch to another supported lane, or adjust lane-level capital before continuing simulated trading."
+          title={messages.simulation.currentLaneTitle}
+          description={messages.simulation.currentLaneDescription}
         />
       </Section>
 
@@ -794,22 +794,22 @@ export default async function SimulationPage({
           <Card className="analytics-card">
             <div className="analytics-card__header">
               <div>
-                <div className="section__eyebrow">SIMULATION / PREPARED TICKET</div>
-                <h3>{`Prepare ${preparedTicket.side === 'buy' ? 'Buy' : 'Sell'}: ${preparedAsset.asset.symbol}`}</h3>
-                <p>Review the simulated order before submitting. No real money or broker execution is involved.</p>
+                <div className="section__eyebrow">{messages.simulation.preparedTicketEyebrow}</div>
+                <h3>{messages.simulation.prepareTicketTitle.replace('{{side}}', preparedTicket.side === 'buy' ? messages.simulation.buy : messages.simulation.sell).replace('{{symbol}}', preparedAsset.asset.symbol)}</h3>
+                <p>{messages.simulation.prepareTicketDescription}</p>
                 <p className="simulation-form__meta">
-                  Macro context: {macroContext.regime.explanations[0] ?? 'Macro overlay unavailable.'}
+                  {messages.simulation.macroContextLabel} {macroContext.regime.explanations[0] ?? messages.simulation.macroOverlayUnavailable}
                 </p>
               </div>
               <div className="asset-card-actions__status-row">
-                <span className="status-pill status-pill--info">Simulation only</span>
+                <span className="status-pill status-pill--info">{messages.simulation.actions.simulationOnly}</span>
                 <span className="status-pill status-pill--neutral">{preparedAsset.asset.assetClass.toUpperCase()}</span>
                 <span className={`status-pill ${preparedTicket.side === 'buy' ? 'status-pill--success' : 'status-pill--warning'}`}>
                   {preparedTicket.side.toUpperCase()}
                 </span>
                 <span className="status-pill status-pill--neutral">{(preparedLaneResolution?.lane ?? preparedTicket.lane).replace(/_/g, ' ')}</span>
                 {preparedLaneResolution?.autoNormalized ? (
-                  <span className="status-pill status-pill--info">auto-aligned to active lane</span>
+                  <span className="status-pill status-pill--info">{messages.simulation.autoAlignedToActiveLane}</span>
                 ) : null}
                 {preparedTicket.source && preparedTicket.source !== 'simulation' && (
                   <span className="status-pill status-pill--neutral">{preparedTicket.source}</span>
@@ -818,7 +818,7 @@ export default async function SimulationPage({
             </div>
             <div className="analytics-card__body">
               <p>
-                Quote: {formatUsdPrice(preparedAsset.quote?.price ?? null, locale, messages.common.unavailable)} · State:{' '}
+                {messages.simulation.quoteLabel} {formatUsdPrice(preparedAsset.quote?.price ?? null, locale, messages.common.unavailable)} · {messages.simulation.stateLabel}{' '}
                 {preparedQuoteUsability?.reasonCode === 'CACHED_MARKET_CLOSED'
                   ? messages.simulation.form.cachedSimulationQuote
                   : preparedQuoteUsability?.reasonCode === 'DELAYED_QUOTE'
@@ -836,17 +836,17 @@ export default async function SimulationPage({
                 <p className="simulation-form__meta">{preparedQuoteUsability.warning}</p>
               ) : null}
               <div className="aurox-action-row" style={{ marginTop: '0.5rem', gap: '0.75rem' }}>
-                <Link href="/invest/simulation" className="journal-action-link" aria-label="Clear prepared ticket">
+                <Link href="/invest/simulation" className="journal-action-link" aria-label={messages.simulation.form.clearPreparedTicket}>
                   {messages.simulation.form.clearPreparedTicket}
                 </Link>
                 <Link
                   href={getAssetDetailHref(preparedAsset.asset.symbol, preparedAsset.asset.assetClass)}
                   className="journal-action-link"
-                  aria-label={`Open asset detail for ${preparedAsset.asset.symbol}`}
+                  aria-label={messages.simulation.openAssetDetailAria.replace('{{symbol}}', preparedAsset.asset.symbol)}
                 >
                   {messages.simulation.form.openAssetDetail}
                 </Link>
-                <Link href="/invest/portfolio" className="journal-action-link" aria-label="Open portfolio">
+                <Link href="/invest/portfolio" className="journal-action-link" aria-label={messages.simulation.form.openPortfolio}>
                   {messages.simulation.form.openPortfolio}
                 </Link>
               </div>
@@ -913,27 +913,27 @@ export default async function SimulationPage({
           remaining metrics stay one click away in the disclosure below. */}
       <Section className="dashboard-section">
         <div className="analytics-strip">
-          <CompactStatCard label={messages.simulation.cashBalance} value={formatCashCurrency(portfolio.summary.cashBalance, locale, portfolio.summary.currency)} detail="Total cash in the simulation account before reserve allocation." />
-          <CompactStatCard label="Available cash" value={formatCashCurrency(portfolio.summary.availableCash, locale, portfolio.summary.currency)} detail="Cash currently available for new simulated orders." />
-          <CompactStatCard label="Total equity" value={formatCashCurrency(portfolio.summary.equityValue, locale, portfolio.summary.currency)} detail="Cash plus the current market value of all open simulated positions." />
-          <CompactStatCard label="Total return" value={formatPercent(portfolioReturn)} detail="Portfolio return versus the default 100,000 USD fictive starting balance." />
-          <CompactStatCard label={messages.simulation.unrealizedPnl} value={formatSignedCurrency(portfolio.summary.unrealizedPnl, locale, portfolio.summary.currency)} detail="Open-position gain or loss versus average cost." />
-          <CompactStatCard label={messages.simulation.realizedPnl} value={formatSignedCurrency(portfolio.summary.realizedPnl, locale, portfolio.summary.currency)} detail="Closed-position gains and losses already locked in by simulated sells." />
+          <CompactStatCard label={messages.simulation.cashBalance} value={formatCashCurrency(portfolio.summary.cashBalance, locale, portfolio.summary.currency)} detail={messages.simulation.cashBalanceDetail} />
+          <CompactStatCard label={messages.simulation.availableCashLabel} value={formatCashCurrency(portfolio.summary.availableCash, locale, portfolio.summary.currency)} detail={messages.simulation.availableCashDetail} />
+          <CompactStatCard label={messages.simulation.totalEquityLabel} value={formatCashCurrency(portfolio.summary.equityValue, locale, portfolio.summary.currency)} detail={messages.simulation.totalEquityDetail} />
+          <CompactStatCard label={messages.simulation.totalReturnLabel} value={formatPercent(portfolioReturn)} detail={messages.simulation.totalReturnDetail} />
+          <CompactStatCard label={messages.simulation.unrealizedPnl} value={formatSignedCurrency(portfolio.summary.unrealizedPnl, locale, portfolio.summary.currency)} detail={messages.simulation.unrealizedPnlDetail} />
+          <CompactStatCard label={messages.simulation.realizedPnl} value={formatSignedCurrency(portfolio.summary.realizedPnl, locale, portfolio.summary.currency)} detail={messages.simulation.realizedPnlDetail} />
         </div>
       </Section>
 
       <Section className="dashboard-section">
-        <Disclosure summary="All portfolio metrics" hint="9 more">
+        <Disclosure summary={messages.simulation.allMetricsSummary} hint={messages.simulation.allMetricsHint}>
           <div className="analytics-strip">
-            <CompactStatCard label="Reserved cash" value={formatCashCurrency(portfolio.summary.reservedCash, locale, portfolio.summary.currency)} detail="Reserved lane capital (currently 0 in this release)." />
-            <CompactStatCard label="Invested capital" value={formatCashCurrency(portfolio.summary.investedCapital, locale, portfolio.summary.currency)} valueTone={portfolio.summary.investedCapital > 0 ? 'positive' : portfolio.summary.investedCapital < 0 ? 'negative' : 'neutral'} detail="Cost basis of all currently active simulated positions." />
-            <CompactStatCard label={messages.simulation.portfolioValue} value={formatCashCurrency(portfolio.summary.portfolioValue, locale, portfolio.summary.currency)} valueTone={portfolio.summary.portfolioValue > 0 ? 'positive' : portfolio.summary.portfolioValue < 0 ? 'negative' : 'neutral'} detail="Current market value of open simulated positions." />
-            <CompactStatCard label="Active investments" value={String(portfolio.summary.activeInvestmentCount)} detail="Open simulated positions currently running." />
-            <CompactStatCard label="Closed investments" value={String(portfolio.summary.closedInvestmentCount)} detail="Previously open positions now fully closed." />
-            <CompactStatCard label="FX conversion" value={portfolio.summary.fxConversionAvailable ? 'Available' : 'Unavailable'} detail={portfolio.summary.fxConversionNote} />
-            <CompactStatCard label="Last simulated action" value={portfolio.orders[0]?.executedAt ? formatDateTimeLabel(portfolio.orders[0].executedAt, locale) : 'Unavailable'} detail="Most recent simulated order execution timestamp." />
-            <CompactStatCard label="Last reset event" value={portfolio.transactions.find((tx) => tx.transactionType === 'reset')?.createdAt ? formatDateTimeLabel(portfolio.transactions.find((tx) => tx.transactionType === 'reset')!.createdAt, locale) : 'Unavailable'} detail="Most recent reset/control event timestamp." />
-            <CompactStatCard label="Execution mode" value="Simulation only" detail="Live trading remains disabled and gated." />
+            <CompactStatCard label={messages.simulation.reservedCashLabel} value={formatCashCurrency(portfolio.summary.reservedCash, locale, portfolio.summary.currency)} detail={messages.simulation.reservedCashDetail} />
+            <CompactStatCard label={messages.simulation.investedCapitalLabel} value={formatCashCurrency(portfolio.summary.investedCapital, locale, portfolio.summary.currency)} valueTone={portfolio.summary.investedCapital > 0 ? 'positive' : portfolio.summary.investedCapital < 0 ? 'negative' : 'neutral'} detail={messages.simulation.investedCapitalDetail} />
+            <CompactStatCard label={messages.simulation.portfolioValue} value={formatCashCurrency(portfolio.summary.portfolioValue, locale, portfolio.summary.currency)} valueTone={portfolio.summary.portfolioValue > 0 ? 'positive' : portfolio.summary.portfolioValue < 0 ? 'negative' : 'neutral'} detail={messages.simulation.portfolioValueDetail} />
+            <CompactStatCard label={messages.simulation.activeInvestmentsLabel} value={String(portfolio.summary.activeInvestmentCount)} detail={messages.simulation.activeInvestmentsDetail} />
+            <CompactStatCard label={messages.simulation.closedInvestmentsLabel} value={String(portfolio.summary.closedInvestmentCount)} detail={messages.simulation.closedInvestmentsDetail} />
+            <CompactStatCard label={messages.simulation.fxConversionLabel} value={portfolio.summary.fxConversionAvailable ? messages.simulation.fxAvailable : messages.common.unavailable} detail={portfolio.summary.fxConversionNote} />
+            <CompactStatCard label={messages.simulation.lastSimulatedActionLabel} value={portfolio.orders[0]?.executedAt ? formatDateTimeLabel(portfolio.orders[0].executedAt, locale) : messages.common.unavailable} detail={messages.simulation.lastSimulatedActionDetail} />
+            <CompactStatCard label={messages.simulation.lastResetEventLabel} value={portfolio.transactions.find((tx) => tx.transactionType === 'reset')?.createdAt ? formatDateTimeLabel(portfolio.transactions.find((tx) => tx.transactionType === 'reset')!.createdAt, locale) : messages.common.unavailable} detail={messages.simulation.lastResetEventDetail} />
+            <CompactStatCard label={messages.simulation.executionModeLabel} value={messages.simulation.actions.simulationOnly} detail={messages.simulation.executionModeDetail} />
           </div>
         </Disclosure>
       </Section>
@@ -944,42 +944,42 @@ export default async function SimulationPage({
       </Section>
 
       <Section className="dashboard-section dashboard-section--tinted">
-        <Disclosure summary="Lanes & exposure" hint={String(workstation.activityLanes.length)}>
+        <Disclosure summary={messages.simulation.lanesExposureSummary} hint={String(workstation.activityLanes.length)}>
           <div className="analytics-two-grid analytics-two-grid--tables">
             <AnalyticsTable
-              title="Broker and strategy lanes"
-              subtitle="Simulation-only activity buckets. Planned lanes do not execute any autonomous live trades."
+              title={messages.simulation.brokerStrategyLanesTitle}
+              subtitle={messages.simulation.brokerStrategyLanesSubtitle}
               columns={laneColumns}
               rows={workstation.activityLanes.map((lane) => ({
                 lane: lane.label,
                 status:
                   lane.status === 'active'
-                    ? 'Active (simulation)'
+                    ? messages.simulation.laneStatusActive
                     : lane.status === 'limited'
-                      ? 'Limited support'
-                      : 'Planned',
+                      ? messages.simulation.laneStatusLimited
+                      : messages.simulation.laneStatusPlanned,
                 capitalLimit: formatUsdPrice(lane.capitalLimit, locale, messages.common.unavailable),
                 allocated: formatUsdPrice(lane.allocatedCapital, locale, messages.common.unavailable),
                 available: formatUsdPrice(lane.availableCapital, locale, messages.common.unavailable),
                 activePositions: String(lane.activePositions),
                 recentOrders: String(lane.recentOrders),
               }))}
-              emptyMessage="No lane activity is available."
+              emptyMessage={messages.simulation.noLaneActivity}
               rowDetailsLabel={messages.table.rowDetails}
             />
             <Card className="analytics-card">
               <div className="analytics-card__header">
                 <div>
-                  <div className="section__eyebrow">Asset exposure</div>
-                  <h3>Active exposure by asset class</h3>
-                  <p>Watchlist symbols are separate from active investments and do not affect PnL totals.</p>
+                  <div className="section__eyebrow">{messages.simulation.assetExposureEyebrow}</div>
+                  <h3>{messages.simulation.assetExposureTitle}</h3>
+                  <p>{messages.simulation.assetExposureDescription}</p>
                 </div>
               </div>
               <div className="analytics-card__body">
                 {workstation.positionsByAssetClass.map((entry) => (
                   <p key={entry.assetClass}>
-                    {entry.assetClass.toUpperCase()}: {entry.activeCount} active positions,{' '}
-                    {formatUsdPrice(entry.marketValue, locale, messages.common.unavailable)} market value
+                    {entry.assetClass.toUpperCase()}: {entry.activeCount} {messages.simulation.activePositionsLabel},{' '}
+                    {formatUsdPrice(entry.marketValue, locale, messages.common.unavailable)} {messages.simulation.marketValueLabel}
                   </p>
                 ))}
                 <p>{messages.common.simulationDisclosure}</p>
@@ -991,19 +991,19 @@ export default async function SimulationPage({
 
       <Section className="dashboard-section">
         <SectionHeader
-          eyebrow="Markets"
-          title="Observe & trade"
-          description="Your watchlist and the tradable simulation universe — quote, freshness, and one-click simulated actions across stocks, ETFs, and crypto."
+          eyebrow={messages.simulation.marketsEyebrow}
+          title={messages.simulation.observeTradeTitle}
+          description={messages.simulation.observeTradeDescription}
         />
       </Section>
 
       <Section className="dashboard-section">
         <header className="dashboard-section-heading">
           <div>
-            <div className="section__eyebrow">Watchlist</div>
-            <h2 className="dashboard-section-heading__title">Saved assets and quick actions</h2>
+            <div className="section__eyebrow">{messages.simulation.universe.summaryWatchlist}</div>
+            <h2 className="dashboard-section-heading__title">{messages.simulation.savedAssetsTitle}</h2>
             <p className="dashboard-section-heading__description">
-              Saved assets stay one click away from detail, buy, and sell actions across stocks, ETFs, and crypto.
+              {messages.simulation.savedAssetsDescription}
             </p>
           </div>
           <MarketViewToggle
@@ -1027,9 +1027,9 @@ export default async function SimulationPage({
           <Card className="analytics-card">
             <div className="analytics-card__header">
               <div>
-                <div className="section__eyebrow">Watchlist</div>
-                <h3>No saved assets yet</h3>
-                <p>Save stocks, ETFs, or crypto assets to keep a multi-asset shortlist inside your simulation shell.</p>
+                <div className="section__eyebrow">{messages.simulation.universe.summaryWatchlist}</div>
+                <h3>{messages.simulation.noSavedAssetsTitle}</h3>
+                <p>{messages.simulation.noSavedAssetsDescription}</p>
               </div>
             </div>
           </Card>
@@ -1040,9 +1040,9 @@ export default async function SimulationPage({
         <header className="dashboard-section-heading">
           <div>
             <div className="section__eyebrow">{messages.simulation.assetUniverse}</div>
-            <h2 className="dashboard-section-heading__title">Tradable simulation universe</h2>
+            <h2 className="dashboard-section-heading__title">{messages.simulation.assetUniverse}</h2>
             <p className="dashboard-section-heading__description">
-              Manual multi-asset lane supports simulated stocks, ETFs, and crypto with fictive cash only. Live execution remains separately gated by broker readiness and policy controls.
+              {messages.simulation.tradableUniverseDescription}
             </p>
           </div>
         </header>
@@ -1056,56 +1056,54 @@ export default async function SimulationPage({
       {/* Context & experimental tools — demoted below the action surface so they
           stop competing with the trade ticket and ledger for attention. */}
       <Section className="dashboard-section">
-        <SectionHeader eyebrow="Context & tools" title="Insights and experimental tools" as="h2" />
-        <Disclosure summary="Macro regime context" hint="simulation only">
+        <SectionHeader eyebrow={messages.simulation.contextToolsEyebrow} title={messages.simulation.contextToolsTitle} as="h2" />
+        <Disclosure summary={messages.simulation.macroRegimeSummary} hint={messages.simulation.macroRegimeHint}>
           <Card className="analytics-card">
             <div className="analytics-card__header">
               <div>
-                <div className="section__eyebrow">Macro regime panel</div>
-                <h3>Simulation context only</h3>
+                <div className="section__eyebrow">{messages.simulation.macroRegimePanelEyebrow}</div>
+                <h3>{messages.simulation.simulationContextOnlyTitle}</h3>
                 <p>{macroContext.simulationOnlyLabel}</p>
               </div>
             </div>
             <div className="analytics-card__body">
               <div className="observation-regime-grid">
-                <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">Inflation pressure</div><div className="analytics-stat__value">{macroContext.regime.inflationRegime.score.toFixed(2)}</div></article>
-                <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">Rates pressure</div><div className="analytics-stat__value">{macroContext.regime.ratesRegime.score.toFixed(2)}</div></article>
-                <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">Growth backdrop</div><div className="analytics-stat__value">{macroContext.regime.growthRegime.score.toFixed(2)}</div></article>
-                <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">Risk-on / risk-off</div><div className="analytics-stat__value">{macroContext.regime.riskRegime.score.toFixed(2)}</div></article>
+                <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">{messages.simulation.inflationPressureLabel}</div><div className="analytics-stat__value">{macroContext.regime.inflationRegime.score.toFixed(2)}</div></article>
+                <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">{messages.simulation.ratesPressureLabel}</div><div className="analytics-stat__value">{macroContext.regime.ratesRegime.score.toFixed(2)}</div></article>
+                <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">{messages.simulation.growthBackdropLabel}</div><div className="analytics-stat__value">{macroContext.regime.growthRegime.score.toFixed(2)}</div></article>
+                <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">{messages.simulation.riskOnOffLabel}</div><div className="analytics-stat__value">{macroContext.regime.riskRegime.score.toFixed(2)}</div></article>
               </div>
-              <p className="simulation-form__meta">Sources: {macroContext.providerStatus.map((item) => `${item.provider}:${item.freshness}`).join(' | ') || 'unavailable'}</p>
+              <p className="simulation-form__meta">{messages.simulation.sourcesLabel} {macroContext.providerStatus.map((item) => `${item.provider}:${item.freshness}`).join(' | ') || messages.simulation.sourcesUnavailable}</p>
             </div>
           </Card>
         </Disclosure>
 
-        <Disclosure summary="Session diagnostics" hint={workstation.workstationStatus}>
+        <Disclosure summary={messages.simulation.sessionDiagnosticsSummary} hint={workstation.workstationStatus}>
           <Card className="analytics-card">
             <div className="analytics-card__header">
               <div>
-                <div className="section__eyebrow">Session state</div>
-                <h3>Session status: {workstation.workstationStatus}</h3>
+                <div className="section__eyebrow">{messages.simulation.sessionStateEyebrow}</div>
+                <h3>{messages.simulation.sessionStatusLabel} {workstation.workstationStatus}</h3>
                 <p>{localizedStatusMessage}</p>
               </div>
             </div>
             <div className="analytics-card__body">
-              <p>Session: {workstation.session?.id ?? messages.common.unavailable}</p>
-              <p>Lane: {workstation.session?.laneId ?? messages.common.unavailable}</p>
-              <p>Observation: {workstation.session?.observationStatus ?? messages.common.unavailable}</p>
-              <p>Trading actions: {workstation.isReadOnly ? 'Read-only' : 'Enabled in simulation'}</p>
+              <p>{messages.simulation.sessionFieldLabel} {workstation.session?.id ?? messages.common.unavailable}</p>
+              <p>{messages.simulation.laneFieldLabel} {workstation.session?.laneId ?? messages.common.unavailable}</p>
+              <p>{messages.simulation.observationFieldLabel} {workstation.session?.observationStatus ?? messages.common.unavailable}</p>
+              <p>{messages.simulation.tradingActionsFieldLabel} {workstation.isReadOnly ? messages.simulation.tradingReadOnly : messages.simulation.tradingEnabledInSimulation}</p>
             </div>
           </Card>
         </Disclosure>
 
-        <Disclosure summary="AI broker agent (experimental)">
+        <Disclosure summary={messages.simulation.aiBrokerAgentSummary}>
           <Card className="analytics-card">
             <div className="analytics-card__header">
               <div>
-                <div className="section__eyebrow">AI tools — experimental</div>
-                <h3>AI Simulation Broker Agent</h3>
+                <div className="section__eyebrow">{messages.simulation.aiToolsEyebrow}</div>
+                <h3>{messages.simulation.aiBrokerAgentTitle}</h3>
                 <p>
-                  AI-provider-powered simulation agent that analyzes your portfolio and proposes simulated
-                  trades. Simulation-only. No real money. All proposals pass existing risk guards before
-                  execution.
+                  {messages.simulation.aiBrokerAgentDescription}
                 </p>
               </div>
             </div>
