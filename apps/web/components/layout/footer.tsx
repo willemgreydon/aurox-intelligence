@@ -47,8 +47,12 @@ function buildFooterGroups(messages: AppMessages): FooterLinkGroup[] {
       links: [
         { label: messages.footer.termsLink, href: '/legal/terms' },
         { label: messages.footer.privacyLink, href: '/legal/privacy' },
+        { label: 'Cookie Notice', href: '/legal/cookie-notice' },
         { label: messages.footer.riskLink, href: '/legal/risk-disclosure' },
+        { label: 'AI Disclaimer', href: '/legal/ai-disclaimer' },
+        { label: 'Market Data Disclaimer', href: '/legal/market-data-disclaimer' },
         { label: 'Simulation Disclaimer', href: '/legal/simulation-disclaimer' },
+        { label: 'Contact & Support', href: '/legal/contact-support' },
         { label: 'Documentation', href: '/legal' },
       ],
     },
