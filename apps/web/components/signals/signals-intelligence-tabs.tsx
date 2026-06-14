@@ -78,7 +78,7 @@ function SimpleTable<T extends Record<string, string>>({
         <thead>
           <tr>
             {columns.map((col) => (
-              <th key={col.key as string} style={{ textAlign: col.align ?? 'left' }}>{col.label}</th>
+              <th scope="col" key={col.key as string} style={{ textAlign: col.align ?? 'left' }}>{col.label}</th>
             ))}
           </tr>
         </thead>

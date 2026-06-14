@@ -85,7 +85,9 @@
     "signals": "الإشارات",
     "risk": "المخاطر",
     "journal": "السجل",
-    "data": "البيانات"
+    "data": "البيانات",
+    "pageNotFoundTitle": "الصفحة غير موجودة",
+    "pageNotFoundDescription": "تعذر العثور على الصفحة التي تبحث عنها. ربما تم نقلها أو لم تعد موجودة."
   },
   "auth": {
     "loginEyebrow": "Authentication",
@@ -126,7 +128,9 @@
     "forgotSubmit": "إرسال التعليمات",
     "forgotSending": "جارٍ الإرسال...",
     "forgotCheckEmail": "تحقق من بريدك الوارد",
-    "backToLogin": "العودة إلى تسجيل الدخول"
+    "backToLogin": "العودة إلى تسجيل الدخول",
+    "showPassword": "إظهار كلمة المرور",
+    "hidePassword": "إخفاء كلمة المرور"
   },
   "dashboard": {
     "headerEyebrow": "Operational dashboard",

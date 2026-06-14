@@ -1,4 +1,5 @@
 import { ObserveWorkstation } from '../../components/observe/observe-workstation';
+import { SimulationModeBadge } from '../../components/ui/simulation-mode-badge';
 import { getObserveViewModel } from '../../server/services/market-observation-service';
 import { requireCurrentSession } from '../../server/auth/session';
 import { assertSerializableProps } from '../../lib/assert-serializable-props';
@@ -71,9 +72,7 @@ export default async function ObservePage({
                   {warningCount} Warning
                 </span>
               )}
-              <span className="observe-chip observe-chip--info" title="Simulation only — no live capital">
-                SIM only
-              </span>
+              <SimulationModeBadge />
               <span className="observe-chip observe-chip--neutral" title={`Generated at ${generatedLabel}`}>
                 {generatedLabel}
               </span>

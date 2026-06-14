@@ -105,28 +105,28 @@ export default async function ProviderMonitoringConfigPage() {
             <table className="table-panel__table">
               <thead>
                 <tr>
-                  <th>Provider</th>
-                  <th>Display</th>
-                  <th>Configured</th>
-                  <th>Auth mode</th>
-                  <th>API key</th>
-                  <th>Quote mode</th>
-                  <th>WS</th>
-                  <th>REST</th>
-                  <th>Stream</th>
-                  <th>Last message</th>
-                  <th>Subscribed symbols</th>
-                  <th>Channels</th>
-                  <th>Asset classes</th>
-                  <th>1m</th>
-                  <th>5m</th>
-                  <th>15m</th>
-                  <th>30m</th>
-                  <th>60m</th>
-                  <th>1d</th>
-                  <th>Last success</th>
-                  <th>Last failure</th>
-                  <th>Rate limit</th>
+                  <th scope="col">Provider</th>
+                  <th scope="col">Display</th>
+                  <th scope="col">Configured</th>
+                  <th scope="col">Auth mode</th>
+                  <th scope="col">API key</th>
+                  <th scope="col">Quote mode</th>
+                  <th scope="col">WS</th>
+                  <th scope="col">REST</th>
+                  <th scope="col">Stream</th>
+                  <th scope="col">Last message</th>
+                  <th scope="col">Subscribed symbols</th>
+                  <th scope="col">Channels</th>
+                  <th scope="col">Asset classes</th>
+                  <th scope="col">1m</th>
+                  <th scope="col">5m</th>
+                  <th scope="col">15m</th>
+                  <th scope="col">30m</th>
+                  <th scope="col">60m</th>
+                  <th scope="col">1d</th>
+                  <th scope="col">Last success</th>
+                  <th scope="col">Last failure</th>
+                  <th scope="col">Rate limit</th>
                 </tr>
               </thead>
               <tbody>

@@ -6,6 +6,7 @@ import type { AppMessages } from '../../lib/i18n/messages';
 import { emptyFormState } from '../../server/auth/forms';
 import { loginAction } from '../../server/actions/auth-actions';
 import { FormSubmitButton } from './form-submit-button';
+import { PasswordInput } from './password-input';
 
 type LoginFormProps = {
   nextPath: string | null;
@@ -59,14 +60,15 @@ export function LoginForm({ nextPath, messages }: LoginFormProps) {
 
       <label className="form-field">
         <span>{messages.password}</span>
-        <input
+        <PasswordInput
           id="login-password"
           name="password"
-          type="password"
           autoComplete="current-password"
           placeholder={messages.passwordPlaceholder}
-          aria-invalid={passwordError ? true : undefined}
-          aria-describedby={passwordError ? 'login-password-error' : undefined}
+          ariaInvalid={Boolean(passwordError)}
+          ariaDescribedby={passwordError ? 'login-password-error' : undefined}
+          showLabel={messages.showPassword}
+          hideLabel={messages.hidePassword}
         />
         {passwordError ? (
           <span id="login-password-error" className="form-field__error">{passwordError}</span>

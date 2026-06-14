@@ -85,7 +85,9 @@
     "signals": "Signalen",
     "risk": "Risico",
     "journal": "Journaal",
-    "data": "Gegevens"
+    "data": "Gegevens",
+    "pageNotFoundTitle": "Pagina niet gevonden",
+    "pageNotFoundDescription": "We konden de pagina die je zocht niet vinden. Mogelijk is deze verplaatst of bestaat niet meer."
   },
   "auth": {
     "loginEyebrow": "Authentication",
@@ -126,7 +128,9 @@
     "forgotSubmit": "Instructies verzenden",
     "forgotSending": "Verzenden...",
     "forgotCheckEmail": "Controleer je inbox",
-    "backToLogin": "Terug naar inloggen"
+    "backToLogin": "Terug naar inloggen",
+    "showPassword": "Wachtwoord tonen",
+    "hidePassword": "Wachtwoord verbergen"
   },
   "dashboard": {
     "headerEyebrow": "Operational dashboard",

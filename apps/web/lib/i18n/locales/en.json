@@ -81,6 +81,8 @@
     "live": "Live",
     "none": "None",
     "simulationDisclosure": "Simulation only. No real money, brokerage execution, or regulated order routing is performed.",
+    "pageNotFoundTitle": "Page not found",
+    "pageNotFoundDescription": "We couldn't find the page you were looking for. It may have moved or no longer exists.",
     "overview": "Overview",
     "signals": "Signals",
     "risk": "Risk",
@@ -126,7 +128,9 @@
     "forgotSubmit": "Send reset instructions",
     "forgotSending": "Sending...",
     "forgotCheckEmail": "Check your inbox",
-    "backToLogin": "Back to sign in"
+    "backToLogin": "Back to sign in",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password"
   },
   "dashboard": {
     "headerEyebrow": "Operational dashboard",

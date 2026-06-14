@@ -85,7 +85,9 @@
     "signals": "संकेत",
     "risk": "जोखिम",
     "journal": "जर्नल",
-    "data": "डेटा"
+    "data": "डेटा",
+    "pageNotFoundTitle": "पृष्ठ नहीं मिला",
+    "pageNotFoundDescription": "हम वह पृष्ठ नहीं ढूंढ सके जिसे आप खोज रहे थे। यह स्थानांतरित हो गया होगा या अब मौजूद नहीं है।"
   },
   "auth": {
     "loginEyebrow": "Authentication",
@@ -126,7 +128,9 @@
     "forgotSubmit": "रीसेट निर्देश भेजें",
     "forgotSending": "भेज रहे हैं...",
     "forgotCheckEmail": "अपना इनबॉक्स जांचें",
-    "backToLogin": "साइन इन पर वापस जाएं"
+    "backToLogin": "साइन इन पर वापस जाएं",
+    "showPassword": "पासवर्ड दिखाएं",
+    "hidePassword": "पासवर्ड छिपाएं"
   },
   "dashboard": {
     "headerEyebrow": "Operational dashboard",

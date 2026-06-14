@@ -37,6 +37,9 @@ bower_components
 # Compiled binary addons (https://nodejs.org/api/addons.html)
 build/Release
 
+# Local Claude Code settings — must never be committed (env-secret-rule)
+.claude/settings.local.json
+
 # Dependency directories
 node_modules/
 jspm_packages/
