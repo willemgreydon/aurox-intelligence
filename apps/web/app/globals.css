@@ -4960,6 +4960,18 @@ code,
   display: flex;
   align-items: baseline;
   gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+/* Quote-freshness chip (AUR-002): sits beside a price so a price is never shown
+   without an accompanying freshness/timestamp signal. */
+.freshness-chip {
+  align-self: center;
+}
+
+.freshness-chip--compact {
+  font-size: 0.6rem;
+  padding: 0.1rem 0.4rem;
 }
 
 .market-graph__instrument-price {

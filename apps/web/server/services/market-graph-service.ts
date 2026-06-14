@@ -90,6 +90,8 @@ export type MarketGraphAssetResult = {
   snapshot: {
     price: number;
     changePercent?: number;
+    /** Quote observation time (ISO) for freshness/staleness display. */
+    observedAt?: string | null;
   } | null;
 };
 
@@ -345,10 +347,11 @@ export async function getMarketGraphData(options: MarketGraphDataOptions = {}): 
       if (!snapshot || typeof snapshot.price !== 'number') {
         return null;
       }
+      const observedAt = snapshot.observedAt ?? snapshot.fetchedAt ?? null;
       if (typeof snapshot.changePercent === 'number') {
-        return { price: snapshot.price, changePercent: snapshot.changePercent };
+        return { price: snapshot.price, changePercent: snapshot.changePercent, observedAt };
       }
-      return { price: snapshot.price };
+      return { price: snapshot.price, observedAt };
     })(),
   }));
 
