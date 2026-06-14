@@ -34,6 +34,7 @@ import {
   getQuoteTimestamp,
 } from '../../../server/lib/quote-display';
 import { getSimulationWorkstationStateForCurrentUser } from '../../../server/services/simulation-workstation-service';
+import { getPreTradeRiskGate } from '../../../server/services/pre-trade-risk-service';
 import { loadMiniHistorySeries } from '../../../server/services/stock-simulation-service';
 import { checkAiSimulationAgentAvailability } from '../../../server/services/ai-simulation-agent-service';
 import { getMicroTradingGuardrailsForDisplay } from '../../../server/services/simulation-service';
@@ -323,6 +324,14 @@ export default async function SimulationPage({
       symbol: preparedAsset.asset.symbol,
       assetClass: preparedAsset.asset.assetClass,
       quote: preparedAsset.quote,
+    })
+    : null;
+  const preparedRiskGate = preparedTicket && preparedAsset
+    ? await getPreTradeRiskGate({
+      symbol: preparedAsset.asset.symbol,
+      assetClass: preparedAsset.asset.assetClass,
+      side: preparedTicket.side,
+      laneId: preparedLaneResolution?.lane ?? preparedTicket.lane,
     })
     : null;
   const aiPanelLabels = {
@@ -853,6 +862,7 @@ export default async function SimulationPage({
                 label={preparedTicket.side === 'buy' ? messages.dashboard.buySimulated : messages.dashboard.sellSimulated}
                 showQuantityInput
                 quantityLabel={messages.simulation.quantity}
+                riskGate={preparedRiskGate ?? undefined}
                 disabled={workstation.isReadOnly || preparedAsset.quote?.price == null || (preparedTicket.side === 'sell' && !heldPositionsBySymbol.has(preparedAsset.asset.symbol))}
                 disabledReason={resolveTradeDisabledReason({
                   isReadOnly: workstation.isReadOnly,
