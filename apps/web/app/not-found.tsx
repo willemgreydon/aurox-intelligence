@@ -12,8 +12,8 @@ export default async function NotFound() {
     <Section className="section--hero">
       <StatePanel
         eyebrow="404"
-        title={messages.common.unavailable}
-        description={messages.common.simulationDisclosure}
+        title={messages.common.pageNotFoundTitle}
+        description={messages.common.pageNotFoundDescription}
         actions={
           <>
             <Link href="/" className="button button--primary">

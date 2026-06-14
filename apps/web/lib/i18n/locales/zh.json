@@ -85,7 +85,9 @@
     "signals": "信号",
     "risk": "风险",
     "journal": "日志",
-    "data": "数据"
+    "data": "数据",
+    "pageNotFoundTitle": "未找到页面",
+    "pageNotFoundDescription": "我们找不到您要查找的页面。它可能已被移动或不再存在。"
   },
   "auth": {
     "loginEyebrow": "Authentication",
@@ -126,7 +128,9 @@
     "forgotSubmit": "发送重置说明",
     "forgotSending": "发送中...",
     "forgotCheckEmail": "请查收您的收件箱",
-    "backToLogin": "返回登录"
+    "backToLogin": "返回登录",
+    "showPassword": "显示密码",
+    "hidePassword": "隐藏密码"
   },
   "dashboard": {
     "headerEyebrow": "Operational dashboard",

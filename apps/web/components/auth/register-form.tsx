@@ -6,6 +6,7 @@ import type { AppMessages } from '../../lib/i18n/messages';
 import { emptyFormState } from '../../server/auth/forms';
 import { registerAction } from '../../server/actions/auth-actions';
 import { FormSubmitButton } from './form-submit-button';
+import { PasswordInput } from './password-input';
 
 type RegisterFormProps = {
   nextPath: string | null;
@@ -65,28 +66,30 @@ export function RegisterForm({ nextPath, messages }: RegisterFormProps) {
       <div className="form-grid form-grid--two">
         <label className="form-field">
           <span>{messages.password}</span>
-          <input
+          <PasswordInput
             id="register-password"
             name="password"
-            type="password"
             autoComplete="new-password"
             placeholder={messages.newPasswordPlaceholder}
-            aria-invalid={state.fieldErrors.password ? true : undefined}
-            aria-describedby={state.fieldErrors.password ? 'register-password-error' : undefined}
+            ariaInvalid={Boolean(state.fieldErrors.password)}
+            ariaDescribedby={state.fieldErrors.password ? 'register-password-error' : undefined}
+            showLabel={messages.showPassword}
+            hideLabel={messages.hidePassword}
           />
           {state.fieldErrors.password ? <span id="register-password-error" className="form-field__error">{state.fieldErrors.password}</span> : null}
         </label>
 
         <label className="form-field">
           <span>{messages.confirmPassword}</span>
-          <input
+          <PasswordInput
             id="register-confirm-password"
             name="confirmPassword"
-            type="password"
             autoComplete="new-password"
             placeholder={messages.confirmPasswordPlaceholder}
-            aria-invalid={state.fieldErrors.confirmPassword ? true : undefined}
-            aria-describedby={state.fieldErrors.confirmPassword ? 'register-confirm-password-error' : undefined}
+            ariaInvalid={Boolean(state.fieldErrors.confirmPassword)}
+            ariaDescribedby={state.fieldErrors.confirmPassword ? 'register-confirm-password-error' : undefined}
+            showLabel={messages.showPassword}
+            hideLabel={messages.hidePassword}
           />
           {state.fieldErrors.confirmPassword ? <span id="register-confirm-password-error" className="form-field__error">{state.fieldErrors.confirmPassword}</span> : null}
         </label>

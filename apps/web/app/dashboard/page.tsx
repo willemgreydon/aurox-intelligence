@@ -152,7 +152,11 @@ export default async function DashboardPage() {
                   <article key={item.id} className="dashboard-exec-list__item">
                     <strong>{item.title}</strong>
                     <span className="text-muted">{item.source}</span>
-                    {item.href ? <a href={item.href} target="_blank" rel="noreferrer noopener">Open source</a> : <span className="text-muted">No source URL</span>}
+                    {item.href ? (
+                      <a href={item.href} target="_blank" rel="noreferrer noopener">Open source</a>
+                    ) : (
+                      <span className="text-muted">Source unavailable</span>
+                    )}
                   </article>
                 ))}
               </div>

@@ -1,4 +1,5 @@
 import { SignalsCockpit } from '../../components/signals/signals-cockpit';
+import { SimulationModeBadge } from '../../components/ui/simulation-mode-badge';
 import { getSignalsPageData } from '../../server/services/analysis-service';
 import { assertSerializableProps } from '../../lib/assert-serializable-props';
 
@@ -33,9 +34,7 @@ export default async function SignalsPage() {
               <span className="observe-chip observe-chip--neutral" title="Tracked signals">
                 {data.signals.length} Signals
               </span>
-              <span className="observe-chip observe-chip--info" title="Simulation only — no live capital">
-                SIM only
-              </span>
+              <SimulationModeBadge />
               <span className="observe-chip observe-chip--neutral" title={`Data as of ${data.overview.lastUpdatedLabel}`}>
                 {data.overview.lastUpdatedLabel}
               </span>

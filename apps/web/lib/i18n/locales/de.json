@@ -85,7 +85,9 @@
     "signals": "Signale",
     "risk": "Risiko",
     "journal": "Journal",
-    "data": "Daten"
+    "data": "Daten",
+    "pageNotFoundTitle": "Seite nicht gefunden",
+    "pageNotFoundDescription": "Wir konnten die gesuchte Seite nicht finden. Sie wurde möglicherweise verschoben oder existiert nicht mehr."
   },
   "auth": {
     "loginEyebrow": "Authentifizierung",
@@ -126,7 +128,9 @@
     "forgotSubmit": "Anweisungen zum Zurücksetzen senden",
     "forgotSending": "Wird gesendet...",
     "forgotCheckEmail": "Überprüfen Sie Ihren Posteingang",
-    "backToLogin": "Zurück zur Anmeldung"
+    "backToLogin": "Zurück zur Anmeldung",
+    "showPassword": "Passwort anzeigen",
+    "hidePassword": "Passwort verbergen"
   },
   "dashboard": {
     "headerEyebrow": "Operatives Dashboard",

@@ -48,7 +48,7 @@ export function AnalyticsTable<T extends Record<string, string>>({
                 <thead>
                   <tr>
                     {columns.map((column) => (
-                      <th key={String(column.key)} className={cn(column.align === 'right' && 'analytics-table__cell--right')}>
+                      <th scope="col" key={String(column.key)} className={cn(column.align === 'right' && 'analytics-table__cell--right')}>
                         <button type="button" className="analytics-table__sort">
                           {column.label}
                         </button>

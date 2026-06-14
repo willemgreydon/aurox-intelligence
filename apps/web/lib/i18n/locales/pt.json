@@ -85,7 +85,9 @@
     "signals": "Sinais",
     "risk": "Risco",
     "journal": "Diário",
-    "data": "Dados"
+    "data": "Dados",
+    "pageNotFoundTitle": "Página não encontrada",
+    "pageNotFoundDescription": "Não encontramos a página que você procurava. Ela pode ter sido movida ou não existir mais."
   },
   "auth": {
     "loginEyebrow": "Authentication",
@@ -126,7 +128,9 @@
     "forgotSubmit": "Enviar instruções",
     "forgotSending": "Enviando...",
     "forgotCheckEmail": "Verifique sua caixa de entrada",
-    "backToLogin": "Voltar para o login"
+    "backToLogin": "Voltar para o login",
+    "showPassword": "Mostrar senha",
+    "hidePassword": "Ocultar senha"
   },
   "dashboard": {
     "headerEyebrow": "Operational dashboard",

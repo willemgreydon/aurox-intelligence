@@ -1,4 +1,5 @@
 import { MarketGraphSection } from '../../components/charts/market-graph-section';
+import { SimulationModeBadge } from '../../components/ui/simulation-mode-badge';
 import { getMessages } from '../../lib/i18n/messages';
 import { getRequestLocale } from '../../server/i18n/locale';
 import { getMarketGraphData } from '../../server/services/market-graph-service';
@@ -47,9 +48,7 @@ export default async function MarketPage() {
               <span className="observe-chip observe-chip--neutral" title="History window">
                 2Y History
               </span>
-              <span className="observe-chip observe-chip--info" title="Simulation only — no live capital">
-                SIM only
-              </span>
+              <SimulationModeBadge />
             </div>
           </div>
           <nav className="observe-command-header__actions" aria-label="Market primary actions">
