@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { formatChartMonthRange } from '../../lib/chart-date-format';
 import { decodeHtmlEntities } from '../../lib/text/decode-html-entities';
+import { FreshnessIndicator } from '../market/freshness-indicator';
 import {
   MARKET_GRAPH_TIMEFRAMES,
   formatAxisTimestamp,
@@ -38,6 +39,7 @@ type AssetSeries = {
   snapshot: {
     price: number;
     changePercent?: number;
+    observedAt?: string | null;
   } | null;
 };
 
@@ -286,7 +288,7 @@ export function MarketGraphWorkspace({
   const [historyFetchPending, setHistoryFetchPending] = useState(false);
   const [historyFetchError, setHistoryFetchError] = useState<string | null>(null);
   const [historyTopUps, setHistoryTopUps] = useState<Record<string, HistoryPoint[]>>({});
-  const [quoteOverrides, setQuoteOverrides] = useState<Record<string, { price: number; changePercent?: number }>>({});
+  const [quoteOverrides, setQuoteOverrides] = useState<Record<string, { price: number; changePercent?: number; observedAt?: string | null }>>({});
 
   const mergedAssets = useMemo(() => {
     return normalizedAssets.map((asset) => {
@@ -447,6 +449,12 @@ export function MarketGraphWorkspace({
             [selectedSymbol]: {
               price: quote.price,
               ...(typeof quote.changePercent === 'number' ? { changePercent: quote.changePercent } : {}),
+              observedAt:
+                typeof quote.observedAt === 'string'
+                  ? quote.observedAt
+                  : typeof quote.fetchedAt === 'string'
+                    ? quote.fetchedAt
+                    : null,
             },
           }));
         }
@@ -915,6 +923,11 @@ export function MarketGraphWorkspace({
             <div className="market-graph__instrument-price-row">
               <span className="market-graph__instrument-price">{priceLabel}</span>
               <span className={`market-graph__instrument-change ${changeToneClass}`}>{changeLabel}</span>
+              <FreshnessIndicator
+                assetClass={selected.assetClass}
+                observedAt={selected.snapshot?.observedAt ?? null}
+                price={selected.snapshot?.price ?? null}
+              />
             </div>
             <div className="market-graph__instrument-range">{rangeLabel}</div>
           </div>
@@ -1211,6 +1224,12 @@ export function MarketGraphWorkspace({
                     <span className={typeof asset.snapshot?.changePercent === 'number' ? asset.snapshot.changePercent >= 0 ? 'market-graph__instrument-change--up' : 'market-graph__instrument-change--down' : 'market-graph__instrument-change--flat'}>
                       {typeof asset.snapshot?.changePercent === 'number' ? `${asset.snapshot.changePercent >= 0 ? '+' : ''}${asset.snapshot.changePercent.toFixed(2)}%` : labels.unavailable}
                     </span>
+                    <FreshnessIndicator
+                      assetClass={asset.assetClass}
+                      observedAt={asset.snapshot?.observedAt ?? null}
+                      price={asset.snapshot?.price ?? null}
+                      className="freshness-chip--compact"
+                    />
                   </div>
                 </li>
               )) : <li className="broker-observer__empty">No watchlist data available.</li>}
