@@ -780,6 +780,22 @@
     "privacyLink": "Privacybeleid",
     "riskLink": "Risico-openbaarmaking",
     "imprintLink": "Juridische kennisgeving",
-    "copyrightSuffix": "Ontworpen voor institutionele analyseteams en interne operators."
+    "copyrightSuffix": "Ontworpen voor institutionele analyseteams en interne operators.",
+    "groupIntelligence": "Intelligence",
+    "etfsLink": "ETFs",
+    "cryptoLink": "Crypto",
+    "macroLink": "Macro",
+    "watchlistLink": "Volglijst",
+    "aiBrokerLink": "AI-broker",
+    "riskEngineLink": "Risico-engine",
+    "signalFrameworkLink": "Signaalframework",
+    "simulationShortLink": "Simulatie",
+    "adminMonitorLink": "Admin-monitor",
+    "cookieNoticeLink": "Cookiemelding",
+    "aiDisclaimerLink": "AI-disclaimer",
+    "marketDataDisclaimerLink": "Disclaimer marktgegevens",
+    "simulationDisclaimerLink": "Simulatiedisclaimer",
+    "contactSupportLink": "Contact en ondersteuning",
+    "documentationLink": "Documentatie"
   }
 }

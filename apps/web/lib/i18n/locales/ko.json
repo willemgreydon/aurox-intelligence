@@ -780,6 +780,22 @@
     "privacyLink": "개인정보 처리방침",
     "riskLink": "리스크 고지",
     "imprintLink": "법적 고지",
-    "copyrightSuffix": "기관 분석 팀과 내부 운영자를 위해 설계되었습니다."
+    "copyrightSuffix": "기관 분석 팀과 내부 운영자를 위해 설계되었습니다.",
+    "groupIntelligence": "인텔리전스",
+    "etfsLink": "ETF",
+    "cryptoLink": "가상자산",
+    "macroLink": "매크로",
+    "watchlistLink": "관심목록",
+    "aiBrokerLink": "AI 브로커",
+    "riskEngineLink": "리스크 엔진",
+    "signalFrameworkLink": "시그널 프레임워크",
+    "simulationShortLink": "시뮬레이션",
+    "adminMonitorLink": "관리자 모니터",
+    "cookieNoticeLink": "쿠키 고지",
+    "aiDisclaimerLink": "AI 면책 조항",
+    "marketDataDisclaimerLink": "시장 데이터 면책 조항",
+    "simulationDisclaimerLink": "시뮬레이션 면책 조항",
+    "contactSupportLink": "문의 및 지원",
+    "documentationLink": "문서"
   }
 }

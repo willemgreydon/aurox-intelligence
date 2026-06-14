@@ -780,6 +780,22 @@
     "privacyLink": "Datenschutzrichtlinie",
     "riskLink": "Risikooffenlegung",
     "imprintLink": "Impressum",
-    "copyrightSuffix": "Konzipiert für institutionelle Analyseteams und interne Operatoren."
+    "copyrightSuffix": "Konzipiert für institutionelle Analyseteams und interne Operatoren.",
+    "groupIntelligence": "Intelligenz",
+    "etfsLink": "ETFs",
+    "cryptoLink": "Krypto",
+    "macroLink": "Makro",
+    "watchlistLink": "Beobachtungsliste",
+    "aiBrokerLink": "KI-Broker",
+    "riskEngineLink": "Risiko-Engine",
+    "signalFrameworkLink": "Signal-Framework",
+    "simulationShortLink": "Simulation",
+    "adminMonitorLink": "Admin-Monitor",
+    "cookieNoticeLink": "Cookie-Hinweis",
+    "aiDisclaimerLink": "KI-Haftungsausschluss",
+    "marketDataDisclaimerLink": "Marktdaten-Haftungsausschluss",
+    "simulationDisclaimerLink": "Simulations-Haftungsausschluss",
+    "contactSupportLink": "Kontakt & Support",
+    "documentationLink": "Dokumentation"
   }
 }
