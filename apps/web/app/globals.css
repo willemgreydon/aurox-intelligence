@@ -2151,6 +2151,65 @@ code,
   text-transform: uppercase;
 }
 
+/* Pre-trade risk gate summary (AUR-018). */
+.risk-gate {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+  padding: var(--space-3);
+  border: var(--border-width-thin, 1px) solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised, transparent);
+}
+
+.risk-gate__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.risk-gate__title {
+  margin: 0;
+  font-size: var(--font-size-sm);
+}
+
+.risk-gate__list {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.risk-gate__item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.risk-gate__pill {
+  min-width: 1.875rem;
+  justify-content: center;
+}
+
+.risk-gate__label {
+  display: grid;
+  gap: 0.1rem;
+  font-size: var(--font-size-sm);
+}
+
+.risk-gate__reason {
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.risk-gate__footnote {
+  margin: 0;
+  color: var(--text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
 .status-pill--success {
   color: var(--status-success-text);
   background: var(--status-success-bg);

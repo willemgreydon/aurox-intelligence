@@ -7,6 +7,8 @@ import { emptyFormState, type FormState, type OrderResult } from '../../server/a
 import { getQuantityRules, notionalToQuantity, type QuantityMode } from '../../lib/simulation-order-ticket';
 import { getSimulationQuantityRules, isStepAligned } from '../../lib/simulation-number-rules';
 import { buildNoOpenPositionReason, snapToStep } from '../../lib/simulation-form-helpers';
+import type { PreTradeRiskGateViewModel } from '../../lib/pre-trade-risk-view';
+import { SimulationRiskGateSummary } from './simulation-risk-gate-summary';
 import {
   createSimulatedOrderAction,
   resetSimulationAccountAction,
@@ -84,6 +86,8 @@ type SimulatedOrderFormProps = {
   disabled?: boolean;
   disabledReason?: string | undefined;
   sourceContext?: string;
+  /** Server-computed pre-trade risk gate; when a check fails, Submit is disabled. */
+  riskGate?: PreTradeRiskGateViewModel;
   uiText?: Partial<{
     quantityMode: string;
     notionalMode: string;
@@ -128,6 +132,7 @@ export function SimulatedOrderForm({
   disabled = false,
   disabledReason,
   sourceContext,
+  riskGate,
   uiText,
 }: SimulatedOrderFormProps) {
   const [state, formAction] = useActionState(createSimulatedOrderAction, emptyFormState);
@@ -343,7 +348,13 @@ export function SimulatedOrderForm({
         <input type="hidden" name="quantity" value={String(quantity)} />
       )}
 
-      <ActionButton className="button button--secondary simulation-form__button" label={label} disabled={disabled || hasNoPositionToSell} />
+      {riskGate ? <SimulationRiskGateSummary gate={riskGate} /> : null}
+
+      <ActionButton
+        className="button button--secondary simulation-form__button"
+        label={label}
+        disabled={disabled || hasNoPositionToSell || (riskGate ? !riskGate.canSubmit : false)}
+      />
 
       <SimulationFormFeedback
         messageId={messageId}
