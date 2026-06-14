@@ -3145,8 +3145,53 @@ code,
   position: absolute;
   inset: 0 auto 0 0;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--chart-series-b), var(--chart-series-a));
+  background: var(--text-tertiary);
 }
+
+/* Semantic confidence bands (AUR-005): high/moderate/low/none. */
+.confidence-meter__fill--high { background: var(--status-success, #22c55e); }
+.confidence-meter__fill--moderate { background: var(--status-warning, #f59e0b); }
+.confidence-meter__fill--low { background: var(--status-danger, #ef4444); }
+.confidence-meter__fill--none { background: var(--text-tertiary, #6b7280); }
+
+.confidence-meter__legend {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.confidence-meter__legend > summary {
+  cursor: pointer;
+  color: var(--text-tertiary);
+  list-style: revert;
+}
+
+.confidence-meter__legend-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.confidence-meter__legend-list li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.confidence-meter__swatch {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 2px;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.confidence-meter__swatch--high { background: var(--status-success, #22c55e); }
+.confidence-meter__swatch--moderate { background: var(--status-warning, #f59e0b); }
+.confidence-meter__swatch--low { background: var(--status-danger, #ef4444); }
+.confidence-meter__swatch--none { background: var(--text-tertiary, #6b7280); }
 
 .comparison-stat {
   display: grid;

@@ -1,6 +1,7 @@
 import { Card } from '../ui/card';
 import { StatusBadge } from '../ui/status-badge';
 import { MiniSparkline } from '../charts/mini-sparkline';
+import { ConfidenceMeter } from '../stats/confidence-meter';
 
 type RecommendationCardProps = {
   symbol: string;
@@ -44,7 +45,7 @@ export function RecommendationCard({ symbol, action, confidence, summary, reason
         <MiniSparkline points={sparkline} label={`${symbol} recommendation trend`} />
       </div>
       <div className="analytics-card__body">
-        <p>Confidence: {(confidence * 100).toFixed(0)}%</p>
+        <ConfidenceMeter label="Confidence" value={confidence * 100} showLegend />
         {riskLevel ? <p>Risk: {riskLevel}</p> : null}
         {newsRiskFlag === 'HIGH' || newsRiskFlag === 'CRITICAL' ? (
           <p className="simulation-form__meta simulation-form__meta--warning">
