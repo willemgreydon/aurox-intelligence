@@ -13,6 +13,11 @@ import type {
 } from '@repo/ai-market-intelligence';
 import type { BrokerDecision } from '@repo/agents';
 import { buildSimulationPrepareHrefForAsset } from '../../../lib/simulation-prepare-url';
+import { getMessages } from '../../../lib/i18n/messages';
+import { getRequestLocale } from '../../../server/i18n/locale';
+import type { AppMessages } from '../../../lib/i18n/messages';
+
+type IntelMessages = AppMessages['portfolioIntelligence'];
 
 export const dynamic = 'force-dynamic';
 const MAX_VISIBLE_PORTFOLIO_ROWS = 25;
@@ -109,17 +114,17 @@ function ProgressBar({ value, tone = 'neutral', label }: { value: number; tone?:
 
 //  Factor decomposition mini-panel 
 
-function FactorPanel({ alloc }: { alloc: PortfolioAllocation }) {
+function FactorPanel({ alloc, messages }: { alloc: PortfolioAllocation; messages: IntelMessages }) {
   const fd = alloc.factorDecomposition;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-      <ProgressBar label="Momentum" value={fd.momentumContribution} tone="positive" />
-      <ProgressBar label="Confidence" value={fd.confidenceContribution} tone="positive" />
-      {fd.volatilityPenalty > 0 && <ProgressBar label="Volatility " value={fd.volatilityPenalty} tone="negative" />}
-      {fd.newsRiskPenalty > 0 && <ProgressBar label="News risk " value={fd.newsRiskPenalty} tone="negative" />}
-      {fd.providerReliabilityPenalty > 0 && <ProgressBar label="Provider " value={fd.providerReliabilityPenalty} tone="negative" />}
-      {fd.correlationPenalty > 0 && <ProgressBar label="Correlation " value={fd.correlationPenalty} tone="negative" />}
-      <ProgressBar label="Final score" value={fd.normalizedScore} tone="neutral" />
+      <ProgressBar label={messages.factorMomentum} value={fd.momentumContribution} tone="positive" />
+      <ProgressBar label={messages.factorConfidence} value={fd.confidenceContribution} tone="positive" />
+      {fd.volatilityPenalty > 0 && <ProgressBar label={messages.factorVolatility} value={fd.volatilityPenalty} tone="negative" />}
+      {fd.newsRiskPenalty > 0 && <ProgressBar label={messages.factorNewsRisk} value={fd.newsRiskPenalty} tone="negative" />}
+      {fd.providerReliabilityPenalty > 0 && <ProgressBar label={messages.factorProvider} value={fd.providerReliabilityPenalty} tone="negative" />}
+      {fd.correlationPenalty > 0 && <ProgressBar label={messages.factorCorrelation} value={fd.correlationPenalty} tone="negative" />}
+      <ProgressBar label={messages.factorFinalScore} value={fd.normalizedScore} tone="neutral" />
     </div>
   );
 }
@@ -138,17 +143,17 @@ function RiskScoreBadge({ score, level }: { score: number; level: string }) {
 
 //  Regime panel 
 
-function RegimePanel({ regime }: { regime: RegimeAwareness }) {
+function RegimePanel({ regime, messages }: { regime: RegimeAwareness; messages: IntelMessages }) {
   const tone = regimeTone(regime.regime);
   return (
     <Card className="analytics-card">
       <div className="analytics-card__header">
         <div>
-          <div className="section__eyebrow">Market regime</div>
+          <div className="section__eyebrow">{messages.regimeEyebrow}</div>
           <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <span className={`status-pill status-pill--${tone}`}>{regime.regime.toUpperCase()}</span>
             <span style={{ fontSize: '0.85rem', fontWeight: 400, color: 'var(--color-muted-foreground)' }}>
-              {(regime.confidence * 100).toFixed(0)}% confidence
+              {(regime.confidence * 100).toFixed(0)}{messages.confidenceSuffix}
             </span>
           </h3>
         </div>
@@ -156,7 +161,7 @@ function RegimePanel({ regime }: { regime: RegimeAwareness }) {
       <div className="analytics-card__body">
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
           <div>
-            <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-muted-foreground)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Evidence</p>
+            <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-muted-foreground)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{messages.evidenceLabel}</p>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
               {regime.evidence.map((e, i) => (
                 <li key={i} style={{ fontSize: '0.8rem', color: 'var(--color-foreground)' }}> {e}</li>
@@ -164,12 +169,12 @@ function RegimePanel({ regime }: { regime: RegimeAwareness }) {
             </ul>
           </div>
           <div>
-            <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-muted-foreground)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Allocation bias</p>
+            <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-muted-foreground)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{messages.allocationBiasLabel}</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-              <ProgressBar label="Risk-on" value={regime.allocationBias.riskOn} tone={regime.allocationBias.riskOn > 0.5 ? 'positive' : 'neutral'} />
-              <ProgressBar label="Cash pref." value={regime.allocationBias.cashPreference} tone="neutral" />
-              <ProgressBar label="Equity pref." value={regime.allocationBias.equityPreference} tone="neutral" />
-              <ProgressBar label="Crypto pref." value={regime.allocationBias.cryptoPreference} tone="neutral" />
+              <ProgressBar label={messages.biasRiskOn} value={regime.allocationBias.riskOn} tone={regime.allocationBias.riskOn > 0.5 ? 'positive' : 'neutral'} />
+              <ProgressBar label={messages.biasCashPref} value={regime.allocationBias.cashPreference} tone="neutral" />
+              <ProgressBar label={messages.biasEquityPref} value={regime.allocationBias.equityPreference} tone="neutral" />
+              <ProgressBar label={messages.biasCryptoPref} value={regime.allocationBias.cryptoPreference} tone="neutral" />
             </div>
           </div>
         </div>
@@ -178,22 +183,22 @@ function RegimePanel({ regime }: { regime: RegimeAwareness }) {
   );
 }
 
-function MacroOverlayPanel({ macroScore, confidence, explanation }: { macroScore: number; confidence: number; explanation: string }) {
+function MacroOverlayPanel({ macroScore, confidence, explanation, messages }: { macroScore: number; confidence: number; explanation: string; messages: IntelMessages }) {
   const tone = macroScore > 0.15 ? 'success' : macroScore < -0.15 ? 'error' : 'warning';
   return (
     <article className="analytics-card">
       <div className="analytics-card__header">
         <div>
-          <div className="section__eyebrow">Macro risk overlay</div>
-          <h3>Simulation context only</h3>
+          <div className="section__eyebrow">{messages.macroEyebrow}</div>
+          <h3>{messages.macroTitle}</h3>
           <p>{explanation}</p>
         </div>
       </div>
       <div className="analytics-card__body">
         <div className="observation-regime-grid">
-          <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">Macro score</div><div className="analytics-stat__value">{macroScore.toFixed(2)}</div></article>
-          <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">Confidence</div><div className="analytics-stat__value">{(confidence * 100).toFixed(0)}%</div></article>
-          <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">Risk tone</div><div className={`status-pill status-pill--${tone}`}>{tone.toUpperCase()}</div></article>
+          <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">{messages.macroScoreLabel}</div><div className="analytics-stat__value">{macroScore.toFixed(2)}</div></article>
+          <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">{messages.macroConfidenceLabel}</div><div className="analytics-stat__value">{(confidence * 100).toFixed(0)}%</div></article>
+          <article className="analytics-card observation-regime-card"><div className="analytics-stat__label">{messages.macroRiskToneLabel}</div><div className={`status-pill status-pill--${tone}`}>{tone.toUpperCase()}</div></article>
         </div>
       </div>
     </article>
@@ -202,27 +207,27 @@ function MacroOverlayPanel({ macroScore, confidence, explanation }: { macroScore
 
 //  Ranking table 
 
-function RankingTable({ ranking }: { ranking: AssetRanking[] }) {
-  if (ranking.length === 0) return <p className="text-muted">No ranking data available.</p>;
+function RankingTable({ ranking, messages }: { ranking: AssetRanking[]; messages: IntelMessages }) {
+  if (ranking.length === 0) return <p className="text-muted">{messages.rankingEmpty}</p>;
   const visibleRanking = ranking.slice(0, MAX_VISIBLE_PORTFOLIO_ROWS);
   return (
     <div style={{ overflowX: 'auto' }}>
       <p className="text-muted" style={{ marginBottom: '0.5rem' }}>
-        Showing top {MAX_VISIBLE_PORTFOLIO_ROWS} of {ranking.length} assets.
+        {messages.showingTopRows.replace('{{max}}', String(MAX_VISIBLE_PORTFOLIO_ROWS)).replace('{{total}}', String(ranking.length))}
       </p>
       <table className="data-table" style={{ width: '100%' }}>
         <thead>
           <tr>
-            <th scope="col" style={{ textAlign: 'right', width: '2.5rem' }}>#</th>
-            <th scope="col" style={{ textAlign: 'left' }}>Asset</th>
-            <th scope="col" style={{ textAlign: 'left' }}>Class</th>
-            <th scope="col" style={{ textAlign: 'left' }}>Signal</th>
-            <th scope="col" style={{ textAlign: 'right' }}>Score</th>
-            <th scope="col" style={{ textAlign: 'right' }}>Confidence</th>
-            <th scope="col" style={{ textAlign: 'right' }}>Risk</th>
-            <th scope="col" style={{ textAlign: 'right' }}>Target</th>
-            <th scope="col" style={{ textAlign: 'left' }}>Reason</th>
-            <th scope="col" style={{ textAlign: 'left' }}>Action</th>
+            <th scope="col" style={{ textAlign: 'right', width: '2.5rem' }}>{messages.colRank}</th>
+            <th scope="col" style={{ textAlign: 'left' }}>{messages.colAsset}</th>
+            <th scope="col" style={{ textAlign: 'left' }}>{messages.colClass}</th>
+            <th scope="col" style={{ textAlign: 'left' }}>{messages.colSignal}</th>
+            <th scope="col" style={{ textAlign: 'right' }}>{messages.colScore}</th>
+            <th scope="col" style={{ textAlign: 'right' }}>{messages.colConfidence}</th>
+            <th scope="col" style={{ textAlign: 'right' }}>{messages.colRisk}</th>
+            <th scope="col" style={{ textAlign: 'right' }}>{messages.colTarget}</th>
+            <th scope="col" style={{ textAlign: 'left' }}>{messages.colReason}</th>
+            <th scope="col" style={{ textAlign: 'left' }}>{messages.colAction}</th>
           </tr>
         </thead>
         <tbody>
@@ -239,7 +244,7 @@ function RankingTable({ ranking }: { ranking: AssetRanking[] }) {
               <td style={{ fontSize: '0.75rem', color: 'var(--color-muted-foreground)', maxWidth: '16rem' }}>{r.reasonShort}</td>
               <td>
                 <Link className="button button--secondary" href={buildPrepareTradeHref({ symbol: r.symbol, assetClass: r.assetClass, side: r.recommendation.includes('SELL') ? 'SELL' : 'BUY', source: 'portfolio-intelligence' })}>
-                  {r.recommendation.includes('SELL') ? 'Prepare Sell' : 'Prepare Buy'}
+                  {r.recommendation.includes('SELL') ? messages.prepareSell : messages.prepareBuy}
                 </Link>
               </td>
             </tr>
@@ -252,26 +257,26 @@ function RankingTable({ ranking }: { ranking: AssetRanking[] }) {
 
 //  Allocation matrix 
 
-function AllocationMatrix({ allocations }: { allocations: PortfolioAllocation[] }) {
-  if (allocations.length === 0) return <p className="text-muted">No allocations computed.</p>;
+function AllocationMatrix({ allocations, messages }: { allocations: PortfolioAllocation[]; messages: IntelMessages }) {
+  if (allocations.length === 0) return <p className="text-muted">{messages.allocationsEmpty}</p>;
   const visibleAllocations = allocations.slice(0, MAX_VISIBLE_PORTFOLIO_ROWS);
   return (
     <div style={{ overflowX: 'auto' }}>
       <p className="text-muted" style={{ marginBottom: '0.5rem' }}>
-        Showing top {MAX_VISIBLE_PORTFOLIO_ROWS} of {allocations.length} assets.
+        {messages.showingTopRows.replace('{{max}}', String(MAX_VISIBLE_PORTFOLIO_ROWS)).replace('{{total}}', String(allocations.length))}
       </p>
       <table className="data-table" style={{ width: '100%' }}>
         <thead>
           <tr>
-            <th scope="col" style={{ textAlign: 'left' }}>Symbol</th>
-            <th scope="col" style={{ textAlign: 'right' }}>Current</th>
-            <th scope="col" style={{ textAlign: 'right' }}>Target</th>
-            <th scope="col" style={{ textAlign: 'right' }}>Delta</th>
-            <th scope="col" style={{ textAlign: 'right' }}>Factor</th>
-            <th scope="col" style={{ textAlign: 'right' }}>Risk</th>
-            <th scope="col" style={{ textAlign: 'left' }}>Action</th>
-            <th scope="col" style={{ textAlign: 'left' }}>Status</th>
-            <th scope="col" style={{ textAlign: 'left' }}>Action</th>
+            <th scope="col" style={{ textAlign: 'left' }}>{messages.colSymbol}</th>
+            <th scope="col" style={{ textAlign: 'right' }}>{messages.colCurrent}</th>
+            <th scope="col" style={{ textAlign: 'right' }}>{messages.colTarget}</th>
+            <th scope="col" style={{ textAlign: 'right' }}>{messages.colDelta}</th>
+            <th scope="col" style={{ textAlign: 'right' }}>{messages.colFactor}</th>
+            <th scope="col" style={{ textAlign: 'right' }}>{messages.colRisk}</th>
+            <th scope="col" style={{ textAlign: 'left' }}>{messages.colAction}</th>
+            <th scope="col" style={{ textAlign: 'left' }}>{messages.colStatus}</th>
+            <th scope="col" style={{ textAlign: 'left' }}>{messages.colAction}</th>
           </tr>
         </thead>
         <tbody>
@@ -301,7 +306,7 @@ function AllocationMatrix({ allocations }: { allocations: PortfolioAllocation[] 
                 </td>
                 <td>
                   <Link className="button button--secondary" href={buildPrepareTradeHref({ symbol: alloc.symbol, assetClass: alloc.assetClass, side: alloc.deltaWeight < 0 ? 'SELL' : 'BUY', source: 'portfolio-intelligence' })}>
-                    {alloc.deltaWeight < 0 ? 'Reduce / Close' : 'Prepare Buy'}
+                    {alloc.deltaWeight < 0 ? messages.reduceClose : messages.prepareBuy}
                   </Link>
                 </td>
               </tr>
@@ -315,9 +320,9 @@ function AllocationMatrix({ allocations }: { allocations: PortfolioAllocation[] 
 
 //  Factor decomposition panel 
 
-function FactorDecompositionPanel({ allocations }: { allocations: PortfolioAllocation[] }) {
+function FactorDecompositionPanel({ allocations, messages }: { allocations: PortfolioAllocation[]; messages: IntelMessages }) {
   const active = allocations.filter((a) => a.targetWeight > 0);
-  if (active.length === 0) return <p className="text-muted">No active allocations.</p>;
+  if (active.length === 0) return <p className="text-muted">{messages.noActiveAllocations}</p>;
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
       {active.map((alloc) => (
@@ -326,7 +331,7 @@ function FactorDecompositionPanel({ allocations }: { allocations: PortfolioAlloc
             <strong style={{ fontSize: '0.875rem' }}>{alloc.symbol}</strong>
             <span style={{ fontSize: '0.75rem', color: 'var(--color-muted-foreground)' }}>{alloc.assetClass}</span>
           </div>
-          <FactorPanel alloc={alloc} />
+          <FactorPanel alloc={alloc} messages={messages} />
         </div>
       ))}
     </div>
@@ -335,25 +340,25 @@ function FactorDecompositionPanel({ allocations }: { allocations: PortfolioAlloc
 
 //  Risk overlay panel 
 
-function RiskOverlayPanel({ allocations }: { allocations: PortfolioAllocation[] }) {
-  if (allocations.length === 0) return <p className="text-muted">No risk data available.</p>;
+function RiskOverlayPanel({ allocations, messages }: { allocations: PortfolioAllocation[]; messages: IntelMessages }) {
+  if (allocations.length === 0) return <p className="text-muted">{messages.riskDataEmpty}</p>;
   const visibleAllocations = allocations.slice(0, MAX_VISIBLE_PORTFOLIO_ROWS);
   return (
     <div style={{ overflowX: 'auto' }}>
       <p className="text-muted" style={{ marginBottom: '0.5rem' }}>
-        Showing top {MAX_VISIBLE_PORTFOLIO_ROWS} of {allocations.length} assets.
+        {messages.showingTopRows.replace('{{max}}', String(MAX_VISIBLE_PORTFOLIO_ROWS)).replace('{{total}}', String(allocations.length))}
       </p>
       <table className="data-table" style={{ width: '100%' }}>
         <thead>
           <tr>
-            <th scope="col" style={{ textAlign: 'left' }}>Symbol</th>
-            <th scope="col" style={{ textAlign: 'left' }}>Risk level</th>
-            <th scope="col" style={{ textAlign: 'right' }}>Score</th>
-            <th scope="col" style={{ textAlign: 'right' }}>Vol.</th>
-            <th scope="col" style={{ textAlign: 'right' }}>News</th>
-            <th scope="col" style={{ textAlign: 'right' }}>Corr.</th>
-            <th scope="col" style={{ textAlign: 'right' }}>Provider</th>
-            <th scope="col" style={{ textAlign: 'left' }}>Dominant risks</th>
+            <th scope="col" style={{ textAlign: 'left' }}>{messages.colSymbol}</th>
+            <th scope="col" style={{ textAlign: 'left' }}>{messages.colRiskLevel}</th>
+            <th scope="col" style={{ textAlign: 'right' }}>{messages.colScore}</th>
+            <th scope="col" style={{ textAlign: 'right' }}>{messages.colVol}</th>
+            <th scope="col" style={{ textAlign: 'right' }}>{messages.colNews}</th>
+            <th scope="col" style={{ textAlign: 'right' }}>{messages.colCorr}</th>
+            <th scope="col" style={{ textAlign: 'right' }}>{messages.colProvider}</th>
+            <th scope="col" style={{ textAlign: 'left' }}>{messages.colDominantRisks}</th>
           </tr>
         </thead>
         <tbody>
@@ -387,7 +392,7 @@ function RiskOverlayPanel({ allocations }: { allocations: PortfolioAllocation[] 
 
 //  Broker preview panel 
 
-function BrokerPreviewRow({ symbol, side, decision }: { symbol: string; side: string; decision: BrokerDecision }) {
+function BrokerPreviewRow({ symbol, side, decision, messages }: { symbol: string; side: string; decision: BrokerDecision; messages: IntelMessages }) {
   return (
     <tr>
       <td style={{ fontWeight: 600 }}>{symbol}</td>
@@ -402,7 +407,7 @@ function BrokerPreviewRow({ symbol, side, decision }: { symbol: string; side: st
       <td className="tabular-nums" style={{ textAlign: 'right' }}>${decision.estimatedFees.toFixed(4)}</td>
       <td>
         <span className={`status-pill status-pill--${decision.executable ? 'success' : 'error'}`}>
-          {decision.executable ? 'Yes' : 'No'}
+          {decision.executable ? messages.executableYes : messages.executableNo}
         </span>
       </td>
       <td className="tabular-nums" style={{ textAlign: 'right' }}>{decision.executionReadinessScore}/100</td>
@@ -422,15 +427,15 @@ function BrokerPreviewRow({ symbol, side, decision }: { symbol: string; side: st
 
 //  Diagnostics summary 
 
-function DiagnosticsSummary({ diagnostics }: { diagnostics: PortfolioDiagnostics }) {
+function DiagnosticsSummary({ diagnostics, messages }: { diagnostics: PortfolioDiagnostics; messages: IntelMessages }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-      <ProgressBar label="Diversification" value={diagnostics.diversificationScore} tone={diagnostics.diversificationScore > 0.6 ? 'positive' : diagnostics.diversificationScore > 0.3 ? 'neutral' : 'negative'} />
-      <ProgressBar label="Avg confidence" value={diagnostics.averageConfidence} tone={diagnostics.averageConfidence > 0.6 ? 'positive' : 'neutral'} />
-      <ProgressBar label="Crypto exposure" value={diagnostics.cryptoExposure} tone={diagnostics.cryptoExposure > 0.4 ? 'negative' : 'neutral'} />
-      <ProgressBar label="Equity exposure" value={diagnostics.equityExposure} tone="neutral" />
-      <ProgressBar label="ETF exposure" value={diagnostics.etfExposure} tone="neutral" />
-      <ProgressBar label="Cash target" value={diagnostics.cashTargetWeight} tone="neutral" />
+      <ProgressBar label={messages.diagDiversification} value={diagnostics.diversificationScore} tone={diagnostics.diversificationScore > 0.6 ? 'positive' : diagnostics.diversificationScore > 0.3 ? 'neutral' : 'negative'} />
+      <ProgressBar label={messages.diagAvgConfidence} value={diagnostics.averageConfidence} tone={diagnostics.averageConfidence > 0.6 ? 'positive' : 'neutral'} />
+      <ProgressBar label={messages.diagCryptoExposure} value={diagnostics.cryptoExposure} tone={diagnostics.cryptoExposure > 0.4 ? 'negative' : 'neutral'} />
+      <ProgressBar label={messages.diagEquityExposure} value={diagnostics.equityExposure} tone="neutral" />
+      <ProgressBar label={messages.diagEtfExposure} value={diagnostics.etfExposure} tone="neutral" />
+      <ProgressBar label={messages.diagCashTarget} value={diagnostics.cashTargetWeight} tone="neutral" />
     </div>
   );
 }
@@ -438,23 +443,22 @@ function DiagnosticsSummary({ diagnostics }: { diagnostics: PortfolioDiagnostics
 function BrokerPreviewCard({
   brokerReadiness,
   brokerPreviews,
+  messages,
 }: {
   brokerReadiness: { ready: boolean; summary: string };
   brokerPreviews: Array<{ symbol: string; side: 'buy' | 'sell'; decision: BrokerDecision }>;
+  messages: IntelMessages;
 }) {
   return (
     <Card className="analytics-card">
         <div className="analytics-card__header">
           <div>
-            <div className="section__eyebrow">Broker preview</div>
-            <h3>Execution quality estimates</h3>
-            <p>
-              Simulation-mode execution preview. Fill prices, slippage, and fees are estimates only.
-              Live execution is permanently locked.
-            </p>
+            <div className="section__eyebrow">{messages.brokerEyebrow}</div>
+            <h3>{messages.brokerTitle}</h3>
+            <p>{messages.brokerDescription}</p>
           </div>
           <span className={`status-pill status-pill--${brokerReadiness.ready ? 'success' : 'warning'}`}>
-            {brokerReadiness.ready ? 'Broker ready' : 'Broker not ready'}
+            {brokerReadiness.ready ? messages.brokerReady : messages.brokerNotReady}
           </span>
         </div>
         <div className="analytics-card__body">
@@ -466,52 +470,52 @@ function BrokerPreviewCard({
               <table className="data-table" style={{ width: '100%' }}>
                 <thead>
                   <tr>
-                    <th scope="col" style={{ textAlign: 'left' }}>Symbol</th>
-                    <th scope="col" style={{ textAlign: 'left' }}>Side</th>
-                    <th scope="col" style={{ textAlign: 'right' }}>Est. fill</th>
-                    <th scope="col" style={{ textAlign: 'right' }}>Slippage</th>
-                    <th scope="col" style={{ textAlign: 'right' }}>Spread</th>
-                    <th scope="col" style={{ textAlign: 'right' }}>Fees</th>
-                    <th scope="col" style={{ textAlign: 'left' }}>Executable</th>
-                    <th scope="col" style={{ textAlign: 'right' }}>Readiness</th>
-                    <th scope="col" style={{ textAlign: 'left' }}>Next action</th>
-                    <th scope="col" style={{ textAlign: 'left' }}>Notes</th>
+                    <th scope="col" style={{ textAlign: 'left' }}>{messages.colSymbol}</th>
+                    <th scope="col" style={{ textAlign: 'left' }}>{messages.colSide}</th>
+                    <th scope="col" style={{ textAlign: 'right' }}>{messages.colEstFill}</th>
+                    <th scope="col" style={{ textAlign: 'right' }}>{messages.colSlippage}</th>
+                    <th scope="col" style={{ textAlign: 'right' }}>{messages.colSpread}</th>
+                    <th scope="col" style={{ textAlign: 'right' }}>{messages.colFees}</th>
+                    <th scope="col" style={{ textAlign: 'left' }}>{messages.colExecutable}</th>
+                    <th scope="col" style={{ textAlign: 'right' }}>{messages.colReadiness}</th>
+                    <th scope="col" style={{ textAlign: 'left' }}>{messages.colNextAction}</th>
+                    <th scope="col" style={{ textAlign: 'left' }}>{messages.colNotes}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {brokerPreviews.map(({ symbol, side, decision }) => (
-                    <BrokerPreviewRow key={symbol} symbol={symbol} side={side} decision={decision} />
+                    <BrokerPreviewRow key={symbol} symbol={symbol} side={side} decision={decision} messages={messages} />
                   ))}
                 </tbody>
               </table>
             </div>
           ) : (
-            <p className="text-muted">No rebalance trades to preview.</p>
+            <p className="text-muted">{messages.noRebalanceToPreview}</p>
           )}
         </div>
     </Card>
   );
 }
 
-function ExplanationCard({ explanation }: { explanation: string }) {
+function ExplanationCard({ explanation, messages }: { explanation: string; messages: IntelMessages }) {
   return (
     <Card className="analytics-card">
         <div className="analytics-card__header">
           <div>
-            <div className="section__eyebrow">Intelligence explanation</div>
-            <h3>Why these allocations?</h3>
+            <div className="section__eyebrow">{messages.explanationEyebrow}</div>
+            <h3>{messages.explanationTitle}</h3>
           </div>
         </div>
         <div className="analytics-card__body">
           <p>{explanation}</p>
           <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '0.75rem' }}>
             {[
-              { label: 'Rules engine', value: 'Deterministic factor scoring  no black-box models.' },
-              { label: 'Live execution', value: 'Permanently locked. All output is simulation only.' },
-              { label: 'Risk gates', value: 'Max position weight, crypto cap, min threshold, correlation penalty.' },
-              { label: 'Allocation constraints', value: 'Max weight: 20%. Min weight: 2%. Crypto cap: 25%. Rebalance threshold: 5%.' },
-              { label: 'Regime detection', value: 'Based on signal aggregation  fallback to "unknown" on low confidence.' },
-              { label: 'Data freshness', value: 'Allocations derived from the most recent available signal data.' },
+              { label: messages.explRulesEngineLabel, value: messages.explRulesEngineValue },
+              { label: messages.explLiveExecutionLabel, value: messages.explLiveExecutionValue },
+              { label: messages.explRiskGatesLabel, value: messages.explRiskGatesValue },
+              { label: messages.explAllocationConstraintsLabel, value: messages.explAllocationConstraintsValue },
+              { label: messages.explRegimeDetectionLabel, value: messages.explRegimeDetectionValue },
+              { label: messages.explDataFreshnessLabel, value: messages.explDataFreshnessValue },
             ].map(({ label, value }) => (
               <div key={label} style={{ border: '1px solid var(--color-border)', borderRadius: '0.5rem', padding: '0.75rem' }}>
                 <p style={{ fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-muted-foreground)', margin: 0 }}>{label}</p>
@@ -520,46 +524,43 @@ function ExplanationCard({ explanation }: { explanation: string }) {
             ))}
           </div>
           <p className="text-muted" style={{ marginTop: '1rem', fontSize: '0.75rem' }}>
-            Allocations are derived from signal confidence, recommendation action, risk level, news risk, and
-            provider health. Correlation penalties reduce weight on assets in the same class when concentration
-            is high. All values are indicative  not financial advice.
+            {messages.explanationFootnote}
           </p>
           <p className="text-muted" style={{ marginTop: '0.5rem', fontSize: '0.75rem' }}>
-            Past performance does not guarantee future results. This is not financial advice.
+            {messages.explanationDisclaimer}
           </p>
         </div>
     </Card>
   );
 }
 
-function ExecutePlanActions() {
+function ExecutePlanActions({ messages }: { messages: IntelMessages }) {
   return (
       <Card className="analytics-card">
         <div className="analytics-card__header">
           <div>
-            <div className="section__eyebrow">Execute plan</div>
-            <h3>Execute rebalance (simulation)</h3>
+            <div className="section__eyebrow">{messages.executeEyebrow}</div>
+            <h3>{messages.executeTitle}</h3>
             <p>
-              Review the plan above, then execute individual trades in the simulation workstation.
-              <strong> No real capital is deployed.</strong>
+              {messages.executeDescriptionPrefix}
+              <strong>{messages.executeDescriptionEmphasis}</strong>
             </p>
           </div>
         </div>
         <div className="analytics-card__action-grid">
           <Link href="/invest/simulation" className="button button--primary">
-            Open simulation workstation
+            {messages.openSimulationWorkstation}
           </Link>
           <Link href="/portfolio" className="button button--secondary">
-            Back to portfolio overview
+            {messages.backToPortfolioOverview}
           </Link>
           <Link href="/markets/intelligence" className="button button--secondary">
-            View market intelligence
+            {messages.viewMarketIntelligence}
           </Link>
         </div>
         <div style={{ marginTop: '1rem', padding: '0.75rem', background: 'var(--color-muted)', borderRadius: '0.375rem' }}>
           <p style={{ fontSize: '0.75rem', margin: 0, color: 'var(--color-muted-foreground)' }}>
-             Simulation only  no real capital deployed. Live trading is locked.
-            All execution occurs within the deterministic simulation engine.
+            {messages.executeNote}
           </p>
         </div>
     </Card>
@@ -570,6 +571,9 @@ function ExecutePlanActions() {
 
 export default async function PortfolioIntelligencePage() {
   await requireCurrentSession('/login');
+  const locale = await getRequestLocale();
+  const messages = getMessages(locale);
+  const t = messages.portfolioIntelligence;
   const vm = await getPortfolioIntelligenceViewModel();
 
   if (vm.status === 'empty') {
@@ -578,17 +582,17 @@ export default async function PortfolioIntelligencePage() {
         <Card className="analytics-card">
           <div className="analytics-card__header">
             <div>
-              <div className="section__eyebrow">Portfolio Intelligence</div>
-              <h3>No intelligence available</h3>
+              <div className="section__eyebrow">{t.emptyEyebrow}</div>
+              <h3>{t.emptyTitle}</h3>
               <p>{vm.statusReason}</p>
             </div>
           </div>
           <div className="analytics-card__action-grid">
             <Link href="/markets/intelligence" className="button button--primary">
-              View market intelligence
+              {t.viewMarketIntelligence}
             </Link>
             <Link href="/invest" className="button button--secondary">
-              Browse assets
+              {t.browseAssets}
             </Link>
           </div>
         </Card>
@@ -611,44 +615,44 @@ export default async function PortfolioIntelligencePage() {
         <div className="observe-command-header__inner">
           <div className="observe-command-header__top">
             <div className="observe-command-header__identity">
-              <span className="observe-command-header__eyebrow">Portfolio / Intelligence</span>
-              <h1 className="observe-command-header__title">Portfolio Command Cockpit</h1>
+              <span className="observe-command-header__eyebrow">{t.headerEyebrow}</span>
+              <h1 className="observe-command-header__title">{t.headerTitle}</h1>
               <p className="observe-command-header__sub">
-                Deterministic allocation analysis — factor decomposition, risk overlay, regime awareness, and simulation-first broker preview.
+                {t.headerSub}
               </p>
             </div>
             <div className="observe-command-header__chips">
-              <span className={`observe-chip observe-chip--${vm.status === 'nominal' ? 'success' : 'warning'}`} title="Intelligence system status">
+              <span className={`observe-chip observe-chip--${vm.status === 'nominal' ? 'success' : 'warning'}`} title={t.chipStatusTitle}>
                 {vm.status.toUpperCase()}
               </span>
-              <span className="observe-chip observe-chip--neutral" title="Market regime">
+              <span className="observe-chip observe-chip--neutral" title={t.chipRegimeTitle}>
                 {regime.regime.toUpperCase()}
               </span>
-              <span className="observe-chip observe-chip--neutral" title="Ranked assets">
-                {ranking.length} Assets
+              <span className="observe-chip observe-chip--neutral" title={t.chipRankedAssetsTitle}>
+                {ranking.length}{t.chipAssetsSuffix}
               </span>
               {riskAlerts.length > 0 && (
-                <span className="observe-chip observe-chip--danger" title="Active risk alerts">
-                  {riskAlerts.length} Risk Alert{riskAlerts.length !== 1 ? 's' : ''}
+                <span className="observe-chip observe-chip--danger" title={t.chipRiskAlertsTitle}>
+                  {riskAlerts.length} {riskAlerts.length !== 1 ? t.chipRiskAlertPlural : t.chipRiskAlertSingular}
                 </span>
               )}
-              <span className="observe-chip observe-chip--info" title="Simulation only — no live capital">
-                SIM only
+              <span className="observe-chip observe-chip--info" title={t.chipSimOnlyTitle}>
+                {t.chipSimOnly}
               </span>
             </div>
           </div>
-          <nav className="observe-command-header__actions" aria-label="Portfolio intelligence primary actions">
-            <Link href="/observe" className="button button--secondary observe-command-action">Observer</Link>
-            <Link href="/signals" className="button button--secondary observe-command-action">Signals</Link>
-            <Link href="/invest/simulation" className="button button--secondary observe-command-action">Simulation</Link>
-            <Link href="/portfolio" className="button button--secondary observe-command-action">Portfolio</Link>
-            <Link href="/alerts" className="button button--secondary observe-command-action">Alerts</Link>
+          <nav className="observe-command-header__actions" aria-label={t.headerActionsAria}>
+            <Link href="/observe" className="button button--secondary observe-command-action">{t.navObserver}</Link>
+            <Link href="/signals" className="button button--secondary observe-command-action">{t.navSignals}</Link>
+            <Link href="/invest/simulation" className="button button--secondary observe-command-action">{t.navSimulation}</Link>
+            <Link href="/portfolio" className="button button--secondary observe-command-action">{t.navPortfolio}</Link>
+            <Link href="/alerts" className="button button--secondary observe-command-action">{t.navAlerts}</Link>
           </nav>
         </div>
       </header>
 
       {/* ── Simulation Safety Banner ── */}
-      <div className="sim-safety-banner" role="status" aria-label="Execution mode notice">
+      <div className="sim-safety-banner" role="status" aria-label={t.safetyBannerAria}>
         {/* Shield icon — inline SVG avoids external deps and hydration mismatch */}
         <svg
           className="sim-safety-banner__icon"
@@ -676,54 +680,54 @@ export default async function PortfolioIntelligencePage() {
           <p className="sim-safety-banner__title">
             {vm.simulationOnlyNotice}
           </p>
-          <div className="sim-safety-banner__pills" aria-label="Execution constraints">
+          <div className="sim-safety-banner__pills" aria-label={t.safetyConstraintsAria}>
             <span className="sim-safety-banner__pill sim-safety-banner__pill--sim">
-              Simulation mode
+              {t.safetySimulationMode}
             </span>
             <span className="sim-safety-banner__pill sim-safety-banner__pill--locked">
-              Live trading locked
+              {t.safetyLiveLocked}
             </span>
             <span className="sim-safety-banner__pill sim-safety-banner__pill--safe">
-              No real capital deployed
+              {t.safetyNoCapital}
             </span>
           </div>
         </div>
       </div>
 
       {/* ── KPI Grid — grouped by category ── */}
-      <section className="intel-kpi-grid" aria-label="Portfolio intelligence key metrics">
+      <section className="intel-kpi-grid" aria-label={t.kpiMetricsAria}>
 
         {/* Group 1 — Portfolio State */}
-        <div className="intel-kpi-group-label" aria-hidden="true">Portfolio State</div>
+        <div className="intel-kpi-group-label" aria-hidden="true">{t.kpiGroupPortfolioState}</div>
 
         {/* Portfolio Value — primary */}
         <article
           className="intel-kpi-card intel-kpi-card--primary"
-          aria-label={`Portfolio value: ${formatCurrency(portfolioContext.portfolioValue, portfolioContext.baseCurrency)}`}
+          aria-label={t.kpiPortfolioValueAria.replace('{{value}}', formatCurrency(portfolioContext.portfolioValue, portfolioContext.baseCurrency))}
         >
-          <div className="intel-kpi-card__label">Portfolio Value</div>
+          <div className="intel-kpi-card__label">{t.kpiPortfolioValueLabel}</div>
           <div className="intel-kpi-card__value">{formatCurrency(portfolioContext.portfolioValue, portfolioContext.baseCurrency)}</div>
-          <div className="intel-kpi-card__desc">Simulation account total</div>
+          <div className="intel-kpi-card__desc">{t.kpiPortfolioValueDesc}</div>
         </article>
 
         {/* Cash — primary */}
         <article
           className="intel-kpi-card intel-kpi-card--primary"
-          aria-label={`Cash balance: ${formatCurrency(portfolioContext.cashBalance, portfolioContext.baseCurrency)}`}
+          aria-label={t.kpiCashAria.replace('{{value}}', formatCurrency(portfolioContext.cashBalance, portfolioContext.baseCurrency))}
         >
-          <div className="intel-kpi-card__label">Cash</div>
+          <div className="intel-kpi-card__label">{t.kpiCashLabel}</div>
           <div className="intel-kpi-card__value">{formatCurrency(portfolioContext.cashBalance, portfolioContext.baseCurrency)}</div>
-          <div className="intel-kpi-card__desc">Available for deployment</div>
+          <div className="intel-kpi-card__desc">{t.kpiCashDesc}</div>
         </article>
 
         {/* Open Positions — primary */}
         <article
           className="intel-kpi-card intel-kpi-card--primary"
-          aria-label={`Open positions: ${portfolioContext.openPositionCount}`}
+          aria-label={t.kpiPositionsAria.replace('{{count}}', String(portfolioContext.openPositionCount))}
         >
-          <div className="intel-kpi-card__label">Positions</div>
+          <div className="intel-kpi-card__label">{t.kpiPositionsLabel}</div>
           <div className="intel-kpi-card__value">{portfolioContext.openPositionCount}</div>
-          <div className="intel-kpi-card__desc">Open simulation holdings</div>
+          <div className="intel-kpi-card__desc">{t.kpiPositionsDesc}</div>
         </article>
 
         {/* Health — primary */}
@@ -734,13 +738,13 @@ export default async function PortfolioIntelligencePage() {
           return (
             <article
               className={`intel-kpi-card intel-kpi-card--primary intel-kpi-card--${healthVariant}`}
-              aria-label={`Portfolio health: ${diagnostics.allocationHealth.replace('-', ' ')}`}
+              aria-label={t.kpiHealthAria.replace('{{health}}', diagnostics.allocationHealth.replace('-', ' '))}
             >
-              <div className="intel-kpi-card__label">Health</div>
+              <div className="intel-kpi-card__label">{t.kpiHealthLabel}</div>
               <div className="intel-kpi-card__value" style={{ textTransform: 'capitalize' }}>
                 {diagnostics.allocationHealth.replace('-', ' ')}
               </div>
-              <div className="intel-kpi-card__desc">Allocation quality assessment</div>
+              <div className="intel-kpi-card__desc">{t.kpiHealthDesc}</div>
             </article>
           );
         })()}
@@ -749,7 +753,7 @@ export default async function PortfolioIntelligencePage() {
         <div aria-hidden="true" style={{ display: 'contents' }} />
 
         {/* Group 2 — Risk & Confidence */}
-        <div className="intel-kpi-group-label" aria-hidden="true">Risk &amp; Confidence</div>
+        <div className="intel-kpi-group-label" aria-hidden="true">{t.kpiGroupRiskConfidence}</div>
 
         {/* Avg Confidence */}
         {(() => {
@@ -758,12 +762,12 @@ export default async function PortfolioIntelligencePage() {
           return (
             <article
               className={`intel-kpi-card${confVariant ? ` intel-kpi-card--${confVariant}` : ''}`}
-              aria-label={`Average confidence: ${formatPct(confValue)}`}
+              aria-label={t.kpiAvgConfidenceAria.replace('{{value}}', formatPct(confValue))}
             >
-              <div className="intel-kpi-card__label">Avg Confidence</div>
+              <div className="intel-kpi-card__label">{t.kpiAvgConfidenceLabel}</div>
               <div className="intel-kpi-card__value">{formatPct(confValue)}</div>
               <div className="intel-kpi-card__desc">
-                {hasActivePortfolio ? 'Portfolio signal confidence' : 'Top-25 asset confidence'}
+                {hasActivePortfolio ? t.kpiAvgConfidenceDescPortfolio : t.kpiAvgConfidenceDescTop25}
               </div>
             </article>
           );
@@ -777,11 +781,11 @@ export default async function PortfolioIntelligencePage() {
           return (
             <article
               className={`intel-kpi-card intel-kpi-card--${riskVariant}`}
-              aria-label={`Average risk score: ${diagnostics.averageRiskScore.toFixed(0)} out of 100`}
+              aria-label={t.kpiAvgRiskAria.replace('{{value}}', diagnostics.averageRiskScore.toFixed(0))}
             >
-              <div className="intel-kpi-card__label">Avg Risk</div>
+              <div className="intel-kpi-card__label">{t.kpiAvgRiskLabel}</div>
               <div className="intel-kpi-card__value">{diagnostics.averageRiskScore.toFixed(0)}<span style={{ fontSize: '0.75em', fontWeight: 400, color: 'var(--text-tertiary)' }}>/100</span></div>
-              <div className="intel-kpi-card__desc">Mean composite risk score</div>
+              <div className="intel-kpi-card__desc">{t.kpiAvgRiskDesc}</div>
             </article>
           );
         })()}
@@ -794,11 +798,11 @@ export default async function PortfolioIntelligencePage() {
           return (
             <article
               className={`intel-kpi-card${divVariant ? ` intel-kpi-card--${divVariant}` : ''}`}
-              aria-label={`Diversification score: ${formatPct(diagnostics.diversificationScore)}`}
+              aria-label={t.kpiDiversificationAria.replace('{{value}}', formatPct(diagnostics.diversificationScore))}
             >
-              <div className="intel-kpi-card__label">Diversification</div>
+              <div className="intel-kpi-card__label">{t.kpiDiversificationLabel}</div>
               <div className="intel-kpi-card__value">{formatPct(diagnostics.diversificationScore)}</div>
-              <div className="intel-kpi-card__desc">Portfolio spread across assets</div>
+              <div className="intel-kpi-card__desc">{t.kpiDiversificationDesc}</div>
             </article>
           );
         })()}
@@ -811,49 +815,50 @@ export default async function PortfolioIntelligencePage() {
           return (
             <article
               className={`intel-kpi-card${newsVariant ? ` intel-kpi-card--${newsVariant}` : ''}`}
-              aria-label={`News risk: ${newsExposure.maxRisk.toFixed(0)} out of 100`}
+              aria-label={t.kpiNewsRiskAria.replace('{{value}}', newsExposure.maxRisk.toFixed(0))}
             >
-              <div className="intel-kpi-card__label">News Risk</div>
+              <div className="intel-kpi-card__label">{t.kpiNewsRiskLabel}</div>
               <div className="intel-kpi-card__value">{newsExposure.maxRisk.toFixed(0)}<span style={{ fontSize: '0.75em', fontWeight: 400, color: 'var(--text-tertiary)' }}>/100</span></div>
-              <div className="intel-kpi-card__desc">Peak sentiment risk exposure</div>
+              <div className="intel-kpi-card__desc">{t.kpiNewsRiskDesc}</div>
             </article>
           );
         })()}
 
         {/* Group 3 — Exposure */}
-        <div className="intel-kpi-group-label" aria-hidden="true">Exposure</div>
+        <div className="intel-kpi-group-label" aria-hidden="true">{t.kpiGroupExposure}</div>
 
         {/* Crypto Exposure */}
         <article
           className={`intel-kpi-card${diagnostics.cryptoExposure > 0.4 ? ' intel-kpi-card--warning' : ''}`}
-          aria-label={`Crypto exposure: ${formatPct(diagnostics.cryptoExposure)}`}
+          aria-label={t.kpiCryptoExpAria.replace('{{value}}', formatPct(diagnostics.cryptoExposure))}
         >
-          <div className="intel-kpi-card__label">Crypto Exp.</div>
+          <div className="intel-kpi-card__label">{t.kpiCryptoExpLabel}</div>
           <div className="intel-kpi-card__value">{formatPct(diagnostics.cryptoExposure)}</div>
           <div className="intel-kpi-card__desc">
-            {diagnostics.cryptoExposure > 0.4 ? 'Above 40% cap — consider reducing' : 'Within concentration limit'}
+            {diagnostics.cryptoExposure > 0.4 ? t.kpiCryptoExpDescAbove : t.kpiCryptoExpDescWithin}
           </div>
         </article>
 
         {/* Cash Target */}
         <article
           className="intel-kpi-card"
-          aria-label={`Cash target weight: ${formatPct(diagnostics.cashTargetWeight)}`}
+          aria-label={t.kpiCashTargetAria.replace('{{value}}', formatPct(diagnostics.cashTargetWeight))}
         >
-          <div className="intel-kpi-card__label">Cash Target</div>
+          <div className="intel-kpi-card__label">{t.kpiCashTargetLabel}</div>
           <div className="intel-kpi-card__value">{formatPct(diagnostics.cashTargetWeight)}</div>
-          <div className="intel-kpi-card__desc">Recommended cash allocation</div>
+          <div className="intel-kpi-card__desc">{t.kpiCashTargetDesc}</div>
         </article>
 
       </section>
 
       {/*  3. Regime Awareness  */}
       <Section className="dashboard-section dashboard-section--tinted">
-        <RegimePanel regime={regime} />
+        <RegimePanel regime={regime} messages={t} />
         <MacroOverlayPanel
           macroScore={macro.overallMacroScore}
           confidence={macro.confidence}
-          explanation={macro.explanations[0] ?? 'Macro data is used as simulation context only.'}
+          explanation={macro.explanations[0] ?? t.macroExplanationFallback}
+          messages={t}
         />
       </Section>
 
@@ -862,15 +867,15 @@ export default async function PortfolioIntelligencePage() {
         <Card className="analytics-card">
           <div className="analytics-card__header">
             <div>
-              <div className="section__eyebrow">Portfolio diagnostics</div>
-              <h3>Exposure and confidence breakdown</h3>
+              <div className="section__eyebrow">{t.diagnosticsEyebrow}</div>
+              <h3>{t.diagnosticsTitle}</h3>
             </div>
           </div>
           <div className="analytics-card__body">
-            <DiagnosticsSummary diagnostics={diagnostics} />
+            <DiagnosticsSummary diagnostics={diagnostics} messages={t} />
             {diagnostics.dominantRiskFactors[0] !== 'none' && (
               <p style={{ marginTop: '1rem', fontSize: '0.8rem', color: 'var(--color-muted-foreground)' }}>
-                Dominant risk factors: {diagnostics.dominantRiskFactors.join('  ')}
+                {t.dominantRiskFactors.replace('{{factors}}', diagnostics.dominantRiskFactors.join('  '))}
               </p>
             )}
           </div>
@@ -883,8 +888,8 @@ export default async function PortfolioIntelligencePage() {
           <Card className="analytics-card">
             <div className="analytics-card__header">
               <div>
-                <div className="section__eyebrow">Risk alerts</div>
-                <h3>Active risk warnings</h3>
+                <div className="section__eyebrow">{t.riskAlertsEyebrow}</div>
+                <h3>{t.riskAlertsTitle}</h3>
               </div>
             </div>
             <div className="analytics-card__body">
@@ -910,90 +915,92 @@ export default async function PortfolioIntelligencePage() {
           tabs={[
             {
               id: 'ranking',
-              label: 'Ranking',
+              label: t.tabRanking,
               panel: (
                 <Card className="analytics-card">
                   <div className="analytics-card__header">
                     <div>
-                      <div className="section__eyebrow">Cross-asset ranking</div>
-                      <h3>Assets ranked by target attractiveness</h3>
-                      <p>Sorted by factor-adjusted score descending. Lower risk breaks ties.</p>
+                      <div className="section__eyebrow">{t.rankingEyebrow}</div>
+                      <h3>{t.rankingTitle}</h3>
+                      <p>{t.rankingDescription}</p>
                     </div>
                   </div>
                   <div className="analytics-card__body">
-                    <RankingTable ranking={ranking} />
+                    <RankingTable ranking={ranking} messages={t} />
                   </div>
                 </Card>
               ),
             },
             {
               id: 'allocation',
-              label: 'Allocation',
+              label: t.tabAllocation,
               panel: (
                 <Card className="analytics-card">
                   <div className="analytics-card__header">
                     <div>
-                      <div className="section__eyebrow">Allocation matrix</div>
-                      <h3>Current vs target allocation</h3>
+                      <div className="section__eyebrow">{t.allocationEyebrow}</div>
+                      <h3>{t.allocationTitle}</h3>
                       <p>{portfolioSummary.explanation}</p>
                     </div>
                   </div>
                   <div className="analytics-card__body">
-                    <AllocationMatrix allocations={allocations} />
+                    <AllocationMatrix allocations={allocations} messages={t} />
                   </div>
                 </Card>
               ),
             },
             {
               id: 'factors',
-              label: 'Factors',
+              label: t.tabFactors,
               panel: (
                 <Card className="analytics-card">
                   <div className="analytics-card__header">
                     <div>
-                      <div className="section__eyebrow">Factor decomposition</div>
-                      <h3>Per-asset score driver breakdown</h3>
-                      <p>Each bar shows the contribution or penalty each factor applied to the final allocation score.</p>
+                      <div className="section__eyebrow">{t.factorsEyebrow}</div>
+                      <h3>{t.factorsTitle}</h3>
+                      <p>{t.factorsDescription}</p>
                     </div>
                   </div>
                   <div className="analytics-card__body">
-                    <FactorDecompositionPanel allocations={allocations} />
+                    <FactorDecompositionPanel allocations={allocations} messages={t} />
                   </div>
                 </Card>
               ),
             },
             {
               id: 'risk',
-              label: 'Risk overlay',
+              label: t.tabRiskOverlay,
               panel: (
                 <Card className="analytics-card">
                   <div className="analytics-card__header">
                     <div>
-                      <div className="section__eyebrow">Risk overlay</div>
-                      <h3>Per-asset composite risk scores</h3>
-                      <p>Volatility, news, correlation, and provider reliability components combined into a 0-100 risk score.</p>
+                      <div className="section__eyebrow">{t.riskOverlayEyebrow}</div>
+                      <h3>{t.riskOverlayTitle}</h3>
+                      <p>{t.riskOverlayDescription}</p>
                     </div>
                   </div>
                   <div className="analytics-card__body">
-                    <RiskOverlayPanel allocations={allocations} />
+                    <RiskOverlayPanel allocations={allocations} messages={t} />
                   </div>
                 </Card>
               ),
             },
             {
               id: 'rebalance',
-              label: 'Rebalance',
+              label: t.tabRebalance,
               hint: rebalancePlan.length > 0 ? String(rebalancePlan.length) : undefined,
               panel: (
                 <Card className="analytics-card">
                   <div className="analytics-card__header">
                     <div>
-                      <div className="section__eyebrow">Rebalance plan</div>
-                      <h3>Suggested simulation trades</h3>
+                      <div className="section__eyebrow">{t.rebalanceEyebrow}</div>
+                      <h3>{t.rebalanceTitle}</h3>
                       <p>
                         {rebalancePlan.length > 0
-                          ? `${rebalancePlan.length} trade${rebalancePlan.length !== 1 ? 's' : ''} required to reach target allocation.`
-                          : 'Portfolio is within rebalance threshold — no trades required.'}
+                          ? t.rebalanceDescriptionRequired
+                              .replace('{{count}}', String(rebalancePlan.length))
+                              .replace('{{plural}}', rebalancePlan.length !== 1 ? 's' : '')
+                          : t.rebalanceDescriptionNone}
                       </p>
                     </div>
                   </div>
@@ -1002,11 +1009,11 @@ export default async function PortfolioIntelligencePage() {
                       <table className="data-table" style={{ width: '100%' }}>
                         <thead>
                           <tr>
-                            <th scope="col" style={{ textAlign: 'left' }}>Symbol</th>
-                            <th scope="col" style={{ textAlign: 'left' }}>Side</th>
-                            <th scope="col" style={{ textAlign: 'right' }}>Weight delta</th>
-                            <th scope="col" style={{ textAlign: 'right' }}>Notional %</th>
-                            <th scope="col" style={{ textAlign: 'left' }}>Reasoning</th>
+                            <th scope="col" style={{ textAlign: 'left' }}>{t.colSymbol}</th>
+                            <th scope="col" style={{ textAlign: 'left' }}>{t.colSide}</th>
+                            <th scope="col" style={{ textAlign: 'right' }}>{t.colWeightDelta}</th>
+                            <th scope="col" style={{ textAlign: 'right' }}>{t.colNotionalPct}</th>
+                            <th scope="col" style={{ textAlign: 'left' }}>{t.colReasoning}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1038,8 +1045,8 @@ export default async function PortfolioIntelligencePage() {
             },
             {
               id: 'broker',
-              label: 'Broker preview',
-              panel: <BrokerPreviewCard brokerReadiness={brokerReadiness} brokerPreviews={brokerPreviews} />,
+              label: t.tabBrokerPreview,
+              panel: <BrokerPreviewCard brokerReadiness={brokerReadiness} brokerPreviews={brokerPreviews} messages={t} />,
             },
           ]}
         />
@@ -1047,14 +1054,14 @@ export default async function PortfolioIntelligencePage() {
 
       {/*  10. Explanation / Audit Trail (collapsed by default)  */}
       <Section className="dashboard-section dashboard-section--tinted">
-        <Disclosure summary="How these allocations are computed" hint="Methodology & constraints">
-          <ExplanationCard explanation={intelligence.explanation} />
+        <Disclosure summary={t.disclosureSummary} hint={t.disclosureHint}>
+          <ExplanationCard explanation={intelligence.explanation} messages={t} />
         </Disclosure>
       </Section>
 
       {/*  Simulation CTA  */}
       <Section className="dashboard-section">
-        <ExecutePlanActions />
+        <ExecutePlanActions messages={t} />
       </Section>
     </>
   );
