@@ -11,8 +11,9 @@ import {
 } from '../../server/lib/watchlist-intelligence';
 import { buildSimulationTicketHref } from '../../lib/observe-actions';
 import { getAssetInspectHref } from '../../lib/market-routes';
+import type { AppMessages } from '../../lib/i18n/messages';
 
-type Props = { model: ObserveViewModel };
+type Props = { model: ObserveViewModel; labels: AppMessages['observe'] };
 
 function severityTone(severity: string): 'success' | 'warning' | 'danger' | 'info' | 'neutral' {
   if (severity === 'CRITICAL') return 'danger';
@@ -22,7 +23,7 @@ function severityTone(severity: string): 'success' | 'warning' | 'danger' | 'inf
   return 'neutral';
 }
 
-export function ObserveWorkstation({ model }: Props) {
+export function ObserveWorkstation({ model, labels }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
@@ -135,35 +136,35 @@ export function ObserveWorkstation({ model }: Props) {
   return (
     <>
       {/* ── Operator Command Bar ── */}
-      <div className="observe-command-bar" role="toolbar" aria-label="Observe operator controls">
+      <div className="observe-command-bar" role="toolbar" aria-label={labels.commandBarAria}>
         <div className="observe-command-bar__inner">
 
           {/* Left: view mode toggles */}
-          <div className="observe-command-bar__group" aria-label="View mode toggles">
+          <div className="observe-command-bar__group" aria-label={labels.viewModeTogglesAria}>
             <button
               type="button"
               className={`observe-mode-btn${denseMode ? ' observe-mode-btn--active' : ''}`}
               onClick={() => setDenseMode((v) => !v)}
               aria-pressed={denseMode}
-              title="Dense mode — compact panel height"
+              title={labels.denseTitle}
             >
-              Dense
+              {labels.dense}
             </button>
             <button
               type="button"
               className={`observe-mode-btn${focusMode ? ' observe-mode-btn--active' : ''}`}
               onClick={() => setFocusMode((v) => !v)}
               aria-pressed={focusMode}
-              title="Focus mode — hide secondary panels"
+              title={labels.focusTitle}
             >
-              Focus
+              {labels.focus}
             </button>
           </div>
 
           <div className="observe-command-bar__divider" role="separator" />
 
           {/* Center: severity quick-filter chips */}
-          <div className="observe-command-bar__group" aria-label="Severity filter">
+          <div className="observe-command-bar__group" aria-label={labels.severityFilterAria}>
             {(['all', 'CRITICAL', 'WARNING', 'WATCH', 'INFO'] as const).map((sev) => (
               <button
                 key={sev}
@@ -172,7 +173,7 @@ export function ObserveWorkstation({ model }: Props) {
                 onClick={() => setSeverityFilter(sev)}
                 aria-pressed={severityFilter === sev}
               >
-                {sev === 'all' ? 'All' : sev.charAt(0) + sev.slice(1).toLowerCase()}
+                {sev === 'all' ? labels.all : sev.charAt(0) + sev.slice(1).toLowerCase()}
               </button>
             ))}
           </div>
@@ -180,7 +181,7 @@ export function ObserveWorkstation({ model }: Props) {
           <div className="observe-command-bar__divider" role="separator" />
 
           {/* Asset class filter */}
-          <div className="observe-command-bar__group" aria-label="Asset class filter">
+          <div className="observe-command-bar__group" aria-label={labels.assetClassFilterAria}>
             {(['all', 'stock', 'etf', 'crypto'] as const).map((cls) => (
               <button
                 key={cls}
@@ -189,7 +190,7 @@ export function ObserveWorkstation({ model }: Props) {
                 onClick={() => setAssetClassFilter(cls)}
                 aria-pressed={assetClassFilter === cls}
               >
-                {cls === 'all' ? 'All assets' : cls.toUpperCase()}
+                {cls === 'all' ? labels.allAssets : cls.toUpperCase()}
               </button>
             ))}
           </div>
@@ -202,8 +203,8 @@ export function ObserveWorkstation({ model }: Props) {
               className="observe-search-input"
               value={symbolSearch}
               onChange={(e) => setSymbolSearch(e.target.value)}
-              placeholder="Search symbol…"
-              aria-label="Search by symbol"
+              placeholder={labels.symbolSearchPlaceholder}
+              aria-label={labels.symbolSearchAria}
               type="search"
             />
           </div>
@@ -211,52 +212,52 @@ export function ObserveWorkstation({ model }: Props) {
           {/* Right: actions */}
           <div className="observe-command-bar__group observe-command-bar__group--right">
             {feedHasFilters && (
-              <button type="button" className="observe-mode-btn" onClick={clearFeedFilters} aria-label="Clear all filters">
-                Clear
+              <button type="button" className="observe-mode-btn" onClick={clearFeedFilters} aria-label={labels.clearAllFiltersAria}>
+                {labels.clear}
               </button>
             )}
-            <Link href="/alerts" className="observe-mode-btn">Alerts</Link>
+            <Link href="/alerts" className="observe-mode-btn">{labels.alerts}</Link>
             <Link href="/invest/simulation?side=buy&intent=prepare" className="observe-mode-btn observe-mode-btn--primary">
-              Prepare Sim
+              {labels.prepareSim}
             </Link>
           </div>
         </div>
       </div>
 
       {/* ── KPI Metric Rail ── */}
-      <section className="observe-metric-rail" aria-label="Market observation metrics">
+      <section className="observe-metric-rail" aria-label={labels.metricsAria}>
         <article className="observe-metric-card">
-          <div className="observe-metric-card__label">Regime</div>
+          <div className="observe-metric-card__label">{labels.regime}</div>
           <div className="observe-metric-card__value">{model.regime.label}</div>
         </article>
         <article className="observe-metric-card">
-          <div className="observe-metric-card__label">Confidence</div>
+          <div className="observe-metric-card__label">{labels.confidence}</div>
           <div className="observe-metric-card__value">{(model.regime.confidence * 100).toFixed(0)}%</div>
         </article>
         <article className={`observe-metric-card${model.summary.criticalCount > 0 ? ' observe-metric-card--danger' : ''}`}>
-          <div className="observe-metric-card__label">Critical</div>
+          <div className="observe-metric-card__label">{labels.critical}</div>
           <div className="observe-metric-card__value">{model.summary.criticalCount}</div>
         </article>
         <article className="observe-metric-card">
-          <div className="observe-metric-card__label">Warning</div>
+          <div className="observe-metric-card__label">{labels.warning}</div>
           <div className="observe-metric-card__value">{model.summary.warningCount}</div>
         </article>
         <article className="observe-metric-card">
-          <div className="observe-metric-card__label">Watch</div>
+          <div className="observe-metric-card__label">{labels.watch}</div>
           <div className="observe-metric-card__value">{model.summary.watchCount}</div>
         </article>
         <article className={`observe-metric-card${tradeReadyCount > 0 ? ' observe-metric-card--success' : ''}`}>
-          <div className="observe-metric-card__label">Trade-ready</div>
+          <div className="observe-metric-card__label">{labels.tradeReady}</div>
           <div className="observe-metric-card__value">{tradeReadyCount}</div>
         </article>
         <article className={`observe-metric-card${providerDegradedCount > 0 ? ' observe-metric-card--warning' : ''}`}>
-          <div className="observe-metric-card__label">Provider issues</div>
+          <div className="observe-metric-card__label">{labels.providerIssues}</div>
           <div className="observe-metric-card__value">{providerDegradedCount}</div>
         </article>
 
         {model.persistenceDegraded && (
           <p className="observe-metric-rail__notice" role="alert">
-            ⚠ Persistence degraded — runtime-only fallback. Events won&apos;t be saved.
+            {labels.persistenceDegraded}
           </p>
         )}
       </section>
@@ -264,7 +265,7 @@ export function ObserveWorkstation({ model }: Props) {
       {/* ── Cockpit Panel Grid ── */}
       <section
         className={`observe-cockpit${denseMode ? ' observe-cockpit--dense' : ''}${focusMode ? ' observe-cockpit--focus' : ''}`}
-        aria-label="Observe cockpit panels"
+        aria-label={labels.cockpitAria}
       >
 
         {/* Row 1: Critical Queue + Anomaly Radar */}
@@ -274,18 +275,18 @@ export function ObserveWorkstation({ model }: Props) {
           <article className="observe-panel">
             <div className="observe-panel__header">
               <div>
-                <div className="section__eyebrow">Critical Queue</div>
-                <h3 className="observe-panel__title">Top priority items</h3>
+                <div className="section__eyebrow">{labels.criticalQueueEyebrow}</div>
+                <h3 className="observe-panel__title">{labels.criticalQueueTitle}</h3>
               </div>
               <Link href="/alerts" className="button button--secondary observe-panel__action">
-                Alert Center →
+                {labels.alertCenter}
               </Link>
             </div>
             <div className="observe-panel__body">
               {criticalItems.length === 0 ? (
                 <div className="aurox-empty-state aurox-empty-state--inline">
-                  <p className="aurox-empty-state__title">No critical items</p>
-                  <p className="text-muted" style={{ fontSize: '0.8rem' }}>Market observation is nominal.</p>
+                  <p className="aurox-empty-state__title">{labels.noCriticalItemsTitle}</p>
+                  <p className="text-muted" style={{ fontSize: '0.8rem' }}>{labels.noCriticalItemsBody}</p>
                 </div>
               ) : (
                 <div className="observe-feed observe-feed--compact">
@@ -293,8 +294,8 @@ export function ObserveWorkstation({ model }: Props) {
                     <div key={item.id} className="observe-feed__item observe-feed__item--compact">
                       <span className={`status-pill status-pill--${severityTone(item.severity)}`}>{item.severity}</span>
                       <span className="observe-feed__item-title">{item.title}</span>
-                      <Link href="/alerts" className="journal-action-link" aria-label={`Inspect: ${item.title}`}>
-                        Inspect →
+                      <Link href="/alerts" className="journal-action-link" aria-label={labels.inspectItemAria.replace('{{title}}', item.title)}>
+                        {labels.inspect}
                       </Link>
                     </div>
                   ))}
@@ -302,7 +303,7 @@ export function ObserveWorkstation({ model }: Props) {
               )}
             </div>
             <div className="observe-panel__footer">
-              <Link href="/alerts" className="journal-action-link">Open full alert center →</Link>
+              <Link href="/alerts" className="journal-action-link">{labels.openFullAlertCenter}</Link>
             </div>
           </article>
 
@@ -310,15 +311,15 @@ export function ObserveWorkstation({ model }: Props) {
           <article className="observe-panel">
             <div className="observe-panel__header">
               <div>
-                <div className="section__eyebrow">Anomaly Radar</div>
-                <h3 className="observe-panel__title">Scored anomaly set</h3>
+                <div className="section__eyebrow">{labels.anomalyRadarEyebrow}</div>
+                <h3 className="observe-panel__title">{labels.anomalyRadarTitle}</h3>
               </div>
             </div>
             <div className="observe-panel__body">
               {model.anomalies.length === 0 ? (
                 <div className="aurox-empty-state aurox-empty-state--inline">
-                  <p className="aurox-empty-state__title">No anomalies detected</p>
-                  <p className="text-muted" style={{ fontSize: '0.8rem' }}>Observation window is clear.</p>
+                  <p className="aurox-empty-state__title">{labels.noAnomaliesTitle}</p>
+                  <p className="text-muted" style={{ fontSize: '0.8rem' }}>{labels.noAnomaliesBody}</p>
                 </div>
               ) : (
                 <div className="observe-feed observe-feed--compact">
@@ -330,7 +331,7 @@ export function ObserveWorkstation({ model }: Props) {
                         {item.anomalyScore.toFixed(0)}/100
                       </span>
                       {item.inspectionHref && (
-                        <Link href={item.inspectionHref} className="journal-action-link" aria-label={`Inspect anomaly for ${item.assetSymbol}`}>
+                        <Link href={item.inspectionHref} className="journal-action-link" aria-label={labels.inspectAnomalyAria.replace('{{symbol}}', item.assetSymbol ?? '')}>
                           →
                         </Link>
                       )}
@@ -340,7 +341,7 @@ export function ObserveWorkstation({ model }: Props) {
               )}
             </div>
             <div className="observe-panel__footer">
-              <Link href="/signals" className="journal-action-link">Review signal anomalies →</Link>
+              <Link href="/signals" className="journal-action-link">{labels.reviewSignalAnomalies}</Link>
             </div>
           </article>
         </div>
@@ -352,37 +353,39 @@ export function ObserveWorkstation({ model }: Props) {
           <article className="observe-panel">
             <div className="observe-panel__header">
               <div>
-                <div className="section__eyebrow">Trade Readiness</div>
-                <h3 className="observe-panel__title">Operator quick actions</h3>
+                <div className="section__eyebrow">{labels.tradeReadinessEyebrow}</div>
+                <h3 className="observe-panel__title">{labels.tradeReadinessTitle}</h3>
               </div>
             </div>
             <div className="observe-panel__body">
               <div className="observe-action-stack">
                 <Link href="/invest/simulation?side=buy&intent=prepare" className="button button--primary observe-action-stack__item">
-                  Prepare simulation buy
+                  {labels.prepareSimulationBuy}
                 </Link>
                 <Link href="/alerts" className="button button--secondary observe-action-stack__item">
-                  Inspect alert center
+                  {labels.inspectAlertCenter}
                 </Link>
                 <Link href="/signals" className="button button--secondary observe-action-stack__item">
-                  Open signal dashboard
+                  {labels.openSignalDashboard}
                 </Link>
                 <Link href="/portfolio/intelligence" className="button button--secondary observe-action-stack__item">
-                  Portfolio intelligence
+                  {labels.portfolioIntelligence}
                 </Link>
                 <Link href="/invest/simulation/journal" className="button button--secondary observe-action-stack__item">
-                  Simulation journal
+                  {labels.simulationJournal}
                 </Link>
               </div>
               {tradeReadyCount > 0 && (
                 <p className="text-muted observe-panel__note">
-                  {tradeReadyCount} watchlist asset{tradeReadyCount !== 1 ? 's' : ''} in buy-signal territory (≥65% confidence).
+                  {labels.tradeReadyNote
+                    .replace('{{count}}', String(tradeReadyCount))
+                    .replace('{{plural}}', tradeReadyCount !== 1 ? 's' : '')}
                 </p>
               )}
             </div>
             <div className="observe-panel__footer">
-              <span className="status-pill status-pill--info" style={{ fontSize: '0.65rem' }}>SIM only</span>
-              <span className="status-pill status-pill--neutral" style={{ fontSize: '0.65rem' }}>Live locked</span>
+              <span className="status-pill status-pill--info" style={{ fontSize: '0.65rem' }}>{labels.simOnly}</span>
+              <span className="status-pill status-pill--neutral" style={{ fontSize: '0.65rem' }}>{labels.liveLocked}</span>
             </div>
           </article>
 
@@ -391,18 +394,18 @@ export function ObserveWorkstation({ model }: Props) {
             <article className="observe-panel">
               <div className="observe-panel__header">
                 <div>
-                  <div className="section__eyebrow">AI Market Observer</div>
-                  <h3 className="observe-panel__title">Observation feed</h3>
+                  <div className="section__eyebrow">{labels.observerEyebrow}</div>
+                  <h3 className="observe-panel__title">{labels.observerTitle}</h3>
                 </div>
               </div>
               <div className="observe-panel__body">
-                <div className="observe-feed" aria-live="polite" aria-label="Observer feed">
+                <div className="observe-feed" aria-live="polite" aria-label={labels.observerFeedAria}>
                   {filteredFeed.length === 0 ? (
                     <div className="aurox-empty-state aurox-empty-state--inline">
-                      <p className="aurox-empty-state__title">No observations match filters</p>
+                      <p className="aurox-empty-state__title">{labels.noObservationsMatchTitle}</p>
                       {feedHasFilters && (
                         <button type="button" className="button button--secondary" onClick={clearFeedFilters}>
-                          Clear filters
+                          {labels.clearFilters}
                         </button>
                       )}
                     </div>
@@ -415,19 +418,19 @@ export function ObserveWorkstation({ model }: Props) {
                         </div>
                         <p className="text-muted observe-feed__item-reason">{item.reason}</p>
                         <p className="text-muted observe-feed__item-meta">
-                          {item.source} · {(item.confidence * 100).toFixed(0)}% confidence{item.assetSymbol ? ` · ${item.assetSymbol}` : ''}
+                          {item.source} · {(item.confidence * 100).toFixed(0)}% {labels.confidenceLabel}{item.assetSymbol ? ` · ${item.assetSymbol}` : ''}
                         </p>
                         <div className="aurox-action-row">
                           <Link href={getAssetInspectHref({ symbol: item.assetSymbol, assetClass: item.assetClass })} className="journal-action-link">
-                            Inspect
+                            {labels.inspectShort}
                           </Link>
-                          <Link href="/signals" className="journal-action-link">Signals</Link>
+                          <Link href="/signals" className="journal-action-link">{labels.signals}</Link>
                           <Link href={buildSimulationTicketHref({ symbol: item.assetSymbol, assetClass: item.assetClass })} className="journal-action-link">
-                            Simulate
+                            {labels.simulate}
                           </Link>
-                          <button type="button" className="journal-action-link" onClick={() => setEventState(item.id, 'pin')} aria-label={`Pin: ${item.title}`}>Pin</button>
-                          <button type="button" className="journal-action-link" onClick={() => setEventState(item.id, 'read')} aria-label={`Mark read: ${item.title}`}>Read</button>
-                          <button type="button" className="journal-action-link" onClick={() => setEventState(item.id, 'dismiss')} aria-label={`Dismiss: ${item.title}`}>Dismiss</button>
+                          <button type="button" className="journal-action-link" onClick={() => setEventState(item.id, 'pin')} aria-label={labels.pinItemAria.replace('{{title}}', item.title)}>{labels.pin}</button>
+                          <button type="button" className="journal-action-link" onClick={() => setEventState(item.id, 'read')} aria-label={labels.markReadItemAria.replace('{{title}}', item.title)}>{labels.read}</button>
+                          <button type="button" className="journal-action-link" onClick={() => setEventState(item.id, 'dismiss')} aria-label={labels.dismissItemAria.replace('{{title}}', item.title)}>{labels.dismiss}</button>
                         </div>
                       </article>
                     ))
@@ -435,8 +438,10 @@ export function ObserveWorkstation({ model }: Props) {
                 </div>
                 {filteredFeed.length > 0 && (
                   <p className="text-muted observe-panel__note">
-                    {filteredFeed.length} of {model.observerItems.length} observations.{' '}
-                    {feedHasFilters && <button type="button" className="journal-action-link" onClick={clearFeedFilters}>Clear filters</button>}
+                    {labels.observationsCount
+                      .replace('{{count}}', String(filteredFeed.length))
+                      .replace('{{total}}', String(model.observerItems.length))}{' '}
+                    {feedHasFilters && <button type="button" className="journal-action-link" onClick={clearFeedFilters}>{labels.clearFilters}</button>}
                   </p>
                 )}
               </div>
@@ -448,15 +453,15 @@ export function ObserveWorkstation({ model }: Props) {
             <article className="observe-panel">
               <div className="observe-panel__header">
                 <div>
-                  <div className="section__eyebrow">Market Event Timeline</div>
-                  <h3 className="observe-panel__title">Newest events first</h3>
+                  <div className="section__eyebrow">{labels.timelineEyebrow}</div>
+                  <h3 className="observe-panel__title">{labels.timelineTitle}</h3>
                 </div>
               </div>
               <div className="observe-panel__body">
                 {model.timeline.length === 0 ? (
                   <div className="aurox-empty-state aurox-empty-state--inline">
-                    <p className="aurox-empty-state__title">No timeline events</p>
-                    <p className="text-muted" style={{ fontSize: '0.8rem' }}>Events appear as market activity is observed.</p>
+                    <p className="aurox-empty-state__title">{labels.noTimelineEventsTitle}</p>
+                    <p className="text-muted" style={{ fontSize: '0.8rem' }}>{labels.noTimelineEventsBody}</p>
                   </div>
                 ) : (
                   <div className="observe-timeline">
@@ -471,7 +476,7 @@ export function ObserveWorkstation({ model }: Props) {
                           </p>
                           {event.actionHref && (
                             <Link href={event.actionHref} className="journal-action-link" style={{ fontSize: '0.75rem' }}>
-                              View →
+                              {labels.view}
                             </Link>
                           )}
                         </div>
@@ -481,7 +486,7 @@ export function ObserveWorkstation({ model }: Props) {
                 )}
               </div>
               <div className="observe-panel__footer">
-                <Link href="/alerts" className="journal-action-link">Full event log →</Link>
+                <Link href="/alerts" className="journal-action-link">{labels.fullEventLog}</Link>
               </div>
             </article>
           )}
@@ -493,8 +498,8 @@ export function ObserveWorkstation({ model }: Props) {
             <article className="observe-panel">
               <div className="observe-panel__header">
                 <div>
-                  <div className="section__eyebrow">Cross-Asset Intelligence</div>
-                  <h3 className="observe-panel__title">Relationship engine insights</h3>
+                  <div className="section__eyebrow">{labels.crossAssetEyebrow}</div>
+                  <h3 className="observe-panel__title">{labels.crossAssetTitle}</h3>
                 </div>
               </div>
               <div className="observe-panel__body">
@@ -507,14 +512,14 @@ export function ObserveWorkstation({ model }: Props) {
                       </div>
                       <p className="text-muted observe-feed__item-reason">{item.narrative}</p>
                       <p className="text-muted observe-feed__item-meta">
-                        {item.symbols.join(', ')} · {(item.confidence * 100).toFixed(0)}% confidence · {item.kind}
+                        {item.symbols.join(', ')} · {(item.confidence * 100).toFixed(0)}% {labels.confidenceLabel} · {item.kind}
                       </p>
                     </article>
                   ))}
                 </div>
               </div>
               <div className="observe-panel__footer">
-                <Link href="/market" className="journal-action-link">Open market workstation →</Link>
+                <Link href="/market" className="journal-action-link">{labels.openMarketWorkstation}</Link>
               </div>
             </article>
           </div>
@@ -526,93 +531,93 @@ export function ObserveWorkstation({ model }: Props) {
             <article className="observe-panel">
               <div className="observe-panel__header">
                 <div>
-                  <div className="section__eyebrow">Watchlist Intelligence</div>
-                  <h3 className="observe-panel__title">Signal, risk, news, and freshness</h3>
+                  <div className="section__eyebrow">{labels.watchlistEyebrow}</div>
+                  <h3 className="observe-panel__title">{labels.watchlistTitle}</h3>
                 </div>
               </div>
               <div className="observe-panel__body">
                 {/* Watchlist filter toolbar */}
-                <div className="aurox-toolbar" aria-label="Watchlist intelligence filters">
-                  <select className="market-graph__selector-input" value={watchlistSort} onChange={(e) => setWatchlistSort(e.target.value)} aria-label="Sort by">
-                    <option value="strongest_signal">Strongest signal</option>
-                    <option value="highest_confidence">Highest confidence</option>
-                    <option value="highest_risk">Highest risk</option>
-                    <option value="biggest_mover">Biggest mover</option>
-                    <option value="newest_news">Newest news</option>
-                    <option value="worst_provider_freshness">Worst freshness</option>
+                <div className="aurox-toolbar" aria-label={labels.watchlistFiltersAria}>
+                  <select className="market-graph__selector-input" value={watchlistSort} onChange={(e) => setWatchlistSort(e.target.value)} aria-label={labels.sortByAria}>
+                    <option value="strongest_signal">{labels.sortStrongestSignal}</option>
+                    <option value="highest_confidence">{labels.sortHighestConfidence}</option>
+                    <option value="highest_risk">{labels.sortHighestRisk}</option>
+                    <option value="biggest_mover">{labels.sortBiggestMover}</option>
+                    <option value="newest_news">{labels.sortNewestNews}</option>
+                    <option value="worst_provider_freshness">{labels.sortWorstFreshness}</option>
                   </select>
-                  <select className="market-graph__selector-input" value={watchlistAssetClass} onChange={(e) => setWatchlistAssetClass(e.target.value)} aria-label="Filter by asset class">
-                    <option value="all">All classes</option>
-                    <option value="stock">Stocks</option>
-                    <option value="etf">ETFs</option>
-                    <option value="crypto">Crypto</option>
+                  <select className="market-graph__selector-input" value={watchlistAssetClass} onChange={(e) => setWatchlistAssetClass(e.target.value)} aria-label={labels.filterAssetClassAria}>
+                    <option value="all">{labels.allClasses}</option>
+                    <option value="stock">{labels.stocks}</option>
+                    <option value="etf">{labels.etfs}</option>
+                    <option value="crypto">{labels.crypto}</option>
                   </select>
-                  <select className="market-graph__selector-input" value={watchlistSignalAction} onChange={(e) => setWatchlistSignalAction(e.target.value)} aria-label="Filter by signal">
-                    <option value="all">All signals</option>
-                    <option value="BUY">Buy</option>
-                    <option value="SELL">Sell</option>
-                    <option value="HOLD">Hold</option>
+                  <select className="market-graph__selector-input" value={watchlistSignalAction} onChange={(e) => setWatchlistSignalAction(e.target.value)} aria-label={labels.filterSignalAria}>
+                    <option value="all">{labels.allSignals}</option>
+                    <option value="BUY">{labels.buy}</option>
+                    <option value="SELL">{labels.sell}</option>
+                    <option value="HOLD">{labels.hold}</option>
                   </select>
-                  <select className="market-graph__selector-input" value={watchlistRisk} onChange={(e) => setWatchlistRisk(e.target.value)} aria-label="Filter by risk">
-                    <option value="all">All risk</option>
-                    <option value="LOW">Low</option>
-                    <option value="MEDIUM">Medium</option>
-                    <option value="HIGH">High</option>
-                    <option value="EXTREME">Extreme</option>
+                  <select className="market-graph__selector-input" value={watchlistRisk} onChange={(e) => setWatchlistRisk(e.target.value)} aria-label={labels.filterRiskAria}>
+                    <option value="all">{labels.allRisk}</option>
+                    <option value="LOW">{labels.low}</option>
+                    <option value="MEDIUM">{labels.medium}</option>
+                    <option value="HIGH">{labels.high}</option>
+                    <option value="EXTREME">{labels.extreme}</option>
                   </select>
-                  <select className="market-graph__selector-input" value={watchlistNews} onChange={(e) => setWatchlistNews(e.target.value)} aria-label="Filter by news">
-                    <option value="all">All news</option>
-                    <option value="NEGATIVE">Negative</option>
-                    <option value="NEUTRAL">Neutral</option>
-                    <option value="POSITIVE">Positive</option>
+                  <select className="market-graph__selector-input" value={watchlistNews} onChange={(e) => setWatchlistNews(e.target.value)} aria-label={labels.filterNewsAria}>
+                    <option value="all">{labels.allNews}</option>
+                    <option value="NEGATIVE">{labels.negative}</option>
+                    <option value="NEUTRAL">{labels.neutral}</option>
+                    <option value="POSITIVE">{labels.positive}</option>
                   </select>
                   <input
                     className="market-graph__selector-input"
                     value={watchlistSearch}
                     onChange={(e) => setWatchlistSearch(e.target.value)}
-                    placeholder="Search symbol/name"
-                    aria-label="Search watchlist"
+                    placeholder={labels.searchWatchlistPlaceholder}
+                    aria-label={labels.searchWatchlistAria}
                   />
                   {watchlistHasFilters ? (
-                    <button type="button" className="button button--secondary" onClick={clearWatchlistControls} aria-label="Clear watchlist filters">
-                      Clear
+                    <button type="button" className="button button--secondary" onClick={clearWatchlistControls} aria-label={labels.clearWatchlistFiltersAria}>
+                      {labels.clear}
                     </button>
                   ) : null}
-                  <button type="button" className="button" onClick={applyWatchlistControls} disabled={isPending} aria-label="Save watchlist filters to URL">
-                    {isPending ? 'Saving…' : 'Save view'}
+                  <button type="button" className="button" onClick={applyWatchlistControls} disabled={isPending} aria-label={labels.saveViewAria}>
+                    {isPending ? labels.saving : labels.saveView}
                   </button>
                 </div>
 
                 {model.watchlistIntelligence.length === 0 ? (
                   <div className="aurox-empty-state aurox-empty-state--inline">
-                    <p className="aurox-empty-state__title">Watchlist is empty</p>
+                    <p className="aurox-empty-state__title">{labels.watchlistEmptyTitle}</p>
                     <p className="text-muted" style={{ fontSize: '0.8rem' }}>
-                      Add assets from Stocks, ETFs, or Crypto lanes to see intelligence here.
+                      {labels.watchlistEmptyBody}
                     </p>
-                    <Link href="/invest/stocks" className="button button--secondary">Browse stocks</Link>
+                    <Link href="/invest/stocks" className="button button--secondary">{labels.browseStocks}</Link>
                   </div>
                 ) : filteredWatchlist.length === 0 ? (
                   <div className="aurox-empty-state aurox-empty-state--inline">
-                    <p className="aurox-empty-state__title">No assets match these filters</p>
+                    <p className="aurox-empty-state__title">{labels.noAssetsMatchTitle}</p>
                     <p className="text-muted" style={{ fontSize: '0.8rem' }}>
-                      Adjust or clear the filters to see watchlist intelligence.
+                      {labels.noAssetsMatchBody}
                     </p>
-                    <button type="button" className="button button--secondary" onClick={clearWatchlistControls}>Clear filters</button>
+                    <button type="button" className="button button--secondary" onClick={clearWatchlistControls}>{labels.clearFilters}</button>
                   </div>
                 ) : (
                   <div style={{ overflowX: 'auto' }}>
                     <table className="data-table" style={{ width: '100%' }}>
                       <thead>
                         <tr>
-                          <th scope="col">Asset</th>
-                          <th scope="col">Price</th>
-                          <th scope="col">Change</th>
-                          <th scope="col">Signal</th>
-                          <th scope="col">Confidence</th>
-                          <th scope="col">Risk</th>
-                          <th scope="col">News</th>
-                          <th scope="col">Freshness</th>
-                          <th scope="col">Actions</th>
+                          <th scope="col">{labels.colAsset}</th>
+                          <th scope="col">{labels.colPrice}</th>
+                          <th scope="col">{labels.colChange}</th>
+                          <th scope="col">{labels.colSignal}</th>
+                          <th scope="col">{labels.colConfidence}</th>
+                          <th scope="col">{labels.colRisk}</th>
+                          <th scope="col">{labels.colNews}</th>
+                          <th scope="col">{labels.colFreshness}</th>
+                          <th scope="col">{labels.colActions}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -636,9 +641,9 @@ export function ObserveWorkstation({ model }: Props) {
                             <td>{item.freshnessLabel}</td>
                             <td>
                               <div className="aurox-action-row">
-                                <Link href={item.actions.inspectHref} className="journal-action-link">Inspect</Link>
-                                <Link href={item.actions.compareHref} className="journal-action-link">Compare</Link>
-                                <Link href={item.actions.simulateHref} className="journal-action-link">Simulate</Link>
+                                <Link href={item.actions.inspectHref} className="journal-action-link">{labels.inspectShort}</Link>
+                                <Link href={item.actions.compareHref} className="journal-action-link">{labels.compare}</Link>
+                                <Link href={item.actions.simulateHref} className="journal-action-link">{labels.simulate}</Link>
                               </div>
                             </td>
                           </tr>
@@ -649,8 +654,8 @@ export function ObserveWorkstation({ model }: Props) {
                 )}
               </div>
               <div className="observe-panel__footer">
-                <Link href="/invest/simulation?intent=prepare" className="journal-action-link">Prepare simulation from watchlist →</Link>
-                <Link href="/portfolio/intelligence" className="journal-action-link">Portfolio intelligence →</Link>
+                <Link href="/invest/simulation?intent=prepare" className="journal-action-link">{labels.prepareSimulationFromWatchlist}</Link>
+                <Link href="/portfolio/intelligence" className="journal-action-link">{labels.portfolioIntelligenceLink}</Link>
               </div>
             </article>
           </div>

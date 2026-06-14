@@ -1,6 +1,8 @@
 import { ObserveWorkstation } from '../../components/observe/observe-workstation';
 import { SimulationModeBadge } from '../../components/ui/simulation-mode-badge';
 import { getObserveViewModel } from '../../server/services/market-observation-service';
+import { getMessages } from '../../lib/i18n/messages';
+import { getRequestLocale } from '../../server/i18n/locale';
 import { requireCurrentSession } from '../../server/auth/session';
 import { assertSerializableProps } from '../../lib/assert-serializable-props';
 import { perfLog, perfNow } from '../../server/lib/perf';
@@ -13,6 +15,8 @@ export default async function ObservePage({
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const pageStart = perfNow();
+  const locale = await getRequestLocale();
+  const messages = getMessages(locale);
   const session = await requireCurrentSession('/login');
   const params = (await searchParams) ?? {};
   const pick = (value: string | string[] | undefined) => Array.isArray(value) ? value[0] : value;
@@ -88,7 +92,7 @@ export default async function ObservePage({
         </div>
       </header>
 
-      <ObserveWorkstation model={model} />
+      <ObserveWorkstation model={model} labels={messages.observe} />
     </>
   );
 }

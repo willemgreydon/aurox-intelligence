@@ -12,6 +12,7 @@ const I18N_CLEAN_FILES = [
   'components/layout/footer.tsx',
   'app/dashboard/page.tsx',
   'app/invest/simulation/page.tsx',
+  'components/observe/observe-workstation.tsx',
 ];
 
 const UI_ATTRS = 'label|title|placeholder|alt|aria-label|subtitle|eyebrow|description|detail|note|emptyMessage';
