@@ -8,13 +8,17 @@ import { join } from 'node:path';
  * hardcoded user-facing string literal is reintroduced. Add a component here once
  * it is i18n-clean; the list grows as the hardcoded-string extraction proceeds.
  */
-const I18N_CLEAN_FILES = ['components/layout/footer.tsx'];
+const I18N_CLEAN_FILES = ['components/layout/footer.tsx', 'app/dashboard/page.tsx'];
+
+const UI_ATTRS = 'label|title|placeholder|alt|aria-label|subtitle|eyebrow|description';
 
 // Heuristics for hardcoded user-facing text. Tuned to ignore className/href/keys:
-// (1) object-literal or attribute label/title/placeholder/alt = 'English…'
-// (2) multi-word JSX text nodes starting with a capital letter.
+// (1) JSX attribute   attr="English…"   (double-quoted string literal)
+// (2) object literal   attr: 'English…' (single-quoted)
+// (3) multi-word JSX text nodes starting with a capital letter.
 const PATTERNS: Array<{ name: string; re: RegExp }> = [
-  { name: "label/title/placeholder = 'Text'", re: /\b(?:label|title|placeholder|alt|aria-label)\s*[:=]\s*'[A-Z][A-Za-z][^']*'/g },
+  { name: 'JSX attr ="Text"', re: new RegExp(`\\b(?:${UI_ATTRS})\\s*=\\s*"[A-Z][A-Za-z][^"]*"`, 'g') },
+  { name: "obj attr: 'Text'", re: new RegExp(`\\b(?:${UI_ATTRS})\\s*:\\s*'[A-Z][A-Za-z][^']*'`, 'g') },
   { name: '>Multi Word Text<', re: />\s*[A-Z][A-Za-z]+(?: [A-Za-z&]+){1,8}\s*</g },
 ];
 

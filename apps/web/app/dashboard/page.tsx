@@ -68,38 +68,38 @@ export default async function DashboardPage() {
       body={(
         <>
           <DashboardGroup
-            title="Portfolio Overview"
-            subtitle="Your simulated book value, state, and trade-readiness guardrails."
+            title={messages.dashboard.groupPortfolioTitle}
+            subtitle={messages.dashboard.groupPortfolioSubtitle}
             lead
           >
-            <DashboardPanel eyebrow="Portfolio Intelligence" title="Portfolio snapshot" description="Allocation and risk state." href="/portfolio/intelligence">
+            <DashboardPanel eyebrow={messages.dashboard.portfolioPanelEyebrow} title={messages.dashboard.portfolioPanelTitle} description={messages.dashboard.portfolioPanelDescription} href="/portfolio/intelligence">
               <div className="dashboard-exec-list">
-                <article className="dashboard-exec-list__item"><strong>Portfolio value</strong><span>{model.portfolioSnapshot.value}</span></article>
-                <article className="dashboard-exec-list__item"><strong>State</strong><span>{model.portfolioSnapshot.state}</span></article>
+                <article className="dashboard-exec-list__item"><strong>{messages.dashboard.portfolioValueLabel}</strong><span>{model.portfolioSnapshot.value}</span></article>
+                <article className="dashboard-exec-list__item"><strong>{messages.dashboard.stateLabel}</strong><span>{model.portfolioSnapshot.state}</span></article>
                 <article className="dashboard-exec-list__item">
-                  <strong>Open positions</strong>
-                  <span className="num-bubble num-bubble--info num-bubble--small" aria-label={`${model.portfolioSnapshot.openPositions} open positions`}>{model.portfolioSnapshot.openPositions}</span>
+                  <strong>{messages.dashboard.openPositionsLabel}</strong>
+                  <span className="num-bubble num-bubble--info num-bubble--small" aria-label={messages.dashboard.openPositionsAria.replace('{{count}}', String(model.portfolioSnapshot.openPositions))}>{model.portfolioSnapshot.openPositions}</span>
                 </article>
-                <article className="dashboard-exec-list__item"><strong>Risk score</strong><span>{model.portfolioSnapshot.riskScore}</span></article>
+                <article className="dashboard-exec-list__item"><strong>{messages.dashboard.riskScoreLabel}</strong><span>{model.portfolioSnapshot.riskScore}</span></article>
               </div>
             </DashboardPanel>
             <DashboardSimulationReadiness model={model} />
           </DashboardGroup>
 
           <DashboardGroup
-            title="Risk Overview"
-            subtitle="Escalations and cross-asset dependencies that change your risk picture."
+            title={messages.dashboard.groupRiskTitle}
+            subtitle={messages.dashboard.groupRiskSubtitle}
           >
             <DashboardAlertQueue model={model} />
-            <DashboardPanel eyebrow="Cross-Asset Intelligence" title="Relationship engine" description="Cross-asset dependencies, correlations, and narrative context derived from live observations." href="/observe">
+            <DashboardPanel eyebrow={messages.dashboard.relationshipPanelEyebrow} title={messages.dashboard.relationshipPanelTitle} description={messages.dashboard.relationshipPanelDescription} href="/observe">
               <div className="dashboard-exec-list">
                 {model.relationships.length === 0 ? (
                   <div className="aurox-empty-state aurox-empty-state--inline">
-                    <p className="aurox-empty-state__title">No cross-asset relationships detected</p>
+                    <p className="aurox-empty-state__title">{messages.dashboard.noRelationshipsTitle}</p>
                     <p className="text-muted" style={{ fontSize: '0.8rem' }}>
-                      The relationship engine requires active observations. Open the Observer to generate market intelligence.
+                      {messages.dashboard.noRelationshipsBody}
                     </p>
-                    <Link href="/observe" className="button button--secondary">Open Observer</Link>
+                    <Link href="/observe" className="button button--secondary">{messages.dashboard.openObserver}</Link>
                   </div>
                 ) : model.relationships.map((row) => (
                   <article key={row.id} className="dashboard-exec-list__item">
@@ -114,8 +114,8 @@ export default async function DashboardPage() {
           </DashboardGroup>
 
           <DashboardGroup
-            title="Market Overview"
-            subtitle="Live market pulse and coverage across stocks, ETFs, and crypto."
+            title={messages.dashboard.groupMarketTitle}
+            subtitle={messages.dashboard.groupMarketSubtitle}
             lead
           >
             <DashboardMarketPulse
@@ -131,31 +131,31 @@ export default async function DashboardPage() {
           </DashboardGroup>
 
           <DashboardGroup
-            title="AI Overview"
-            subtitle="Explainable signal distribution and the most relevant observer outputs."
+            title={messages.dashboard.groupAiTitle}
+            subtitle={messages.dashboard.groupAiSubtitle}
           >
             <DashboardSignalSnapshot model={model} />
             <DashboardObservationSummary model={model} />
           </DashboardGroup>
 
           <DashboardGroup
-            title="Research Overview"
-            subtitle="News shocks and the health of the data providers behind every number."
+            title={messages.dashboard.groupResearchTitle}
+            subtitle={messages.dashboard.groupResearchSubtitle}
           >
-            <DashboardPanel eyebrow="News Impact" title="News shock snapshot" description="Top headlines and sentiment shocks." href="/news">
+            <DashboardPanel eyebrow={messages.dashboard.newsPanelEyebrow} title={messages.dashboard.newsPanelTitle} description={messages.dashboard.newsPanelDescription} href="/news">
               <div className="dashboard-exec-list">
                 <article className="dashboard-exec-list__item">
-                  <strong>Shock count</strong>
-                  <span className="num-bubble num-bubble--warning num-bubble--small" aria-label={`${model.newsSnapshot.shockCount} news shocks`}>{model.newsSnapshot.shockCount}</span>
+                  <strong>{messages.dashboard.shockCountLabel}</strong>
+                  <span className="num-bubble num-bubble--warning num-bubble--small" aria-label={messages.dashboard.shockCountAria.replace('{{count}}', String(model.newsSnapshot.shockCount))}>{model.newsSnapshot.shockCount}</span>
                 </article>
                 {model.newsSnapshot.headlines.map((item) => (
                   <article key={item.id} className="dashboard-exec-list__item">
                     <strong>{item.title}</strong>
                     <span className="text-muted">{item.source}</span>
                     {item.href ? (
-                      <a href={item.href} target="_blank" rel="noreferrer noopener">Open source</a>
+                      <a href={item.href} target="_blank" rel="noreferrer noopener">{messages.dashboard.openSource}</a>
                     ) : (
-                      <span className="text-muted">Source unavailable</span>
+                      <span className="text-muted">{messages.dashboard.sourceUnavailable}</span>
                     )}
                   </article>
                 ))}
@@ -167,12 +167,12 @@ export default async function DashboardPage() {
       )}
       ctas={(
         <div className="dashboard-exec-cta-band">
-          <Link href="/market" className="button">Open Market Workstation</Link>
-          <Link href="/observe" className="button button--secondary">Open Observer Feed</Link>
-          <Link href="/alerts" className="button button--secondary">Inspect Alert Center</Link>
-          <Link href="/invest/simulation" className="button button--secondary">Open Simulation Cockpit</Link>
-          <Link href="/portfolio/intelligence" className="button button--secondary">Review Portfolio Intelligence</Link>
-          <span className="dashboard-exec-cta-band__hint text-muted">Press <kbd>⌘K</kbd> for quick navigation</span>
+          <Link href="/market" className="button">{messages.dashboard.ctaOpenMarket}</Link>
+          <Link href="/observe" className="button button--secondary">{messages.dashboard.ctaOpenObserver}</Link>
+          <Link href="/alerts" className="button button--secondary">{messages.dashboard.ctaInspectAlerts}</Link>
+          <Link href="/invest/simulation" className="button button--secondary">{messages.dashboard.ctaOpenSimulation}</Link>
+          <Link href="/portfolio/intelligence" className="button button--secondary">{messages.dashboard.ctaReviewPortfolio}</Link>
+          <span className="dashboard-exec-cta-band__hint text-muted">{messages.dashboard.quickNavHintPrefix} <kbd>⌘K</kbd> {messages.dashboard.quickNavHintSuffix}</span>
         </div>
       )}
     />
