@@ -1655,10 +1655,33 @@ code,
   font-size: var(--font-size-sm);
 }
 
+/* "Forgot password?" link — aligned end, with a >=44px tap target (WCAG 2.5.5). */
+.auth-form__forgot {
+  align-self: flex-end;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--space-1);
+  font-size: var(--font-size-sm);
+  color: var(--accent-strong, inherit);
+}
+
 .form-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-md);
   font-size: var(--font-size-sm);
+}
+
+/* Inline link inside an error banner — keep a 44px-high target for touch. */
+.form-banner__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  text-decoration: underline;
 }
 
 .form-banner--error {
@@ -7747,6 +7770,154 @@ code,
   font-size: var(--font-size-xs);
   color: var(--text-tertiary);
   line-height: 1.3;
+}
+
+/* Visually-hidden utility: content stays available to screen readers and is
+   referenced by aria-describedby on quietly-disabled actions, without adding a
+   loud, repeated inline note to every card. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Standardized simulation-only boundary notice (compact | inline | panel | footer). */
+.simulation-boundary-notice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.simulation-boundary-notice__message {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+.simulation-boundary-notice--panel {
+  padding: var(--space-3);
+  border: var(--border-width-thin) solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-subtle, transparent);
+}
+.simulation-boundary-notice--footer {
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: var(--border-width-thin) solid var(--border-subtle);
+  justify-content: center;
+  text-align: center;
+}
+.simulation-boundary-notice--compact {
+  font-size: 0.65rem;
+}
+
+/* Tradable universe explorer: compact summary + filter/sort controls. */
+.universe-explorer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.universe-explorer__summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin: 0;
+}
+.universe-explorer__summary-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.universe-explorer__summary-item dt {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  margin: 0;
+}
+.universe-explorer__summary-item dd {
+  margin: 0;
+}
+.universe-explorer__controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.universe-explorer__search {
+  flex: 1 1 14rem;
+  min-width: 10rem;
+  padding: 0.4rem 0.65rem;
+  border: var(--border-width-thin) solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-subtle, transparent);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+}
+.universe-explorer__sort {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+.universe-explorer__sort select {
+  padding: 0.35rem 0.5rem;
+  border: var(--border-width-thin) solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-subtle, transparent);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+}
+.universe-explorer__results {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  margin-left: auto;
+}
+.universe-explorer__filter-groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+.universe-explorer__group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+.universe-explorer__group legend {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  padding: 0;
+  margin-right: var(--space-1);
+  float: left;
+}
+.universe-explorer__chip {
+  font-size: var(--font-size-xs);
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-pill, 999px);
+  border: var(--border-width-thin) solid var(--border-subtle);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.universe-explorer__chip--active {
+  background: var(--accent-soft, rgba(99, 102, 241, 0.16));
+  border-color: var(--accent, #6366f1);
+  color: var(--text-primary);
+}
+.universe-explorer__empty {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  padding: var(--space-4);
+  text-align: center;
 }
 
 /* Ghost button variant for secondary actions */

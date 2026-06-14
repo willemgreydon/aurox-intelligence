@@ -94,14 +94,18 @@ export { InMemoryStore, NoOpStore };
 // IP extraction
 // ---------------------------------------------------------------------------
 
-function extractIp(request: Request): string {
+export function extractIpFromHeaders(headers: Headers): string {
   // Vercel / common proxies set x-forwarded-for.
   // We take only the first address (the client) and strip the port.
-  const forwarded = request.headers.get('x-forwarded-for');
+  const forwarded = headers.get('x-forwarded-for');
   if (forwarded) {
     return (forwarded.split(',')[0] ?? forwarded).trim();
   }
-  return request.headers.get('x-real-ip') ?? 'unknown';
+  return headers.get('x-real-ip') ?? 'unknown';
+}
+
+function extractIp(request: Request): string {
+  return extractIpFromHeaders(request.headers);
 }
 
 // ---------------------------------------------------------------------------
@@ -133,11 +137,9 @@ export async function checkRateLimitWithStore(
   options: RateLimitOptions,
   store: RateLimitStore,
 ): Promise<NextResponse | null> {
-  const ip = extractIp(request);
-  const key = `rl:${route}:${ip}`;
-  const count = await store.increment(key, options.windowMs);
+  const { limited, retryAfterSeconds } = await consumeRateLimit(extractIp(request), route, options, store);
 
-  if (count > options.max) {
+  if (limited) {
     return NextResponse.json(
       {
         error: 'too_many_requests',
@@ -146,11 +148,40 @@ export async function checkRateLimitWithStore(
       {
         status: 429,
         headers: {
-          'Retry-After': String(Math.ceil(options.windowMs / 1000)),
+          'Retry-After': String(retryAfterSeconds),
         },
       },
     );
   }
 
   return null;
+}
+
+export interface RateLimitVerdict {
+  /** True when this hit exceeded the configured maximum for the window. */
+  limited: boolean;
+  /** Seconds the caller should wait before retrying. */
+  retryAfterSeconds: number;
+}
+
+/**
+ * Transport-agnostic rate-limit primitive keyed by an arbitrary identifier
+ * (usually the client IP). Server Actions — which have no `Request`/`NextResponse`
+ * — call this with an IP derived from `next/headers` and translate the verdict
+ * into their own typed result. It increments the SAME default store and key
+ * convention (`rl:<route>:<id>`) as the route-handler path, so an action and its
+ * mirror route handler share one limit per identifier.
+ */
+export async function consumeRateLimit(
+  identifier: string,
+  route: string,
+  options: RateLimitOptions,
+  store: RateLimitStore = defaultStore,
+): Promise<RateLimitVerdict> {
+  const key = `rl:${route}:${identifier}`;
+  const count = await store.increment(key, options.windowMs);
+  return {
+    limited: count > options.max,
+    retryAfterSeconds: Math.ceil(options.windowMs / 1000),
+  };
 }

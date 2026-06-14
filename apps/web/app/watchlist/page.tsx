@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Section } from '../../components/ui/section';
 import { WorkstationPageHeader } from '../../components/asset/workstation-page-header';
 import { MarketAssetRow } from '../../components/invest/market-asset-row';
+import { PaginatedAssetList } from '../../components/invest/paginated-asset-list';
 import { QuickTradeActions } from '../../components/invest/quick-trade-actions';
 import { requireCurrentSession } from '../../server/auth/session';
 import { getSimulationPortfolioPageData, loadMiniHistorySeries } from '../../server/services/stock-simulation-service';
@@ -36,6 +37,48 @@ export default async function WatchlistPage() {
   const gainers = model.watchlist.filter((row) => (row.quote?.changePercent ?? 0) > 0);
   const losers = model.watchlist.filter((row) => (row.quote?.changePercent ?? 0) < 0);
   const held = model.watchlist.filter((row) => heldSymbols.has(row.asset.symbol));
+
+  // Pre-render watchlist rows so the list can be paginated client-side.
+  const watchlistNodes = model.watchlist.map((row) => {
+    const changePercent = row.quote?.changePercent;
+    return {
+      key: row.asset.assetId,
+      node: (
+        <MarketAssetRow
+          symbol={row.asset.symbol}
+          title={row.asset.name}
+          category={row.asset.category}
+          thesis={row.asset.thesis}
+          priceLabel={formatPrice(row.quote?.price)}
+          changeLabel={formatChange(changePercent)}
+          freshnessLabel={
+            row.quote?.observedAt
+              ? new Date(row.quote.observedAt).toLocaleTimeString('en-US', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })
+              : 'stale'
+          }
+          actionAvailability={row.asset.isTradable ? 'simulated' : 'unavailable'}
+          insightStance={changeStance(changePercent)}
+          sparkline={miniHistory[row.asset.symbol] ?? []}
+          actions={(
+            <QuickTradeActions
+              detailHref={getAssetInspectHref({ symbol: row.asset.symbol, assetClass: row.asset.assetClass })}
+              assetId={row.asset.assetId}
+              symbol={row.asset.symbol}
+              assetClass={row.asset.assetClass as 'stock' | 'etf' | 'crypto'}
+              isAuthenticated
+              strategyLaneId="manual_multi_asset_lane"
+              showWatchlist
+              isWatched
+              hasSimulatedPosition={heldSymbols.has(row.asset.symbol)}
+            />
+          )}
+        />
+      ),
+    };
+  });
 
   return (
     <>
@@ -132,46 +175,11 @@ export default async function WatchlistPage() {
                 <span>Actions</span>
               </div>
 
-              <div className="market-table watchlist-table">
-                {model.watchlist.map((row) => {
-                  const changePercent = row.quote?.changePercent;
-                  return (
-                    <MarketAssetRow
-                      key={row.asset.assetId}
-                      symbol={row.asset.symbol}
-                      title={row.asset.name}
-                      category={row.asset.category}
-                      thesis={row.asset.thesis}
-                      priceLabel={formatPrice(row.quote?.price)}
-                      changeLabel={formatChange(changePercent)}
-                      freshnessLabel={
-                        row.quote?.observedAt
-                          ? new Date(row.quote.observedAt).toLocaleTimeString('en-US', {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })
-                          : 'stale'
-                      }
-                      actionAvailability={row.asset.isTradable ? 'simulated' : 'unavailable'}
-                      insightStance={changeStance(changePercent)}
-                      sparkline={miniHistory[row.asset.symbol] ?? []}
-                      actions={(
-                        <QuickTradeActions
-                          detailHref={getAssetInspectHref({ symbol: row.asset.symbol, assetClass: row.asset.assetClass })}
-                          assetId={row.asset.assetId}
-                          symbol={row.asset.symbol}
-                          assetClass={row.asset.assetClass as 'stock' | 'etf' | 'crypto'}
-                          isAuthenticated
-                          strategyLaneId="manual_multi_asset_lane"
-                          showWatchlist
-                          isWatched
-                          hasSimulatedPosition={heldSymbols.has(row.asset.symbol)}
-                        />
-                      )}
-                    />
-                  );
-                })}
-              </div>
+              <PaginatedAssetList
+                items={watchlistNodes}
+                className="market-table watchlist-table"
+                pageSize={20}
+              />
 
               <p className="watchlist-workspace__disclaimer">
                 Simulation only. No real capital at risk. All trade actions route through the simulation engine.

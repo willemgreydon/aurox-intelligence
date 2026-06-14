@@ -5,6 +5,19 @@
 
 ---
 
+# 0. TASKBOARD
+
+The canonical project taskboard lives in Notion:
+
+* **Board:** aurox-notion-todo-import.csv (Board – by Epic)
+* **URL:** https://app.notion.com/p/mitterbergerlab/37eb7515353580c5a7a1f2ab60860ed0?v=37eb751535358177880a000c19a362a6
+* **Database ID:** `37eb7515-3535-8005-bced-000b7b026173` (data source / collection)
+* **Schema:** `Name` (title), `Epic` (select), `Size` (S/M/L), `MVP`, `Persona`, `Acceptance Criteria (summary)`, `Source`, `Priority`, `Status` (Todo/Done)
+
+**Rule:** Only write tasks to this board when explicitly instructed in the conversation (e.g. "save this to the board" / "add this to the taskboard"). Do not push tasks to Notion automatically.
+
+---
+
 # 1. SYSTEM PURPOSE
 
 Aurox Intelligence is a **deterministic-first financial intelligence and trading system** designed to:

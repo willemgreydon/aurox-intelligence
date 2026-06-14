@@ -8,6 +8,9 @@ import { getRequestLocale } from '../../../server/i18n/locale';
 import { getAccountOverviewData } from '../../../server/services/account-service';
 import { assertSerializableProps } from '../../../lib/assert-serializable-props';
 
+// User-specific account data — never cached at the route level.
+export const dynamic = 'force-dynamic';
+
 export default async function AccountSettingsPage() {
   const auth = await requireCurrentSession('/account/settings');
   const locale = await getRequestLocale();

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { NavGroup } from './site-nav';
 import type { MarketTickerViewModel } from '../../server/mappers/market-ticker-mapper';
 import { searchCommandPalette, type CommandPaletteEntry } from '../../lib/command-palette';
@@ -202,9 +202,55 @@ function buildEntries(navGroups: NavGroup[], ticker: MarketTickerViewModel): Com
 export function CommandPalette({ navGroups, ticker }: CommandPaletteProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
 
   const entries = useMemo(() => buildEntries(navGroups, ticker), [navGroups, ticker]);
   const results = useMemo(() => searchCommandPalette(entries, query), [entries, query]);
+
+  // Remember the element that had focus before the palette opened and restore it
+  // when the palette closes — keyboard/screen-reader users return to where they
+  // were (WCAG 2.4.3) instead of being dropped at the top of the document.
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    previouslyFocusedRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    return () => {
+      previouslyFocusedRef.current?.focus?.();
+    };
+  }, [open]);
+
+  // Trap Tab focus within the open dialog so it cannot escape to the page behind.
+  function handleDialogKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+    if (event.key !== 'Tab') {
+      return;
+    }
+    const container = dialogRef.current;
+    if (!container) {
+      return;
+    }
+    const focusable = Array.from(
+      container.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ),
+    ).filter((el) => el.offsetParent !== null || el === document.activeElement);
+    if (focusable.length === 0) {
+      return;
+    }
+    const first = focusable[0]!;
+    const last = focusable[focusable.length - 1]!;
+    const active = document.activeElement;
+    if (event.shiftKey) {
+      if (active === first || !container.contains(active)) {
+        event.preventDefault();
+        last.focus();
+      }
+    } else if (active === last || !container.contains(active)) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -240,7 +286,14 @@ export function CommandPalette({ navGroups, ticker }: CommandPaletteProps) {
   const groupOrder: CommandPaletteEntry['group'][] = ['Routes', 'Actions', 'Assets'];
 
   return (
-    <div className="command-palette" role="dialog" aria-modal="true" aria-label="Command palette">
+    <div
+      ref={dialogRef}
+      className="command-palette"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Command palette"
+      onKeyDown={handleDialogKeyDown}
+    >
       <button className="command-palette__backdrop" aria-label="Close command palette" onClick={() => setOpen(false)} />
       <div className="command-palette__surface">
         <div className="command-palette__header">

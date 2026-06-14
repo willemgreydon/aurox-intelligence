@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach } from 'vitest';
-import { InMemoryStore, NoOpStore, checkRateLimitWithStore } from './rate-limit';
+import { InMemoryStore, NoOpStore, checkRateLimitWithStore, consumeRateLimit, extractIpFromHeaders } from './rate-limit';
 
 // ---------------------------------------------------------------------------
 // InMemoryStore unit tests
@@ -192,5 +192,82 @@ describe('forgot-password rate limit — information leak prevention', () => {
     expect(JSON.stringify(body)).not.toContain('target@example.com');
     expect(JSON.stringify(body)).not.toContain('exists');
     expect(JSON.stringify(body)).not.toContain('account');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// consumeRateLimit — the primitive used by the login/register SERVER ACTIONS
+// (AUR-038). Server actions have no Request/NextResponse, so they enforce the
+// limit via this identifier-based verdict and return a typed FormState.
+// ---------------------------------------------------------------------------
+
+describe('consumeRateLimit (server-action enforcement)', () => {
+  it('extractIpFromHeaders reads x-forwarded-for (first hop) then x-real-ip', () => {
+    expect(extractIpFromHeaders(new Headers({ 'x-forwarded-for': '5.5.5.5, 10.0.0.1' }))).toBe('5.5.5.5');
+    expect(extractIpFromHeaders(new Headers({ 'x-real-ip': '6.6.6.6' }))).toBe('6.6.6.6');
+    expect(extractIpFromHeaders(new Headers())).toBe('unknown');
+  });
+
+  it('login action limit: allows the first 10 attempts per IP, blocks the 11th', async () => {
+    const store = new InMemoryStore();
+    const opts = { max: 10, windowMs: 60_000 }; // matches /api/auth/login + loginAction
+
+    for (let i = 0; i < 10; i++) {
+      const verdict = await consumeRateLimit('1.1.1.1', 'auth:login', opts, store);
+      expect(verdict.limited).toBe(false);
+    }
+    const blocked = await consumeRateLimit('1.1.1.1', 'auth:login', opts, store);
+    expect(blocked.limited).toBe(true);
+    expect(blocked.retryAfterSeconds).toBe(60);
+  });
+
+  it('register action limit blocks after 10 attempts per IP', async () => {
+    const store = new InMemoryStore();
+    const opts = { max: 10, windowMs: 60_000 };
+    let lastVerdict = { limited: false, retryAfterSeconds: 0 };
+    for (let i = 0; i < 11; i++) {
+      lastVerdict = await consumeRateLimit('2.2.2.2', 'auth:register', opts, store);
+    }
+    expect(lastVerdict.limited).toBe(true);
+  });
+
+  it('limits are isolated per IP', async () => {
+    const store = new InMemoryStore();
+    const opts = { max: 1, windowMs: 60_000 };
+
+    await consumeRateLimit('1.1.1.1', 'auth:login', opts, store); // count 1 (ok)
+    const sameIp = await consumeRateLimit('1.1.1.1', 'auth:login', opts, store); // count 2 (blocked)
+    const otherIp = await consumeRateLimit('9.9.9.9', 'auth:login', opts, store); // count 1 (ok)
+
+    expect(sameIp.limited).toBe(true);
+    expect(otherIp.limited).toBe(false);
+  });
+
+  it('a server action and its mirror route handler share one limit per IP (same key)', async () => {
+    const store = new InMemoryStore();
+    const opts = { max: 2, windowMs: 60_000 };
+
+    // Route handler path increments rl:auth:login:7.7.7.7
+    const req = new Request('http://localhost/api/auth/login', {
+      method: 'POST',
+      headers: { 'x-forwarded-for': '7.7.7.7' },
+    });
+    expect(await checkRateLimitWithStore(req, 'auth:login', opts, store)).toBeNull(); // 1
+    // Server-action path increments the SAME key
+    expect((await consumeRateLimit('7.7.7.7', 'auth:login', opts, store)).limited).toBe(false); // 2
+    // Third hit (either path) is blocked
+    expect((await consumeRateLimit('7.7.7.7', 'auth:login', opts, store)).limited).toBe(true); // 3
+  });
+
+  it('isolates different routes for the same IP', async () => {
+    const store = new InMemoryStore();
+    const opts = { max: 1, windowMs: 60_000 };
+
+    await consumeRateLimit('3.3.3.3', 'auth:login', opts, store); // login ok
+    const loginBlocked = await consumeRateLimit('3.3.3.3', 'auth:login', opts, store); // login blocked
+    const registerOk = await consumeRateLimit('3.3.3.3', 'auth:register', opts, store); // register independent
+
+    expect(loginBlocked.limited).toBe(true);
+    expect(registerOk.limited).toBe(false);
   });
 });

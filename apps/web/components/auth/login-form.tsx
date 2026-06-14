@@ -14,6 +14,8 @@ type LoginFormProps = {
 
 export function LoginForm({ nextPath, messages }: LoginFormProps) {
   const [state, formAction] = useActionState(loginAction, emptyFormState);
+  const emailError = state.fieldErrors.email;
+  const passwordError = state.fieldErrors.password;
 
   return (
     <form action={formAction} className="auth-form">
@@ -25,20 +27,55 @@ export function LoginForm({ nextPath, messages }: LoginFormProps) {
       <input type="hidden" name="next" value={nextPath ?? ''} />
 
       {state.message ? (
-        <div className={`form-banner form-banner--${state.status === 'error' ? 'error' : 'success'}`}>{state.message}</div>
+        <div
+          role="alert"
+          aria-live="polite"
+          className={`form-banner form-banner--${state.status === 'error' ? 'error' : 'success'}`}
+        >
+          <span>{state.message}</span>
+          {state.status === 'error' ? (
+            <Link className="form-banner__link" href="/forgot-password">
+              {messages.forgotPassword}
+            </Link>
+          ) : null}
+        </div>
       ) : null}
 
       <label className="form-field">
         <span>{messages.emailAddress}</span>
-        <input name="email" type="email" autoComplete="email" placeholder={messages.emailPlaceholder} />
-        {state.fieldErrors.email ? <span className="form-field__error">{state.fieldErrors.email}</span> : null}
+        <input
+          id="login-email"
+          name="email"
+          type="email"
+          autoComplete="email"
+          placeholder={messages.emailPlaceholder}
+          aria-invalid={emailError ? true : undefined}
+          aria-describedby={emailError ? 'login-email-error' : undefined}
+        />
+        {emailError ? (
+          <span id="login-email-error" className="form-field__error">{emailError}</span>
+        ) : null}
       </label>
 
       <label className="form-field">
         <span>{messages.password}</span>
-        <input name="password" type="password" autoComplete="current-password" placeholder={messages.passwordPlaceholder} />
-        {state.fieldErrors.password ? <span className="form-field__error">{state.fieldErrors.password}</span> : null}
+        <input
+          id="login-password"
+          name="password"
+          type="password"
+          autoComplete="current-password"
+          placeholder={messages.passwordPlaceholder}
+          aria-invalid={passwordError ? true : undefined}
+          aria-describedby={passwordError ? 'login-password-error' : undefined}
+        />
+        {passwordError ? (
+          <span id="login-password-error" className="form-field__error">{passwordError}</span>
+        ) : null}
       </label>
+
+      <Link className="auth-form__forgot" href="/forgot-password">
+        {messages.forgotPassword}
+      </Link>
 
       <FormSubmitButton label={messages.signIn} pendingLabel={messages.signingIn} className="auth-form__submit" />
 
