@@ -2,10 +2,14 @@ import { SignalsCockpit } from '../../components/signals/signals-cockpit';
 import { SimulationModeBadge } from '../../components/ui/simulation-mode-badge';
 import { getSignalsPageData } from '../../server/services/analysis-service';
 import { assertSerializableProps } from '../../lib/assert-serializable-props';
+import { getMessages } from '../../lib/i18n/messages';
+import { getRequestLocale } from '../../server/i18n/locale';
 
 export const dynamic = 'force-dynamic';
 
 export default async function SignalsPage() {
+  const locale = await getRequestLocale();
+  const messages = getMessages(locale);
   const data = await getSignalsPageData();
 
   assertSerializableProps('signals.data', data as Record<string, unknown>);
@@ -50,7 +54,7 @@ export default async function SignalsPage() {
         </div>
       </header>
 
-      <SignalsCockpit data={data} />
+      <SignalsCockpit data={data} labels={messages.signals} />
     </>
   );
 }
