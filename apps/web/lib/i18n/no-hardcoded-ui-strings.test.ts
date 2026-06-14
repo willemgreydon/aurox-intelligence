@@ -8,9 +8,13 @@ import { join } from 'node:path';
  * hardcoded user-facing string literal is reintroduced. Add a component here once
  * it is i18n-clean; the list grows as the hardcoded-string extraction proceeds.
  */
-const I18N_CLEAN_FILES = ['components/layout/footer.tsx', 'app/dashboard/page.tsx'];
+const I18N_CLEAN_FILES = [
+  'components/layout/footer.tsx',
+  'app/dashboard/page.tsx',
+  'app/invest/simulation/page.tsx',
+];
 
-const UI_ATTRS = 'label|title|placeholder|alt|aria-label|subtitle|eyebrow|description';
+const UI_ATTRS = 'label|title|placeholder|alt|aria-label|subtitle|eyebrow|description|detail|note|emptyMessage';
 
 // Heuristics for hardcoded user-facing text. Tuned to ignore className/href/keys:
 // (1) JSX attribute   attr="English…"   (double-quoted string literal)
