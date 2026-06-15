@@ -877,6 +877,7 @@ export default async function SimulationPage({
                   noOpenPositionToSellTemplate: messages.simulation.validation.noOpenPositionToSell,
                 })}
                 currentPrice={preparedAsset.quote?.price ?? null}
+                availableCashUsd={portfolio.summary.availableCash}
                 currentHeldQuantity={heldPositionsBySymbol.get(preparedAsset.asset.symbol)?.quantity ?? 0}
                 sourceContext={preparedTicket.source}
                 uiText={{
