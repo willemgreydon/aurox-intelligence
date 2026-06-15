@@ -4960,6 +4960,65 @@ code,
   color: var(--text-muted);
 }
 
+/* AUR-065 — forecast confidence bar + bias direction glyph. */
+.forecast-card__bias {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.forecast-card__bias-glyph {
+  font-size: 0.85em;
+  line-height: 1;
+}
+
+.forecast-card__bias-glyph--bullish {
+  color: var(--color-success, #16a34a);
+}
+
+.forecast-card__bias-glyph--bearish {
+  color: var(--color-danger, #dc2626);
+}
+
+.forecast-card__bias-glyph--neutral {
+  color: var(--text-muted);
+}
+
+.forecast-card__confidence {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: 0.5rem;
+}
+
+.forecast-card__confidence-track {
+  position: relative;
+  flex: 1;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-chart-muted, color-mix(in srgb, var(--text-muted) 18%, transparent));
+  overflow: hidden;
+}
+
+.forecast-card__confidence-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--confidence-pct, 0%);
+  border-radius: var(--radius-pill);
+  /* Amber (low) → green (high): wider fills reveal more green. */
+  background: linear-gradient(90deg, var(--color-warning, #f59e0b), var(--color-success, #16a34a));
+}
+
+.forecast-card__confidence-value {
+  font-size: var(--font-size-xs, 0.72rem);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  min-width: 2.6ch;
+  text-align: right;
+}
+
 .site-nav-group__count {
   display: inline-flex;
   min-width: 1.5rem;
