@@ -4718,6 +4718,109 @@ code,
   }
 }
 
+/* ============================================================
+   GODTIER motion & elevation primitives (opt-in utilities)
+   Apply by adding the class in markup — never blanket-applied to
+   shared card classes. The global prefers-reduced-motion reset
+   above neutralizes all of these for users who opt out.
+   ============================================================ */
+
+@keyframes gt-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* One-shot entrance: subtle rise + fade. */
+.gt-rise {
+  animation: gt-rise-in var(--duration-base, 200ms) var(--ease-standard, ease) both;
+}
+
+/* Staggered entrance for a group's direct children. */
+.gt-rise-stagger > * {
+  animation: gt-rise-in var(--duration-base, 200ms) var(--ease-standard, ease) both;
+}
+
+.gt-rise-stagger > *:nth-child(1) {
+  animation-delay: 0ms;
+}
+.gt-rise-stagger > *:nth-child(2) {
+  animation-delay: 45ms;
+}
+.gt-rise-stagger > *:nth-child(3) {
+  animation-delay: 90ms;
+}
+.gt-rise-stagger > *:nth-child(4) {
+  animation-delay: 135ms;
+}
+.gt-rise-stagger > *:nth-child(5) {
+  animation-delay: 180ms;
+}
+.gt-rise-stagger > *:nth-child(6) {
+  animation-delay: 225ms;
+}
+.gt-rise-stagger > *:nth-child(7) {
+  animation-delay: 270ms;
+}
+.gt-rise-stagger > *:nth-child(n + 8) {
+  animation-delay: 300ms;
+}
+
+/* Hover elevation for interactive cards. */
+.gt-hover-lift {
+  transition:
+    transform var(--duration-fast, 140ms) var(--ease-standard, ease),
+    box-shadow var(--duration-fast, 140ms) var(--ease-standard, ease),
+    border-color var(--duration-fast, 140ms) var(--ease-standard, ease);
+}
+
+.gt-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg, 0 12px 30px rgba(0, 0, 0, 0.18));
+  border-color: var(--border-strong, var(--border-default));
+}
+
+/* Touch devices: no hover lift (avoids sticky :hover after tap). */
+@media (hover: none) {
+  .gt-hover-lift:hover {
+    transform: none;
+  }
+}
+
+/* Value-change flash — wire via JS by toggling the class when a tracked
+   numeric value changes (green up / red down). Semantic, never decorative. */
+@keyframes gt-flash-up {
+  0% {
+    background-color: color-mix(in srgb, var(--color-success, #16a34a) 22%, transparent);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+@keyframes gt-flash-down {
+  0% {
+    background-color: color-mix(in srgb, var(--color-danger, #dc2626) 22%, transparent);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.gt-tick-up {
+  animation: gt-flash-up 700ms var(--ease-standard, ease);
+}
+
+.gt-tick-down {
+  animation: gt-flash-down 700ms var(--ease-standard, ease);
+}
+
 .site-nav-group__count {
   display: inline-flex;
   min-width: 1.5rem;

@@ -60,6 +60,10 @@ export default async function DashboardPage() {
       })()
     : undefined;
 
+  // AUR-022: state-based primary CTA. If a simulation is underway, the cockpit is
+  // the primary action; otherwise lead users into the market. Derived server-side.
+  const simulationActive = Boolean(accountVm?.hasTrades);
+
   return (
     <DashboardShell
       hero={<DashboardHero model={model} />}
@@ -167,10 +171,19 @@ export default async function DashboardPage() {
       )}
       ctas={(
         <div className="dashboard-exec-cta-band">
-          <Link href="/market" className="button">{messages.dashboard.ctaOpenMarket}</Link>
+          {simulationActive ? (
+            <>
+              <Link href="/invest/simulation" className="button">{messages.dashboard.ctaOpenSimulation}</Link>
+              <Link href="/market" className="button button--secondary">{messages.dashboard.ctaOpenMarket}</Link>
+            </>
+          ) : (
+            <>
+              <Link href="/market" className="button">{messages.dashboard.ctaOpenMarket}</Link>
+              <Link href="/invest/simulation" className="button button--secondary">{messages.dashboard.ctaOpenSimulation}</Link>
+            </>
+          )}
           <Link href="/observe" className="button button--secondary">{messages.dashboard.ctaOpenObserver}</Link>
           <Link href="/alerts" className="button button--secondary">{messages.dashboard.ctaInspectAlerts}</Link>
-          <Link href="/invest/simulation" className="button button--secondary">{messages.dashboard.ctaOpenSimulation}</Link>
           <Link href="/portfolio/intelligence" className="button button--secondary">{messages.dashboard.ctaReviewPortfolio}</Link>
           <span className="dashboard-exec-cta-band__hint text-muted">{messages.dashboard.quickNavHintPrefix} <kbd>⌘K</kbd> {messages.dashboard.quickNavHintSuffix}</span>
         </div>
