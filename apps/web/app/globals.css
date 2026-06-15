@@ -4870,6 +4870,96 @@ code,
   background: var(--surface-raised, var(--surface-base));
 }
 
+/* AUR-064 — macro regime diverging meter + direction readout. */
+.macro-regime-card__readout {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.macro-regime-card__arrow {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.macro-regime-card__arrow--positive {
+  color: var(--color-success, #16a34a);
+}
+
+.macro-regime-card__arrow--negative {
+  color: var(--color-danger, #dc2626);
+}
+
+.macro-regime-card__arrow--neutral {
+  color: var(--text-muted);
+}
+
+.macro-meter {
+  position: relative;
+  height: 8px;
+  margin: 0.55rem 0 0.3rem;
+}
+
+.macro-meter__track {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-pill);
+  background: var(--surface-chart-muted, color-mix(in srgb, var(--text-muted) 18%, transparent));
+}
+
+.macro-meter__fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--fill-left, 50%);
+  width: var(--fill-width, 0%);
+  border-radius: var(--radius-pill);
+}
+
+.macro-meter[data-tone='positive'] .macro-meter__fill,
+.macro-meter[data-tone='positive'] .macro-meter__marker {
+  background: var(--color-success, #16a34a);
+}
+
+.macro-meter[data-tone='negative'] .macro-meter__fill,
+.macro-meter[data-tone='negative'] .macro-meter__marker {
+  background: var(--color-danger, #dc2626);
+}
+
+.macro-meter[data-tone='neutral'] .macro-meter__fill,
+.macro-meter[data-tone='neutral'] .macro-meter__marker {
+  background: var(--text-muted);
+}
+
+.macro-meter__center {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  left: 50%;
+  width: 1px;
+  background: var(--border-strong, var(--text-muted));
+  transform: translateX(-50%);
+}
+
+.macro-meter__marker {
+  position: absolute;
+  top: 50%;
+  left: var(--marker-pos, 50%);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--surface-base, var(--app-bg));
+  transform: translate(-50%, -50%);
+}
+
+.macro-meter__legend {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--font-size-xs, 0.72rem);
+  color: var(--text-muted);
+}
+
 .site-nav-group__count {
   display: inline-flex;
   min-width: 1.5rem;
