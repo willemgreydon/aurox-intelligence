@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTransition, useState } from 'react';
+import type { CSSProperties } from 'react';
 import type { AlertCenterViewModel } from '../../server/services/alert-center-service';
 
 type Props = {
@@ -69,6 +70,12 @@ export function AlertCenterPanel({ model }: Props) {
     0,
   );
 
+  // AUR-068: count-proportional severity weight. Each severity card's bar reflects its
+  // share of all alerts so magnitude is visible, not just color-coded.
+  const severityDenominator = Math.max(1, totalAlerts);
+  const proportion = (count: number): CSSProperties =>
+    ({ '--proportion': `${Math.round((count / severityDenominator) * 100)}%` } as CSSProperties);
+
   return (
     <>
       {/* KPI rail */}
@@ -82,12 +89,16 @@ export function AlertCenterPanel({ model }: Props) {
                 <div className="alert-kpi-card__label">Open</div>
               </div>
             </article>
-            <article className="alert-kpi-card alert-kpi-card--critical">
+            <article
+              className="alert-kpi-card alert-kpi-card--critical"
+              data-active={model.summary.critical > 0 ? 'true' : undefined}
+            >
               <span className="alert-kpi-card__icon" aria-hidden="true">⚑</span>
               <div>
                 <div className="alert-kpi-card__value">{model.summary.critical}</div>
                 <div className="alert-kpi-card__label">Critical</div>
               </div>
+              <span className="alert-kpi-card__bar" style={proportion(model.summary.critical)} aria-hidden="true" />
             </article>
             <article className="alert-kpi-card alert-kpi-card--warning">
               <span className="alert-kpi-card__icon" aria-hidden="true">▲</span>
@@ -95,6 +106,7 @@ export function AlertCenterPanel({ model }: Props) {
                 <div className="alert-kpi-card__value">{model.summary.warning}</div>
                 <div className="alert-kpi-card__label">Warning</div>
               </div>
+              <span className="alert-kpi-card__bar" style={proportion(model.summary.warning)} aria-hidden="true" />
             </article>
             <article className="alert-kpi-card alert-kpi-card--watch">
               <span className="alert-kpi-card__icon" aria-hidden="true">◎</span>
@@ -102,6 +114,7 @@ export function AlertCenterPanel({ model }: Props) {
                 <div className="alert-kpi-card__value">{model.grouped.WATCH.length}</div>
                 <div className="alert-kpi-card__label">Watch</div>
               </div>
+              <span className="alert-kpi-card__bar" style={proportion(model.grouped.WATCH.length)} aria-hidden="true" />
             </article>
             <article className="alert-kpi-card alert-kpi-card--info">
               <span className="alert-kpi-card__icon" aria-hidden="true">◑</span>
@@ -109,6 +122,7 @@ export function AlertCenterPanel({ model }: Props) {
                 <div className="alert-kpi-card__value">{model.grouped.INFO.length}</div>
                 <div className="alert-kpi-card__label">Info</div>
               </div>
+              <span className="alert-kpi-card__bar" style={proportion(model.grouped.INFO.length)} aria-hidden="true" />
             </article>
             <article className="alert-kpi-card alert-kpi-card--snoozed">
               <span className="alert-kpi-card__icon" aria-hidden="true">⏱</span>

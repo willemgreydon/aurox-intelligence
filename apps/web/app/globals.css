@@ -10039,6 +10039,8 @@ code,
 }
 
 .alert-kpi-card {
+  position: relative;
+  overflow: hidden;
   display: flex;
   align-items: center;
   gap: 0.6rem;
@@ -10079,6 +10081,32 @@ code,
 .alert-kpi-card--watch { border-color: color-mix(in srgb, var(--status-info-text) 40%, var(--border-default)); }
 .alert-kpi-card--watch .alert-kpi-card__icon { color: var(--status-info-text); }
 .alert-kpi-card--resolved .alert-kpi-card__icon { color: var(--status-success-text); }
+
+/* AUR-068 — count-proportional severity bar + active CRITICAL emphasis. */
+.alert-kpi-card__bar {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  width: var(--proportion, 0%);
+  background: var(--border-strong, var(--text-muted));
+  transition: width var(--duration-base, 200ms) var(--ease-standard, ease);
+}
+
+.alert-kpi-card--critical .alert-kpi-card__bar { background: var(--status-danger-text); }
+.alert-kpi-card--warning .alert-kpi-card__bar { background: var(--status-warning-text); }
+.alert-kpi-card--watch .alert-kpi-card__bar { background: var(--status-info-text); }
+.alert-kpi-card--info .alert-kpi-card__bar { background: var(--status-success-text); }
+
+.alert-kpi-card--critical[data-active='true'] {
+  border-color: var(--status-danger-text);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--status-danger-text) 35%, transparent),
+    0 6px 18px color-mix(in srgb, var(--status-danger-text) 18%, transparent);
+}
+
+.alert-kpi-card--critical[data-active='true'] .alert-kpi-card__icon {
+  animation: status-pulse 2.4s var(--ease-standard, ease) infinite;
+}
 
 .alert-degraded-banner {
   display: flex;
