@@ -4821,6 +4821,55 @@ code,
   animation: gt-flash-down 700ms var(--ease-standard, ease);
 }
 
+/* AUR-015 — sticky in-page section navigator for long workstation pages. */
+.sim-section-nav {
+  position: sticky;
+  top: var(--header-height, 3.5rem);
+  z-index: var(--z-sticky);
+  margin-bottom: var(--space-3);
+  background: color-mix(in srgb, var(--app-bg) 88%, transparent);
+  backdrop-filter: blur(12px);
+  border-bottom: var(--border-width-thin) solid var(--border-subtle);
+}
+
+.sim-section-nav__list {
+  display: flex;
+  gap: var(--space-2);
+  margin: 0 auto;
+  padding: 0.5rem var(--space-4);
+  max-width: var(--layout-dashboard-width, 90rem);
+  list-style: none;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.sim-section-nav__list::-webkit-scrollbar {
+  display: none;
+}
+
+.sim-section-nav__link {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  padding: 0.4rem 0.85rem;
+  border-radius: var(--radius-pill);
+  border: var(--border-width-thin) solid var(--border-default);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  text-decoration: none;
+  transition:
+    color var(--duration-fast, 140ms) var(--ease-standard, ease),
+    border-color var(--duration-fast, 140ms) var(--ease-standard, ease),
+    background-color var(--duration-fast, 140ms) var(--ease-standard, ease);
+}
+
+.sim-section-nav__link:hover,
+.sim-section-nav__link:focus-visible {
+  color: var(--text-primary);
+  border-color: var(--border-strong, var(--text-accent));
+  background: var(--surface-raised, var(--surface-base));
+}
+
 .site-nav-group__count {
   display: inline-flex;
   min-width: 1.5rem;

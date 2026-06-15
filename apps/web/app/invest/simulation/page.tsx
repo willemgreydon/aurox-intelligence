@@ -3,6 +3,7 @@ import type { Locale, SimulationLaneId } from '@repo/api-contracts';
 import { AnalyticsTable } from '../../../components/tables/analytics-table';
 import { Section } from '../../../components/ui/section';
 import { WorkstationPageHeader } from '../../../components/asset/workstation-page-header';
+import { SimulationSectionNav } from '../../../components/invest/simulation-section-nav';
 import { CompactStatCard } from '../../../components/stats/compact-stat-card';
 import { Card } from '../../../components/ui/card';
 import { BrokerModeLaunchpad } from '../../../components/invest/broker-mode-launchpad';
@@ -775,7 +776,20 @@ export default async function SimulationPage({
         />
       </Section>
 
-      <Section className="dashboard-section">
+      {/* AUR-015: sticky in-page navigator for the long cockpit. Labels are
+          English literals for now; i18n extraction is tracked under AUR-049. */}
+      <SimulationSectionNav
+        label="Jump to simulation section"
+        items={[
+          { href: '#sim-start', label: 'Start' },
+          { href: '#sim-ticket', label: 'Ticket' },
+          { href: '#sim-balances', label: 'Balances' },
+          { href: '#sim-ledger', label: 'Ledger' },
+          { href: '#sim-markets', label: 'Markets' },
+        ]}
+      />
+
+      <Section id="sim-start" className="dashboard-section">
         <BrokerModeLaunchpad
           baseCapitalUsd={portfolio.summary.initialCashBalance}
           isAuthenticated
@@ -790,7 +804,7 @@ export default async function SimulationPage({
       </Section>
 
       {preparedTicket && preparedAsset ? (
-        <Section className="dashboard-section dashboard-section--tinted">
+        <Section id="sim-ticket" className="dashboard-section dashboard-section--tinted">
           <Card className="analytics-card">
             <div className="analytics-card__header">
               <div>
@@ -912,7 +926,7 @@ export default async function SimulationPage({
 
       {/* Headline metrics — the 5-6 figures a trader needs at a glance. The
           remaining metrics stay one click away in the disclosure below. */}
-      <Section className="dashboard-section">
+      <Section id="sim-balances" className="dashboard-section">
         <div className="analytics-strip">
           <CompactStatCard label={messages.simulation.cashBalance} value={formatCashCurrency(portfolio.summary.cashBalance, locale, portfolio.summary.currency)} detail={messages.simulation.cashBalanceDetail} />
           <CompactStatCard label={messages.simulation.availableCashLabel} value={formatCashCurrency(portfolio.summary.availableCash, locale, portfolio.summary.currency)} detail={messages.simulation.availableCashDetail} />
@@ -940,7 +954,7 @@ export default async function SimulationPage({
       </Section>
 
       {/* Secondary ledger content behind one accessible tab group. */}
-      <Section className="dashboard-section">
+      <Section id="sim-ledger" className="dashboard-section">
         <IntelligenceAnalysisTabs tabs={ledgerTabs} defaultTabId={ledgerDefaultTab} />
       </Section>
 
@@ -990,7 +1004,7 @@ export default async function SimulationPage({
         </Disclosure>
       </Section>
 
-      <Section className="dashboard-section">
+      <Section id="sim-markets" className="dashboard-section">
         <SectionHeader
           eyebrow={messages.simulation.marketsEyebrow}
           title={messages.simulation.observeTradeTitle}
