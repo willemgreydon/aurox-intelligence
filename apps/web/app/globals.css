@@ -5019,6 +5019,97 @@ code,
   text-align: right;
 }
 
+/* AUR-066 — ranking row visual encoding: sparkline, signal chevron, confidence
+   micro-bar, risk dot, directional move. */
+.market-row__chart {
+  min-width: 0;
+  max-width: 7.5rem;
+}
+
+.market-signal {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-weight: var(--font-weight-medium);
+}
+
+.market-signal--positive {
+  color: var(--color-success, #16a34a);
+}
+
+.market-signal--negative {
+  color: var(--color-danger, #dc2626);
+}
+
+.market-signal--neutral {
+  color: var(--text-tertiary);
+}
+
+.market-row__move--positive {
+  color: var(--color-success, #16a34a);
+}
+
+.market-row__move--negative {
+  color: var(--color-danger, #dc2626);
+}
+
+.market-row__move--neutral {
+  color: var(--text-tertiary);
+}
+
+.market-row__status {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.confidence-microbar {
+  position: relative;
+  flex: 1;
+  min-width: 2.4rem;
+  height: 5px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-chart-muted, color-mix(in srgb, var(--text-muted) 18%, transparent));
+  overflow: hidden;
+}
+
+.confidence-microbar__fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--confidence-pct, 0%);
+  border-radius: var(--radius-pill);
+  background: linear-gradient(90deg, var(--color-warning, #f59e0b), var(--color-success, #16a34a));
+}
+
+.confidence-microbar__value {
+  font-size: var(--font-size-xs, 0.72rem);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.risk-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 0.15rem;
+  vertical-align: middle;
+}
+
+.risk-dot--low {
+  background: var(--color-success, #16a34a);
+}
+
+.risk-dot--medium {
+  background: var(--color-warning, #f59e0b);
+}
+
+.risk-dot--high {
+  background: var(--color-danger, #dc2626);
+}
+
 .site-nav-group__count {
   display: inline-flex;
   min-width: 1.5rem;
