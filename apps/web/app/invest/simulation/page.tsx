@@ -836,17 +836,17 @@ export default async function SimulationPage({
                 <p className="simulation-form__meta">{preparedQuoteUsability.warning}</p>
               ) : null}
               <div className="aurox-action-row" style={{ marginTop: '0.5rem', gap: '0.75rem' }}>
-                <Link href="/invest/simulation" className="journal-action-link" aria-label={messages.simulation.form.clearPreparedTicket}>
+                <Link href="/invest/simulation" className="button button--secondary" aria-label={messages.simulation.form.clearPreparedTicket}>
                   {messages.simulation.form.clearPreparedTicket}
                 </Link>
                 <Link
                   href={getAssetDetailHref(preparedAsset.asset.symbol, preparedAsset.asset.assetClass)}
-                  className="journal-action-link"
+                  className="button button--secondary"
                   aria-label={messages.simulation.openAssetDetailAria.replace('{{symbol}}', preparedAsset.asset.symbol)}
                 >
                   {messages.simulation.form.openAssetDetail}
                 </Link>
-                <Link href="/invest/portfolio" className="journal-action-link" aria-label={messages.simulation.form.openPortfolio}>
+                <Link href="/invest/portfolio" className="button button--secondary" aria-label={messages.simulation.form.openPortfolio}>
                   {messages.simulation.form.openPortfolio}
                 </Link>
               </div>
