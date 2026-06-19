@@ -1,0 +1,8 @@
+# Compiled output. The build emits to dist/ (tsconfig outDir); compiled .js/.d.ts
+# must never live alongside the .ts source in src/, where they shadow the source
+# at runtime (vitest/Node resolve .js before .ts) and can serve stale code.
+src/**/*.js
+src/**/*.js.map
+src/**/*.d.ts
+src/**/*.d.ts.map
+dist

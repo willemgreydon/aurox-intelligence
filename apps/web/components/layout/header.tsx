@@ -1,6 +1,6 @@
 import type { Locale } from '@repo/api-contracts';
 import { getMarketTickerData } from '../../server/services/market-ticker-service';
-import { getSimulationOverviewDataForUser } from '../../server/services/stock-simulation-service';
+import { getSimulationPortfolioSummaryForUser } from '../../server/services/stock-simulation-service';
 import type { NavGroup } from './site-nav';
 import { getOptionalCurrentSession } from '../../server/auth/session';
 import type { AppMessages } from '../../lib/i18n/messages';
@@ -40,12 +40,7 @@ export async function Header({ locale, messages }: HeaderProps) {
 
   const portfolioSnapshot = auth
     ? await withTimeout(
-        getSimulationOverviewDataForUser(auth.user.id)
-          .then((overview) => ({
-            portfolioValue: overview.summary.portfolioValue,
-            investedCapital: overview.summary.investedCapital,
-          }))
-          .catch(() => null),
+        getSimulationPortfolioSummaryForUser(auth.user.id).catch(() => null),
         HEADER_PORTFOLIO_TIMEOUT_MS,
         null,
       )

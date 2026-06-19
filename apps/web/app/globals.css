@@ -10406,6 +10406,19 @@ code,
   background: color-mix(in srgb, var(--status-success-bg) 50%, transparent);
 }
 
+.alert-card__action-status {
+  margin: 0.15rem 0 0;
+  font-size: 0.65rem;
+  color: var(--text-tertiary);
+  letter-spacing: 0.03em;
+}
+
+.alert-card__action-error {
+  margin: 0.15rem 0 0;
+  font-size: 0.65rem;
+  color: var(--status-danger-text);
+}
+
 /* Empty state actions */
 .aurox-empty-state__icon {
   font-size: 2.5rem;
