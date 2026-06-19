@@ -54,9 +54,25 @@ export function resolveMigrationDatabaseUrl() {
   return direct;
 }
 
+// A single shared connection (max: 1) serializes every concurrent query in the
+// process through one socket. Page renders fan out many parallel reads (market
+// graph history, simulation overview, ticker, stocks), so max: 1 turns them into
+// a serial queue — and a query that the caller abandons on timeout keeps holding
+// the lone connection, cascading into the multi-second DB read timeouts seen in
+// dev. The runtime URL targets the Neon `-pooler` endpoint (PgBouncer in
+// transaction mode, hence `prepare: false`), which safely accepts a larger
+// client-side pool. Tunable via DB_POOL_MAX for constrained environments.
+function resolvePoolMax(): number {
+  const raw = Number(process.env.DB_POOL_MAX);
+  if (!Number.isFinite(raw) || raw < 1) {
+    return 10;
+  }
+  return Math.floor(raw);
+}
+
 function createSql(url: string) {
   return postgres(url, {
-    max: 1,
+    max: resolvePoolMax(),
     prepare: false,
     idle_timeout: 20,
     connect_timeout: 30,

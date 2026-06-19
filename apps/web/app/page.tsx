@@ -44,18 +44,24 @@ export default async function HomePage() {
   const pageStart = perfNow();
   const locale = await getRequestLocale();
   const messages = getMessages(locale);
+  const HOME_WIDGET_TIMEOUT_MS = getHomeWidgetTimeoutMs();
   // Run auth + news in parallel with the workspace symbols lookup — none depend
   // on each other. Stocks and graph are started after symbols resolve because
   // they use preferredSymbols to filter their queries.
-  const [preferredSymbols, newsResult, auth] = await Promise.all([
-    getWorkspaceTrackedSymbols(16),
-    withDbReadFallback('home:news-stream', { items: [], providerHealth: [], updatedAt: new Date().toISOString(), degraded: true, message: 'Database unavailable — showing local fallback data.' }, () => getNewsStreamData()),
+  // Every DB-backed read here is wrapped in withDbReadFallback so a single slow
+  // read (e.g. while the ingestion worker is writing market_daily_bars) degrades
+  // to a bounded fallback instead of stalling the whole page render. Tracked
+  // symbols previously ran unguarded and could hang for the full connection
+  // wait, stacking with the simulation-overview timeout into a ~17s render.
+  const [preferredSymbolsResult, newsResult, auth] = await Promise.all([
+    withDbReadFallback('home:tracked-symbols', [] as string[], () => getWorkspaceTrackedSymbols(16), HOME_WIDGET_TIMEOUT_MS),
+    withDbReadFallback('home:news-stream', { items: [], providerHealth: [], updatedAt: new Date().toISOString(), degraded: true, message: 'Database unavailable — showing local fallback data.' }, () => getNewsStreamData(), HOME_WIDGET_TIMEOUT_MS),
     getOptionalCurrentSession(),
   ]);
-  const HOME_WIDGET_TIMEOUT_MS = getHomeWidgetTimeoutMs();
+  const preferredSymbols = preferredSymbolsResult.value;
   // Start portfolio fetch concurrently — it doesn't depend on stocks/graph results.
   const portfolioPromise = auth
-    ? withDbReadFallback('home:simulation-overview', null, () => getSimulationOverviewDataForUser(auth.user.id))
+    ? withDbReadFallback('home:simulation-overview', null, () => getSimulationOverviewDataForUser(auth.user.id), HOME_WIDGET_TIMEOUT_MS)
     : Promise.resolve({ value: null, degraded: false, reason: null as string | null });
   const [stocksResult, marketGraphResult, portfolioResult] = await Promise.all([
     withDbReadFallback('home:stocks-overview', buildFallbackStocks(messages), () =>
