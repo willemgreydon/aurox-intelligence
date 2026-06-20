@@ -60,7 +60,15 @@ export const getRequestLocale = cache(async (): Promise<Locale> => {
 
   // Only hit DB if authenticated. Apply a tight timeout so a slow DB does not
   // block page render for every unauthenticated visitor.
-  const session = await withTimeout(getOptionalCurrentSession(), LOCALE_SESSION_TIMEOUT_MS, null);
+  // withTimeout only guards against a slow lookup — it does NOT catch a
+  // rejection. Add .catch so a fast-failing session store (e.g. DB outage /
+  // Neon quota) degrades to anonymous locale resolution instead of throwing
+  // out of the root layout and rendering global-error on every route.
+  const session = await withTimeout(
+    getOptionalCurrentSession().catch(() => null),
+    LOCALE_SESSION_TIMEOUT_MS,
+    null,
+  );
   if (session) {
     const dbLocale = await getDbLocale(session.user.id);
     if (dbLocale) {
