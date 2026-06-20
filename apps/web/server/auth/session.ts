@@ -2,7 +2,7 @@ import type { AccountUser, AuthSession } from '@repo/api-contracts';
 import { authenticatedSessionSchema } from '@repo/api-contracts';
 import { findSessionByToken, touchAuthSession } from '@repo/db';
 import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { redirect, unstable_rethrow } from 'next/navigation';
 import { cache } from 'react';
 import { AUTH_SESSION_COOKIE_NAME, buildAuthenticatedRedirect, buildLoginRedirect } from './routing';
 import { parseSignedSessionValue } from './session-token';
@@ -13,40 +13,62 @@ export type CurrentAuthSession = {
 };
 
 export const getOptionalCurrentSession = cache(async (): Promise<CurrentAuthSession | null> => {
-  const cookieStore = await cookies();
-  const rawCookie = cookieStore.get(AUTH_SESSION_COOKIE_NAME)?.value;
-  const token = await parseSignedSessionValue(rawCookie);
+  try {
+    const cookieStore = await cookies();
+    const rawCookie = cookieStore.get(AUTH_SESSION_COOKIE_NAME)?.value;
+    const token = await parseSignedSessionValue(rawCookie);
 
-  if (!token) {
+    if (!token) {
+      return null;
+    }
+
+    const record = await findSessionByToken(token);
+
+    if (!record) {
+      return null;
+    }
+
+    // Best-effort last-seen update — a write failure must never drop an
+    // otherwise valid, readable session.
+    try {
+      await touchAuthSession(record.session.id);
+    } catch (error) {
+      console.warn('[auth] touchAuthSession failed (non-fatal)', error);
+    }
+
+    return authenticatedSessionSchema.parse({
+      user: {
+        id: record.user.id,
+        email: record.user.email,
+        name: record.user.name,
+        role: record.user.role,
+        avatarUrl: record.user.avatarUrl,
+        createdAt: record.user.createdAt,
+        updatedAt: record.user.updatedAt,
+      },
+      session: {
+        id: record.session.id,
+        userId: record.session.userId,
+        createdAt: record.session.createdAt,
+        expiresAt: record.session.expiresAt,
+        lastSeenAt: record.session.lastSeenAt,
+      },
+    });
+  } catch (error) {
+    // Never swallow Next.js control-flow signals (dynamic-server usage from
+    // cookies(), redirect(), notFound()) — re-throw them so static/dynamic
+    // detection and per-user rendering stay correct.
+    unstable_rethrow(error);
+
+    // Session store unreachable (DB outage / Neon data-transfer quota exceeded)
+    // or token unparseable. Fail CLOSED: treat the viewer as anonymous rather
+    // than throwing. This is the OPTIONAL session getter, called at the root
+    // layout level (Header + getRequestLocale); a throw here has no nearer error
+    // boundary and renders global-error on every route, taking down the whole
+    // app shell. Returning null never grants access it shouldn't.
+    console.warn('[auth] session lookup failed; treating viewer as anonymous', error);
     return null;
   }
-
-  const record = await findSessionByToken(token);
-
-  if (!record) {
-    return null;
-  }
-
-  await touchAuthSession(record.session.id);
-
-  return authenticatedSessionSchema.parse({
-    user: {
-      id: record.user.id,
-      email: record.user.email,
-      name: record.user.name,
-      role: record.user.role,
-      avatarUrl: record.user.avatarUrl,
-      createdAt: record.user.createdAt,
-      updatedAt: record.user.updatedAt,
-    },
-    session: {
-      id: record.session.id,
-      userId: record.session.userId,
-      createdAt: record.session.createdAt,
-      expiresAt: record.session.expiresAt,
-      lastSeenAt: record.session.lastSeenAt,
-    },
-  });
 });
 
 export const getOptionalCurrentUser = cache(async (): Promise<AccountUser | null> => {
