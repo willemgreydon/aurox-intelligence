@@ -10,6 +10,7 @@ import { withTimeout } from '../../server/lib/with-timeout';
 // Hard cap on how long the header waits for slow data before degrading gracefully.
 const HEADER_TICKER_TIMEOUT_MS = 3_000;
 const HEADER_PORTFOLIO_TIMEOUT_MS = 2_000;
+const HEADER_SESSION_TIMEOUT_MS = 2_000;
 
 type HeaderProps = {
   locale: Locale;
@@ -35,7 +36,16 @@ export async function Header({ locale, messages }: HeaderProps) {
         lastUpdatedLabel: messages.common.unavailable,
       },
     ),
-    getOptionalCurrentSession(),
+    // The session lookup hits the DB. If the session store is unreachable
+    // (DB outage, Neon data-transfer quota exceeded, slow query), treat the
+    // viewer as anonymous instead of throwing — a throw here propagates out of
+    // the root layout and renders the global-error boundary on every route,
+    // taking the entire app shell down. Degrade to a signed-out header instead.
+    withTimeout(
+      getOptionalCurrentSession().catch(() => null),
+      HEADER_SESSION_TIMEOUT_MS,
+      null,
+    ),
   ]);
 
   const portfolioSnapshot = auth
