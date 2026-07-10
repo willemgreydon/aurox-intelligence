@@ -5,6 +5,7 @@ import { useFormStatus } from 'react-dom';
 import { useEffect, useMemo, useState } from 'react';
 import type { SimulationLaneId } from '@repo/api-contracts';
 import { startSimulationSessionAction } from '../../server/actions/simulation-actions';
+import { Disclosure } from '../ui/disclosure';
 
 type BrokerModeStatus = 'active' | 'limited' | 'planned';
 
@@ -172,6 +173,15 @@ export function BrokerModeLaunchpad({
         <div className="section__eyebrow">Simulation entry</div>
         <h3>{title}</h3>
         <p>{description}</p>
+        <Disclosure summary="What is a simulation lane?">
+          <p>
+            A simulation lane is an isolated paper-trading workspace with its own capital limit,
+            asset scope, and risk guardrails. Orders placed here never touch real money or real
+            markets — they run through the same deterministic engine used for analysis, so you can
+            practice and compare approaches safely. Past simulated results do not predict future
+            outcomes.
+          </p>
+        </Disclosure>
       </div>
 
       <div className="broker-mode-launchpad__grid">
@@ -181,7 +191,7 @@ export function BrokerModeLaunchpad({
           return (
             <label
               key={mode.id}
-              className={`broker-mode-card${isSelected ? ' broker-mode-card--active' : ''}`}
+              className={`broker-mode-card gt-hover-lift${isSelected ? ' broker-mode-card--active' : ''}`}
             >
               <input
                 id={`broker-mode-${mode.id}`}

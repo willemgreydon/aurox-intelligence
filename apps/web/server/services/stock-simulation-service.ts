@@ -7,6 +7,7 @@ import {
   getLatestMarketQuoteSnapshots,
   getMarketHistoryBars,
   getSimulationWorkspace,
+  getSimulationPortfolioSummaryLite,
   getUserWatchlist,
   listCatalogAssets,
   listSimulationTradableAssets,
@@ -664,6 +665,18 @@ export async function getSimulationOverviewDataForUser(userId: string): Promise<
     recentOrders: workspace.orders.slice(0, 8),
     hasActiveInvestments: workspace.summary.activeInvestmentCount > 0,
   };
+}
+
+/**
+ * Headline portfolio numbers for the global header. Intentionally lighter than
+ * {@link getSimulationOverviewDataForUser} (no orders/transactions/snapshots) so
+ * it resolves inside the header's hard timeout and shows real numbers instead of
+ * degrading to em-dashes.
+ */
+export async function getSimulationPortfolioSummaryForUser(
+  userId: string,
+): Promise<{ portfolioValue: number; investedCapital: number } | null> {
+  return getSimulationPortfolioSummaryLite(userId);
 }
 
 export async function getSimulationPortfolioPageData(): Promise<SimulationPortfolioPageData> {

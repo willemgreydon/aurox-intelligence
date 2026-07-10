@@ -24,11 +24,11 @@ export default async function MacroPage() {
         />
       </Section>
       <Section className="dashboard-section">
-        <div className="observation-regime-grid">
-          <MacroRegimeCard title="Inflation pressure" score={model.regime.inflationRegime.score} detail={model.regime.inflationRegime.explanation} />
-          <MacroRegimeCard title="Rates pressure" score={model.regime.ratesRegime.score} detail={model.regime.ratesRegime.explanation} />
-          <MacroRegimeCard title="Growth backdrop" score={model.regime.growthRegime.score} detail={model.regime.growthRegime.explanation} />
-          <MacroRegimeCard title="Risk-on / risk-off" score={model.regime.riskRegime.score} detail={model.regime.riskRegime.explanation} />
+        <div className="observation-regime-grid gt-rise-stagger">
+          <MacroRegimeCard title="Inflation pressure" score={model.regime.inflationRegime.score} detail={model.regime.inflationRegime.explanation} confidence={model.regime.confidence} />
+          <MacroRegimeCard title="Rates pressure" score={model.regime.ratesRegime.score} detail={model.regime.ratesRegime.explanation} confidence={model.regime.confidence} />
+          <MacroRegimeCard title="Growth backdrop" score={model.regime.growthRegime.score} detail={model.regime.growthRegime.explanation} confidence={model.regime.confidence} />
+          <MacroRegimeCard title="Risk-on / risk-off" score={model.regime.riskRegime.score} detail={model.regime.riskRegime.explanation} confidence={model.regime.confidence} />
         </div>
       </Section>
       <Section className="dashboard-section">

@@ -16,7 +16,7 @@ export function DashboardPanel({
   children: ReactNode;
 }) {
   return (
-    <Card className="dashboard-exec-panel">
+    <Card className="dashboard-exec-panel gt-hover-lift">
       <header className="dashboard-exec-panel__header">
         <div>
           <div className="section__eyebrow">{eyebrow}</div>

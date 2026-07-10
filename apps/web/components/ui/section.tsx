@@ -5,11 +5,13 @@ type SectionProps = {
   children: ReactNode;
   className?: string;
   containerClassName?: string;
+  /** Optional anchor id for in-page section navigation (e.g. sticky section nav). */
+  id?: string;
 };
 
-export function Section({ children, className, containerClassName }: SectionProps) {
+export function Section({ children, className, containerClassName, id }: SectionProps) {
   return (
-    <section className={cn('section', className)}>
+    <section id={id} className={cn('section', className)} style={id ? { scrollMarginTop: 'calc(var(--header-height, 3.5rem) + 3.5rem)' } : undefined}>
       <div className={cn('shell-container', containerClassName)}>{children}</div>
     </section>
   );

@@ -81,6 +81,8 @@ type SimulatedOrderFormProps = {
   maxQuantity?: number | null;
   currentHeldQuantity?: number | null;
   currentPrice?: number | null;
+  /** Server-computed available simulation cash, used for the soft position-size caution. */
+  availableCashUsd?: number | null;
   showQuantityInput?: boolean;
   quantityLabel?: string;
   disabled?: boolean;
@@ -99,6 +101,7 @@ type SimulatedOrderFormProps = {
     wholeSharesOnly: string;
     quantityStepMismatchTemplate: string;
     minimumNotional: string;
+    positionSizeWarningTemplate: string;
     noOpenPositionToSellTemplate: string;
     closePosition: string;
     quoteReady: string;
@@ -127,6 +130,7 @@ export function SimulatedOrderForm({
   maxQuantity = null,
   currentHeldQuantity = null,
   currentPrice = null,
+  availableCashUsd = null,
   showQuantityInput = false,
   quantityLabel = 'Quantity',
   disabled = false,
@@ -215,6 +219,21 @@ export function SimulatedOrderForm({
     sanitizedQuantity !== null && typeof currentPrice === 'number' && Number.isFinite(currentPrice) && currentPrice > 0
       ? sanitizedQuantity * currentPrice
       : null;
+
+  // AUR-014: soft (non-blocking) caution when a buy order consumes a large share of
+  // available simulation cash. availableCashUsd is the server-computed figure; the
+  // threshold is a fixed presentation constant. Never disables Submit.
+  const POSITION_SIZE_WARNING_RATIO = 0.25;
+  const positionSizePercent =
+    side === 'buy' && estimatedGross !== null && typeof availableCashUsd === 'number' && availableCashUsd > 0
+      ? (estimatedGross / availableCashUsd) * 100
+      : null;
+  const showPositionSizeWarning =
+    positionSizePercent !== null && positionSizePercent > POSITION_SIZE_WARNING_RATIO * 100;
+  const positionSizeWarningText = showPositionSizeWarning
+    ? formatTemplate(uiText?.positionSizeWarningTemplate, { percent: String(Math.round(positionSizePercent!)) }) ??
+      `This buy order is about ${Math.round(positionSizePercent!)}% of your available simulation cash. Consider sizing down — this is a soft caution, not a block.`
+    : null;
 
   const fillDetail = state.status === 'success' && state.orderResult ? buildFillDetail(state.orderResult) : null;
   const describedByIds = [quantityError || clientError ? `${quantityId}-error` : null, `${quantityId}-hint`].filter(Boolean).join(' ') || undefined;
@@ -338,6 +357,11 @@ export function SimulatedOrderForm({
               rulesHint: rules.hint,
             })}
           </span>
+          {positionSizeWarningText ? (
+            <span className="simulation-form__meta simulation-form__meta--warning" role="status" aria-live="polite">
+              {positionSizeWarningText}
+            </span>
+          ) : null}
           {quantityError || clientError ? (
             <span id={`${quantityId}-error`} className="simulation-form__meta simulation-form__meta--error">
               {clientError ?? quantityError}

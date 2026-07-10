@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTransition, useState } from 'react';
+import type { CSSProperties } from 'react';
 import type { AlertCenterViewModel } from '../../server/services/alert-center-service';
 
 type Props = {
@@ -32,6 +33,11 @@ export function AlertCenterPanel({ model }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
+  // Per-alert action state. Actions are intentionally NOT gated on the filter
+  // transition's `isPending` — otherwise navigating a filter would disable every
+  // Resolve/Dismiss/Snooze/Pin button across the board.
+  const [pendingAlertId, setPendingAlertId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<{ id: string; message: string } | null>(null);
   const [expandedGroups, setExpandedGroups] = useState<Record<AlertGroup, boolean>>({
     CRITICAL: true,
     WARNING:  true,
@@ -50,12 +56,34 @@ export function AlertCenterPanel({ model }: Props) {
   }
 
   async function setAlertState(id: string, action: 'read' | 'pin' | 'snooze' | 'dismiss' | 'resolve') {
-    await fetch(`/api/alerts/${id}/state`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ action }),
-    });
-    router.refresh();
+    setPendingAlertId(id);
+    setActionError(null);
+    try {
+      const response = await fetch(`/api/alerts/${id}/state`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ action }),
+      });
+      if (!response.ok) {
+        // Surface the failure instead of silently doing nothing (which reads as
+        // "the button doesn't work"). 401 → session expired; 5xx → persistence.
+        throw new Error(
+          response.status === 401
+            ? 'Your session expired — please sign in again.'
+            : `Request failed (${response.status}).`,
+        );
+      }
+      router.refresh();
+    } catch (error) {
+      setActionError({
+        id,
+        message: `Could not ${action} this alert. ${
+          error instanceof Error ? error.message : 'Please retry.'
+        }`,
+      });
+    } finally {
+      setPendingAlertId(null);
+    }
   }
 
   function toggleGroup(group: AlertGroup) {
@@ -68,6 +96,12 @@ export function AlertCenterPanel({ model }: Props) {
     (sum, g) => sum + model.grouped[g].filter((a) => a.source === 'provider').length,
     0,
   );
+
+  // AUR-068: count-proportional severity weight. Each severity card's bar reflects its
+  // share of all alerts so magnitude is visible, not just color-coded.
+  const severityDenominator = Math.max(1, totalAlerts);
+  const proportion = (count: number): CSSProperties =>
+    ({ '--proportion': `${Math.round((count / severityDenominator) * 100)}%` } as CSSProperties);
 
   return (
     <>
@@ -82,12 +116,16 @@ export function AlertCenterPanel({ model }: Props) {
                 <div className="alert-kpi-card__label">Open</div>
               </div>
             </article>
-            <article className="alert-kpi-card alert-kpi-card--critical">
+            <article
+              className="alert-kpi-card alert-kpi-card--critical"
+              data-active={model.summary.critical > 0 ? 'true' : undefined}
+            >
               <span className="alert-kpi-card__icon" aria-hidden="true">⚑</span>
               <div>
                 <div className="alert-kpi-card__value">{model.summary.critical}</div>
                 <div className="alert-kpi-card__label">Critical</div>
               </div>
+              <span className="alert-kpi-card__bar" style={proportion(model.summary.critical)} aria-hidden="true" />
             </article>
             <article className="alert-kpi-card alert-kpi-card--warning">
               <span className="alert-kpi-card__icon" aria-hidden="true">▲</span>
@@ -95,6 +133,7 @@ export function AlertCenterPanel({ model }: Props) {
                 <div className="alert-kpi-card__value">{model.summary.warning}</div>
                 <div className="alert-kpi-card__label">Warning</div>
               </div>
+              <span className="alert-kpi-card__bar" style={proportion(model.summary.warning)} aria-hidden="true" />
             </article>
             <article className="alert-kpi-card alert-kpi-card--watch">
               <span className="alert-kpi-card__icon" aria-hidden="true">◎</span>
@@ -102,6 +141,7 @@ export function AlertCenterPanel({ model }: Props) {
                 <div className="alert-kpi-card__value">{model.grouped.WATCH.length}</div>
                 <div className="alert-kpi-card__label">Watch</div>
               </div>
+              <span className="alert-kpi-card__bar" style={proportion(model.grouped.WATCH.length)} aria-hidden="true" />
             </article>
             <article className="alert-kpi-card alert-kpi-card--info">
               <span className="alert-kpi-card__icon" aria-hidden="true">◑</span>
@@ -109,6 +149,7 @@ export function AlertCenterPanel({ model }: Props) {
                 <div className="alert-kpi-card__value">{model.grouped.INFO.length}</div>
                 <div className="alert-kpi-card__label">Info</div>
               </div>
+              <span className="alert-kpi-card__bar" style={proportion(model.grouped.INFO.length)} aria-hidden="true" />
             </article>
             <article className="alert-kpi-card alert-kpi-card--snoozed">
               <span className="alert-kpi-card__icon" aria-hidden="true">⏱</span>
@@ -303,6 +344,8 @@ export function AlertCenterPanel({ model }: Props) {
                       <div className="alert-feed">
                         {alerts.map((alert) => {
                           const runtimeOnly = alert.id.startsWith('runtime-');
+                          const actionPending = pendingAlertId === alert.id;
+                          const actionDisabled = runtimeOnly || actionPending;
                           const isPinned = alert.status === 'PINNED';
                           const isSnoozed = alert.status === 'SNOOZED';
                           return (
@@ -361,7 +404,7 @@ export function AlertCenterPanel({ model }: Props) {
                                   <button
                                     type="button"
                                     className="alert-card__action-btn"
-                                    disabled={isPending || runtimeOnly}
+                                    disabled={actionDisabled}
                                     onClick={() => setAlertState(alert.id, 'pin')}
                                     title="Pin alert"
                                     aria-label={`Pin alert: ${alert.title}`}
@@ -371,7 +414,7 @@ export function AlertCenterPanel({ model }: Props) {
                                   <button
                                     type="button"
                                     className="alert-card__action-btn"
-                                    disabled={isPending || runtimeOnly}
+                                    disabled={actionDisabled}
                                     onClick={() => setAlertState(alert.id, 'snooze')}
                                     title="Snooze for 1 hour"
                                     aria-label={`Snooze alert: ${alert.title}`}
@@ -381,7 +424,7 @@ export function AlertCenterPanel({ model }: Props) {
                                   <button
                                     type="button"
                                     className="alert-card__action-btn alert-card__action-btn--dismiss"
-                                    disabled={isPending || runtimeOnly}
+                                    disabled={actionDisabled}
                                     onClick={() => setAlertState(alert.id, 'dismiss')}
                                     aria-label={`Dismiss alert: ${alert.title}`}
                                   >
@@ -390,7 +433,7 @@ export function AlertCenterPanel({ model }: Props) {
                                   <button
                                     type="button"
                                     className="alert-card__action-btn alert-card__action-btn--resolve"
-                                    disabled={isPending || runtimeOnly}
+                                    disabled={actionDisabled}
                                     onClick={() => setAlertState(alert.id, 'resolve')}
                                     aria-label={`Resolve alert: ${alert.title}`}
                                   >
@@ -398,6 +441,12 @@ export function AlertCenterPanel({ model }: Props) {
                                   </button>
                                 </div>
                               </div>
+                              {actionPending ? (
+                                <p className="alert-card__action-status" role="status">Updating…</p>
+                              ) : null}
+                              {actionError?.id === alert.id ? (
+                                <p className="alert-card__action-error" role="alert">{actionError.message}</p>
+                              ) : null}
                             </article>
                           );
                         })}
