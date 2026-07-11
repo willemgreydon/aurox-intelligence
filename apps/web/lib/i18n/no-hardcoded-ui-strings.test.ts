@@ -14,6 +14,7 @@ const I18N_CLEAN_FILES = [
   'app/invest/simulation/page.tsx',
   'components/observe/observe-workstation.tsx',
   'components/signals/signals-cockpit.tsx',
+  'app/portfolio/intelligence/page.tsx',
 ];
 
 const UI_ATTRS = 'label|title|placeholder|alt|aria-label|subtitle|eyebrow|description|detail|note|emptyMessage';
