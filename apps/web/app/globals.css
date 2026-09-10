@@ -1974,6 +1974,11 @@ code,
 
 .hero-graph-card {
   grid-area: graph;
+  /* Home spotlight is shorter than the full market workstation so the declining
+     line does not leave a large empty band above the hero copy. Both the chart
+     canvas and the sidebar rail read this var; the rail body scrolls internally
+     (.broker-observer__scroll), so nothing clips. Scoped to the hero only. */
+  --market-workstation-height: clamp(22rem, 44vh, 32rem);
   margin-inline: calc(50% - 50vw);
   border: none;
   border-radius: 0;
@@ -1992,8 +1997,8 @@ code,
 }
 
 .hero-graph-card .market-graph__canvas {
-  min-height: clamp(31rem, 68vh, 45rem);
-  height: clamp(31rem, 68vh, 45rem);
+  min-height: var(--market-workstation-height);
+  height: var(--market-workstation-height);
   border: 0;
   border-radius: 0;
   background:
@@ -4822,22 +4827,31 @@ code,
 }
 
 /* AUR-015 — sticky in-page section navigator for long workstation pages. */
+/* Styled to match the signals-page sticky command bar (.observe-command-bar):
+   same surface + blur + hairline underline, stuck flush below the full site
+   header. */
 .sim-section-nav {
   position: sticky;
-  top: var(--header-height, 3.5rem);
-  z-index: var(--z-sticky);
+  top: var(--site-header-offset, 7.5rem);
+  /* Below the site header in the stack so the header wins any overlap. */
+  z-index: calc(var(--z-sticky) - 1);
   margin-bottom: var(--space-3);
-  background: color-mix(in srgb, var(--app-bg) 88%, transparent);
-  backdrop-filter: blur(12px);
-  border-bottom: var(--border-width-thin) solid var(--border-subtle);
+  background: color-mix(in srgb, var(--surface-1) 95%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: var(--space-2) 0;
 }
 
+/* Inner strip aligns to the same content column as the page sections
+   (.shell-container), so the tabs left-align with section content. */
 .sim-section-nav__list {
+  width: min(calc(100% - var(--space-8)), var(--layout-max-width));
+  margin-inline: auto;
+  padding: 0;
+  padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
   display: flex;
-  gap: var(--space-2);
-  margin: 0 auto;
-  padding: 0.5rem var(--space-4);
-  max-width: var(--layout-dashboard-width, 90rem);
+  align-items: center;
+  gap: var(--space-1);
   list-style: none;
   overflow-x: auto;
   scrollbar-width: none;
@@ -4847,15 +4861,19 @@ code,
   display: none;
 }
 
+/* Tab items match the signals command-bar buttons (.observe-mode-btn). */
 .sim-section-nav__link {
   display: inline-flex;
   align-items: center;
+  gap: 0.25rem;
   white-space: nowrap;
-  padding: 0.4rem 0.85rem;
-  border-radius: var(--radius-pill);
-  border: var(--border-width-thin) solid var(--border-default);
+  padding: 0.28rem 0.7rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-2);
   color: var(--text-secondary);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
   text-decoration: none;
   transition:
     color var(--duration-fast, 140ms) var(--ease-standard, ease),
@@ -4866,8 +4884,15 @@ code,
 .sim-section-nav__link:hover,
 .sim-section-nav__link:focus-visible {
   color: var(--text-primary);
-  border-color: var(--border-strong, var(--text-accent));
-  background: var(--surface-raised, var(--surface-base));
+  border-color: var(--border-default);
+  background: var(--surface-hover);
+}
+
+/* Sim cockpit sections must clear BOTH the site header and the sticky section
+   nav when a pill is clicked. !important overrides the Section component's inline
+   scroll-margin so the heading lands just below the strip, not behind it. */
+:where([id^='sim-']) {
+  scroll-margin-top: calc(var(--page-arrival-offset) + 3rem) !important;
 }
 
 /* AUR-064 — macro regime diverging meter + direction readout. */
@@ -6648,6 +6673,20 @@ code,
 
 .market-view-toggle__button {
   min-width: 4.75rem;
+}
+
+/* Asset-class filter tabs for the market roster (/market). */
+.market-class-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+}
+
+.market-class-filter__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .mini-sparkline {
@@ -11438,7 +11477,17 @@ code,
 .mission-control__freshness--warning { color: var(--status-warning-text); border-color: var(--status-warning); }
 .mission-control__freshness--neutral { color: var(--text-tertiary); }
 
-.mission-control__kpis { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+/* 4-up on desktop so KPI values (currency, "Not enough data") have room and do
+   not wrap/overflow. Falls back to 2 then 1 on smaller viewports. Overrides the
+   base .analytics-strip columns by source order + child min-width:0 to shrink. */
+.mission-control__kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.mission-control__kpis > * { min-width: 0; }
+@media (max-width: 1100px) {
+  .mission-control__kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 720px) {
+  .mission-control__kpis { grid-template-columns: 1fr; }
+}
 
 .mission-control__grid {
   display: grid;

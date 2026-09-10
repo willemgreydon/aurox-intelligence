@@ -84,14 +84,17 @@ describe('components are wired to the layout-polish primitives', () => {
 
   it('dashboard page composes the five named overview groups', () => {
     const page = read('../app/dashboard/page.tsx');
-    for (const group of [
-      'Portfolio Overview',
-      'Risk Overview',
-      'Market Overview',
-      'AI Overview',
-      'Research Overview',
+    // Titles are internationalised (AUR-049), so assert the five group message
+    // keys are wired rather than literal English text. The English values live
+    // in the message catalog and are guarded separately.
+    for (const groupTitleKey of [
+      'messages.dashboard.groupPortfolioTitle',
+      'messages.dashboard.groupRiskTitle',
+      'messages.dashboard.groupMarketTitle',
+      'messages.dashboard.groupAiTitle',
+      'messages.dashboard.groupResearchTitle',
     ]) {
-      expect(page).toContain(group);
+      expect(page).toContain(groupTitleKey);
     }
   });
 

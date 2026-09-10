@@ -883,7 +883,15 @@
     "aiBrokerAgentSummary": "AI-brokeragent (experimenteel)",
     "aiToolsEyebrow": "AI-tools — experimenteel",
     "aiBrokerAgentTitle": "AI-simulatiebrokeragent",
-    "aiBrokerAgentDescription": "Door AI-provider aangedreven simulatieagent die uw portefeuille analyseert en gesimuleerde transacties voorstelt. Uitsluitend simulatie. Geen echt geld. Alle voorstellen doorlopen de bestaande risicocontroles vóór uitvoering."
+    "aiBrokerAgentDescription": "Door AI-provider aangedreven simulatieagent die uw portefeuille analyseert en gesimuleerde transacties voorstelt. Uitsluitend simulatie. Geen echt geld. Alle voorstellen doorlopen de bestaande risicocontroles vóór uitvoering.",
+    "sectionNav": {
+      "label": "Ga naar simulatiesectie",
+      "start": "Start",
+      "ticket": "Order",
+      "balances": "Saldi",
+      "ledger": "Grootboek",
+      "markets": "Markten"
+    }
   },
   "marketGraph": {
     "title": "Marktgrafiek",

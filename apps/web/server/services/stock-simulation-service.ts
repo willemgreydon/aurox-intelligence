@@ -13,6 +13,7 @@ import {
   listSimulationTradableAssets,
   replaceMarketHistoryBars,
   searchStockAssets,
+  searchCatalogAssets,
   upsertMarketQuoteSnapshots,
   type CatalogAsset,
   type PersistedMarketHistoryBar,
@@ -525,6 +526,115 @@ export async function getStockCatalogPageData(
     hasPreviousPage,
     providerError: quotes.length === 0 ? 'Live or cached quote data is currently unavailable.' : null,
     stocks: pagedAssets.map((asset) => {
+      const quote = quoteBySymbol.get(asset.symbol) ?? null;
+      const position = positionBySymbol.get(asset.symbol) ?? null;
+
+      return {
+        asset,
+        quote,
+        isWatched: watchlist.some((item) => item.assetId === asset.assetId),
+        position: position
+          ? {
+              quantity: position.quantity,
+              marketValue: position.marketValue,
+              unrealizedPnl: position.unrealizedPnl,
+            }
+          : null,
+      };
+    }),
+  };
+}
+
+export type MarketAssetClassId = 'stock' | 'etf' | 'crypto';
+export type MarketCatalogClassFilter = 'all' | MarketAssetClassId;
+
+export type MarketCatalogEntry = {
+  asset: CatalogAsset;
+  quote: PersistedMarketQuoteSnapshot | null;
+  isWatched: boolean;
+  position: {
+    quantity: number;
+    marketValue: number;
+    unrealizedPnl: number;
+  } | null;
+};
+
+export type MarketCatalogPageData = {
+  query: string;
+  assetClass: MarketCatalogClassFilter;
+  total: number;
+  page: number;
+  pageSize: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+  /** Counts across the FULL matched set (pre-pagination) per asset class + all. */
+  classCounts: Record<MarketCatalogClassFilter, number>;
+  entries: MarketCatalogEntry[];
+  providerError: string | null;
+};
+
+/**
+ * Market-wide catalog page data — the multi-asset-class generalisation of
+ * {@link getStockCatalogPageData}. Powers the `/market` roster: search across
+ * stocks + ETFs + crypto, an optional asset-class filter, pagination, and
+ * per-class counts for the filter tabs. User-scoped (watchlist + positions), so
+ * the calling route must stay `force-dynamic`.
+ */
+export async function getMarketCatalogPageData(
+  query = '',
+  options: { page?: number; pageSize?: number; assetClass?: MarketCatalogClassFilter } = {},
+): Promise<MarketCatalogPageData> {
+  const assetClass: MarketCatalogClassFilter = options.assetClass ?? 'all';
+  const page =
+    typeof options.page === 'number' && Number.isFinite(options.page) && options.page > 0
+      ? Math.floor(options.page)
+      : 1;
+  const pageSize =
+    typeof options.pageSize === 'number' && Number.isFinite(options.pageSize) && options.pageSize > 0
+      ? Math.floor(options.pageSize)
+      : 24;
+
+  const [session, assets] = await Promise.all([
+    getOptionalCurrentSession(),
+    searchCatalogAssets(query, assetClass === 'all' ? undefined : assetClass),
+  ]);
+
+  // Per-class counts across the full matched set (before pagination) so the
+  // filter tabs can show how many entries each class holds for this query.
+  const classCounts: Record<MarketCatalogClassFilter, number> = {
+    all: assets.length,
+    stock: assets.filter((asset) => asset.assetClass === 'stock').length,
+    etf: assets.filter((asset) => asset.assetClass === 'etf').length,
+    crypto: assets.filter((asset) => asset.assetClass === 'crypto').length,
+  };
+
+  const total = assets.length;
+  const startIndex = (page - 1) * pageSize;
+  const pagedAssets = assets.slice(startIndex, startIndex + pageSize);
+  const hasPreviousPage = page > 1 && total > 0;
+  const hasNextPage = page * pageSize < total;
+
+  const quotes = await loadQuoteSnapshots(pagedAssets.map((asset) => asset.symbol));
+  const quoteBySymbol = new Map(quotes.map((quote) => [quote.symbol, quote]));
+
+  const watchlist = session ? await getUserWatchlist(session.user.id) : [];
+  const quoteMap = Object.fromEntries(quotes.map((quote) => [quote.symbol, quote.price]));
+  const workspace = session ? await getSimulationWorkspace(session.user.id, quoteMap) : null;
+  const positionBySymbol = new Map(workspace?.positions.map((position) => [position.symbol, position]) ?? []);
+
+  return {
+    query,
+    assetClass,
+    total,
+    page,
+    pageSize,
+    hasNextPage,
+    hasPreviousPage,
+    classCounts,
+    providerError: quotes.length === 0 && pagedAssets.length > 0
+      ? 'Live or cached quote data is currently unavailable.'
+      : null,
+    entries: pagedAssets.map((asset) => {
       const quote = quoteBySymbol.get(asset.symbol) ?? null;
       const position = positionBySymbol.get(asset.symbol) ?? null;
 

@@ -777,15 +777,15 @@ export default async function SimulationPage({
       </Section>
 
       {/* AUR-015: sticky in-page navigator for the long cockpit. Labels are
-          English literals for now; i18n extraction is tracked under AUR-049. */}
+          internationalised via messages.simulation.sectionNav (AUR-049). */}
       <SimulationSectionNav
-        label="Jump to simulation section"
+        label={messages.simulation.sectionNav.label}
         items={[
-          { href: '#sim-start', label: 'Start' },
-          { href: '#sim-ticket', label: 'Ticket' },
-          { href: '#sim-balances', label: 'Balances' },
-          { href: '#sim-ledger', label: 'Ledger' },
-          { href: '#sim-markets', label: 'Markets' },
+          { href: '#sim-start', label: messages.simulation.sectionNav.start },
+          { href: '#sim-ticket', label: messages.simulation.sectionNav.ticket },
+          { href: '#sim-balances', label: messages.simulation.sectionNav.balances },
+          { href: '#sim-ledger', label: messages.simulation.sectionNav.ledger },
+          { href: '#sim-markets', label: messages.simulation.sectionNav.markets },
         ]}
       />
 

@@ -883,7 +883,15 @@
     "aiBrokerAgentSummary": "Agente de corretora AI (experimental)",
     "aiToolsEyebrow": "Ferramentas AI — experimental",
     "aiBrokerAgentTitle": "Agente de Corretora de Simulação AI",
-    "aiBrokerAgentDescription": "Agente de simulação alimentado por provedor AI que analisa sua carteira e propõe negociações simuladas. Apenas simulação. Sem dinheiro real. Todas as propostas passam pelas proteções de risco existentes antes da execução."
+    "aiBrokerAgentDescription": "Agente de simulação alimentado por provedor AI que analisa sua carteira e propõe negociações simuladas. Apenas simulação. Sem dinheiro real. Todas as propostas passam pelas proteções de risco existentes antes da execução.",
+    "sectionNav": {
+      "label": "Ir para a seção de simulação",
+      "start": "Início",
+      "ticket": "Ordem",
+      "balances": "Saldos",
+      "ledger": "Registro",
+      "markets": "Mercados"
+    }
   },
   "marketGraph": {
     "title": "Gráfico de mercado",

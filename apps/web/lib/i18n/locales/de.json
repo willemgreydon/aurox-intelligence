@@ -883,7 +883,15 @@
     "aiBrokerAgentSummary": "KI-Broker-Agent (experimentell)",
     "aiToolsEyebrow": "KI-Werkzeuge — experimentell",
     "aiBrokerAgentTitle": "KI-Simulations-Broker-Agent",
-    "aiBrokerAgentDescription": "KI-gestützter Simulationsagent, der Ihr Portfolio analysiert und simulierte Trades vorschlägt. Nur Simulation. Kein echtes Geld. Alle Vorschläge durchlaufen vor der Ausführung die bestehenden Risikoprüfungen."
+    "aiBrokerAgentDescription": "KI-gestützter Simulationsagent, der Ihr Portfolio analysiert und simulierte Trades vorschlägt. Nur Simulation. Kein echtes Geld. Alle Vorschläge durchlaufen vor der Ausführung die bestehenden Risikoprüfungen.",
+    "sectionNav": {
+      "label": "Zu Simulationsabschnitt springen",
+      "start": "Start",
+      "ticket": "Order",
+      "balances": "Salden",
+      "ledger": "Journal",
+      "markets": "Märkte"
+    }
   },
   "marketGraph": {
     "title": "Marktgraph",

@@ -883,7 +883,15 @@
     "aiBrokerAgentSummary": "AI 브로커 에이전트 (실험적)",
     "aiToolsEyebrow": "AI 도구 — 실험적",
     "aiBrokerAgentTitle": "AI 시뮬레이션 브로커 에이전트",
-    "aiBrokerAgentDescription": "AI 제공자가 구동하는 시뮬레이션 에이전트로, 포트폴리오를 분석하고 모의 거래를 제안합니다. 시뮬레이션 전용이며 실제 자금은 없습니다. 모든 제안은 실행 전에 기존 리스크 가드를 통과합니다."
+    "aiBrokerAgentDescription": "AI 제공자가 구동하는 시뮬레이션 에이전트로, 포트폴리오를 분석하고 모의 거래를 제안합니다. 시뮬레이션 전용이며 실제 자금은 없습니다. 모든 제안은 실행 전에 기존 리스크 가드를 통과합니다.",
+    "sectionNav": {
+      "label": "시뮬레이션 섹션으로 이동",
+      "start": "시작",
+      "ticket": "주문",
+      "balances": "잔액",
+      "ledger": "원장",
+      "markets": "시장"
+    }
   },
   "marketGraph": {
     "title": "마켓 그래프",

@@ -883,7 +883,15 @@
     "aiBrokerAgentSummary": "Agent courtier IA (expérimental)",
     "aiToolsEyebrow": "Outils IA — expérimental",
     "aiBrokerAgentTitle": "Agent courtier de simulation IA",
-    "aiBrokerAgentDescription": "Agent de simulation propulsé par un fournisseur IA qui analyse votre portefeuille et propose des transactions simulées. Simulation uniquement. Pas d'argent réel. Toutes les propositions passent par les garde-fous de risque existants avant exécution."
+    "aiBrokerAgentDescription": "Agent de simulation propulsé par un fournisseur IA qui analyse votre portefeuille et propose des transactions simulées. Simulation uniquement. Pas d'argent réel. Toutes les propositions passent par les garde-fous de risque existants avant exécution.",
+    "sectionNav": {
+      "label": "Aller à la section de simulation",
+      "start": "Début",
+      "ticket": "Ordre",
+      "balances": "Soldes",
+      "ledger": "Journal",
+      "markets": "Marchés"
+    }
   },
   "marketGraph": {
     "title": "Graphique de marché",

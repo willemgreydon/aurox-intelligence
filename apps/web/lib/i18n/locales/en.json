@@ -964,7 +964,15 @@
     "aiBrokerAgentSummary": "AI broker agent (experimental)",
     "aiToolsEyebrow": "AI tools — experimental",
     "aiBrokerAgentTitle": "AI Simulation Broker Agent",
-    "aiBrokerAgentDescription": "AI-provider-powered simulation agent that analyzes your portfolio and proposes simulated trades. Simulation-only. No real money. All proposals pass existing risk guards before execution."
+    "aiBrokerAgentDescription": "AI-provider-powered simulation agent that analyzes your portfolio and proposes simulated trades. Simulation-only. No real money. All proposals pass existing risk guards before execution.",
+    "sectionNav": {
+      "label": "Jump to simulation section",
+      "start": "Start",
+      "ticket": "Ticket",
+      "balances": "Balances",
+      "ledger": "Ledger",
+      "markets": "Markets"
+    }
   },
   "marketGraph": {
     "title": "Market graph",
