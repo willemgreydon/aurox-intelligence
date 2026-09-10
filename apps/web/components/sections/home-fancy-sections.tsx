@@ -76,19 +76,6 @@ type HomeFancySectionsProps = {
   };
 };
 
-function toTone(value: number | null | undefined): 'up' | 'down' | 'flat' {
-  if (typeof value !== 'number') {
-    return 'flat';
-  }
-  if (value > 0) {
-    return 'up';
-  }
-  if (value < 0) {
-    return 'down';
-  }
-  return 'flat';
-}
-
 function toStatusTone(statusLabel: string): 'success' | 'warning' | 'danger' | 'info' {
   const normalized = statusLabel.toLowerCase();
   if (normalized.includes('warning')) {
@@ -103,29 +90,7 @@ function toStatusTone(statusLabel: string): 'success' | 'warning' | 'danger' | '
   return 'success';
 }
 
-function toSparklinePath(values: number[]): string {
-  if (values.length < 2) {
-    return '';
-  }
-  const width = 140;
-  const height = 42;
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const span = max - min || 1;
-  return values
-    .map((value, index) => {
-      const x = (index / (values.length - 1)) * width;
-      const y = height - ((value - min) / span) * height;
-      return `${index === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`;
-    })
-    .join(' ');
-}
-
-export function HomeFancySections({ marketGraph, portfolioSnapshot, labels, common }: HomeFancySectionsProps) {
-  const movers = [...marketGraph.assets]
-    .sort((left, right) => (right.snapshot?.changePercent ?? -Infinity) - (left.snapshot?.changePercent ?? -Infinity))
-    .slice(0, 6);
-
+export function HomeFancySections({ portfolioSnapshot, labels }: HomeFancySectionsProps) {
   const featureCards = labels.capabilities.items.slice(0, 3);
   const extraCapabilities = labels.capabilities.items.slice(3);
   const featuredModule = labels.modules.items[0];
@@ -171,71 +136,9 @@ export function HomeFancySections({ marketGraph, portfolioSnapshot, labels, comm
         </Section>
       ) : null}
 
-      {/* Market Pulse Preview — compact proof the system is live, one outbound link. */}
-      <Section className="home-fancy home-fancy--pulse section section--tinted">
-        <header className="home-fancy__header">
-          <div className="section__eyebrow">Live pulse</div>
-          <h2 className="section__title">Top movers right now</h2>
-          <p className="section__description">
-            A fast scan of the strongest live moves loaded into the workspace.
-          </p>
-        </header>
-
-        <div className="home-fancy-pulse-grid">
-          {movers.map((asset) => {
-            const tone = toTone(asset.snapshot?.changePercent ?? null);
-            const moveLabel =
-              typeof asset.snapshot?.changePercent === 'number'
-                ? `${asset.snapshot.changePercent > 0 ? '+' : ''}${asset.snapshot.changePercent.toFixed(2)}%`
-                : common.unavailable;
-            const directionWord = tone === 'up' ? 'up' : tone === 'down' ? 'down' : 'unchanged';
-            const sparklinePath = toSparklinePath(
-              asset.history.slice(-20).map((point: { close: number }) => point.close),
-            );
-
-            return (
-              <Card key={asset.assetId} className={`home-pulse-card home-pulse-card--${tone}`}>
-                <article>
-                  <div className="home-pulse-card__meta">
-                    <div>
-                      <div className="home-pulse-card__symbol">{asset.symbol}</div>
-                      <h3>{asset.name}</h3>
-                    </div>
-                    <span
-                      className={`home-pulse-card__move home-pulse-card__move--${tone}`}
-                      aria-label={`${asset.symbol} ${directionWord} ${moveLabel}`}
-                    >
-                      {moveLabel}
-                    </span>
-                  </div>
-                  <div className="home-pulse-card__price">
-                    {typeof asset.snapshot?.price === 'number'
-                      ? `$${asset.snapshot.price.toFixed(2)}`
-                      : common.unavailable}
-                  </div>
-                  <div className="home-pulse-card__sparkline" aria-hidden="true">
-                    {sparklinePath ? (
-                      <svg viewBox="0 0 140 42" preserveAspectRatio="none">
-                        <path d={sparklinePath} />
-                      </svg>
-                    ) : (
-                      <span />
-                    )}
-                  </div>
-                </article>
-              </Card>
-            );
-          })}
-        </div>
-
-        <div className="home-fancy__footer-link">
-          <Link href="/market" className="module-card__link">
-            {labels.home.viewAllMarkets}
-          </Link>
-        </div>
-      </Section>
-
-      {/* What Aurox Does — 3 feature cards, rest behind a disclosure. */}
+      {/* Platform capabilities — premium numbered pillars. Promoted to the primary
+          supporting section right after the hero (the old "Top movers" band was
+          redundant with the hero graph and the /market roster, so it was removed). */}
       <Section className="home-fancy home-fancy--capabilities">
         <header className="home-fancy__header">
           <div className="section__eyebrow">{labels.capabilities.eyebrow}</div>
@@ -243,12 +146,15 @@ export function HomeFancySections({ marketGraph, portfolioSnapshot, labels, comm
           <p className="section__description">{labels.capabilities.description}</p>
         </header>
 
-        <div className="home-feature-grid">
-          {featureCards.map((item) => (
-            <Card key={item.title} className="home-feature-card">
+        <div className="home-pillar-grid">
+          {featureCards.map((item, index) => (
+            <Card key={item.title} className="home-pillar-card">
               <article>
-                <h3 className="home-feature-card__title">{item.title}</h3>
-                <p className="home-feature-card__body">{item.description}</p>
+                <span className="home-pillar-card__index" aria-hidden="true">
+                  {String(index + 1).padStart(2, '0')}
+                </span>
+                <h3 className="home-pillar-card__title">{item.title}</h3>
+                <p className="home-pillar-card__body">{item.description}</p>
               </article>
             </Card>
           ))}
@@ -256,12 +162,15 @@ export function HomeFancySections({ marketGraph, portfolioSnapshot, labels, comm
 
         {extraCapabilities.length > 0 ? (
           <Disclosure summary={labels.home.showAllCapabilities} className="home-fancy__disclosure">
-            <div className="home-feature-grid">
-              {extraCapabilities.map((item) => (
-                <Card key={item.title} className="home-feature-card" tone="ghost">
+            <div className="home-pillar-grid">
+              {extraCapabilities.map((item, index) => (
+                <Card key={item.title} className="home-pillar-card home-pillar-card--ghost" tone="ghost">
                   <article>
-                    <h3 className="home-feature-card__title">{item.title}</h3>
-                    <p className="home-feature-card__body">{item.description}</p>
+                    <span className="home-pillar-card__index" aria-hidden="true">
+                      {String(index + 4).padStart(2, '0')}
+                    </span>
+                    <h3 className="home-pillar-card__title">{item.title}</h3>
+                    <p className="home-pillar-card__body">{item.description}</p>
                   </article>
                 </Card>
               ))}

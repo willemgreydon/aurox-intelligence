@@ -136,6 +136,7 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
           <MarketViewToggle
             basePath="/market"
             view={viewMode}
+            scroll={false}
             query={{
               q: query || undefined,
               class: assetClass !== 'all' ? assetClass : undefined,

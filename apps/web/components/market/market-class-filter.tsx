@@ -49,6 +49,9 @@ export function MarketClassFilter({ basePath, active, counts, query }: MarketCla
             key={tab.id}
             href={buildHref(basePath, query, tab.id)}
             aria-pressed={isActive}
+            // Keep the viewport where it is when switching filters — the roster
+            // updates in place instead of jumping back to the top of the page.
+            scroll={false}
             className={`button market-class-filter__tab ${isActive ? 'button--primary' : 'button--secondary'}`}
           >
             <span>{tab.label}</span>
