@@ -883,7 +883,15 @@
     "aiBrokerAgentSummary": "Agente broker AI (sperimentale)",
     "aiToolsEyebrow": "Strumenti AI — sperimentali",
     "aiBrokerAgentTitle": "Agente Broker AI di Simulazione",
-    "aiBrokerAgentDescription": "Agente di simulazione basato su provider AI che analizza il tuo portafoglio e propone operazioni simulate. Solo simulazione. Nessun denaro reale. Tutte le proposte superano i controlli di rischio esistenti prima dell'esecuzione."
+    "aiBrokerAgentDescription": "Agente di simulazione basato su provider AI che analizza il tuo portafoglio e propone operazioni simulate. Solo simulazione. Nessun denaro reale. Tutte le proposte superano i controlli di rischio esistenti prima dell'esecuzione.",
+    "sectionNav": {
+      "label": "Vai alla sezione di simulazione",
+      "start": "Inizio",
+      "ticket": "Ordine",
+      "balances": "Saldi",
+      "ledger": "Registro",
+      "markets": "Mercati"
+    }
   },
   "marketGraph": {
     "title": "Grafico di mercato",

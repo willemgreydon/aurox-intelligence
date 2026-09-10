@@ -308,6 +308,30 @@ export async function searchStockAssets(query: string): Promise<CatalogAsset[]> 
   return assets.filter((asset) => matchedSymbols.has(asset.symbol));
 }
 
+/**
+ * Multi-asset-class catalog search. Generalises {@link searchStockAssets} across
+ * the whole investable universe (stocks + ETFs + crypto) with an optional
+ * asset-class filter. Backs the market-wide roster on `/market`.
+ */
+export async function searchCatalogAssets(
+  query: string,
+  assetClass?: InvestmentUniverseAsset['assetClass'],
+): Promise<CatalogAsset[]> {
+  const normalized = query.trim().toLowerCase();
+  const assets = await listCatalogAssets(assetClass);
+
+  if (!normalized) {
+    return assets;
+  }
+  const matchedSymbols = new Set(
+    searchInvestmentUniverse(normalized, assetClass ? { assetClass } : undefined).map(
+      (asset) => asset.symbol,
+    ),
+  );
+
+  return assets.filter((asset) => matchedSymbols.has(asset.symbol));
+}
+
 export async function getCatalogAssetBySymbol(symbol: string): Promise<CatalogAsset | null> {
   const normalized = symbol.trim().toUpperCase();
 

@@ -176,6 +176,48 @@ function roundPrice(value: number) {
   return Math.round((value + Number.EPSILON) * 1e8) / 1e8;
 }
 
+/**
+ * A market price is usable for valuation only when it is a finite, strictly
+ * positive number. A `0`, negative, or `NaN` price is a degraded/missing quote —
+ * it must NOT be multiplied into market value, because that silently renders a
+ * real holding as `$0.00` (the cross-user "0,00 $" bug). Such quotes are treated
+ * as absent so valuation falls back to cost basis and `marketPrice` is reported
+ * as `null`, letting the UI surface "price unavailable" instead of a fake zero.
+ *
+ * Note: `?? ` does not catch `0` because `0` is not nullish — that is exactly the
+ * trap this helper exists to close.
+ */
+export function usableMarketPrice(value: number | null | undefined): number | null {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : null;
+}
+
+export type PositionValuation = {
+  marketPrice: number | null;
+  marketValue: number;
+  costBasis: number;
+  unrealizedPnl: number;
+};
+
+/**
+ * Deterministic position valuation. When no usable market price is available the
+ * position is valued at cost basis (so equity is never silently zeroed) and
+ * `marketPrice` is `null` and `unrealizedPnl` is `0` — an honest "unknown gain"
+ * rather than a fabricated loss to zero.
+ */
+export function resolvePositionValuation(
+  quantity: number,
+  averageCost: number,
+  rawMarketPrice: number | null | undefined,
+): PositionValuation {
+  const costBasis = roundCurrency(quantity * averageCost);
+  const marketPrice = usableMarketPrice(rawMarketPrice);
+  const effectivePrice = marketPrice ?? averageCost;
+  const marketValue = roundCurrency(quantity * effectivePrice);
+  const unrealizedPnl = roundCurrency(marketValue - costBasis);
+
+  return { marketPrice, marketValue, costBasis, unrealizedPnl };
+}
+
 function isEffectivelyZero(value: number) {
   return Math.abs(value) <= 1e-8;
 }
@@ -986,21 +1028,40 @@ export async function getSimulationWorkspace(
   ]);
 
   const symbols = positions.map((row) => row.symbol);
-  let effectiveMarketPrices = marketPrices;
 
-  if (symbols.length > 0 && Object.keys(effectiveMarketPrices).length === 0) {
-    const snapshots = await getLatestMarketQuoteSnapshots(symbols);
-    effectiveMarketPrices = Object.fromEntries(snapshots.map((snapshot) => [snapshot.symbol, snapshot.price]));
+  // Normalize caller-supplied prices first, dropping degraded (0 / NaN / negative)
+  // quotes so they never zero out a real holding.
+  const effectiveMarketPrices: Record<string, number | null> = {};
+  for (const [symbol, price] of Object.entries(marketPrices)) {
+    effectiveMarketPrices[symbol] = usableMarketPrice(price);
+  }
+
+  // Backfill any held symbol still missing a usable quote. This runs regardless of
+  // how many quotes the caller supplied — previously it only ran when the map was
+  // entirely empty, which let /invest/portfolio (a smaller asset window) and
+  // /invest/simulation value the same holdings differently. Now both pages resolve
+  // identical market values for the same positions.
+  const missingSymbols = [
+    ...new Set(symbols.filter((symbol) => usableMarketPrice(effectiveMarketPrices[symbol]) === null)),
+  ];
+  if (missingSymbols.length > 0) {
+    const snapshots = await getLatestMarketQuoteSnapshots(missingSymbols);
+    for (const snapshot of snapshots) {
+      const price = usableMarketPrice(snapshot.price);
+      if (price !== null) {
+        effectiveMarketPrices[snapshot.symbol] = price;
+      }
+    }
   }
 
   const mappedPositions = positions.map((row) => {
     const quantity = toNumber(row.quantity);
     const averageCost = toNumber(row.averageCost);
-    const costBasis = roundCurrency(quantity * averageCost);
-    const marketPrice = effectiveMarketPrices[row.symbol] ?? null;
-    const effectivePrice = marketPrice ?? averageCost;
-    const marketValue = roundCurrency(quantity * effectivePrice);
-    const unrealizedPnl = roundCurrency(marketValue - costBasis);
+    const { marketPrice, marketValue, costBasis, unrealizedPnl } = resolvePositionValuation(
+      quantity,
+      averageCost,
+      effectiveMarketPrices[row.symbol],
+    );
 
     return simulationPositionSchema.parse({
       id: row.id,
@@ -1091,6 +1152,67 @@ export async function getSimulationWorkspaceIfExists(
   }
 
   return getSimulationWorkspace(userId, marketPrices);
+}
+
+export type SimulationPortfolioSummaryLite = {
+  portfolioValue: number;
+  investedCapital: number;
+};
+
+/**
+ * Lightweight portfolio valuation for surfaces that only need the headline
+ * numbers (e.g. the global header's Portfolio / Invested chips). Reads just the
+ * open positions and their latest quotes instead of assembling the full
+ * workspace (orders, transactions, snapshots, closed positions), so it completes
+ * well inside the header's tight timeout and degrades to numbers — not blanks.
+ *
+ * Uses the same {@link resolvePositionValuation} as the full workspace, so the
+ * header value always matches /invest/portfolio for the same holdings.
+ */
+export async function getSimulationPortfolioSummaryLite(
+  userId: string,
+): Promise<SimulationPortfolioSummaryLite | null> {
+  const client = createDatabaseClient();
+
+  if (!client.isConfigured) {
+    return null;
+  }
+
+  const account = await ensureSimulationAccount(client, userId);
+  const positions = await client.query<{ symbol: string; quantity: number | string; averageCost: number | string }>(
+    `
+      select symbol, quantity, average_cost as "averageCost"
+      from ${positionsTable}
+      where portfolio_id = $1
+        and quantity > 0
+    `,
+    [account.portfolioId],
+  );
+
+  if (positions.length === 0) {
+    return { portfolioValue: 0, investedCapital: 0 };
+  }
+
+  const symbols = [...new Set(positions.map((row) => row.symbol))];
+  const snapshots = await getLatestMarketQuoteSnapshots(symbols);
+  const priceBySymbol = new Map(snapshots.map((snapshot) => [snapshot.symbol, usableMarketPrice(snapshot.price)]));
+
+  let portfolioValue = 0;
+  let investedCapital = 0;
+  for (const row of positions) {
+    const valuation = resolvePositionValuation(
+      toNumber(row.quantity),
+      toNumber(row.averageCost),
+      priceBySymbol.get(row.symbol) ?? null,
+    );
+    portfolioValue += valuation.marketValue;
+    investedCapital += valuation.costBasis;
+  }
+
+  return {
+    portfolioValue: roundCurrency(portfolioValue),
+    investedCapital: roundCurrency(investedCapital),
+  };
 }
 
 export async function createSimulatedOrder(input: SimulationExecutionInput): Promise<SimulationOrder> {

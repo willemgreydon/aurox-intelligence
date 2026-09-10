@@ -1,5 +1,7 @@
-﻿import Link from 'next/link';
+﻿import type { CSSProperties } from 'react';
+import Link from 'next/link';
 import { Section } from '../../../components/ui/section';
+import { MiniSparkline } from '../../../components/charts/mini-sparkline';
 import { getRequestLocale } from '../../../server/i18n/locale';
 import { getMessages } from '../../../lib/i18n/messages';
 import { getInvestOverviewData } from '../../../server/services/invest-service';
@@ -8,6 +10,25 @@ import { deriveAssetDecisionIntelligence } from '../../../server/services/decisi
 import { perfLog, perfNow } from '../../../server/lib/perf';
 
 export const revalidate = 30;
+
+type DirTone = 'positive' | 'negative' | 'neutral';
+
+function dirTone(value: number, threshold = 0): DirTone {
+  if (value > threshold) return 'positive';
+  if (value < -threshold) return 'negative';
+  return 'neutral';
+}
+
+function dirGlyph(tone: DirTone): string {
+  return tone === 'positive' ? '▲' : tone === 'negative' ? '▼' : '—';
+}
+
+function riskTone(risk: string): 'low' | 'medium' | 'high' {
+  const r = risk.toLowerCase();
+  if (r === 'low') return 'low';
+  if (r === 'medium') return 'medium';
+  return 'high'; // high / extreme
+}
 
 type RankingParams = {
   assetClass?: string;
@@ -59,6 +80,7 @@ export default async function MarketRankingsPage({ searchParams }: { searchParam
       recommendation: decision.recommendation.value,
       liquidityProxy,
       volatilityProxy,
+      sparkline: invest.sparklineBySymbol[asset.symbol] ?? [],
     };
   });
 
@@ -153,23 +175,51 @@ export default async function MarketRankingsPage({ searchParams }: { searchParam
 
       <Section className="dashboard-section">
         <div className="market-list">
-          {filtered.map((row) => (
-            <article key={row.symbol} className="market-row">
-              <div className="market-row__identity">
-                <div className="market-row__symbol">#{row.rank}</div>
-                <div className="market-row__title">{row.symbol}</div>
-                <div className="market-row__meta">{row.assetClass.toUpperCase()}</div>
-              </div>
-              <div className="market-row__price">{formatUsdPrice(row.price, locale, '-')}</div>
-              <div className="market-row__move">{formatPercentChange(row.move, '-')}</div>
-              <div className="market-row__freshness">{row.signal}</div>
-              <div className="market-row__status">{(row.confidence * 100).toFixed(0)}%</div>
-              <div className="market-row__thesis">Risk {row.risk} | Recommendation {row.recommendation}</div>
-              <div className="market-row__actions">
-                Liq {row.liquidityProxy.toFixed(2)} | Vol {row.volatilityProxy.toFixed(3)}
-              </div>
-            </article>
-          ))}
+          {filtered.map((row) => {
+            const moveTone = dirTone(row.move ?? 0);
+            const signalTone = dirTone(row.signalScore, 0.1);
+            const confidencePct = Math.round(row.confidence * 100);
+            const confidenceVars = { '--confidence-pct': `${confidencePct}%` } as CSSProperties;
+            return (
+              <article key={row.symbol} className="market-row gt-hover-lift">
+                <div className="market-row__identity">
+                  <div className="market-row__symbol">#{row.rank}</div>
+                  <div className="market-row__title">{row.symbol}</div>
+                  <div className="market-row__meta">{row.assetClass.toUpperCase()}</div>
+                </div>
+                <div className="market-row__chart">
+                  <MiniSparkline points={row.sparkline} label={row.symbol} signalScore={row.signalScore} />
+                </div>
+                <div className="market-row__price">{formatUsdPrice(row.price, locale, '-')}</div>
+                <div className={`market-row__move market-row__move--${moveTone}`}>
+                  <span aria-hidden="true">{dirGlyph(moveTone)}</span> {formatPercentChange(row.move, '-')}
+                </div>
+                <div className="market-row__freshness">
+                  <span className={`market-signal market-signal--${signalTone}`}>
+                    <span aria-hidden="true">{dirGlyph(signalTone)}</span> {row.signal}
+                  </span>
+                </div>
+                <div className="market-row__status">
+                  <span
+                    className="confidence-microbar"
+                    style={confidenceVars}
+                    role="img"
+                    aria-label={`Confidence ${confidencePct}%`}
+                  >
+                    <span className="confidence-microbar__fill" />
+                  </span>
+                  <span className="confidence-microbar__value">{confidencePct}%</span>
+                </div>
+                <div className="market-row__thesis">
+                  <span className={`risk-dot risk-dot--${riskTone(row.risk)}`} aria-hidden="true" /> Risk {row.risk} ·{' '}
+                  {row.recommendation}
+                </div>
+                <div className="market-row__actions">
+                  Liq {row.liquidityProxy.toFixed(2)} | Vol {row.volatilityProxy.toFixed(3)}
+                </div>
+              </article>
+            );
+          })}
         </div>
       </Section>
     </>

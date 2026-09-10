@@ -51,19 +51,35 @@ const scheduledJobs: ScheduledJob[] = [
   },
 ];
 
+// Delay before the first job runs, giving the web app a clean window to serve
+// pages on startup before ingestion begins competing for the database.
+const INITIAL_DELAY_MS = Number(process.env.WORKER_INITIAL_DELAY_MS ?? 20_000);
+// Gap between each job's first run so boot doesn't fire all jobs at once. The
+// previous implementation kicked every job synchronously on startup, producing
+// a thundering-herd of heavy ingestion writes to market_daily_bars that
+// starved concurrent page reads (multi-second DB read timeouts on the home
+// page). Staggering keeps at most one heavy job starting at a time.
+const STARTUP_STAGGER_MS = Number(process.env.WORKER_STARTUP_STAGGER_MS ?? 15_000);
+
 export function startScheduler() {
   console.info('[worker] scheduler initialized', {
     jobs: scheduledJobs.map((job) => ({
       name: job.name,
       intervalMs: job.intervalMs,
     })),
+    initialDelayMs: INITIAL_DELAY_MS,
+    startupStaggerMs: STARTUP_STAGGER_MS,
   });
 
-  for (const job of scheduledJobs) {
-    void runJob(job.name, job.execute);
+  scheduledJobs.forEach((job, index) => {
+    const firstRunDelay = INITIAL_DELAY_MS + index * STARTUP_STAGGER_MS;
 
-    setInterval(() => {
+    setTimeout(() => {
       void runJob(job.name, job.execute);
-    }, job.intervalMs);
-  }
+
+      setInterval(() => {
+        void runJob(job.name, job.execute);
+      }, job.intervalMs);
+    }, firstRunDelay);
+  });
 }

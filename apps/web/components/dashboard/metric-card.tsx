@@ -7,7 +7,7 @@ type MetricCardProps = {
 
 export function MetricCard({ metric }: MetricCardProps) {
   return (
-    <article className="metric-panel surface">
+    <article className="metric-panel surface gt-hover-lift">
       <div className="surface__inner metric-panel__inner">
         <div className="metric-panel__header">
           <div className="metric-panel__label">{metric.label}</div>

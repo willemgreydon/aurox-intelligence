@@ -1974,6 +1974,11 @@ code,
 
 .hero-graph-card {
   grid-area: graph;
+  /* Home spotlight is shorter than the full market workstation so the declining
+     line does not leave a large empty band above the hero copy. Both the chart
+     canvas and the sidebar rail read this var; the rail body scrolls internally
+     (.broker-observer__scroll), so nothing clips. Scoped to the hero only. */
+  --market-workstation-height: clamp(22rem, 44vh, 32rem);
   margin-inline: calc(50% - 50vw);
   border: none;
   border-radius: 0;
@@ -1992,8 +1997,8 @@ code,
 }
 
 .hero-graph-card .market-graph__canvas {
-  min-height: clamp(31rem, 68vh, 45rem);
-  height: clamp(31rem, 68vh, 45rem);
+  min-height: var(--market-workstation-height);
+  height: var(--market-workstation-height);
   border: 0;
   border-radius: 0;
   background:
@@ -4718,6 +4723,418 @@ code,
   }
 }
 
+/* ============================================================
+   GODTIER motion & elevation primitives (opt-in utilities)
+   Apply by adding the class in markup — never blanket-applied to
+   shared card classes. The global prefers-reduced-motion reset
+   above neutralizes all of these for users who opt out.
+   ============================================================ */
+
+@keyframes gt-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* One-shot entrance: subtle rise + fade. */
+.gt-rise {
+  animation: gt-rise-in var(--duration-base, 200ms) var(--ease-standard, ease) both;
+}
+
+/* Staggered entrance for a group's direct children. */
+.gt-rise-stagger > * {
+  animation: gt-rise-in var(--duration-base, 200ms) var(--ease-standard, ease) both;
+}
+
+.gt-rise-stagger > *:nth-child(1) {
+  animation-delay: 0ms;
+}
+.gt-rise-stagger > *:nth-child(2) {
+  animation-delay: 45ms;
+}
+.gt-rise-stagger > *:nth-child(3) {
+  animation-delay: 90ms;
+}
+.gt-rise-stagger > *:nth-child(4) {
+  animation-delay: 135ms;
+}
+.gt-rise-stagger > *:nth-child(5) {
+  animation-delay: 180ms;
+}
+.gt-rise-stagger > *:nth-child(6) {
+  animation-delay: 225ms;
+}
+.gt-rise-stagger > *:nth-child(7) {
+  animation-delay: 270ms;
+}
+.gt-rise-stagger > *:nth-child(n + 8) {
+  animation-delay: 300ms;
+}
+
+/* Hover elevation for interactive cards. */
+.gt-hover-lift {
+  transition:
+    transform var(--duration-fast, 140ms) var(--ease-standard, ease),
+    box-shadow var(--duration-fast, 140ms) var(--ease-standard, ease),
+    border-color var(--duration-fast, 140ms) var(--ease-standard, ease);
+}
+
+.gt-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg, 0 12px 30px rgba(0, 0, 0, 0.18));
+  border-color: var(--border-strong, var(--border-default));
+}
+
+/* Touch devices: no hover lift (avoids sticky :hover after tap). */
+@media (hover: none) {
+  .gt-hover-lift:hover {
+    transform: none;
+  }
+}
+
+/* Value-change flash — wire via JS by toggling the class when a tracked
+   numeric value changes (green up / red down). Semantic, never decorative. */
+@keyframes gt-flash-up {
+  0% {
+    background-color: color-mix(in srgb, var(--color-success, #16a34a) 22%, transparent);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+@keyframes gt-flash-down {
+  0% {
+    background-color: color-mix(in srgb, var(--color-danger, #dc2626) 22%, transparent);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.gt-tick-up {
+  animation: gt-flash-up 700ms var(--ease-standard, ease);
+}
+
+.gt-tick-down {
+  animation: gt-flash-down 700ms var(--ease-standard, ease);
+}
+
+/* AUR-015 — sticky in-page section navigator for long workstation pages. */
+/* Styled to match the signals-page sticky command bar (.observe-command-bar):
+   same surface + blur + hairline underline, stuck flush below the full site
+   header. */
+.sim-section-nav {
+  position: sticky;
+  top: var(--site-header-offset, 7.5rem);
+  /* Below the site header in the stack so the header wins any overlap. */
+  z-index: calc(var(--z-sticky) - 1);
+  margin-bottom: var(--space-3);
+  background: color-mix(in srgb, var(--surface-1) 95%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: var(--space-2) 0;
+}
+
+/* Inner strip aligns to the same content column as the page sections
+   (.shell-container), so the tabs left-align with section content. */
+.sim-section-nav__list {
+  width: min(calc(100% - var(--space-8)), var(--layout-max-width));
+  margin-inline: auto;
+  padding: 0;
+  padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  list-style: none;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.sim-section-nav__list::-webkit-scrollbar {
+  display: none;
+}
+
+/* Tab items match the signals command-bar buttons (.observe-mode-btn). */
+.sim-section-nav__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  white-space: nowrap;
+  padding: 0.28rem 0.7rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  text-decoration: none;
+  transition:
+    color var(--duration-fast, 140ms) var(--ease-standard, ease),
+    border-color var(--duration-fast, 140ms) var(--ease-standard, ease),
+    background-color var(--duration-fast, 140ms) var(--ease-standard, ease);
+}
+
+.sim-section-nav__link:hover,
+.sim-section-nav__link:focus-visible {
+  color: var(--text-primary);
+  border-color: var(--border-default);
+  background: var(--surface-hover);
+}
+
+/* Sim cockpit sections must clear BOTH the site header and the sticky section
+   nav when a pill is clicked. !important overrides the Section component's inline
+   scroll-margin so the heading lands just below the strip, not behind it. */
+:where([id^='sim-']) {
+  scroll-margin-top: calc(var(--page-arrival-offset) + 3rem) !important;
+}
+
+/* AUR-064 — macro regime diverging meter + direction readout. */
+.macro-regime-card__readout {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.macro-regime-card__arrow {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.macro-regime-card__arrow--positive {
+  color: var(--color-success, #16a34a);
+}
+
+.macro-regime-card__arrow--negative {
+  color: var(--color-danger, #dc2626);
+}
+
+.macro-regime-card__arrow--neutral {
+  color: var(--text-muted);
+}
+
+.macro-meter {
+  position: relative;
+  height: 8px;
+  margin: 0.55rem 0 0.3rem;
+}
+
+.macro-meter__track {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-pill);
+  background: var(--surface-chart-muted, color-mix(in srgb, var(--text-muted) 18%, transparent));
+}
+
+.macro-meter__fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--fill-left, 50%);
+  width: var(--fill-width, 0%);
+  border-radius: var(--radius-pill);
+}
+
+.macro-meter[data-tone='positive'] .macro-meter__fill,
+.macro-meter[data-tone='positive'] .macro-meter__marker {
+  background: var(--color-success, #16a34a);
+}
+
+.macro-meter[data-tone='negative'] .macro-meter__fill,
+.macro-meter[data-tone='negative'] .macro-meter__marker {
+  background: var(--color-danger, #dc2626);
+}
+
+.macro-meter[data-tone='neutral'] .macro-meter__fill,
+.macro-meter[data-tone='neutral'] .macro-meter__marker {
+  background: var(--text-muted);
+}
+
+.macro-meter__center {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  left: 50%;
+  width: 1px;
+  background: var(--border-strong, var(--text-muted));
+  transform: translateX(-50%);
+}
+
+.macro-meter__marker {
+  position: absolute;
+  top: 50%;
+  left: var(--marker-pos, 50%);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--surface-base, var(--app-bg));
+  transform: translate(-50%, -50%);
+}
+
+.macro-meter__legend {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--font-size-xs, 0.72rem);
+  color: var(--text-muted);
+}
+
+/* AUR-065 — forecast confidence bar + bias direction glyph. */
+.forecast-card__bias {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.forecast-card__bias-glyph {
+  font-size: 0.85em;
+  line-height: 1;
+}
+
+.forecast-card__bias-glyph--bullish {
+  color: var(--color-success, #16a34a);
+}
+
+.forecast-card__bias-glyph--bearish {
+  color: var(--color-danger, #dc2626);
+}
+
+.forecast-card__bias-glyph--neutral {
+  color: var(--text-muted);
+}
+
+.forecast-card__confidence {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: 0.5rem;
+}
+
+.forecast-card__confidence-track {
+  position: relative;
+  flex: 1;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-chart-muted, color-mix(in srgb, var(--text-muted) 18%, transparent));
+  overflow: hidden;
+}
+
+.forecast-card__confidence-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--confidence-pct, 0%);
+  border-radius: var(--radius-pill);
+  /* Amber (low) → green (high): wider fills reveal more green. */
+  background: linear-gradient(90deg, var(--color-warning, #f59e0b), var(--color-success, #16a34a));
+}
+
+.forecast-card__confidence-value {
+  font-size: var(--font-size-xs, 0.72rem);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  min-width: 2.6ch;
+  text-align: right;
+}
+
+/* AUR-066 — ranking row visual encoding: sparkline, signal chevron, confidence
+   micro-bar, risk dot, directional move. */
+.market-row__chart {
+  min-width: 0;
+  max-width: 7.5rem;
+}
+
+.market-signal {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-weight: var(--font-weight-medium);
+}
+
+.market-signal--positive {
+  color: var(--color-success, #16a34a);
+}
+
+.market-signal--negative {
+  color: var(--color-danger, #dc2626);
+}
+
+.market-signal--neutral {
+  color: var(--text-tertiary);
+}
+
+.market-row__move--positive {
+  color: var(--color-success, #16a34a);
+}
+
+.market-row__move--negative {
+  color: var(--color-danger, #dc2626);
+}
+
+.market-row__move--neutral {
+  color: var(--text-tertiary);
+}
+
+.market-row__status {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.confidence-microbar {
+  position: relative;
+  flex: 1;
+  min-width: 2.4rem;
+  height: 5px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-chart-muted, color-mix(in srgb, var(--text-muted) 18%, transparent));
+  overflow: hidden;
+}
+
+.confidence-microbar__fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--confidence-pct, 0%);
+  border-radius: var(--radius-pill);
+  background: linear-gradient(90deg, var(--color-warning, #f59e0b), var(--color-success, #16a34a));
+}
+
+.confidence-microbar__value {
+  font-size: var(--font-size-xs, 0.72rem);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.risk-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 0.15rem;
+  vertical-align: middle;
+}
+
+.risk-dot--low {
+  background: var(--color-success, #16a34a);
+}
+
+.risk-dot--medium {
+  background: var(--color-warning, #f59e0b);
+}
+
+.risk-dot--high {
+  background: var(--color-danger, #dc2626);
+}
+
 .site-nav-group__count {
   display: inline-flex;
   min-width: 1.5rem;
@@ -6256,6 +6673,20 @@ code,
 
 .market-view-toggle__button {
   min-width: 4.75rem;
+}
+
+/* Asset-class filter tabs for the market roster (/market). */
+.market-class-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+}
+
+.market-class-filter__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .mini-sparkline {
@@ -9647,6 +10078,8 @@ code,
 }
 
 .alert-kpi-card {
+  position: relative;
+  overflow: hidden;
   display: flex;
   align-items: center;
   gap: 0.6rem;
@@ -9687,6 +10120,32 @@ code,
 .alert-kpi-card--watch { border-color: color-mix(in srgb, var(--status-info-text) 40%, var(--border-default)); }
 .alert-kpi-card--watch .alert-kpi-card__icon { color: var(--status-info-text); }
 .alert-kpi-card--resolved .alert-kpi-card__icon { color: var(--status-success-text); }
+
+/* AUR-068 — count-proportional severity bar + active CRITICAL emphasis. */
+.alert-kpi-card__bar {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  width: var(--proportion, 0%);
+  background: var(--border-strong, var(--text-muted));
+  transition: width var(--duration-base, 200ms) var(--ease-standard, ease);
+}
+
+.alert-kpi-card--critical .alert-kpi-card__bar { background: var(--status-danger-text); }
+.alert-kpi-card--warning .alert-kpi-card__bar { background: var(--status-warning-text); }
+.alert-kpi-card--watch .alert-kpi-card__bar { background: var(--status-info-text); }
+.alert-kpi-card--info .alert-kpi-card__bar { background: var(--status-success-text); }
+
+.alert-kpi-card--critical[data-active='true'] {
+  border-color: var(--status-danger-text);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--status-danger-text) 35%, transparent),
+    0 6px 18px color-mix(in srgb, var(--status-danger-text) 18%, transparent);
+}
+
+.alert-kpi-card--critical[data-active='true'] .alert-kpi-card__icon {
+  animation: status-pulse 2.4s var(--ease-standard, ease) infinite;
+}
 
 .alert-degraded-banner {
   display: flex;
@@ -9984,6 +10443,19 @@ code,
 
 .alert-card__action-btn--resolve:hover {
   background: color-mix(in srgb, var(--status-success-bg) 50%, transparent);
+}
+
+.alert-card__action-status {
+  margin: 0.15rem 0 0;
+  font-size: 0.65rem;
+  color: var(--text-tertiary);
+  letter-spacing: 0.03em;
+}
+
+.alert-card__action-error {
+  margin: 0.15rem 0 0;
+  font-size: 0.65rem;
+  color: var(--status-danger-text);
 }
 
 /* Empty state actions */
@@ -11005,7 +11477,17 @@ code,
 .mission-control__freshness--warning { color: var(--status-warning-text); border-color: var(--status-warning); }
 .mission-control__freshness--neutral { color: var(--text-tertiary); }
 
-.mission-control__kpis { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+/* 4-up on desktop so KPI values (currency, "Not enough data") have room and do
+   not wrap/overflow. Falls back to 2 then 1 on smaller viewports. Overrides the
+   base .analytics-strip columns by source order + child min-width:0 to shrink. */
+.mission-control__kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.mission-control__kpis > * { min-width: 0; }
+@media (max-width: 1100px) {
+  .mission-control__kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 720px) {
+  .mission-control__kpis { grid-template-columns: 1fr; }
+}
 
 .mission-control__grid {
   display: grid;

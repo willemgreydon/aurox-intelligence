@@ -518,6 +518,7 @@ export function mapDashboardSnapshot(readModel: DashboardOperationalReadModel): 
         horizon: forecast.horizon,
         directionalBias: forecast.directionalBias,
         confidenceLabel: confidenceLabel(forecast.confidenceScore),
+        confidenceScore: forecast.confidenceScore,
         producedAt: forecast.producedAt,
         keyDriverSummary: forecast.scenarioSummary,
         riskSummary: forecast.riskSummary ?? 'No persisted risk summary is available for this forecast row yet.',

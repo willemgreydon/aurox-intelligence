@@ -33,6 +33,8 @@ export const dashboardForecastPreviewSchema = z.object({
   horizon: z.enum(['short', 'medium', 'long']),
   directionalBias: z.enum(['bullish', 'bearish', 'neutral']),
   confidenceLabel: z.string(),
+  /** Normalized 0..1 confidence behind confidenceLabel, for visual encoding. */
+  confidenceScore: z.number().min(0).max(1).optional(),
   producedAt: z.string().nullable(),
   keyDriverSummary: z.string(),
   riskSummary: z.string(),

@@ -883,7 +883,15 @@
     "aiBrokerAgentSummary": "Agente de bróker con IA (experimental)",
     "aiToolsEyebrow": "Herramientas de IA — experimental",
     "aiBrokerAgentTitle": "Agente de Bróker de Simulación con IA",
-    "aiBrokerAgentDescription": "Agente de simulación impulsado por proveedor de IA que analiza tu cartera y propone operaciones simuladas. Solo simulación. Sin dinero real. Todas las propuestas pasan por los controles de riesgo existentes antes de ejecutarse."
+    "aiBrokerAgentDescription": "Agente de simulación impulsado por proveedor de IA que analiza tu cartera y propone operaciones simuladas. Solo simulación. Sin dinero real. Todas las propuestas pasan por los controles de riesgo existentes antes de ejecutarse.",
+    "sectionNav": {
+      "label": "Ir a la sección de simulación",
+      "start": "Inicio",
+      "ticket": "Orden",
+      "balances": "Saldos",
+      "ledger": "Registro",
+      "markets": "Mercados"
+    }
   },
   "marketGraph": {
     "title": "Gráfico de mercado",

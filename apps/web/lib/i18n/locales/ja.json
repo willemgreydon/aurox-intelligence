@@ -883,7 +883,15 @@
     "aiBrokerAgentSummary": "AIブローカーエージェント（実験的）",
     "aiToolsEyebrow": "AIツール — 実験的",
     "aiBrokerAgentTitle": "AIシミュレーションブローカーエージェント",
-    "aiBrokerAgentDescription": "AIプロバイダーを活用したシミュレーションエージェントが、ポートフォリオを分析してシミュレーション取引を提案します。シミュレーション専用。実際の資金は関与しません。すべての提案は執行前に既存のリスクガードを通過します。"
+    "aiBrokerAgentDescription": "AIプロバイダーを活用したシミュレーションエージェントが、ポートフォリオを分析してシミュレーション取引を提案します。シミュレーション専用。実際の資金は関与しません。すべての提案は執行前に既存のリスクガードを通過します。",
+    "sectionNav": {
+      "label": "シミュレーションセクションへ移動",
+      "start": "開始",
+      "ticket": "注文",
+      "balances": "残高",
+      "ledger": "台帳",
+      "markets": "マーケット"
+    }
   },
   "marketGraph": {
     "title": "マーケットグラフ",

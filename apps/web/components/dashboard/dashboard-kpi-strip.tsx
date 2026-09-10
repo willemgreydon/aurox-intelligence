@@ -4,9 +4,9 @@ import type { DashboardExecutiveViewModel } from '../../server/services/dashboar
 export function DashboardKpiStrip({ model }: { model: DashboardExecutiveViewModel }) {
   return (
     <section className="dashboard-section dashboard-section--compact">
-      <div className="dashboard-exec-kpi-strip">
+      <div className="dashboard-exec-kpi-strip gt-rise-stagger">
         {model.kpis.map((kpi) => (
-          <article key={kpi.id} className="analytics-card dashboard-exec-kpi">
+          <article key={kpi.id} className="analytics-card dashboard-exec-kpi gt-hover-lift">
             <div className="analytics-stat__label">{kpi.label}</div>
             <div className="analytics-stat__value">{kpi.value}</div>
             <p className="text-muted">{kpi.detail}</p>

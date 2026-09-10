@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   executeSimulationOrder,
+  getSimulationPortfolioSummaryLite,
   getTodayAiSimulationOrderNotionalForUser,
   insertSimulationAgentDecision,
   resetSimulationAccount,
+  resolvePositionValuation,
+  usableMarketPrice,
 } from './simulated-trading-repository';
 
 const createDatabaseClientMock = vi.fn();
@@ -41,6 +44,131 @@ const existingAccountRow = {
   allowNegativeBalance: false,
   updatedAt: new Date().toISOString(),
 };
+
+// ─── position valuation (no fake $0.00 from degraded quotes) ──────────────────
+
+describe('usableMarketPrice', () => {
+  it('accepts a finite, strictly positive price', () => {
+    expect(usableMarketPrice(401.07)).toBe(401.07);
+    expect(usableMarketPrice(0.00000001)).toBe(0.00000001);
+  });
+
+  it('rejects 0 as a degraded quote (the core "0,00 $" trap)', () => {
+    // `0` is not nullish, so `price ?? averageCost` would wrongly keep it.
+    expect(usableMarketPrice(0)).toBeNull();
+  });
+
+  it('rejects negative, NaN, Infinity, null and undefined', () => {
+    expect(usableMarketPrice(-5)).toBeNull();
+    expect(usableMarketPrice(Number.NaN)).toBeNull();
+    expect(usableMarketPrice(Number.POSITIVE_INFINITY)).toBeNull();
+    expect(usableMarketPrice(null)).toBeNull();
+    expect(usableMarketPrice(undefined)).toBeNull();
+  });
+});
+
+describe('resolvePositionValuation', () => {
+  it('values a position at the live market price when one is available', () => {
+    const v = resolvePositionValuation(2, 100, 150);
+    expect(v.marketPrice).toBe(150);
+    expect(v.marketValue).toBe(300);
+    expect(v.costBasis).toBe(200);
+    expect(v.unrealizedPnl).toBe(100);
+  });
+
+  it('does NOT zero a real holding when the quote is 0 — falls back to cost basis', () => {
+    const v = resolvePositionValuation(3, 401.07, 0);
+    // Regression: previously effectivePrice = 0 ?? averageCost === 0 → marketValue 0.
+    expect(v.marketValue).toBe(1203.21);
+    expect(v.costBasis).toBe(1203.21);
+    expect(v.marketPrice).toBeNull();
+    expect(v.unrealizedPnl).toBe(0);
+  });
+
+  it('falls back to cost basis when no quote is supplied (missing symbol)', () => {
+    const v = resolvePositionValuation(1, 250, null);
+    expect(v.marketValue).toBe(250);
+    expect(v.marketPrice).toBeNull();
+    expect(v.unrealizedPnl).toBe(0);
+  });
+
+  it('still reports a genuine zero only when quantity is truly zero', () => {
+    const v = resolvePositionValuation(0, 100, 150);
+    expect(v.marketValue).toBe(0);
+    expect(v.costBasis).toBe(0);
+    expect(v.marketPrice).toBe(150);
+  });
+});
+
+// ─── getSimulationPortfolioSummaryLite (header chips must show numbers) ────────
+
+describe('getSimulationPortfolioSummaryLite', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  function quoteRow(symbol: string, price: number | null) {
+    return {
+      symbol,
+      assetId: `asset-${symbol}`,
+      price,
+      changeAmount: 0,
+      changePercent: 0,
+      source: 'test',
+      observedAt: new Date().toISOString(),
+      fetchedAt: new Date().toISOString(),
+    };
+  }
+
+  it('returns null when the database is not configured (header degrades, not crashes)', async () => {
+    const client = makeClient();
+    client.isConfigured = false;
+    createDatabaseClientMock.mockReturnValue(client);
+
+    await expect(getSimulationPortfolioSummaryLite(USER_ID)).resolves.toBeNull();
+  });
+
+  it('returns zeroed numbers when there are no open positions', async () => {
+    const client = makeClient();
+    createDatabaseClientMock.mockReturnValue(client);
+    client.query
+      .mockResolvedValueOnce([existingAccountRow]) // ensureSimulationAccount
+      .mockResolvedValueOnce([]); // positions
+
+    await expect(getSimulationPortfolioSummaryLite(USER_ID)).resolves.toEqual({
+      portfolioValue: 0,
+      investedCapital: 0,
+    });
+  });
+
+  it('values positions at market price when a usable quote exists', async () => {
+    const client = makeClient();
+    createDatabaseClientMock.mockReturnValue(client);
+    client.query
+      .mockResolvedValueOnce([existingAccountRow]) // ensureSimulationAccount
+      .mockResolvedValueOnce([{ symbol: 'AAPL', quantity: '2', averageCost: '100' }]) // positions
+      .mockResolvedValueOnce([quoteRow('AAPL', 150)]); // getLatestMarketQuoteSnapshots
+
+    await expect(getSimulationPortfolioSummaryLite(USER_ID)).resolves.toEqual({
+      portfolioValue: 300,
+      investedCapital: 200,
+    });
+  });
+
+  it('falls back to cost basis when the quote is degraded to 0 — never a fake $0 portfolio', async () => {
+    const client = makeClient();
+    createDatabaseClientMock.mockReturnValue(client);
+    client.query
+      .mockResolvedValueOnce([existingAccountRow])
+      .mockResolvedValueOnce([{ symbol: 'AAPL', quantity: '3', averageCost: '401.07' }])
+      .mockResolvedValueOnce([quoteRow('AAPL', 0)]); // degraded quote
+
+    await expect(getSimulationPortfolioSummaryLite(USER_ID)).resolves.toEqual({
+      portfolioValue: 1203.21,
+      investedCapital: 1203.21,
+    });
+  });
+});
 
 describe('getTodayAiSimulationOrderNotionalForUser', () => {
   beforeEach(() => {

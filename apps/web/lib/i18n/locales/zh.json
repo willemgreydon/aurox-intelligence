@@ -877,7 +877,15 @@
     "aiBrokerAgentSummary": "AI 经纪代理（实验性）",
     "aiToolsEyebrow": "AI 工具——实验性",
     "aiBrokerAgentTitle": "AI 模拟经纪代理",
-    "aiBrokerAgentDescription": "由 AI 提供方驱动的模拟代理，可分析您的组合并提出模拟交易建议。仅限模拟。不涉及真实资金。所有建议在执行前均须通过现有的风险防护。"
+    "aiBrokerAgentDescription": "由 AI 提供方驱动的模拟代理，可分析您的组合并提出模拟交易建议。仅限模拟。不涉及真实资金。所有建议在执行前均须通过现有的风险防护。",
+    "sectionNav": {
+      "label": "跳转到模拟部分",
+      "start": "开始",
+      "ticket": "委托单",
+      "balances": "余额",
+      "ledger": "账本",
+      "markets": "市场"
+    }
   },
   "marketGraph": {
     "title": "市场图表",
