@@ -7,6 +7,9 @@ type MarketViewToggleProps = {
   view: MarketViewMode;
   query?: Record<string, string | undefined>;
   paramKey?: string;
+  /** When false, keep the current scroll position on switch instead of jumping
+   * to the top (Next.js default). Defaults to true to preserve existing pages. */
+  scroll?: boolean;
 };
 
 function buildHref(
@@ -31,13 +34,14 @@ function buildHref(
   return queryString ? `${basePath}?${queryString}` : basePath;
 }
 
-export function MarketViewToggle({ basePath, view, query, paramKey = 'view' }: MarketViewToggleProps) {
+export function MarketViewToggle({ basePath, view, query, paramKey = 'view', scroll = true }: MarketViewToggleProps) {
   return (
     <div className="market-view-toggle" role="group" aria-label="Market view">
       <Link
         href={buildHref(basePath, query, 'grid', paramKey)}
         className={`button ${view === 'grid' ? 'button--primary' : 'button--secondary'} market-view-toggle__button`}
         aria-pressed={view === 'grid'}
+        scroll={scroll}
       >
         Grid
       </Link>
@@ -45,6 +49,7 @@ export function MarketViewToggle({ basePath, view, query, paramKey = 'view' }: M
         href={buildHref(basePath, query, 'list', paramKey)}
         className={`button ${view === 'list' ? 'button--primary' : 'button--secondary'} market-view-toggle__button`}
         aria-pressed={view === 'list'}
+        scroll={scroll}
       >
         List
       </Link>

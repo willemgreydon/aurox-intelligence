@@ -1974,11 +1974,12 @@ code,
 
 .hero-graph-card {
   grid-area: graph;
-  /* Home spotlight is shorter than the full market workstation so the declining
-     line does not leave a large empty band above the hero copy. Both the chart
-     canvas and the sidebar rail read this var; the rail body scrolls internally
+  /* Home spotlight height. Taller than a plain card so the graph reads as the
+     hero, but kept below the full 47.5rem workstation so the declining line
+     doesn't leave a large empty band above the hero copy. Both the chart canvas
+     and the sidebar rail read this var; the rail body scrolls internally
      (.broker-observer__scroll), so nothing clips. Scoped to the hero only. */
-  --market-workstation-height: clamp(22rem, 44vh, 32rem);
+  --market-workstation-height: clamp(26rem, 54vh, 40rem);
   margin-inline: calc(50% - 50vw);
   border: none;
   border-radius: 0;
@@ -7431,6 +7432,69 @@ code,
 .home-feature-card__body {
   color: var(--text-secondary);
   line-height: 1.6;
+}
+
+/* Premium numbered capability pillars (home second section). */
+.home-pillar-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+.home-pillar-grid > * {
+  min-width: 0;
+}
+.home-pillar-card {
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform var(--duration-fast, 140ms) var(--ease-standard, ease),
+    border-color var(--duration-fast, 140ms) var(--ease-standard, ease);
+}
+/* Accent hairline along the top edge, brightened on hover. */
+.home-pillar-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--text-accent), transparent 70%);
+  opacity: 0.55;
+  transition: opacity var(--duration-fast, 140ms) var(--ease-standard, ease);
+}
+.home-pillar-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-strong, var(--text-accent));
+}
+.home-pillar-card:hover::before {
+  opacity: 1;
+}
+.home-pillar-card--ghost::before {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--text-accent) 60%, transparent), transparent 70%);
+}
+.home-pillar-card__index {
+  display: block;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.12em;
+  color: var(--text-accent);
+  margin-bottom: var(--space-3);
+}
+.home-pillar-card__title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+  letter-spacing: -0.01em;
+}
+.home-pillar-card__body {
+  color: var(--text-secondary);
+  line-height: 1.6;
+  font-size: var(--font-size-sm);
+}
+@media (max-width: 960px) {
+  .home-pillar-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Workflow strip — Data → Signals → Risk → Decision */
