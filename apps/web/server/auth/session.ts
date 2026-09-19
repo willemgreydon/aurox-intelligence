@@ -91,6 +91,21 @@ export async function requireCurrentUser(nextPath?: string) {
   return session.user;
 }
 
+/**
+ * Single typed authorization guard for admin-only server actions. Redirects to
+ * login if unauthenticated, then throws a stable, non-spoofable error if the
+ * verified session is not an admin. Use in every admin mutation instead of a
+ * hand-written `role !== 'admin'` check (removes drift). The `/admin` layout
+ * keeps its own render-time guard (it renders a 403 rather than throwing).
+ */
+export async function requireAdmin(nextPath?: string): Promise<CurrentAuthSession> {
+  const session = await requireCurrentSession(nextPath);
+  if (session.user.role !== 'admin') {
+    throw new Error('admin_authorization_required: admin role is required');
+  }
+  return session;
+}
+
 export async function redirectIfAuthenticated(nextPath?: string) {
   const session = await getOptionalCurrentSession();
 

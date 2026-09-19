@@ -613,6 +613,116 @@ export async function updateAuthUserRole(input: {
 }
 
 /**
+ * Sets a user's account status (active/disabled) AND writes an immutable audit
+ * event in one transaction. Disabling additionally revokes all of the user's
+ * live sessions inside the same transaction, so a disabled account loses access
+ * immediately (not just on next natural expiry). Status is read `for update` to
+ * capture an accurate `before` value and serialize concurrent changes.
+ * Returns the updated user, or null if no row matched (no audit written).
+ */
+export async function adminSetUserStatus(input: {
+  userId: string;
+  status: 'active' | 'disabled';
+  actorId: string;
+  actorEmail: string;
+  reason?: string | null;
+}): Promise<AuthUserRecord | null> {
+  const client = createDatabaseClient();
+  assertDatabaseConfigured(client);
+
+  return client.transaction(async (transactionClient) => {
+    const currentRows = await transactionClient.query<{ status: UserStatus }>(
+      `select status from ${usersTable} where id = $1 for update`,
+      [input.userId],
+    );
+    const current = currentRows[0];
+
+    if (!current) {
+      return null;
+    }
+
+    await transactionClient.execute(
+      `update ${usersTable} set status = $2, updated_at = now() where id = $1`,
+      [input.userId, input.status],
+    );
+
+    // Disabling kills access now: revoke every live session for the account.
+    if (input.status === 'disabled') {
+      await transactionClient.execute(
+        `update ${sessionsTable} set revoked_at = now(), updated_at = now() where user_id = $1 and revoked_at is null`,
+        [input.userId],
+      );
+    }
+
+    await transactionClient.execute(
+      `
+        insert into ${adminEventsTable} (
+          id, event_type, actor_user_id, actor_email, target_user_id, before_value, after_value, reason
+        ) values ($1, 'user_status_changed', $2, $3, $4, $5, $6, $7)
+      `,
+      [
+        crypto.randomUUID(),
+        input.actorId,
+        input.actorEmail,
+        input.userId,
+        current.status,
+        input.status,
+        input.reason ?? null,
+      ],
+    );
+
+    return findUserByIdWithClient(transactionClient, input.userId);
+  });
+}
+
+/**
+ * Revokes ALL live sessions for a user (force logout everywhere) AND writes an
+ * immutable audit event in one transaction. `before_value` records how many
+ * sessions were revoked. Returns that count.
+ */
+export async function adminRevokeUserSessions(input: {
+  userId: string;
+  actorId: string;
+  actorEmail: string;
+  reason?: string | null;
+}): Promise<number> {
+  const client = createDatabaseClient();
+  assertDatabaseConfigured(client);
+
+  return client.transaction(async (transactionClient) => {
+    const activeRows = await transactionClient.query<{ count: string }>(
+      `select count(*)::text as count from ${sessionsTable} where user_id = $1 and revoked_at is null`,
+      [input.userId],
+    );
+    const revokedCount = Number(activeRows[0]?.count ?? '0');
+
+    await transactionClient.execute(
+      `update ${sessionsTable} set revoked_at = now(), updated_at = now() where user_id = $1 and revoked_at is null`,
+      [input.userId],
+    );
+
+    await transactionClient.execute(
+      `
+        insert into ${adminEventsTable} (
+          id, event_type, actor_user_id, actor_email, target_user_id, before_value, after_value, reason
+        ) values ($1, 'user_sessions_revoked', $2, $3, $4, $5, $6, $7)
+      `,
+      [
+        crypto.randomUUID(),
+        input.actorId,
+        input.actorEmail,
+        input.userId,
+        String(revokedCount),
+        '0',
+        input.reason ?? null,
+      ],
+    );
+
+    return revokedCount;
+  });
+}
+
+/**
  * Reads the most recent admin audit events, newest-first. Read-only; the table
  * is append-only by convention.
  */

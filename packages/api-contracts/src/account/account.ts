@@ -49,11 +49,27 @@ export const accountUserSchema = z.object({
   updatedAt: z.string(),
 });
 
-export const adminEventTypeSchema = z.enum(['user_role_changed']);
+export const adminEventTypeSchema = z.enum([
+  'user_role_changed',
+  'user_status_changed',
+  'user_sessions_revoked',
+]);
 
 export const setUserRoleInputSchema = z.object({
   userId: z.string().uuid('A valid user id is required.'),
   role: userRoleSchema,
+});
+
+/** Statuses an admin may set directly (pending_verification is lifecycle-only). */
+export const adminManageableStatusSchema = z.enum(['active', 'disabled']);
+
+export const setUserStatusInputSchema = z.object({
+  userId: z.string().uuid('A valid user id is required.'),
+  status: adminManageableStatusSchema,
+});
+
+export const forceLogoutUserInputSchema = z.object({
+  userId: z.string().uuid('A valid user id is required.'),
 });
 
 export const authSessionSchema = z.object({
@@ -199,6 +215,9 @@ export const preferencesUpdateInputSchema = z.object({
 
 export type UserRole = z.infer<typeof userRoleSchema>;
 export type SetUserRoleInput = z.infer<typeof setUserRoleInputSchema>;
+export type AdminManageableStatus = z.infer<typeof adminManageableStatusSchema>;
+export type SetUserStatusInput = z.infer<typeof setUserStatusInputSchema>;
+export type ForceLogoutUserInput = z.infer<typeof forceLogoutUserInputSchema>;
 export type AdminEventType = z.infer<typeof adminEventTypeSchema>;
 export type AccountUser = z.infer<typeof accountUserSchema>;
 export type AuthSession = z.infer<typeof authSessionSchema>;
