@@ -4,35 +4,6 @@ import { getFreshnessLabel, getFreshnessState } from './market-data';
 
 type AssetClassHint = 'stock' | 'etf' | 'crypto' | 'fx' | 'index' | null | undefined;
 
-function toLocaleTag(locale: Locale): string {
-  switch (locale) {
-    case 'de':
-      return 'de-DE';
-    case 'fr':
-      return 'fr-FR';
-    case 'es':
-      return 'es-ES';
-    case 'it':
-      return 'it-IT';
-    case 'pt':
-      return 'pt-PT';
-    case 'nl':
-      return 'nl-NL';
-    case 'zh':
-      return 'zh-CN';
-    case 'ja':
-      return 'ja-JP';
-    case 'ko':
-      return 'ko-KR';
-    case 'ar':
-      return 'ar-SA';
-    case 'hi':
-      return 'hi-IN';
-    default:
-      return 'en-US';
-  }
-}
-
 export function toFiniteNumber(value: number | null | undefined): number | null {
   if (typeof value !== 'number') {
     return null;
@@ -52,7 +23,12 @@ export function formatUsdPrice(
     return unavailableLabel;
   }
 
-  return new Intl.NumberFormat(toLocaleTag(locale), {
+  // USD prices are always presented in en-US convention ($ leading, period
+  // decimal) regardless of UI locale — a locale-formatted USD value (e.g. de-DE
+  // "336,13 $") trails the symbol and reads as wrong for a USD amount. Other
+  // localized text still follows the request locale; only the money glyph is fixed.
+  void locale;
+  return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
     maximumFractionDigits: 2,

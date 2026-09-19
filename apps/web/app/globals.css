@@ -6835,8 +6835,9 @@ code,
   grid-template-columns: repeat(2, minmax(0, 1fr)) minmax(6rem, 0.9fr);
   align-items: center;
   /* Quote value is 2xl and sits right next to the Move column; the inherited
-     --space-4 gap reads as cramped. Widen only the horizontal gap. */
-  column-gap: var(--space-6);
+     --space-4 gap reads as cramped. Widen only the horizontal gap. Shared by
+     every InvestableAssetCard (market / invest / stocks / simulation universe). */
+  column-gap: var(--space-8);
 }
 
 .market-card__chart {
