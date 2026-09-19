@@ -11,6 +11,41 @@ import {
 
 export const userRoleSchema = z.enum(['member', 'admin']);
 
+/**
+ * Capability-based access (RBAC-lite). Roles map to a static capability set —
+ * the single seam that future granularity (operator/analyst/viewer, or a DB
+ * permissions table) plugs into. Authorization should prefer a capability check
+ * over a raw role so the mapping can evolve in one place.
+ *
+ * `activate_live` is intentionally NOT granted to `admin`: enabling live
+ * execution must require an explicit elevation beyond generic admin (see the
+ * simulation-first / live-locked doctrine). It is reserved for a dedicated gate.
+ */
+export const capabilitySchema = z.enum([
+  'access_admin',
+  'manage_users',
+  'configure_providers',
+  'view_monitoring',
+  'activate_live',
+]);
+export type Capability = z.infer<typeof capabilitySchema>;
+
+const ROLE_CAPABILITIES: Record<z.infer<typeof userRoleSchema>, readonly Capability[]> = {
+  member: [],
+  admin: ['access_admin', 'manage_users', 'configure_providers', 'view_monitoring'],
+};
+
+export function getCapabilitiesForRole(role: z.infer<typeof userRoleSchema>): readonly Capability[] {
+  return ROLE_CAPABILITIES[role] ?? [];
+}
+
+export function roleHasCapability(
+  role: z.infer<typeof userRoleSchema>,
+  capability: Capability,
+): boolean {
+  return getCapabilitiesForRole(role).includes(capability);
+}
+
 export const normalizedEmailSchema = z
   .string()
   .trim()

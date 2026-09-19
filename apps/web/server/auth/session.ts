@@ -1,5 +1,5 @@
-import type { AccountUser, AuthSession } from '@repo/api-contracts';
-import { authenticatedSessionSchema } from '@repo/api-contracts';
+import type { AccountUser, AuthSession, Capability } from '@repo/api-contracts';
+import { authenticatedSessionSchema, roleHasCapability } from '@repo/api-contracts';
 import { findSessionByToken, touchAuthSession } from '@repo/db';
 import { cookies } from 'next/headers';
 import { redirect, unstable_rethrow } from 'next/navigation';
@@ -92,18 +92,30 @@ export async function requireCurrentUser(nextPath?: string) {
 }
 
 /**
- * Single typed authorization guard for admin-only server actions. Redirects to
- * login if unauthenticated, then throws a stable, non-spoofable error if the
- * verified session is not an admin. Use in every admin mutation instead of a
- * hand-written `role !== 'admin'` check (removes drift). The `/admin` layout
- * keeps its own render-time guard (it renders a 403 rather than throwing).
+ * Capability-based authorization guard for server actions (RBAC-lite). Redirects
+ * to login if unauthenticated, then throws a stable, non-spoofable error if the
+ * verified session's role does not grant the required capability. Prefer this
+ * over raw `role === 'admin'` checks so authorization evolves in one place
+ * (the role→capability map in @repo/api-contracts).
  */
-export async function requireAdmin(nextPath?: string): Promise<CurrentAuthSession> {
+export async function requireCapability(
+  capability: Capability,
+  nextPath?: string,
+): Promise<CurrentAuthSession> {
   const session = await requireCurrentSession(nextPath);
-  if (session.user.role !== 'admin') {
-    throw new Error('admin_authorization_required: admin role is required');
+  if (!roleHasCapability(session.user.role, capability)) {
+    throw new Error(`authorization_required: capability "${capability}" is required`);
   }
   return session;
+}
+
+/**
+ * Admin console access guard. Thin wrapper over the `access_admin` capability.
+ * The `/admin` layout keeps its own render-time guard (renders a 403 rather
+ * than throwing).
+ */
+export async function requireAdmin(nextPath?: string): Promise<CurrentAuthSession> {
+  return requireCapability('access_admin', nextPath);
 }
 
 export async function redirectIfAuthenticated(nextPath?: string) {
