@@ -106,6 +106,7 @@ export async function Header({ locale, messages }: HeaderProps) {
       label: messages.shell.nav.admin,
       items: [
         { href: '/admin', label: messages.shell.nav.admin, icon: 'AD', description: 'System-level administrative controls.' },
+        { href: '/admin/users', label: 'Manage Users', icon: 'US', description: 'Grant or revoke administrator access; role-change audit trail.' },
         { href: '/admin/monitoring', label: messages.shell.nav.monitoring, icon: 'MN', description: 'Monitoring overview across providers/services.' },
         { href: '/admin/monitoring/providers', label: 'Provider Monitoring', icon: 'PM', description: 'Per-provider health, config, and monitoring toggles.' },
         { href: '/invest/broker-health', label: 'Broker Health', icon: 'BH', description: 'Broker connectivity and adapter diagnostics.' },
