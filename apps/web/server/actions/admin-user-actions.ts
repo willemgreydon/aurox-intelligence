@@ -7,7 +7,7 @@ import {
 } from '@repo/api-contracts';
 import { adminRevokeUserSessions, adminSetUserStatus, updateAuthUserRole } from '@repo/db';
 import { revalidatePath } from 'next/cache';
-import { requireAdmin } from '../auth/session';
+import { requireCapability } from '../auth/session';
 
 // NOTE: This is a "use server" module — every export MUST be an async function.
 // Do not export error classes/constants from here, or Next.js drops the action
@@ -27,7 +27,7 @@ import { requireAdmin } from '../auth/session';
  * than returning a result object.
  */
 export async function setUserRoleAction(formData: FormData): Promise<void> {
-  const auth = await requireAdmin('/admin/users');
+  const auth = await requireCapability('manage_users', '/admin/users');
 
   const parsed = setUserRoleInputSchema.safeParse({
     userId: formData.get('userId'),
@@ -60,7 +60,7 @@ export async function setUserRoleAction(formData: FormData): Promise<void> {
  * Admin-gated, Zod-validated, self-protected, and audited.
  */
 export async function setUserStatusAction(formData: FormData): Promise<void> {
-  const auth = await requireAdmin('/admin/users');
+  const auth = await requireCapability('manage_users', '/admin/users');
 
   const parsed = setUserStatusInputSchema.safeParse({
     userId: formData.get('userId'),
@@ -90,7 +90,7 @@ export async function setUserStatusAction(formData: FormData): Promise<void> {
  * compromise). Admin-gated, Zod-validated, self-protected, and audited.
  */
 export async function forceLogoutUserAction(formData: FormData): Promise<void> {
-  const auth = await requireAdmin('/admin/users');
+  const auth = await requireCapability('manage_users', '/admin/users');
 
   const parsed = forceLogoutUserInputSchema.safeParse({
     userId: formData.get('userId'),

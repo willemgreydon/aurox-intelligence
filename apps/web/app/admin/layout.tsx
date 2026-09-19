@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
+import { roleHasCapability } from '@repo/api-contracts';
 import { requireCurrentSession } from '../../server/auth/session';
 
 /**
@@ -15,7 +16,7 @@ import { requireCurrentSession } from '../../server/auth/session';
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const auth = await requireCurrentSession('/admin');
 
-  if (auth.user.role !== 'admin') {
+  if (!roleHasCapability(auth.user.role, 'access_admin')) {
     return (
       <div className="dashboard-page-container">
         <section className="dashboard-section dashboard-section--hero" aria-labelledby="admin-access-restricted-title">
