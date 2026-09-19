@@ -554,10 +554,19 @@ const EXPANDED_ETF_SYMBOLS = [
   'SPYD','SPDW','SPAB','VT','ACWI','URTH','QQQM','IVW','IWF','IWD','IWN','IWO','IWB','IWR','IWP','IWS','MTUM','QUAL','USMV','VLUE',
 ] as const;
 
+/**
+ * Expanded-universe symbols promoted to first-class simulation-tradable status.
+ * These are liquid, provider-covered names we treat as 'simulated' (quoted +
+ * card Buy enabled) rather than 'planned'. Kept as a small, budget-safe allowlist
+ * — promoting the entire expanded universe would blow the per-render quote budget.
+ */
+const PROMOTED_SIMULATED_SYMBOLS = new Set<string>(['COIN']);
+
 function makeFallbackAsset(
   symbol: string,
   assetClass: 'stock' | 'etf',
 ): InvestmentUniverseAsset {
+  const promoted = PROMOTED_SIMULATED_SYMBOLS.has(symbol);
   return {
     assetId: `${assetClass}-${symbol.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
     symbol,
@@ -574,9 +583,9 @@ function makeFallbackAsset(
       assetClass === 'stock'
         ? 'Expanded-coverage symbol; evaluate liquidity, volatility, and current catalyst risk.'
         : 'Expanded-coverage ETF; evaluate concentration, factor, and macro sensitivity.',
-    actionAvailability: 'planned',
+    actionAvailability: promoted ? 'simulated' : 'planned',
     isSimulated: true,
-    metadataTags: ['expanded-universe'],
+    metadataTags: promoted ? ['expanded-universe', 'promoted-simulated'] : ['expanded-universe'],
     searchAliases: [symbol],
     providerSymbolMap: {},
     brokerIdentifierMap: {},
