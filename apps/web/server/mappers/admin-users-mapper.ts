@@ -19,6 +19,12 @@ export type AdminUserRowViewModel = {
   /** The role this user would be toggled to (the opposite of the current role). */
   nextRole: UserRole;
   nextRoleActionLabel: string;
+  /** Account lifecycle: whether the account is currently disabled. */
+  isDisabled: boolean;
+  /** The status the lifecycle button would set (toggle target). */
+  nextStatus: 'active' | 'disabled';
+  /** Label for the lifecycle toggle button ("Disable" / "Reactivate"). */
+  statusActionLabel: string;
 };
 
 export type AdminEventRowViewModel = {
@@ -81,6 +87,7 @@ export function mapAdminUsersViewModel(
   const rows: AdminUserRowViewModel[] = readModel.users.map((user) => {
     const isAdmin = user.role === 'admin';
     const nextRole: UserRole = isAdmin ? 'member' : 'admin';
+    const isDisabled = user.status === 'disabled';
     return {
       id: user.id,
       email: user.email,
@@ -96,6 +103,9 @@ export function mapAdminUsersViewModel(
       isAdmin,
       nextRole,
       nextRoleActionLabel: isAdmin ? 'Revoke admin' : 'Make admin',
+      isDisabled,
+      nextStatus: isDisabled ? 'active' : 'disabled',
+      statusActionLabel: isDisabled ? 'Reactivate' : 'Disable',
     };
   });
 
@@ -108,9 +118,22 @@ export function mapAdminUsersViewModel(
       (event.targetUserId ? `user ${event.targetUserId.slice(0, 8)}…` : 'unknown user');
     const before = event.beforeValue ?? '—';
     const after = event.afterValue ?? '—';
+    let summary: string;
+    switch (event.eventType) {
+      case 'user_status_changed':
+        summary = `Status ${before} → ${after} for ${targetLabel}`;
+        break;
+      case 'user_sessions_revoked':
+        summary = `Force-logout: revoked ${before} session(s) for ${targetLabel}`;
+        break;
+      case 'user_role_changed':
+      default:
+        summary = `Role ${before} → ${after} for ${targetLabel}`;
+        break;
+    }
     return {
       id: event.id,
-      summary: `Role ${before} → ${after} for ${targetLabel}`,
+      summary,
       actorEmail: event.actorEmail,
       createdAtLabel: formatTimestamp(event.createdAt),
     };

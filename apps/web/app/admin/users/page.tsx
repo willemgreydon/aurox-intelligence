@@ -1,7 +1,11 @@
 import { Section } from '../../../components/ui/section';
 import { WorkstationPageHeader } from '../../../components/asset/workstation-page-header';
 import { CompactStatCard } from '../../../components/stats/compact-stat-card';
-import { setUserRoleAction } from '../../../server/actions/admin-user-actions';
+import {
+  forceLogoutUserAction,
+  setUserRoleAction,
+  setUserStatusAction,
+} from '../../../server/actions/admin-user-actions';
 import { requireCurrentSession } from '../../../server/auth/session';
 import { getAdminUsersData } from '../../../server/services/admin-users-service';
 
@@ -83,17 +87,40 @@ export default async function AdminUsersPage() {
                         {row.isSelf ? (
                           <span className="text-muted">Your account</span>
                         ) : (
-                          <form action={setUserRoleAction}>
-                            <input type="hidden" name="userId" value={row.id} />
-                            <input type="hidden" name="role" value={row.nextRole} />
-                            <button
-                              type="submit"
-                              className={`button ${row.isAdmin ? 'button--secondary' : 'button--primary'}`}
-                              aria-label={`${row.nextRoleActionLabel} for ${row.email}`}
-                            >
-                              {row.nextRoleActionLabel}
-                            </button>
-                          </form>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                            <form action={setUserRoleAction}>
+                              <input type="hidden" name="userId" value={row.id} />
+                              <input type="hidden" name="role" value={row.nextRole} />
+                              <button
+                                type="submit"
+                                className={`button ${row.isAdmin ? 'button--secondary' : 'button--primary'}`}
+                                aria-label={`${row.nextRoleActionLabel} for ${row.email}`}
+                              >
+                                {row.nextRoleActionLabel}
+                              </button>
+                            </form>
+                            <form action={setUserStatusAction}>
+                              <input type="hidden" name="userId" value={row.id} />
+                              <input type="hidden" name="status" value={row.nextStatus} />
+                              <button
+                                type="submit"
+                                className={`button ${row.isDisabled ? 'button--primary' : 'button--secondary'}`}
+                                aria-label={`${row.statusActionLabel} account for ${row.email}`}
+                              >
+                                {row.statusActionLabel}
+                              </button>
+                            </form>
+                            <form action={forceLogoutUserAction}>
+                              <input type="hidden" name="userId" value={row.id} />
+                              <button
+                                type="submit"
+                                className="button button--ghost"
+                                aria-label={`Force logout ${row.email}`}
+                              >
+                                Force logout
+                              </button>
+                            </form>
+                          </div>
                         )}
                       </td>
                     </tr>
