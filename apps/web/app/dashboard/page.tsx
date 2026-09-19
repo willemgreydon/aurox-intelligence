@@ -28,7 +28,7 @@ export default async function DashboardPage() {
   // Executive (market) intelligence + personal (account) intelligence in parallel.
   // The account band is optional: if it fails, the dashboard still renders.
   const [model, accountVm] = await Promise.all([
-    getDashboardExecutiveViewModel({ userId: session.user.id }),
+    getDashboardExecutiveViewModel({ userId: session.user.id, messages }),
     getAccountIntelligenceViewModel().catch(() => null),
   ]);
 
@@ -37,7 +37,7 @@ export default async function DashboardPage() {
     ? (() => {
         const providerOk = model.providerHealth.total > 0 && model.providerHealth.degraded === 0 && !model.degraded;
         const freshness = {
-          label: providerOk ? 'Data nominal' : 'Data degraded',
+          label: providerOk ? messages.dashboard.exec.dataNominal : messages.dashboard.exec.dataDegraded,
           tone: providerOk ? ('positive' as const) : ('warning' as const),
           detail: model.providerHealth.summary,
         };
@@ -55,8 +55,8 @@ export default async function DashboardPage() {
           watchlistCount: accountVm.activity.watchlistCount,
           staleData: model.degraded,
           openPositions: accountVm.hero.positionCount,
-        }).slice(0, 4);
-        return <DashboardMissionControl vm={accountVm} nextActions={nextActions} freshness={freshness} />;
+        }, messages).slice(0, 4);
+        return <DashboardMissionControl vm={accountVm} nextActions={nextActions} freshness={freshness} messages={messages} />;
       })()
     : undefined;
 
@@ -66,8 +66,8 @@ export default async function DashboardPage() {
 
   return (
     <DashboardShell
-      hero={<DashboardHero model={model} />}
-      kpis={<DashboardKpiStrip model={model} />}
+      hero={<DashboardHero model={model} messages={messages} />}
+      kpis={<DashboardKpiStrip model={model} messages={messages} />}
       topBand={missionControl}
       body={(
         <>

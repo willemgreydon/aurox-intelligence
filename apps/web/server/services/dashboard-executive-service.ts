@@ -1,3 +1,4 @@
+import type { AppMessages } from '../../lib/i18n/messages';
 import { getAlertCenterViewModel } from './alert-center-service';
 import { getObserveViewModel } from './market-observation-service';
 import { getPortfolioIntelligenceViewModel } from './portfolio-intelligence-service';
@@ -77,7 +78,9 @@ function mapToneFromSeverity(severity: string): 'success' | 'warning' | 'neutral
 
 export async function getDashboardExecutiveViewModel(input: {
   userId: string;
+  messages: AppMessages;
 }): Promise<DashboardExecutiveViewModel> {
+  const t = input.messages.dashboard.exec;
   const observe = await getObserveViewModel({ userId: input.userId });
   const [alerts, portfolio, news, admin] = await Promise.all([
     getAlertCenterViewModel({ userId: input.userId, observeModel: observe }),
@@ -128,23 +131,23 @@ export async function getDashboardExecutiveViewModel(input: {
     generatedAt,
     degraded,
     hero: {
-      title: 'Aurox Intelligence Dashboard',
-      subtitle: `Executive command surface for ${observe.regime.label} regime monitoring, simulation preparation, and explainable cross-asset intelligence.`,
+      title: t.title,
+      subtitle: t.subtitle.replace('{{regime}}', observe.regime.label),
       chips: [
-        { label: 'Mode', value: 'Simulation-only', tone: 'info' },
-        { label: 'Provider status', value: providerDegraded > 0 ? `${providerDegraded}/${providerTotal} degraded` : 'Nominal', tone: providerDegraded > 0 ? 'warning' : 'success' },
-        { label: 'Latest snapshot', value: new Date(observe.generatedAt).toLocaleString('en-US'), tone: 'neutral' },
-        { label: 'Open alerts', value: String(alerts.summary.open), tone: alerts.summary.critical > 0 ? 'warning' : 'info' },
+        { label: t.chipMode, value: t.chipModeValue, tone: 'info' },
+        { label: t.chipProviderStatus, value: providerDegraded > 0 ? t.chipDegraded.replace('{{count}}', String(providerDegraded)).replace('{{total}}', String(providerTotal)) : t.chipNominal, tone: providerDegraded > 0 ? 'warning' : 'success' },
+        { label: t.chipLatestSnapshot, value: new Date(observe.generatedAt).toLocaleString(), tone: 'neutral' },
+        { label: t.chipOpenAlerts, value: String(alerts.summary.open), tone: alerts.summary.critical > 0 ? 'warning' : 'info' },
       ],
     },
     kpis: [
-      { id: 'portfolio', label: 'Portfolio Value', value: safeCurrency(portfolio.portfolioContext.portfolioValue, portfolio.portfolioContext.baseCurrency), detail: portfolio.portfolioContext.stateReason, tone: portfolio.status === 'nominal' ? 'success' : 'warning', href: '/portfolio/intelligence' },
-      { id: 'alerts', label: 'Open Alerts', value: String(alerts.summary.open), detail: `${alerts.summary.critical} critical, ${alerts.summary.warning} warning`, tone: alerts.summary.critical > 0 ? 'warning' : 'info', href: '/alerts' },
-      { id: 'regime', label: 'Market Regime', value: observe.regime.label, detail: `${(observe.regime.confidence * 100).toFixed(0)}% confidence`, tone: 'neutral', href: '/observe' },
-      { id: 'confidence', label: 'Avg Signal Confidence', value: safePct(avgConfidenceValue), detail: 'Watchlist-weighted confidence snapshot', tone: 'info', href: '/signals' },
-      { id: 'risk', label: 'Risk Score', value: `${riskScore.toFixed(1)}/100`, detail: 'Portfolio intelligence risk overlay', tone: riskScore > 60 ? 'warning' : 'success', href: '/portfolio/intelligence' },
-      { id: 'news', label: 'News Shock Count', value: String(newsShockCount), detail: 'High-sentiment-impact headlines', tone: newsShockCount > 0 ? 'warning' : 'success', href: '/news' },
-      { id: 'provider', label: 'Provider Health', value: providerTotal > 0 ? `${providerHealthy}/${providerTotal}` : 'Unavailable', detail: 'Nominal provider checks', tone: providerDegraded > 0 ? 'warning' : 'success', href: '/admin/monitoring/providers' },
+      { id: 'portfolio', label: t.kpiPortfolioLabel, value: safeCurrency(portfolio.portfolioContext.portfolioValue, portfolio.portfolioContext.baseCurrency), detail: portfolio.portfolioContext.stateReason, tone: portfolio.status === 'nominal' ? 'success' : 'warning', href: '/portfolio/intelligence' },
+      { id: 'alerts', label: t.kpiAlertsLabel, value: String(alerts.summary.open), detail: t.kpiAlertsDetail.replace('{{critical}}', String(alerts.summary.critical)).replace('{{warning}}', String(alerts.summary.warning)), tone: alerts.summary.critical > 0 ? 'warning' : 'info', href: '/alerts' },
+      { id: 'regime', label: t.kpiRegimeLabel, value: observe.regime.label, detail: t.kpiRegimeDetail.replace('{{count}}', (observe.regime.confidence * 100).toFixed(0)), tone: 'neutral', href: '/observe' },
+      { id: 'confidence', label: t.kpiConfidenceLabel, value: safePct(avgConfidenceValue), detail: t.kpiConfidenceDetail, tone: 'info', href: '/signals' },
+      { id: 'risk', label: t.kpiRiskLabel, value: `${riskScore.toFixed(1)}/100`, detail: t.kpiRiskDetail, tone: riskScore > 60 ? 'warning' : 'success', href: '/portfolio/intelligence' },
+      { id: 'news', label: t.kpiNewsLabel, value: String(newsShockCount), detail: t.kpiNewsDetail, tone: newsShockCount > 0 ? 'warning' : 'success', href: '/news' },
+      { id: 'provider', label: t.kpiProviderLabel, value: providerTotal > 0 ? `${providerHealthy}/${providerTotal}` : t.unavailable, detail: t.kpiProviderDetail, tone: providerDegraded > 0 ? 'warning' : 'success', href: '/admin/monitoring/providers' },
     ],
     marketPulse,
     observations: observe.observerItems.slice(0, 6).map((item) => ({
@@ -180,7 +183,7 @@ export async function getDashboardExecutiveViewModel(input: {
       healthy: providerHealthy,
       degraded: providerDegraded,
       total: providerTotal,
-      summary: providerTotal > 0 ? `${providerHealthy}/${providerTotal} providers nominal.` : 'Provider monitoring unavailable.',
+      summary: providerTotal > 0 ? t.providerSummary.replace('{{healthy}}', String(providerHealthy)).replace('{{total}}', String(providerTotal)) : t.providerSummaryUnavailable,
     },
     signalSnapshot: {
       buy: signalCounts.buy,
