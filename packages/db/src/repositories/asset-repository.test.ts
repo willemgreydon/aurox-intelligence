@@ -35,6 +35,14 @@ describe('simulation tradable universe', () => {
     expect(dell?.actionAvailability).toBe('planned');
   });
 
+  it('promotes COIN to a first-class simulated tradable asset', async () => {
+    const assets = await listSimulationTradableAssets();
+    const coin = assets.find((asset) => asset.symbol === 'COIN');
+    expect(coin).toBeDefined();
+    // COIN is promoted from the expanded universe to simulated (quoted + buyable).
+    expect(coin?.actionAvailability).toBe('simulated');
+  });
+
   it('exposes far more than the old 120-item cap (root cause was an arbitrary slice)', async () => {
     const assets = await listSimulationTradableAssets();
     // The previous 120-slice truncated a universe an order of magnitude larger.
