@@ -2,6 +2,8 @@ import type { ClaudeFinanceRecentDecision } from '@repo/api-contracts';
 
 type RecentDecisionsProps = {
   decisions: ClaudeFinanceRecentDecision[];
+  ariaLabel: string;
+  emptyMessage: string;
 };
 
 function formatTimestamp(iso: string): string {
@@ -16,17 +18,17 @@ function formatTimestamp(iso: string): string {
 }
 
 /** Compact, read-only list of previously saved Claude Finance decisions. */
-export function RecentDecisions({ decisions }: RecentDecisionsProps) {
+export function RecentDecisions({ decisions, ariaLabel, emptyMessage }: RecentDecisionsProps) {
   if (decisions.length === 0) {
     return (
       <p className="finance-empty" role="status">
-        No saved decisions yet. Generate a simulated activity and save it to start your journal.
+        {emptyMessage}
       </p>
     );
   }
 
   return (
-    <ul className="finance-decision-list" aria-label="Recent saved simulated decisions">
+    <ul className="finance-decision-list" aria-label={ariaLabel}>
       {decisions.map((decision) => (
         <li key={decision.id} className="finance-decision">
           <div className="finance-decision__head">

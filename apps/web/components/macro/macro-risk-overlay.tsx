@@ -16,10 +16,20 @@ const TONE_META: Record<OverlayTone, { arrow: string; verdict: string; pill: str
  * Macro risk overlay verdict (AUR-064). Adds a direction arrow + semantic pill + a
  * confidence read so the headline score carries visual encoding, not just text.
  */
-export function MacroRiskOverlay({ score, confidence, note }: { score: number; confidence: number; note: string }) {
+export function MacroRiskOverlay({
+  score,
+  confidence,
+  note,
+  hasData,
+}: {
+  score: number;
+  confidence: number;
+  note: string;
+  /** Derived from real macro coverage (see MacroRegimeModel.hasSufficientData). */
+  hasData: boolean;
+}) {
   const tone = toneFor(score);
   const meta = TONE_META[tone];
-  const hasData = confidence > 0;
 
   return (
     <article className="analytics-card">

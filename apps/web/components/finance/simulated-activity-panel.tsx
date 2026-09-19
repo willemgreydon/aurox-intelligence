@@ -3,11 +3,14 @@
 import { useActionState, useMemo, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import type { SimulatedBrokerActivity } from '@repo/api-contracts';
+import type { AppMessages } from '../../lib/i18n/messages';
 import {
   generateSimulatedBrokerActivityAction,
   saveSimulatedBrokerActivityToJournalAction,
 } from '../../server/actions/finance-actions';
 import { emptyFinanceActivityState } from '../../server/actions/finance-actions-state';
+
+type ActivityLabels = AppMessages['finance']['activity'];
 
 type LaneOption = {
   assetId: string;
@@ -20,6 +23,7 @@ type SimulatedActivityPanelProps = {
   lanes: LaneOption[];
   microTradingEnabled: boolean;
   disclaimer: string;
+  labels: ActivityLabels;
 };
 
 function SubmitButton({ label, disabled }: { label: string; disabled?: boolean }) {
@@ -37,7 +41,7 @@ const riskToneClass: Record<SimulatedBrokerActivity['riskLevel'], string> = {
   high: 'finance-activity__risk--high',
 };
 
-function ActivityResultCard({ activity, disclaimer }: { activity: SimulatedBrokerActivity; disclaimer: string }) {
+function ActivityResultCard({ activity, disclaimer, labels }: { activity: SimulatedBrokerActivity; disclaimer: string; labels: ActivityLabels }) {
   const [saveState, saveAction] = useActionState(
     saveSimulatedBrokerActivityToJournalAction,
     emptyFinanceActivityState,
@@ -61,34 +65,34 @@ function ActivityResultCard({ activity, disclaimer }: { activity: SimulatedBroke
 
       <dl className="finance-activity__metrics">
         <div>
-          <dt>Simulated notional</dt>
+          <dt>{labels.notional}</dt>
           <dd>{activity.simulatedNotionalLabel}</dd>
         </div>
         <div>
-          <dt>Est. fill</dt>
+          <dt>{labels.estFill}</dt>
           <dd>{activity.estimatedFillLabel}</dd>
         </div>
         <div>
-          <dt>Est. fees</dt>
+          <dt>{labels.estFees}</dt>
           <dd>{activity.estimatedFeesLabel}</dd>
         </div>
         <div>
-          <dt>Confidence</dt>
+          <dt>{labels.confidence}</dt>
           <dd>{activity.confidenceLabel}</dd>
         </div>
         <div>
-          <dt>Quote</dt>
+          <dt>{labels.quote}</dt>
           <dd>{activity.quoteSnapshot.freshnessLabel}</dd>
         </div>
         <div>
-          <dt>Next best action</dt>
+          <dt>{labels.nextBestAction}</dt>
           <dd>{activity.nextBestAction}</dd>
         </div>
       </dl>
 
       {activity.blockingReasons.length > 0 ? (
         <div className="finance-activity__blocked" role="status">
-          <p className="finance-activity__blocked-title">Activity blocked by risk controls</p>
+          <p className="finance-activity__blocked-title">{labels.blockedTitle}</p>
           <ul>
             {activity.blockingReasons.map((reason, index) => (
               <li key={`block-${index}`}>{reason}</li>
@@ -106,13 +110,13 @@ function ActivityResultCard({ activity, disclaimer }: { activity: SimulatedBroke
       ) : null}
 
       <details className="finance-activity__explain">
-        <summary>Why this decision</summary>
+        <summary>{labels.whyDecision}</summary>
         <p>{activity.explanation}</p>
       </details>
 
       <form action={saveAction} className="finance-activity__save">
         <input type="hidden" name="activity" value={serialized} />
-        <SubmitButton label="Save to journal" />
+        <SubmitButton label={labels.saveToJournal} />
         {saveState.message ? (
           <p className={`finance-activity__save-msg finance-activity__save-msg--${saveState.status}`} aria-live="polite">
             {saveState.message}
@@ -130,7 +134,7 @@ function ActivityResultCard({ activity, disclaimer }: { activity: SimulatedBroke
  * starred lane, then optionally save it to the decision journal. No order is
  * ever executed from this surface.
  */
-export function SimulatedActivityPanel({ lanes, microTradingEnabled, disclaimer }: SimulatedActivityPanelProps) {
+export function SimulatedActivityPanel({ lanes, microTradingEnabled, disclaimer, labels }: SimulatedActivityPanelProps) {
   const tradableLanes = lanes.filter((lane) => lane.canGenerateActivity);
   const [state, formAction] = useActionState(generateSimulatedBrokerActivityAction, emptyFinanceActivityState);
   const [selectedAssetId, setSelectedAssetId] = useState(tradableLanes[0]?.assetId ?? '');
@@ -140,7 +144,7 @@ export function SimulatedActivityPanel({ lanes, microTradingEnabled, disclaimer 
   if (tradableLanes.length === 0) {
     return (
       <p className="finance-empty" role="status" id="finance-generate">
-        Star a tradable asset to generate a simulated broker activity preview.
+        {labels.emptyStar}
       </p>
     );
   }
@@ -155,7 +159,7 @@ export function SimulatedActivityPanel({ lanes, microTradingEnabled, disclaimer 
 
         <div className="finance-generate__row">
           <label className="form-field finance-generate__field">
-            <span>Lane</span>
+            <span>{labels.fieldLane}</span>
             <select
               name="laneSelector"
               value={selectedLane?.assetId ?? ''}
@@ -170,16 +174,16 @@ export function SimulatedActivityPanel({ lanes, microTradingEnabled, disclaimer 
           </label>
 
           <label className="form-field finance-generate__field">
-            <span>Side</span>
+            <span>{labels.fieldSide}</span>
             <select name="side" defaultValue="buy">
-              <option value="buy">Simulated buy</option>
-              <option value="sell">Simulated sell</option>
+              <option value="buy">{labels.sideBuy}</option>
+              <option value="sell">{labels.sideSell}</option>
             </select>
             {state.fieldErrors?.side ? <span className="form-field__error">{state.fieldErrors.side}</span> : null}
           </label>
 
           <label className="form-field finance-generate__field">
-            <span>Quantity</span>
+            <span>{labels.fieldQuantity}</span>
             <input name="quantity" type="number" min="0" step="0.0001" defaultValue="1" inputMode="decimal" />
             {state.fieldErrors?.quantity ? (
               <span className="form-field__error">{state.fieldErrors.quantity}</span>
@@ -189,11 +193,11 @@ export function SimulatedActivityPanel({ lanes, microTradingEnabled, disclaimer 
 
         {microTradingEnabled ? (
           <p className="finance-generate__micro-hint">
-            Micro-trading mode is enabled — previews favor small, controlled simulated sizes.
+            {labels.microHint}
           </p>
         ) : null}
 
-        <SubmitButton label="Generate simulated activity" />
+        <SubmitButton label={labels.generateCta} />
         {state.message && state.status === 'error' ? (
           <p className="finance-generate__msg finance-generate__msg--error" aria-live="polite">
             {state.message}
@@ -201,7 +205,7 @@ export function SimulatedActivityPanel({ lanes, microTradingEnabled, disclaimer 
         ) : null}
       </form>
 
-      {state.activity ? <ActivityResultCard activity={state.activity} disclaimer={disclaimer} /> : null}
+      {state.activity ? <ActivityResultCard activity={state.activity} disclaimer={disclaimer} labels={labels} /> : null}
     </div>
   );
 }

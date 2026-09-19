@@ -25,14 +25,14 @@ export default async function MacroPage() {
       </Section>
       <Section className="dashboard-section">
         <div className="observation-regime-grid gt-rise-stagger">
-          <MacroRegimeCard title="Inflation pressure" score={model.regime.inflationRegime.score} detail={model.regime.inflationRegime.explanation} confidence={model.regime.confidence} />
-          <MacroRegimeCard title="Rates pressure" score={model.regime.ratesRegime.score} detail={model.regime.ratesRegime.explanation} confidence={model.regime.confidence} />
-          <MacroRegimeCard title="Growth backdrop" score={model.regime.growthRegime.score} detail={model.regime.growthRegime.explanation} confidence={model.regime.confidence} />
-          <MacroRegimeCard title="Risk-on / risk-off" score={model.regime.riskRegime.score} detail={model.regime.riskRegime.explanation} confidence={model.regime.confidence} />
+          <MacroRegimeCard title="Inflation pressure" score={model.regime.inflationRegime.score} detail={model.regime.inflationRegime.explanation} hasData={model.regime.hasSufficientData} />
+          <MacroRegimeCard title="Rates pressure" score={model.regime.ratesRegime.score} detail={model.regime.ratesRegime.explanation} hasData={model.regime.hasSufficientData} />
+          <MacroRegimeCard title="Growth backdrop" score={model.regime.growthRegime.score} detail={model.regime.growthRegime.explanation} hasData={model.regime.hasSufficientData} />
+          <MacroRegimeCard title="Risk-on / risk-off" score={model.regime.riskRegime.score} detail={model.regime.riskRegime.explanation} hasData={model.regime.hasSufficientData} />
         </div>
       </Section>
       <Section className="dashboard-section">
-        <MacroRiskOverlay score={model.regime.overallMacroScore} confidence={model.regime.confidence} note={model.regime.explanations[0] ?? 'No dominant macro signal yet.'} />
+        <MacroRiskOverlay score={model.regime.overallMacroScore} confidence={model.regime.confidence} note={model.regime.explanations[0] ?? 'No dominant macro signal yet.'} hasData={model.regime.hasSufficientData} />
       </Section>
       <Section className="dashboard-section">
         <MacroProviderStatusPanel rows={model.providerStatus} />

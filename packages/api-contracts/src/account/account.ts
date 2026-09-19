@@ -49,6 +49,13 @@ export const accountUserSchema = z.object({
   updatedAt: z.string(),
 });
 
+export const adminEventTypeSchema = z.enum(['user_role_changed']);
+
+export const setUserRoleInputSchema = z.object({
+  userId: z.string().uuid('A valid user id is required.'),
+  role: userRoleSchema,
+});
+
 export const authSessionSchema = z.object({
   id: z.string(),
   userId: z.string(),
@@ -191,6 +198,8 @@ export const preferencesUpdateInputSchema = z.object({
 });
 
 export type UserRole = z.infer<typeof userRoleSchema>;
+export type SetUserRoleInput = z.infer<typeof setUserRoleInputSchema>;
+export type AdminEventType = z.infer<typeof adminEventTypeSchema>;
 export type AccountUser = z.infer<typeof accountUserSchema>;
 export type AuthSession = z.infer<typeof authSessionSchema>;
 export type AuthenticatedSession = z.infer<typeof authenticatedSessionSchema>;

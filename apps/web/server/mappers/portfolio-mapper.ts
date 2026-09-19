@@ -79,7 +79,7 @@ function computeAllocationItems(
     .sort((left, right) => right.value - left.value);
 }
 
-function mapPositionItems(
+export function mapPositionItems(
   rows: NonNullable<PortfolioReadModel['workstation']['workspace']>['positions'],
   readModel: PortfolioReadModel,
 ): PortfolioPositionItem[] {
@@ -102,6 +102,9 @@ function mapPositionItems(
       unrealizedPnl: row.unrealizedPnl,
       realizedPnl: row.realizedPnl,
       allocationPercent: portfolioValue > 0 ? (row.marketValue / portfolioValue) * 100 : 0,
+      // Degraded valuation: open quantity but no usable live quote → valued at
+      // cost basis. Surfaced so the UI never presents this as a live price.
+      pricedFromCostBasis: row.marketPrice === null && row.quantity !== 0,
       openedAt: row.openedAt,
       closedAt: row.closedAt,
       lastUpdatedAt: row.updatedAt,
@@ -132,6 +135,8 @@ function mapClosedPositionItems(
       unrealizedPnl: row.unrealizedPnl,
       realizedPnl: row.realizedPnl,
       allocationPercent: 0,
+      // Closed positions hold no open quantity to value — never a degraded quote.
+      pricedFromCostBasis: false,
       openedAt: row.openedAt,
       closedAt: row.closedAt,
       lastUpdatedAt: row.updatedAt,
@@ -251,6 +256,7 @@ export function mapInvestPortfolioViewModel(
       unrealizedPnl: 0,
       realizedPnl: order.realizedPnl,
       allocationPercent: 0,
+      pricedFromCostBasis: false,
       openedAt: null,
       closedAt: null,
       lastUpdatedAt: order.executedAt,
