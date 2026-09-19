@@ -1,4 +1,5 @@
 import { DashboardPanel } from './dashboard-panel';
+import type { AppMessages } from '../../lib/i18n/messages';
 import type { DashboardExecutiveViewModel } from '../../server/services/dashboard-executive-service';
 
 /**
@@ -14,25 +15,26 @@ function deriveProviderState(health: DashboardExecutiveViewModel['providerHealth
   return { label: 'LIVE', tone: 'live' };
 }
 
-export function DashboardProviderHealth({ model }: { model: DashboardExecutiveViewModel }) {
+export function DashboardProviderHealth({ model, messages }: { model: DashboardExecutiveViewModel; messages: AppMessages }) {
+  const t = messages.dashboard.panels;
   const state = deriveProviderState(model.providerHealth);
   return (
-    <DashboardPanel eyebrow="Provider Health" title="Data/provider status" description={model.providerHealth.summary} href="/admin/monitoring/providers">
+    <DashboardPanel eyebrow={t.providerEyebrow} title={t.providerTitle} description={model.providerHealth.summary} href="/admin/monitoring/providers">
       <div className="dashboard-exec-list">
         <article className="dashboard-exec-list__item">
-          <strong>Status</strong>
+          <strong>{t.statusLabel}</strong>
           <span className={`status-pill status-pill--xs status-pill--${state.tone}`}>{state.label}</span>
         </article>
         <article className="dashboard-exec-list__item">
-          <strong>Healthy</strong>
+          <strong>{t.healthy}</strong>
           <span className="num-bubble num-bubble--success num-bubble--small" aria-label={`${model.providerHealth.healthy} healthy providers`}>{model.providerHealth.healthy}</span>
         </article>
         <article className="dashboard-exec-list__item">
-          <strong>Degraded</strong>
+          <strong>{t.degraded}</strong>
           <span className={`num-bubble num-bubble--small ${model.providerHealth.degraded > 0 ? 'num-bubble--warning' : 'num-bubble--muted'}`} aria-label={`${model.providerHealth.degraded} degraded providers`}>{model.providerHealth.degraded}</span>
         </article>
         <article className="dashboard-exec-list__item">
-          <strong>Total</strong>
+          <strong>{t.total}</strong>
           <span className="num-bubble num-bubble--neutral num-bubble--small" aria-label={`${model.providerHealth.total} providers total`}>{model.providerHealth.total}</span>
         </article>
       </div>
