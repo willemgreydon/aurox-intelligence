@@ -157,6 +157,14 @@ export async function getSimulationWorkstationStateForCurrentUser(options?: {
   sessionId?: string | null;
   assetLimit?: number;
   watchlistLimit?: number;
+  /**
+   * Symbols that MUST be quoted even if they are not curated-'simulated' or on
+   * the watchlist — e.g. the symbol the user is preparing a ticket for. Without
+   * this, a prepared buy for a 'planned' universe symbol (e.g. COIN) has no
+   * price and is wrongly blocked with "fresh quote required", even though the
+   * same symbol executes fine from its detail page (which quotes it directly).
+   */
+  focusSymbols?: string[];
 }): Promise<SimulationWorkstationState> {
   const auth = await requireCurrentSession('/invest/simulation');
   const session = await getPreferredSimulationSessionForUser(auth.user.id, options?.sessionId ?? null);
@@ -207,12 +215,18 @@ export async function getSimulationWorkstationStateForCurrentUser(options?: {
   // universe symbols are NOT tradable, so a fresh quote is not required for a
   // correct render — they show "unavailable" pricing and a Planned badge.
   // Quoting the full expanded universe would fire hundreds of provider calls.
+  const focusSymbols = (options?.focusSymbols ?? [])
+    .map((symbol) => symbol.trim().toUpperCase())
+    .filter(Boolean);
   const quoteCandidates = [
     ...new Set([
       ...tradableAssets
         .filter((asset) => asset.actionAvailability === 'simulated')
         .map((asset) => asset.symbol),
       ...watchlist.map((item) => item.symbol),
+      // Always quote the prepared/focused symbol so its ticket has a live price,
+      // regardless of curated-simulated vs planned classification.
+      ...focusSymbols.filter((symbol) => tradableAssets.some((asset) => asset.symbol === symbol)),
     ]),
   ];
   const quotes = await loadQuoteSnapshots(quoteCandidates, undefined, {

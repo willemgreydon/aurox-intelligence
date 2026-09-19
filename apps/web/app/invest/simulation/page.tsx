@@ -176,6 +176,10 @@ export default async function SimulationPage({
     // Planned/observation without forcing per-symbol provider calls.
     assetLimit: 500,
     watchlistLimit: 40,
+    // The symbol the user is preparing a ticket for must be quoted even if it is
+    // a 'planned' universe symbol — otherwise its ticket price is null and the
+    // buy is wrongly blocked with "fresh quote required".
+    focusSymbols: resolvedSearchParams?.symbol ? [resolvedSearchParams.symbol] : undefined,
   });
 
   const portfolio = workstation.workspace;
