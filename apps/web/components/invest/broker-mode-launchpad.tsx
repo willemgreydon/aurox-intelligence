@@ -6,72 +6,14 @@ import { useEffect, useMemo, useState } from 'react';
 import type { SimulationLaneId } from '@repo/api-contracts';
 import { startSimulationSessionAction } from '../../server/actions/simulation-actions';
 import { Disclosure } from '../ui/disclosure';
+import {
+  SIMULATION_LANE_DEFINITIONS,
+  type SimulationLaneAssetScope,
+} from '../../lib/simulation-lane-catalog';
 
-type BrokerModeStatus = 'active' | 'limited' | 'planned';
-
-type BrokerModeDefinition = {
-  id: SimulationLaneId;
-  label: string;
-  status: BrokerModeStatus;
-  description: string;
-  defaultCapitalShare: number;
-  defaultMicroRatio: number;
-  assetScopeOptions: Array<'stock' | 'etf' | 'crypto' | 'multi-asset'>;
-  supportNote: string;
-};
-
-const brokerModes: BrokerModeDefinition[] = [
-  {
-    id: 'manual_stock_lane',
-    label: 'Manual stock lane',
-    status: 'active',
-    description: 'Direct workstation-driven paper trading with explicit buy and sell actions.',
-    defaultCapitalShare: 0.5,
-    defaultMicroRatio: 0.08,
-    assetScopeOptions: ['stock'],
-    supportNote: 'Fully supported in simulation for stocks.',
-  },
-  {
-    id: 'manual_multi_asset_lane',
-    label: 'Manual multi-asset lane',
-    status: 'limited',
-    description: 'Manual lane prepared for cross-asset simulation workflows.',
-    defaultCapitalShare: 0.25,
-    defaultMicroRatio: 0.05,
-    assetScopeOptions: ['multi-asset', 'stock', 'etf', 'crypto'],
-    supportNote: 'Stock simulation works now. ETF and crypto execution remain browse-only.',
-  },
-  {
-    id: 'ai_copilot_lane',
-    label: 'AI copilot lane',
-    status: 'planned',
-    description: 'Assistant-guided paper trading with human confirmation at every step.',
-    defaultCapitalShare: 0.15,
-    defaultMicroRatio: 0.03,
-    assetScopeOptions: ['stock', 'etf', 'crypto'],
-    supportNote: 'Planned only. No autonomous order execution.',
-  },
-  {
-    id: 'signal_follow_lane',
-    label: 'Signal-follow lane',
-    status: 'planned',
-    description: 'Strategy bucket that mirrors selected internal signal packs in simulation.',
-    defaultCapitalShare: 0.07,
-    defaultMicroRatio: 0.02,
-    assetScopeOptions: ['stock', 'etf'],
-    supportNote: 'Planned only. Requires strategy and controls rollout.',
-  },
-  {
-    id: 'agent_sandbox_lane',
-    label: 'Broker-agent sandbox',
-    status: 'planned',
-    description: 'Future agentic simulation lane for broker-like orchestration research.',
-    defaultCapitalShare: 0.03,
-    defaultMicroRatio: 0.01,
-    assetScopeOptions: ['multi-asset', 'stock', 'etf', 'crypto'],
-    supportNote: 'Planned only. Simulation safety boundary remains enforced.',
-  },
-];
+// Single source of truth for lane metadata (shared with the server-side lane
+// detail service — see apps/web/lib/simulation-lane-catalog.ts).
+const brokerModes = SIMULATION_LANE_DEFINITIONS;
 
 type BrokerModeLaunchpadProps = {
   baseCapitalUsd: number;
@@ -86,7 +28,7 @@ type BrokerModeLaunchpadProps = {
   activeLaneId?: SimulationLaneId | null;
 };
 
-function formatScopeLabel(scope: BrokerModeDefinition['assetScopeOptions'][number]) {
+function formatScopeLabel(scope: SimulationLaneAssetScope) {
   switch (scope) {
     case 'multi-asset':
       return 'Multi-asset';
@@ -137,7 +79,7 @@ export function BrokerModeLaunchpad({
     Math.max(0, Math.round(baseCapitalUsd * initialMode.defaultCapitalShare)),
   );
   const [microRatio, setMicroRatio] = useState<number>(initialMode.defaultMicroRatio * 100);
-  const [assetScope, setAssetScope] = useState<BrokerModeDefinition['assetScopeOptions'][number]>(
+  const [assetScope, setAssetScope] = useState<SimulationLaneAssetScope>(
     initialMode.assetScopeOptions[0] ?? 'stock',
   );
 
@@ -254,7 +196,7 @@ export function BrokerModeLaunchpad({
               name="assetScopePreview"
               value={assetScope}
               onChange={(event) =>
-                setAssetScope(event.target.value as BrokerModeDefinition['assetScopeOptions'][number])
+                setAssetScope(event.target.value as SimulationLaneAssetScope)
               }
               disabled={selectedMode.status === 'planned'}
             >

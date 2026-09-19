@@ -196,6 +196,13 @@ export type PositionValuation = {
   marketValue: number;
   costBasis: number;
   unrealizedPnl: number;
+  /**
+   * True when the position carries open quantity but no usable live quote, so it
+   * is valued at cost basis (marketValue === costBasis, unrealizedPnl === 0). The
+   * "flat / breakeven" appearance is a degraded state, not a real valuation, and
+   * must be surfaced as such — never shown as a live valuation.
+   */
+  pricedFromCostBasis: boolean;
 };
 
 /**
@@ -214,8 +221,9 @@ export function resolvePositionValuation(
   const effectivePrice = marketPrice ?? averageCost;
   const marketValue = roundCurrency(quantity * effectivePrice);
   const unrealizedPnl = roundCurrency(marketValue - costBasis);
+  const pricedFromCostBasis = marketPrice === null && quantity !== 0;
 
-  return { marketPrice, marketValue, costBasis, unrealizedPnl };
+  return { marketPrice, marketValue, costBasis, unrealizedPnl, pricedFromCostBasis };
 }
 
 function isEffectivelyZero(value: number) {
@@ -366,7 +374,15 @@ function mapSnapshot(row: SnapshotRow): SimulationSnapshot {
   });
 }
 
-async function ensureSimulationAccount(client: DatabaseClient, userId: string) {
+/**
+ * Read-only lookup of a user's simulation account + primary portfolio. Returns
+ * `null` when the user has no account yet. This never writes — safe to call from
+ * render/timeout paths (a timeout here cannot leave persisted state).
+ */
+async function getSimulationAccountRow(
+  client: DatabaseClient,
+  userId: string,
+): Promise<AccountRow | null> {
   const existing = await client.query<AccountRow>(
     `
       select
@@ -386,7 +402,11 @@ async function ensureSimulationAccount(client: DatabaseClient, userId: string) {
     [userId],
   );
 
-  const current = existing[0];
+  return existing[0] ?? null;
+}
+
+async function ensureSimulationAccount(client: DatabaseClient, userId: string): Promise<AccountRow> {
+  const current = await getSimulationAccountRow(client, userId);
   if (current) {
     return current;
   }
@@ -397,63 +417,72 @@ async function ensureSimulationAccount(client: DatabaseClient, userId: string) {
   const initialCash = 100000;
   const defaultCurrency = getDefaultSimulationCurrency();
 
-  await client.execute(
-    `
-      insert into ${accountsTable} (
-        id,
-        user_id,
-        base_currency,
-        initial_cash_balance,
-        cash_balance,
-        realized_pnl
-      ) values ($1, $2, $3, $4, $4, 0)
-    `,
-    [accountId, userId, defaultCurrency, initialCash],
-  );
+  // Atomic create: account + primary portfolio + initial-funding transaction +
+  // opening snapshot must all land together or not at all — a partial account is
+  // an audit-inconsistent ledger. `transaction` is nesting-safe: when this runs
+  // inside an existing transaction the wrapped client has no `begin`, so the
+  // callback executes inline on the same transaction (no nested BEGIN), and at
+  // the top level it opens a real transaction that a mid-sequence failure (or an
+  // abandoned-on-timeout caller) rolls back wholesale.
+  await client.transaction(async (tx) => {
+    await tx.execute(
+      `
+        insert into ${accountsTable} (
+          id,
+          user_id,
+          base_currency,
+          initial_cash_balance,
+          cash_balance,
+          realized_pnl
+        ) values ($1, $2, $3, $4, $4, 0)
+      `,
+      [accountId, userId, defaultCurrency, initialCash],
+    );
 
-  await client.execute(
-    `
-      insert into ${portfoliosTable} (id, account_id, name)
-      values ($1, $2, 'Primary simulation portfolio')
-    `,
-    [portfolioId, accountId],
-  );
+    await tx.execute(
+      `
+        insert into ${portfoliosTable} (id, account_id, name)
+        values ($1, $2, 'Primary simulation portfolio')
+      `,
+      [portfolioId, accountId],
+    );
 
-  await client.execute(
-    `
-      insert into ${transactionsTable} (
-        id,
-        account_id,
-        portfolio_id,
-        transaction_type,
-        gross_amount,
-        fee_amount,
-        cash_delta,
-        realized_pnl,
-        description,
-        created_at
-      ) values ($1, $2, $3, 'initial_funding', $4, 0, $4, 0, 'Initial fictive funding', $5)
-    `,
-    [crypto.randomUUID(), accountId, portfolioId, initialCash, createdAt],
-  );
+    await tx.execute(
+      `
+        insert into ${transactionsTable} (
+          id,
+          account_id,
+          portfolio_id,
+          transaction_type,
+          gross_amount,
+          fee_amount,
+          cash_delta,
+          realized_pnl,
+          description,
+          created_at
+        ) values ($1, $2, $3, 'initial_funding', $4, 0, $4, 0, 'Initial fictive funding', $5)
+      `,
+      [crypto.randomUUID(), accountId, portfolioId, initialCash, createdAt],
+    );
 
-  await client.execute(
-    `
-      insert into ${snapshotsTable} (
-        id,
-        account_id,
-        portfolio_id,
-        cash_balance,
-        market_value,
-        equity_value,
-        unrealized_pnl,
-        realized_pnl,
-        position_count,
-        taken_at
-      ) values ($1, $2, $3, $4, 0, $4, 0, 0, 0, $5)
-    `,
-    [crypto.randomUUID(), accountId, portfolioId, initialCash, createdAt],
-  );
+    await tx.execute(
+      `
+        insert into ${snapshotsTable} (
+          id,
+          account_id,
+          portfolio_id,
+          cash_balance,
+          market_value,
+          equity_value,
+          unrealized_pnl,
+          realized_pnl,
+          position_count,
+          taken_at
+        ) values ($1, $2, $3, $4, 0, $4, 0, 0, 0, $5)
+      `,
+      [crypto.randomUUID(), accountId, portfolioId, initialCash, createdAt],
+    );
+  });
 
   return {
     accountId,
@@ -465,6 +494,19 @@ async function ensureSimulationAccount(client: DatabaseClient, userId: string) {
     allowNegativeBalance: false,
     updatedAt: createdAt,
   };
+}
+
+/**
+ * Public, transactional eager-create used at signup so a user's simulation
+ * account exists before any render/timeout path needs it. Idempotent: a no-op
+ * when the account already exists. Render paths must NOT create accounts.
+ */
+export async function ensureSimulationAccountForUser(userId: string): Promise<void> {
+  const client = createDatabaseClient();
+  if (!client.isConfigured) {
+    return;
+  }
+  await ensureSimulationAccount(client, userId);
 }
 
 export async function hasSimulationAccountForUser(userId: string): Promise<boolean> {
@@ -1157,6 +1199,14 @@ export async function getSimulationWorkspaceIfExists(
 export type SimulationPortfolioSummaryLite = {
   portfolioValue: number;
   investedCapital: number;
+  /** Total open positions counted in this summary. */
+  positionCount: number;
+  /**
+   * How many open positions had no usable live quote and are valued at cost
+   * basis. `> 0` means the headline value is partially degraded and the surface
+   * must show a "priced from cost basis / price unavailable" cue.
+   */
+  positionsPricedFromCostBasis: number;
 };
 
 /**
@@ -1178,7 +1228,15 @@ export async function getSimulationPortfolioSummaryLite(
     return null;
   }
 
-  const account = await ensureSimulationAccount(client, userId);
+  // Render/timeout path: read only, never create. A first-time user with no
+  // account yet is a clean empty state (zeros), not a trigger to persist an
+  // account from a render that may be abandoned on timeout. Eager creation
+  // happens at signup via ensureSimulationAccountForUser.
+  const account = await getSimulationAccountRow(client, userId);
+  if (!account) {
+    return { portfolioValue: 0, investedCapital: 0, positionCount: 0, positionsPricedFromCostBasis: 0 };
+  }
+
   const positions = await client.query<{ symbol: string; quantity: number | string; averageCost: number | string }>(
     `
       select symbol, quantity, average_cost as "averageCost"
@@ -1190,7 +1248,7 @@ export async function getSimulationPortfolioSummaryLite(
   );
 
   if (positions.length === 0) {
-    return { portfolioValue: 0, investedCapital: 0 };
+    return { portfolioValue: 0, investedCapital: 0, positionCount: 0, positionsPricedFromCostBasis: 0 };
   }
 
   const symbols = [...new Set(positions.map((row) => row.symbol))];
@@ -1199,6 +1257,7 @@ export async function getSimulationPortfolioSummaryLite(
 
   let portfolioValue = 0;
   let investedCapital = 0;
+  let positionsPricedFromCostBasis = 0;
   for (const row of positions) {
     const valuation = resolvePositionValuation(
       toNumber(row.quantity),
@@ -1207,11 +1266,16 @@ export async function getSimulationPortfolioSummaryLite(
     );
     portfolioValue += valuation.marketValue;
     investedCapital += valuation.costBasis;
+    if (valuation.pricedFromCostBasis) {
+      positionsPricedFromCostBasis += 1;
+    }
   }
 
   return {
     portfolioValue: roundCurrency(portfolioValue),
     investedCapital: roundCurrency(investedCapital),
+    positionCount: positions.length,
+    positionsPricedFromCostBasis,
   };
 }
 

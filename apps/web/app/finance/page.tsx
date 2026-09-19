@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { requireCurrentSession } from '../../server/auth/session';
 import { getClaudeFinanceCockpitData } from '../../server/services/finance-cockpit-service';
 import { ClaudeFinanceCockpit } from '../../components/finance/claude-finance-cockpit';
+import { getMessages } from '../../lib/i18n/messages';
+import { getRequestLocale } from '../../server/i18n/locale';
 
 // User-specific financial data — must never be cached at the route level.
 // See .claude/rules/user-specific-cache-rule.md and next-cache-rule.md.
@@ -15,6 +17,10 @@ export const metadata: Metadata = {
 
 export default async function ClaudeFinancePage() {
   await requireCurrentSession('/finance');
-  const cockpit = await getClaudeFinanceCockpitData();
-  return <ClaudeFinanceCockpit cockpit={cockpit} />;
+  const [cockpit, locale] = await Promise.all([
+    getClaudeFinanceCockpitData(),
+    getRequestLocale(),
+  ]);
+  const messages = getMessages(locale);
+  return <ClaudeFinanceCockpit cockpit={cockpit} labels={messages.finance} />;
 }

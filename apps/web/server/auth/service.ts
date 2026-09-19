@@ -2,6 +2,7 @@ import {
   createSession,
   createUser,
   createVerificationToken,
+  ensureSimulationAccountForUser,
   findUserByEmail,
   recordUserSignIn,
   resetPasswordFromToken,
@@ -54,6 +55,12 @@ export async function registerWithEmailPassword(
     passwordHash: await hashPassword(input.password),
     status: 'pending_verification',
   });
+
+  // Eagerly provision the simulation account at signup (atomic, idempotent) so
+  // no later render/timeout path has to create one. Best-effort: a failure here
+  // must not block account registration — the account is re-ensured atomically
+  // on the user's first trade.
+  await ensureSimulationAccountForUser(user.id).catch(() => undefined);
 
   await createVerificationToken({
     id: crypto.randomUUID(),

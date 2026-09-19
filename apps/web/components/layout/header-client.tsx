@@ -34,6 +34,8 @@ type HeaderClientProps = {
   portfolioSnapshot: {
     portfolioValue: number;
     investedCapital: number;
+    positionCount: number;
+    positionsPricedFromCostBasis: number;
   } | null;
 };
 
@@ -196,6 +198,15 @@ export function HeaderClient({ locale, messages, ticker, auth, navGroups, portfo
                         {portfolioSnapshot ? formatCompactUsd(portfolioSnapshot.investedCapital) : '—'}
                       </strong>
                     </span>
+                    {portfolioSnapshot && portfolioSnapshot.positionsPricedFromCostBasis > 0 ? (
+                      <span
+                        className="nav-portfolio-mini__notice"
+                        role="status"
+                        title={`Live price unavailable for ${portfolioSnapshot.positionsPricedFromCostBasis} of ${portfolioSnapshot.positionCount} positions — valued at cost basis.`}
+                      >
+                        ⚠ {portfolioSnapshot.positionsPricedFromCostBasis}/{portfolioSnapshot.positionCount} at cost
+                      </span>
+                    ) : null}
                   </div>
                 ) : null}
                 <LocaleSwitcher locale={locale} label={messages.shell.language} compact />
@@ -318,6 +329,14 @@ export function HeaderClient({ locale, messages, ticker, auth, navGroups, portfo
                       {portfolioSnapshot ? formatCompactUsd(portfolioSnapshot.investedCapital) : '—'}
                     </span>
                   </div>
+                  {portfolioSnapshot && portfolioSnapshot.positionsPricedFromCostBasis > 0 ? (
+                    <div className="nav-metric-strip__item" role="status">
+                      <span className="nav-metric-strip__label">Pricing</span>
+                      <span className="nav-metric-strip__value nav-metric-strip__value--warning">
+                        ⚠ {portfolioSnapshot.positionsPricedFromCostBasis}/{portfolioSnapshot.positionCount} at cost
+                      </span>
+                    </div>
+                  ) : null}
                   <div className="nav-metric-strip__item">
                     <span className="nav-metric-strip__label">Simulation</span>
                     <Link href="/invest/simulation" className="nav-metric-strip__value" style={{ color: 'var(--text-accent)', textDecoration: 'none' }} onClick={() => setMenuOpen(false)}>

@@ -2,9 +2,11 @@ import { createHash } from 'node:crypto';
 import type {
   AccountSessionSummary,
   AccountUser,
+  AdminEventType,
   UserRole,
 } from '@repo/api-contracts';
 import { createDatabaseClient, type DatabaseClient, type QueryParam } from '../client';
+import { adminEventsTable } from '../schema/admin-events';
 import { authAccountsTable } from '../schema/auth-accounts';
 import { sessionsTable } from '../schema/sessions';
 import { usersTable } from '../schema/users';
@@ -446,6 +448,200 @@ export async function updateAuthUserProfile(
   }
 
   return updatedUser;
+}
+
+export type AdminUserSummaryRecord = {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  status: UserStatus;
+  createdAt: string;
+  lastLoginAt: string | null;
+};
+
+type AdminUserSummaryRow = {
+  id: string;
+  email: string;
+  displayName: string;
+  role: UserRole;
+  status: UserStatus;
+  createdAt: string | Date;
+  lastLoginAt: string | Date | null;
+};
+
+/**
+ * Lists every user for the admin user-management surface. Read-only, ordered
+ * newest-first. Does not expose password hashes or session material.
+ */
+export async function listAuthUsers(): Promise<AdminUserSummaryRecord[]> {
+  const client = createDatabaseClient();
+  assertDatabaseConfigured(client);
+
+  const rows = await client.query<AdminUserSummaryRow>(
+    `
+      select
+        id,
+        email,
+        display_name as "displayName",
+        role,
+        status,
+        created_at as "createdAt",
+        last_login_at as "lastLoginAt"
+      from ${usersTable}
+      order by created_at desc
+    `,
+  );
+
+  return rows.map((row) => ({
+    id: row.id,
+    email: row.email,
+    name: row.displayName,
+    role: row.role,
+    status: row.status,
+    createdAt: toIsoTimestamp(row.createdAt) ?? new Date(0).toISOString(),
+    lastLoginAt: toIsoTimestamp(row.lastLoginAt),
+  }));
+}
+
+export type AdminEventRecord = {
+  id: string;
+  eventType: AdminEventType;
+  actorUserId: string | null;
+  actorEmail: string;
+  targetUserId: string | null;
+  beforeValue: string | null;
+  afterValue: string | null;
+  reason: string | null;
+  createdAt: string;
+};
+
+type AdminEventRow = {
+  id: string;
+  eventType: AdminEventType;
+  actorUserId: string | null;
+  actorEmail: string;
+  targetUserId: string | null;
+  beforeValue: string | null;
+  afterValue: string | null;
+  reason: string | null;
+  createdAt: string | Date;
+};
+
+function mapAdminEvent(row: AdminEventRow): AdminEventRecord {
+  return {
+    id: row.id,
+    eventType: row.eventType,
+    actorUserId: row.actorUserId,
+    actorEmail: row.actorEmail,
+    targetUserId: row.targetUserId,
+    beforeValue: row.beforeValue,
+    afterValue: row.afterValue,
+    reason: row.reason,
+    createdAt: toIsoTimestamp(row.createdAt) ?? new Date(0).toISOString(),
+  };
+}
+
+/**
+ * Sets a user's role AND writes an immutable audit event in a single
+ * transaction, so a role change can never exist without its audit record (or
+ * vice versa). The current role is read `for update` inside the transaction to
+ * capture an accurate `before` value and to serialize concurrent changes.
+ *
+ * The `users_role_check` constraint enforces allowed values at the DB layer;
+ * the caller (admin-gated server action) is responsible for authorization.
+ * Returns the updated user, or null if no row matched the id (no audit written).
+ */
+export async function updateAuthUserRole(input: {
+  userId: string;
+  role: UserRole;
+  actorId: string;
+  actorEmail: string;
+  reason?: string | null;
+}): Promise<AuthUserRecord | null> {
+  const client = createDatabaseClient();
+  assertDatabaseConfigured(client);
+
+  return client.transaction(async (transactionClient) => {
+    const currentRows = await transactionClient.query<{ role: UserRole }>(
+      `select role from ${usersTable} where id = $1 for update`,
+      [input.userId],
+    );
+    const current = currentRows[0];
+
+    if (!current) {
+      return null;
+    }
+
+    await transactionClient.execute(
+      `
+        update ${usersTable}
+        set
+          role = $2,
+          updated_at = now()
+        where id = $1
+      `,
+      [input.userId, input.role],
+    );
+
+    await transactionClient.execute(
+      `
+        insert into ${adminEventsTable} (
+          id,
+          event_type,
+          actor_user_id,
+          actor_email,
+          target_user_id,
+          before_value,
+          after_value,
+          reason
+        ) values ($1, 'user_role_changed', $2, $3, $4, $5, $6, $7)
+      `,
+      [
+        crypto.randomUUID(),
+        input.actorId,
+        input.actorEmail,
+        input.userId,
+        current.role,
+        input.role,
+        input.reason ?? null,
+      ],
+    );
+
+    return findUserByIdWithClient(transactionClient, input.userId);
+  });
+}
+
+/**
+ * Reads the most recent admin audit events, newest-first. Read-only; the table
+ * is append-only by convention.
+ */
+export async function listRecentAdminEvents(limit = 25): Promise<AdminEventRecord[]> {
+  const client = createDatabaseClient();
+  assertDatabaseConfigured(client);
+
+  const safeLimit = Math.min(Math.max(Math.trunc(limit), 1), 200);
+
+  const rows = await client.query<AdminEventRow>(
+    `
+      select
+        id,
+        event_type as "eventType",
+        actor_user_id as "actorUserId",
+        actor_email as "actorEmail",
+        target_user_id as "targetUserId",
+        before_value as "beforeValue",
+        after_value as "afterValue",
+        reason,
+        created_at as "createdAt"
+      from ${adminEventsTable}
+      order by created_at desc
+      limit $1
+    `,
+    [safeLimit],
+  );
+
+  return rows.map(mapAdminEvent);
 }
 
 export async function updateAuthUserPassword(userId: string, passwordHash: string) {

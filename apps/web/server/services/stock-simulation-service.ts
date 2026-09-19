@@ -8,6 +8,7 @@ import {
   getMarketHistoryBars,
   getSimulationWorkspace,
   getSimulationPortfolioSummaryLite,
+  type SimulationPortfolioSummaryLite,
   getUserWatchlist,
   listCatalogAssets,
   listSimulationTradableAssets,
@@ -785,7 +786,7 @@ export async function getSimulationOverviewDataForUser(userId: string): Promise<
  */
 export async function getSimulationPortfolioSummaryForUser(
   userId: string,
-): Promise<{ portfolioValue: number; investedCapital: number } | null> {
+): Promise<SimulationPortfolioSummaryLite | null> {
   return getSimulationPortfolioSummaryLite(userId);
 }
 

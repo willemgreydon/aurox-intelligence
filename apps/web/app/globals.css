@@ -742,6 +742,19 @@ code,
   font-weight: var(--font-weight-semibold);
 }
 
+.nav-portfolio-mini__notice {
+  align-self: center;
+  color: var(--status-warning-text, #b45309);
+  font-size: 0.58rem;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.nav-metric-strip__value--warning {
+  color: var(--status-warning-text, #b45309);
+}
+
 .mobile-nav-shell {
   display: none;
 }
@@ -1465,6 +1478,22 @@ code,
 
 .hero__content::before {
   content: none;
+}
+
+/* Homepage hero H1: scoped reduction so the marketing hero reads as a
+   confident lede rather than an oversized banner. The global `h1` token
+   (clamp(4xl,5vw,6xl)) is preserved for every other surface. */
+.lane-detail-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.hero__content h1 {
+  font-size: clamp(var(--font-size-3xl), 4vw, var(--font-size-5xl));
+  line-height: var(--line-height-tight);
+  max-width: 22ch;
 }
 
 .hero__lede {
@@ -7860,7 +7889,9 @@ code,
 
 .dashboard-exec-kpi-strip {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  /* Desktop: 3 columns. Cards wrap to additional rows as the KPI count grows,
+     so this stays correct regardless of how many KPIs the model emits. */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-3);
 }
 
@@ -8013,7 +8044,8 @@ code,
 
 @media (max-width: 1180px) {
   .dashboard-exec-kpi-strip {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    /* Tablet: 2 columns. */
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .dashboard-exec-main-grid {

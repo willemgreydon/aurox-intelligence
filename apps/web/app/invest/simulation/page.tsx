@@ -161,7 +161,7 @@ function getAssetDetailHref(symbol: string, assetClass: 'stock' | 'etf' | 'crypt
 export default async function SimulationPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ session?: string; lane?: string; assetView?: string; tab?: string; intent?: string; side?: string; symbol?: string; assetClass?: string; source?: string }>;
+  searchParams?: Promise<{ session?: string; lane?: string; assetView?: string; view?: string; tab?: string; intent?: string; side?: string; symbol?: string; assetClass?: string; source?: string }>;
 }) {
   const locale = await getRequestLocale();
   const messages = getMessages(locale);
@@ -171,7 +171,10 @@ export default async function SimulationPage({
 
   const workstation = await getSimulationWorkstationStateForCurrentUser({
     sessionId: resolvedSearchParams?.session ?? null,
-    assetLimit: 120,
+    // Surface the full simulation universe (paginated in the explorer). Tradable
+    // ('simulated') assets are quoted; 'planned' coverage symbols render as
+    // Planned/observation without forcing per-symbol provider calls.
+    assetLimit: 500,
     watchlistLimit: 40,
   });
 
@@ -285,10 +288,16 @@ export default async function SimulationPage({
     !portfolio || portfolio.summary.equityValue === 0
       ? 0
       : ((portfolio.summary.equityValue - 100000) / 100000) * 100;
+  // Bound sparkline history to the actually-tradable assets plus the watchlist.
+  // 'planned' universe symbols render without a sparkline ([] fallback) — fetching
+  // history for the full expanded universe would be an N+1 provider blowup (T17 /
+  // provider-call-budget-rule).
   const sparklineSymbols = [
     ...new Set([
       ...workstation.watchlist.map((item) => item.asset.symbol),
-      ...workstation.tradableAssets.map((item) => item.asset.symbol),
+      ...workstation.tradableAssets
+        .filter((item) => item.asset.actionAvailability === 'simulated')
+        .map((item) => item.asset.symbol),
     ]),
   ];
   // Run sparkline history and journal fetch in parallel — neither depends on
@@ -960,6 +969,17 @@ export default async function SimulationPage({
 
       <Section className="dashboard-section dashboard-section--tinted">
         <Disclosure summary={messages.simulation.lanesExposureSummary} hint={String(workstation.activityLanes.length)}>
+          <nav className="lane-detail-links" aria-label={messages.simulation.laneDetail.inspectNavLabel}>
+            {workstation.activityLanes.map((lane) => (
+              <Link
+                key={lane.laneId}
+                href={`/invest/simulation/lanes/${lane.laneId}`}
+                className="button button--secondary"
+              >
+                {lane.label} — {messages.simulation.laneDetail.openDetailCta}
+              </Link>
+            ))}
+          </nav>
           <div className="analytics-two-grid analytics-two-grid--tables">
             <AnalyticsTable
               title={messages.simulation.brokerStrategyLanesTitle}
@@ -1012,14 +1032,15 @@ export default async function SimulationPage({
         />
       </Section>
 
+      {/* Watchlist + tradable universe are stacked into one accessible tab group
+          (T7). Both panels are pre-rendered server JSX and stay mounted, so
+          switching is instant and no data is fetched twice. `?view=` sets the
+          initial tab so the choice is deep-linkable / refresh-safe. */}
       <Section className="dashboard-section">
         <header className="dashboard-section-heading">
           <div>
-            <div className="section__eyebrow">{messages.simulation.universe.summaryWatchlist}</div>
-            <h2 className="dashboard-section-heading__title">{messages.simulation.savedAssetsTitle}</h2>
-            <p className="dashboard-section-heading__description">
-              {messages.simulation.savedAssetsDescription}
-            </p>
+            <div className="section__eyebrow">{messages.simulation.marketsEyebrow}</div>
+            <h2 className="dashboard-section-heading__title">{messages.simulation.observeTradeTitle}</h2>
           </div>
           <MarketViewToggle
             basePath="/invest/simulation"
@@ -1031,40 +1052,51 @@ export default async function SimulationPage({
             }}
           />
         </header>
-        {workstation.watchlist.length > 0 ? (
-          <PaginatedAssetList
-            items={watchlistItems}
-            className={assetViewMode === 'grid' ? 'analytics-two-grid' : 'market-list'}
-            pageSize={assetViewMode === 'grid' ? 12 : 20}
-            labels={universePaginationLabels}
-          />
-        ) : (
-          <Card className="analytics-card">
-            <div className="analytics-card__header">
-              <div>
-                <div className="section__eyebrow">{messages.simulation.universe.summaryWatchlist}</div>
-                <h3>{messages.simulation.noSavedAssetsTitle}</h3>
-                <p>{messages.simulation.noSavedAssetsDescription}</p>
-              </div>
-            </div>
-          </Card>
-        )}
-      </Section>
-
-      <Section className="dashboard-section dashboard-section--tinted">
-        <header className="dashboard-section-heading">
-          <div>
-            <div className="section__eyebrow">{messages.simulation.assetUniverse}</div>
-            <h2 className="dashboard-section-heading__title">{messages.simulation.assetUniverse}</h2>
-            <p className="dashboard-section-heading__description">
-              {messages.simulation.tradableUniverseDescription}
-            </p>
-          </div>
-        </header>
-        <TradableUniverseExplorer
-          items={universeExplorerItems}
-          viewMode={assetViewMode}
-          labels={universeExplorerLabels}
+        <IntelligenceAnalysisTabs
+          defaultTabId={resolvedSearchParams?.view === 'universe' ? 'universe' : 'watchlist'}
+          tabs={[
+            {
+              id: 'watchlist',
+              label: messages.simulation.universe.summaryWatchlist,
+              hint: String(workstation.watchlist.length),
+              panel:
+                workstation.watchlist.length > 0 ? (
+                  <PaginatedAssetList
+                    items={watchlistItems}
+                    className={assetViewMode === 'grid' ? 'analytics-two-grid' : 'market-list'}
+                    pageSize={assetViewMode === 'grid' ? 12 : 20}
+                    labels={universePaginationLabels}
+                  />
+                ) : (
+                  <Card className="analytics-card">
+                    <div className="analytics-card__header">
+                      <div>
+                        <div className="section__eyebrow">{messages.simulation.universe.summaryWatchlist}</div>
+                        <h3>{messages.simulation.noSavedAssetsTitle}</h3>
+                        <p>{messages.simulation.noSavedAssetsDescription}</p>
+                      </div>
+                    </div>
+                  </Card>
+                ),
+            },
+            {
+              id: 'universe',
+              label: messages.simulation.assetUniverse,
+              hint: String(universeExplorerItems.length),
+              panel: (
+                <>
+                  <p className="dashboard-section-heading__description">
+                    {messages.simulation.tradableUniverseDescription}
+                  </p>
+                  <TradableUniverseExplorer
+                    items={universeExplorerItems}
+                    viewMode={assetViewMode}
+                    labels={universeExplorerLabels}
+                  />
+                </>
+              ),
+            },
+          ]}
         />
       </Section>
 

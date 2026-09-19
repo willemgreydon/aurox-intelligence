@@ -125,6 +125,11 @@ export const portfolioPositionItemSchema = z.object({
   unrealizedPnl: z.number(),
   realizedPnl: z.number(),
   allocationPercent: z.number(),
+  // True when the position has no usable live quote and is valued at cost basis
+  // (marketValue === costBasis, unrealizedPnl === 0). The UI must show a
+  // "price unavailable / valued at cost" cue instead of presenting the degraded
+  // breakeven figure as a live valuation.
+  pricedFromCostBasis: z.boolean().default(false),
   openedAt: z.string().nullable(),
   closedAt: z.string().nullable(),
   lastUpdatedAt: z.string(),

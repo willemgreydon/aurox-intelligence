@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  ensureSimulationAccountForUser,
   executeSimulationOrder,
   getSimulationPortfolioSummaryLite,
   getTodayAiSimulationOrderNotionalForUser,
@@ -74,29 +75,34 @@ describe('resolvePositionValuation', () => {
     expect(v.marketValue).toBe(300);
     expect(v.costBasis).toBe(200);
     expect(v.unrealizedPnl).toBe(100);
+    expect(v.pricedFromCostBasis).toBe(false);
   });
 
-  it('does NOT zero a real holding when the quote is 0 — falls back to cost basis', () => {
+  it('does NOT zero a real holding when the quote is 0 — falls back to cost basis and flags it', () => {
     const v = resolvePositionValuation(3, 401.07, 0);
     // Regression: previously effectivePrice = 0 ?? averageCost === 0 → marketValue 0.
     expect(v.marketValue).toBe(1203.21);
     expect(v.costBasis).toBe(1203.21);
     expect(v.marketPrice).toBeNull();
     expect(v.unrealizedPnl).toBe(0);
+    // Degraded valuation must be flagged so the UI never shows it as a live $0 P&L.
+    expect(v.pricedFromCostBasis).toBe(true);
   });
 
-  it('falls back to cost basis when no quote is supplied (missing symbol)', () => {
+  it('falls back to cost basis when no quote is supplied (missing symbol) and flags it', () => {
     const v = resolvePositionValuation(1, 250, null);
     expect(v.marketValue).toBe(250);
     expect(v.marketPrice).toBeNull();
     expect(v.unrealizedPnl).toBe(0);
+    expect(v.pricedFromCostBasis).toBe(true);
   });
 
-  it('still reports a genuine zero only when quantity is truly zero', () => {
+  it('still reports a genuine zero only when quantity is truly zero (not a degraded quote)', () => {
     const v = resolvePositionValuation(0, 100, 150);
     expect(v.marketValue).toBe(0);
     expect(v.costBasis).toBe(0);
     expect(v.marketPrice).toBe(150);
+    expect(v.pricedFromCostBasis).toBe(false);
   });
 });
 
@@ -128,16 +134,34 @@ describe('getSimulationPortfolioSummaryLite', () => {
     await expect(getSimulationPortfolioSummaryLite(USER_ID)).resolves.toBeNull();
   });
 
+  it('returns a clean empty summary WITHOUT creating an account on the render path', async () => {
+    const client = makeClient();
+    createDatabaseClientMock.mockReturnValue(client);
+    client.query.mockResolvedValueOnce([]); // getSimulationAccountRow → no account yet
+
+    await expect(getSimulationPortfolioSummaryLite(USER_ID)).resolves.toEqual({
+      portfolioValue: 0,
+      investedCapital: 0,
+      positionCount: 0,
+      positionsPricedFromCostBasis: 0,
+    });
+    // Render/timeout path must never persist an account.
+    expect(client.transaction).not.toHaveBeenCalled();
+    expect(client.execute).not.toHaveBeenCalled();
+  });
+
   it('returns zeroed numbers when there are no open positions', async () => {
     const client = makeClient();
     createDatabaseClientMock.mockReturnValue(client);
     client.query
-      .mockResolvedValueOnce([existingAccountRow]) // ensureSimulationAccount
+      .mockResolvedValueOnce([existingAccountRow]) // getSimulationAccountRow
       .mockResolvedValueOnce([]); // positions
 
     await expect(getSimulationPortfolioSummaryLite(USER_ID)).resolves.toEqual({
       portfolioValue: 0,
       investedCapital: 0,
+      positionCount: 0,
+      positionsPricedFromCostBasis: 0,
     });
   });
 
@@ -145,17 +169,19 @@ describe('getSimulationPortfolioSummaryLite', () => {
     const client = makeClient();
     createDatabaseClientMock.mockReturnValue(client);
     client.query
-      .mockResolvedValueOnce([existingAccountRow]) // ensureSimulationAccount
+      .mockResolvedValueOnce([existingAccountRow]) // getSimulationAccountRow
       .mockResolvedValueOnce([{ symbol: 'AAPL', quantity: '2', averageCost: '100' }]) // positions
       .mockResolvedValueOnce([quoteRow('AAPL', 150)]); // getLatestMarketQuoteSnapshots
 
     await expect(getSimulationPortfolioSummaryLite(USER_ID)).resolves.toEqual({
       portfolioValue: 300,
       investedCapital: 200,
+      positionCount: 1,
+      positionsPricedFromCostBasis: 0,
     });
   });
 
-  it('falls back to cost basis when the quote is degraded to 0 — never a fake $0 portfolio', async () => {
+  it('falls back to cost basis when the quote is degraded to 0 — never a fake $0 portfolio, and flags it', async () => {
     const client = makeClient();
     createDatabaseClientMock.mockReturnValue(client);
     client.query
@@ -166,7 +192,62 @@ describe('getSimulationPortfolioSummaryLite', () => {
     await expect(getSimulationPortfolioSummaryLite(USER_ID)).resolves.toEqual({
       portfolioValue: 1203.21,
       investedCapital: 1203.21,
+      positionCount: 1,
+      positionsPricedFromCostBasis: 1,
     });
+  });
+});
+
+// ─── ensureSimulationAccountForUser (atomic, eager, no partial accounts) ───────
+
+describe('ensureSimulationAccountForUser', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('creates account + portfolio + funding txn + opening snapshot inside one transaction', async () => {
+    const client = makeClient();
+    createDatabaseClientMock.mockReturnValue(client);
+    client.query.mockResolvedValueOnce([]); // getSimulationAccountRow → none
+
+    await ensureSimulationAccountForUser(USER_ID);
+
+    expect(client.transaction).toHaveBeenCalledTimes(1);
+    // All four inserts run within the transaction callback.
+    expect(client.execute).toHaveBeenCalledTimes(4);
+  });
+
+  it('stops the insert sequence and rejects when a mid-sequence insert fails (all-or-nothing)', async () => {
+    const client = makeClient();
+    createDatabaseClientMock.mockReturnValue(client);
+    client.query.mockResolvedValueOnce([]); // no account
+    client.execute
+      .mockResolvedValueOnce(undefined) // account insert ok
+      .mockRejectedValueOnce(new Error('insert failed')); // portfolio insert fails → real DB rolls back
+
+    await expect(ensureSimulationAccountForUser(USER_ID)).rejects.toThrow('insert failed');
+    // The remaining inserts (funding txn, snapshot) never ran — no partial ledger.
+    expect(client.execute).toHaveBeenCalledTimes(2);
+  });
+
+  it('is a no-op when the account already exists', async () => {
+    const client = makeClient();
+    createDatabaseClientMock.mockReturnValue(client);
+    client.query.mockResolvedValueOnce([existingAccountRow]);
+
+    await ensureSimulationAccountForUser(USER_ID);
+
+    expect(client.transaction).not.toHaveBeenCalled();
+    expect(client.execute).not.toHaveBeenCalled();
+  });
+
+  it('is a safe no-op when the database is not configured', async () => {
+    const client = makeClient();
+    client.isConfigured = false;
+    createDatabaseClientMock.mockReturnValue(client);
+
+    await expect(ensureSimulationAccountForUser(USER_ID)).resolves.toBeUndefined();
+    expect(client.query).not.toHaveBeenCalled();
   });
 });
 

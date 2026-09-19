@@ -25,14 +25,14 @@ export function MacroRegimeCard({
   title,
   score,
   detail,
-  confidence = 1,
+  hasData,
 }: {
   title: string;
   score: number;
   detail: string;
-  confidence?: number;
+  /** Derived from real macro coverage (see MacroRegimeModel.hasSufficientData). */
+  hasData: boolean;
 }) {
-  const hasData = confidence > 0;
   const tone = toneFor(score);
   const meta = TONE_META[tone];
 

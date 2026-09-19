@@ -9,9 +9,20 @@ export type MacroRegimeModel = {
   riskRegime: MacroRegimeSignal;
   overallMacroScore: number;
   confidence: number;
+  /** Number of macro series (of the ~8 modeled) that actually carry data points. */
+  seriesWithPoints: number;
+  /** True when coverage meets {@link MACRO_MIN_SERIES}; gates degraded display. */
+  hasSufficientData: boolean;
   explanations: string[];
   updatedAt: string;
 };
+
+/**
+ * Minimum number of populated macro series required before the regime read is
+ * presented as a precise score rather than a degraded "insufficient data" state.
+ * Below this the inputs are too sparse to claim a meaningful regime.
+ */
+export const MACRO_MIN_SERIES = 3;
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 const latestValue = (series: MacroSeries[], id: string) => {
@@ -45,7 +56,12 @@ export function computeMacroRegimeModel(series: MacroSeries[]): MacroRegimeModel
   const liquidityFromM2 = m2 === null ? 0 : clamp((m2 - 20000) / 20000, -1, 1);
   const liquidityScore = clamp(liquidityFromCurve * 0.7 + liquidityFromM2 * 0.3, -1, 1);
   const overall = clamp(inflationScore * 0.2 + ratesScore * 0.2 + growthScore * 0.2 + laborScore * 0.15 + riskScore * 0.15 + liquidityScore * 0.1, -1, 1);
-  const confidence = clamp(series.filter((item) => item.points.length > 0).length / 8, 0.2, 0.95);
+  const seriesWithPoints = series.filter((item) => item.points.length > 0).length;
+  const hasSufficientData = seriesWithPoints >= MACRO_MIN_SERIES;
+  // Confidence is honestly 0 when no series carry data. The 0.2 floor only applies
+  // once there is real coverage — it must never manufacture confidence from nothing
+  // (otherwise the degraded "insufficient data" branch is unreachable dead code).
+  const confidence = seriesWithPoints === 0 ? 0 : clamp(seriesWithPoints / 8, 0.2, 0.95);
   const explanations = [
     inflation !== null && fedFunds !== null && inflation > 3 && fedFunds > 4.5 ? 'Inflation pressure and restrictive rates imply higher risk pressure.' : null,
     curve !== null && curve < 0 ? 'Yield curve inversion contributes recession-risk pressure.' : null,
@@ -63,6 +79,8 @@ export function computeMacroRegimeModel(series: MacroSeries[]): MacroRegimeModel
     riskRegime: mkSignal('risk', 'Risk-on / risk-off', 'risk', riskScore, confidence, `Risk context score ${riskScore.toFixed(2)}`, ['vix', 'nfci']),
     overallMacroScore: overall,
     confidence,
+    seriesWithPoints,
+    hasSufficientData,
     explanations: explanations.length > 0 ? explanations : ['Macro regime confidence is limited; use as simulation context only.'],
     updatedAt: new Date().toISOString(),
   };

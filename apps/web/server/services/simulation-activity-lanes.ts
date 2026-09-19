@@ -1,7 +1,10 @@
+import type { SimulationLaneId } from '@repo/api-contracts';
 import type { getSimulationWorkspace } from '@repo/db';
 
 export type SimulationActivityLane = {
   id: string;
+  /** Canonical lane id used for routing to the lane detail view. */
+  laneId: SimulationLaneId;
   label: string;
   mode: 'manual' | 'ai-assisted' | 'strategy';
   status: 'active' | 'limited' | 'planned';
@@ -48,6 +51,11 @@ function parseDecisionContext(notes: string | null | undefined): DecisionContext
   };
 }
 
+/** Extract the canonical lane id tagged on a simulation order's notes, if any. */
+export function parseLaneIdFromOrderNotes(notes: string | null | undefined): string | null {
+  return parseDecisionContext(notes).laneId;
+}
+
 function roundCurrency(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
@@ -75,6 +83,7 @@ export function buildSimulationActivityLanes(workspace: Awaited<ReturnType<typeo
   return [
     {
       id: 'manual-core',
+      laneId: 'manual_stock_lane',
       label: 'Manual trading lane',
       mode: 'manual',
       status: 'active',
@@ -87,6 +96,7 @@ export function buildSimulationActivityLanes(workspace: Awaited<ReturnType<typeo
     },
     {
       id: 'manual-multi',
+      laneId: 'manual_multi_asset_lane',
       label: 'Manual multi-asset lane',
       mode: 'manual',
       status: 'active',
@@ -99,6 +109,7 @@ export function buildSimulationActivityLanes(workspace: Awaited<ReturnType<typeo
     },
     {
       id: 'ai-assist',
+      laneId: 'ai_copilot_lane',
       label: 'AI-assisted lane',
       mode: 'ai-assisted',
       status: 'planned',
@@ -111,6 +122,7 @@ export function buildSimulationActivityLanes(workspace: Awaited<ReturnType<typeo
     },
     {
       id: 'signal-follow',
+      laneId: 'signal_follow_lane',
       label: 'Signal-follow lane',
       mode: 'strategy',
       status: 'planned',
@@ -123,6 +135,7 @@ export function buildSimulationActivityLanes(workspace: Awaited<ReturnType<typeo
     },
     {
       id: 'agent-sandbox',
+      laneId: 'agent_sandbox_lane',
       label: 'Broker-agent sandbox',
       mode: 'strategy',
       status: 'planned',

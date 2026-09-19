@@ -56,9 +56,27 @@ function inferTrend(points: number[]): 'up' | 'down' | 'flat' {
   return delta > 0 ? 'up' : 'down';
 }
 
-export function MiniSparkline({ points, label, trend }: MiniSparklineProps) {
+function trendFromSignalScore(score: number): 'up' | 'down' | 'flat' {
+  if (!Number.isFinite(score) || Math.abs(score) <= 0.1) {
+    return 'flat';
+  }
+  return score > 0 ? 'up' : 'down';
+}
+
+export function MiniSparkline({
+  points,
+  label,
+  trend,
+  signalScore,
+  showMovingAverage = true,
+}: MiniSparklineProps) {
   const normalized = (points ?? []).filter((value) => Number.isFinite(value));
-  const resolvedTrend = trend ?? inferTrend(normalized);
+  // Color/trend precedence: an explicit `trend` wins; otherwise the deterministic
+  // signal score drives the tone (so a bearish signal on a price-up series renders
+  // bearish, matching the signal label shown alongside the chart); price action is
+  // the final fallback when no signal is supplied.
+  const resolvedTrend =
+    trend ?? (typeof signalScore === 'number' ? trendFromSignalScore(signalScore) : inferTrend(normalized));
 
   if (normalized.length < 2) {
     return (
@@ -73,7 +91,7 @@ export function MiniSparkline({ points, label, trend }: MiniSparklineProps) {
   const linePath = buildLinePath(normalized, width, height);
   const areaPath = buildAreaPath(normalized, width, height);
   const movingAveragePath = (() => {
-    if (normalized.length < 3) {
+    if (!showMovingAverage || normalized.length < 3) {
       return '';
     }
     const maWindow = Math.min(5, normalized.length);

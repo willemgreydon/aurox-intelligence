@@ -280,10 +280,10 @@ export default async function PortfolioPage({
                   categoryLabel={position.assetClass.toUpperCase()}
                   thesis={`Quantity ${position.quantity.toFixed(4)} · Allocation ${formatPercent(position.allocationPercent)}`}
                   priceLabel={position.marketPrice !== null ? formatUsdPrice(position.marketPrice, locale, '-') : '-'}
-                  changeLabel={formatSignedUsd(position.unrealizedPnl, locale)}
-                  freshnessLabel={`Cost basis ${formatUsdPrice(position.costBasis, locale, '-')}`}
+                  changeLabel={position.pricedFromCostBasis ? 'P&L unavailable' : formatSignedUsd(position.unrealizedPnl, locale)}
+                  freshnessLabel={position.pricedFromCostBasis ? `Price unavailable · valued at cost ${formatUsdPrice(position.costBasis, locale, '-')}` : `Cost basis ${formatUsdPrice(position.costBasis, locale, '-')}`}
                   actionAvailability="simulated"
-                  insightStance={position.unrealizedPnl > 0 ? 'positive' : position.unrealizedPnl < 0 ? 'negative' : 'neutral'}
+                  insightStance={position.pricedFromCostBasis ? 'neutral' : position.unrealizedPnl > 0 ? 'positive' : position.unrealizedPnl < 0 ? 'negative' : 'neutral'}
                   riskSummary={`Avg ${formatUsdPrice(position.averageCost, locale, '-')} · Market value ${formatUsdPrice(position.marketValue, locale, '-')}`}
                   riskLabel={decision.risk.label}
                   sparkline={position.sparkline}
@@ -320,10 +320,10 @@ export default async function PortfolioPage({
                   category={position.assetClass.toUpperCase()}
                   thesis={`Qty ${position.quantity.toFixed(4)} · Avg ${formatUsdPrice(position.averageCost, locale, '-')} · Allocation ${formatPercent(position.allocationPercent)}`}
                   priceLabel={position.marketPrice !== null ? formatUsdPrice(position.marketPrice, locale, '-') : '-'}
-                  changeLabel={formatSignedUsd(position.unrealizedPnl, locale)}
-                  freshnessLabel={`Value ${formatUsdPrice(position.marketValue, locale, '-')}`}
+                  changeLabel={position.pricedFromCostBasis ? 'P&L unavailable' : formatSignedUsd(position.unrealizedPnl, locale)}
+                  freshnessLabel={position.pricedFromCostBasis ? `Price unavailable · valued at cost ${formatUsdPrice(position.marketValue, locale, '-')}` : `Value ${formatUsdPrice(position.marketValue, locale, '-')}`}
                   actionAvailability="simulated"
-                  insightStance={position.unrealizedPnl > 0 ? 'positive' : position.unrealizedPnl < 0 ? 'negative' : 'neutral'}
+                  insightStance={position.pricedFromCostBasis ? 'neutral' : position.unrealizedPnl > 0 ? 'positive' : position.unrealizedPnl < 0 ? 'negative' : 'neutral'}
                   sparkline={position.sparkline}
                   riskLabel={decision.risk.label}
                   signal={{

@@ -180,10 +180,15 @@ export async function getSimulationWorkstationStateForCurrentUser(options?: {
 
   await markSimulationSessionOpened(auth.user.id, session.id);
 
+  // Universe render cap. The prior value (140/120) arbitrarily truncated the
+  // simulation universe, hiding ~200 legitimate symbols (e.g. DELL) that ARE
+  // simulation-catalog assets — they were simply beyond the slice. The explorer
+  // paginates client-side, so a large list is cheap to pass; the real cost is
+  // quote fetches, which we bound separately below.
   const assetLimit =
     options?.assetLimit && Number.isFinite(options.assetLimit)
       ? Math.max(20, Math.floor(options.assetLimit))
-      : 140;
+      : 500;
   const watchlistLimit =
     options?.watchlistLimit && Number.isFinite(options.watchlistLimit)
       ? Math.max(10, Math.floor(options.watchlistLimit))
@@ -196,10 +201,23 @@ export async function getSimulationWorkstationStateForCurrentUser(options?: {
   const tradableAssets = tradableAssetsRaw.slice(0, assetLimit);
   const watchlist = watchlistRaw.slice(0, watchlistLimit);
 
-  const quoteCandidates = [...new Set([...tradableAssets.map((asset) => asset.symbol), ...watchlist.map((item) => item.symbol)])];
+  // Performance / provider-budget safety (provider-call-budget-rule): only
+  // fetch live quotes for assets that are actually tradable now
+  // (actionAvailability === 'simulated') plus the user's watchlist. 'planned'
+  // universe symbols are NOT tradable, so a fresh quote is not required for a
+  // correct render — they show "unavailable" pricing and a Planned badge.
+  // Quoting the full expanded universe would fire hundreds of provider calls.
+  const quoteCandidates = [
+    ...new Set([
+      ...tradableAssets
+        .filter((asset) => asset.actionAvailability === 'simulated')
+        .map((asset) => asset.symbol),
+      ...watchlist.map((item) => item.symbol),
+    ]),
+  ];
   const quotes = await loadQuoteSnapshots(quoteCandidates, undefined, {
     preferCached: true,
-    maxSymbols: Math.max(assetLimit, 40),
+    maxSymbols: Math.max(quoteCandidates.length, 40),
   });
   const quoteBySymbol = new Map(quotes.map((quote) => [quote.symbol, quote]));
 

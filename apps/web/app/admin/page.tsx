@@ -33,6 +33,7 @@ export default async function AdminPage() {
             { label: 'Warnings', value: String(admin.warnings.length) },
           ]}
           actions={[
+            { href: '/admin/users', label: 'Manage users' },
             { href: '/admin/monitoring', label: 'Open monitoring' },
             { href: '/admin/live-readiness', label: 'Live readiness' },
             { href: '/dashboard', label: 'Open dashboard' },
