@@ -176,8 +176,8 @@ export async function getDashboardExecutiveViewModel(input: {
       })),
     simulationReadiness: {
       symbol: observe.tradeReadiness.symbol,
-      status: observe.tradeReadiness.result?.status ?? 'Unavailable',
-      explanation: observe.tradeReadiness.result?.explanation ?? ['No readiness context available.'],
+      status: observe.tradeReadiness.result?.status ?? input.messages.dashboard.panels.readinessUnavailable,
+      explanation: observe.tradeReadiness.result?.explanation ?? [input.messages.dashboard.panels.readinessNoContext],
     },
     providerHealth: {
       healthy: providerHealthy,

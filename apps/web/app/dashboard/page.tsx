@@ -87,14 +87,14 @@ export default async function DashboardPage() {
                 <article className="dashboard-exec-list__item"><strong>{messages.dashboard.riskScoreLabel}</strong><span>{model.portfolioSnapshot.riskScore}</span></article>
               </div>
             </DashboardPanel>
-            <DashboardSimulationReadiness model={model} />
+            <DashboardSimulationReadiness model={model} messages={messages} />
           </DashboardGroup>
 
           <DashboardGroup
             title={messages.dashboard.groupRiskTitle}
             subtitle={messages.dashboard.groupRiskSubtitle}
           >
-            <DashboardAlertQueue model={model} />
+            <DashboardAlertQueue model={model} messages={messages} />
             <DashboardPanel eyebrow={messages.dashboard.relationshipPanelEyebrow} title={messages.dashboard.relationshipPanelTitle} description={messages.dashboard.relationshipPanelDescription} href="/observe">
               <div className="dashboard-exec-list">
                 {model.relationships.length === 0 ? (
@@ -131,15 +131,15 @@ export default async function DashboardPage() {
                 unavailable: messages.dashboard.marketPulseUnavailable,
               }}
             />
-            <DashboardAssetClassSnapshot model={model} />
+            <DashboardAssetClassSnapshot model={model} messages={messages} />
           </DashboardGroup>
 
           <DashboardGroup
             title={messages.dashboard.groupAiTitle}
             subtitle={messages.dashboard.groupAiSubtitle}
           >
-            <DashboardSignalSnapshot model={model} />
-            <DashboardObservationSummary model={model} />
+            <DashboardSignalSnapshot model={model} messages={messages} />
+            <DashboardObservationSummary model={model} messages={messages} />
           </DashboardGroup>
 
           <DashboardGroup
@@ -165,7 +165,7 @@ export default async function DashboardPage() {
                 ))}
               </div>
             </DashboardPanel>
-            <DashboardProviderHealth model={model} />
+            <DashboardProviderHealth model={model} messages={messages} />
           </DashboardGroup>
         </>
       )}

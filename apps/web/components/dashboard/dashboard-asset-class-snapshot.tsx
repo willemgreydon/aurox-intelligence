@@ -1,19 +1,21 @@
 import Link from 'next/link';
 import { DashboardPanel } from './dashboard-panel';
+import type { AppMessages } from '../../lib/i18n/messages';
 import type { DashboardExecutiveViewModel } from '../../server/services/dashboard-executive-service';
 
-export function DashboardAssetClassSnapshot({ model }: { model: DashboardExecutiveViewModel }) {
+export function DashboardAssetClassSnapshot({ model, messages }: { model: DashboardExecutiveViewModel; messages: AppMessages }) {
+  const t = messages.dashboard.panels;
   return (
-    <DashboardPanel eyebrow="Asset Classes" title="Stocks, ETFs, Crypto overview" description="Coverage and confidence by lane.">
+    <DashboardPanel eyebrow={t.assetsEyebrow} title={t.assetsTitle} description={t.assetsDescription}>
       <div className="dashboard-exec-list">
-        {model.assetClassSnapshot.length === 0 ? <p className="text-muted">Unavailable</p> : model.assetClassSnapshot.map((row) => (
+        {model.assetClassSnapshot.length === 0 ? <p className="text-muted">{t.assetsEmpty}</p> : model.assetClassSnapshot.map((row) => (
           <article key={row.assetClass} className="dashboard-exec-list__item">
             <strong>{row.assetClass.toUpperCase()}</strong>
             <span>
-              <span className="num-bubble num-bubble--info num-bubble--small" aria-label={`${row.count} assets`}>{row.count}</span> assets
+              <span className="num-bubble num-bubble--info num-bubble--small" aria-label={`${row.count} assets`}>{row.count}</span> {t.assetsSuffix}
             </span>
             <span className="text-muted">{row.avgConfidence}</span>
-            <Link href={row.href}>Open lane</Link>
+            <Link href={row.href}>{t.openLane}</Link>
           </article>
         ))}
       </div>
