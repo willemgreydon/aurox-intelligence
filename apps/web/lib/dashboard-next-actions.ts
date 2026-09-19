@@ -5,6 +5,8 @@
  * language (never advisory). Returned in priority order, capped by the caller.
  */
 
+import type { AppMessages } from './i18n/messages';
+
 export type NextActionInput = {
   hasTrades: boolean;
   totalTrades: number;
@@ -27,15 +29,16 @@ export type NextAction = {
   priority: number; // lower = higher priority
 };
 
-export function computeNextBestActions(input: NextActionInput): NextAction[] {
+export function computeNextBestActions(input: NextActionInput, messages: AppMessages): NextAction[] {
+  const t = messages.dashboard.nextActions;
   const actions: NextAction[] = [];
 
   if (!input.hasTrades) {
     actions.push({
       id: 'first-trade',
-      title: 'Make your first paper trade',
-      detail: 'Your simulation account is ready. Start building a performance history.',
-      ctaLabel: 'Open simulation',
+      title: t.firstTradeTitle,
+      detail: t.firstTradeDetail,
+      ctaLabel: t.firstTradeCta,
       href: '/invest/simulation',
       tone: 'primary',
       priority: 0,
@@ -45,9 +48,9 @@ export function computeNextBestActions(input: NextActionInput): NextAction[] {
   if (input.staleData) {
     actions.push({
       id: 'stale-data',
-      title: 'Check data freshness',
-      detail: 'Some valuations may rely on delayed or cached quotes. Review data quality before acting.',
-      ctaLabel: 'Market overview',
+      title: t.staleTitle,
+      detail: t.staleDetail,
+      ctaLabel: t.staleCta,
       href: '/invest',
       tone: 'review',
       priority: 1,
@@ -57,11 +60,11 @@ export function computeNextBestActions(input: NextActionInput): NextAction[] {
   if (input.concentrationLevel === 'high') {
     actions.push({
       id: 'concentration',
-      title: 'Review concentration risk',
+      title: t.concentrationTitle,
       detail: input.largestPositionLabel
-        ? `Your largest simulated exposure is ${input.largestPositionLabel}. Review position weight.`
-        : 'Your simulated positions are concentrated. Review exposure before adding more.',
-      ctaLabel: 'Portfolio intelligence',
+        ? t.concentrationDetail.replace('{{position}}', input.largestPositionLabel)
+        : t.concentrationDetailFallback,
+      ctaLabel: t.concentrationCta,
       href: '/portfolio/intelligence',
       tone: 'review',
       priority: 2,
@@ -76,9 +79,9 @@ export function computeNextBestActions(input: NextActionInput): NextAction[] {
   ) {
     actions.push({
       id: 'journal-coverage',
-      title: 'Document your recent decisions',
-      detail: 'Several paper trades have no journal rationale yet. Documenting improves review quality.',
-      ctaLabel: 'Open journal',
+      title: t.journalTitle,
+      detail: t.journalDetail,
+      ctaLabel: t.journalCta,
       href: '/invest/simulation?tab=journal',
       tone: 'review',
       priority: 3,
@@ -88,9 +91,9 @@ export function computeNextBestActions(input: NextActionInput): NextAction[] {
   if (input.cashDeploymentRatio > 0.85 && input.openPositions > 0) {
     actions.push({
       id: 'cash-deployment',
-      title: 'Review cash deployment',
-      detail: 'Most simulated capital is invested. Consider reviewing concentration and reserves.',
-      ctaLabel: 'Account overview',
+      title: t.cashTitle,
+      detail: t.cashDetail,
+      ctaLabel: t.cashCta,
       href: '/account',
       tone: 'review',
       priority: 4,
@@ -98,11 +101,12 @@ export function computeNextBestActions(input: NextActionInput): NextAction[] {
   }
 
   if (input.watchlistCount > 0) {
+    const detailTemplate = input.watchlistCount === 1 ? t.watchlistDetailOne : t.watchlistDetailMany;
     actions.push({
       id: 'review-watchlist',
-      title: 'Review your starred assets',
-      detail: `You have ${input.watchlistCount} asset${input.watchlistCount === 1 ? '' : 's'} on your watchlist. Inspect and compare.`,
-      ctaLabel: 'Claude Finance',
+      title: t.watchlistTitle,
+      detail: detailTemplate.replace('{{count}}', String(input.watchlistCount)),
+      ctaLabel: t.watchlistCta,
       href: '/finance',
       tone: 'info',
       priority: 5,
@@ -112,9 +116,9 @@ export function computeNextBestActions(input: NextActionInput): NextAction[] {
   if (input.hasTrades && actions.length === 0) {
     actions.push({
       id: 'review-performance',
-      title: 'Review your simulated performance',
-      detail: 'Inspect your daily timeline, moneyflow, and recent decisions.',
-      ctaLabel: 'Account overview',
+      title: t.performanceTitle,
+      detail: t.performanceDetail,
+      ctaLabel: t.performanceCta,
       href: '/account',
       tone: 'info',
       priority: 6,

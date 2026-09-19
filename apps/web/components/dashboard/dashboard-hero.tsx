@@ -1,11 +1,13 @@
 import Link from 'next/link';
+import type { AppMessages } from '../../lib/i18n/messages';
 import type { DashboardExecutiveViewModel } from '../../server/services/dashboard-executive-service';
 
-export function DashboardHero({ model }: { model: DashboardExecutiveViewModel }) {
+export function DashboardHero({ model, messages }: { model: DashboardExecutiveViewModel; messages: AppMessages }) {
+  const t = messages.dashboard.exec;
   return (
     <section className="dashboard-section dashboard-section--hero dashboard-exec-hero">
       <div className="dashboard-exec-hero__inner">
-        <div className="section__eyebrow">Command Header</div>
+        <div className="section__eyebrow">{t.commandEyebrow}</div>
         <h1>{model.hero.title}</h1>
         <p>{model.hero.subtitle}</p>
         <div className="dashboard-exec-chips">
@@ -14,12 +16,12 @@ export function DashboardHero({ model }: { model: DashboardExecutiveViewModel })
           ))}
         </div>
         <div className="dashboard-exec-actions">
-          <Link href="/market" className="button">Open Market</Link>
-          <Link href="/observe" className="button button--secondary">Open Observer</Link>
-          <Link href="/alerts" className="button button--secondary">Open Alerts</Link>
-          <Link href="/invest/simulation" className="button button--secondary">Open Simulation</Link>
+          <Link href="/market" className="button">{t.openMarket}</Link>
+          <Link href="/observe" className="button button--secondary">{t.openObserver}</Link>
+          <Link href="/alerts" className="button button--secondary">{t.openAlerts}</Link>
+          <Link href="/invest/simulation" className="button button--secondary">{t.openSimulation}</Link>
         </div>
-        <p className="text-muted">Press Ctrl/Cmd+K to jump anywhere.</p>
+        <p className="text-muted">{t.shortcutHint}</p>
       </div>
     </section>
   );
