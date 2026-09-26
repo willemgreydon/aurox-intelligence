@@ -47,7 +47,7 @@ export default async function ForecastsPage() {
     );
 
   return (
-    <>
+    <div className="page-wide">
       <Section className="dashboard-section dashboard-section--hero">
         <WorkstationPageHeader
           eyebrow={messages.shell.nav.forecasts}
@@ -94,6 +94,6 @@ export default async function ForecastsPage() {
           </div>
         </Section>
       ) : null}
-    </>
+    </div>
   );
 }

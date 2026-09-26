@@ -13042,6 +13042,11 @@ code,
      dashboard + home content on large screens (was stranded at the 76rem
      standard shell while the body widened). */
   .site-header .shell-container,
+  /* Opt-in wide-workstation wrapper (e.g. /forecasts). Reusable: add
+     className="page-wide" around a page's sections to widen its shell
+     containers on large screens without touching the shared .dashboard-section
+     class (which ~40 pages, incl. reading-heavy /legal, rely on). */
+  .page-wide .shell-container,
   /* Dense, data-first home bands use the full wide dashboard regime. */
   .section--hero > .shell-container,
   .home-fancy--portfolio > .shell-container,
