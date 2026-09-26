@@ -9,12 +9,14 @@ import {
   saveSimulatedBrokerActivityToJournalAction,
 } from '../../server/actions/finance-actions';
 import { emptyFinanceActivityState } from '../../server/actions/finance-actions-state';
+import { LaneCombobox } from './lane-combobox';
 
 type ActivityLabels = AppMessages['finance']['activity'];
 
 type LaneOption = {
   assetId: string;
   symbol: string;
+  name: string;
   assetClass: 'stock' | 'etf' | 'crypto';
   canGenerateActivity: boolean;
 };
@@ -158,20 +160,15 @@ export function SimulatedActivityPanel({ lanes, microTradingEnabled, disclaimer,
         <input type="hidden" name="mode" value={microTradingEnabled ? 'micro-trading' : 'watchlist-analysis'} />
 
         <div className="finance-generate__row">
-          <label className="form-field finance-generate__field">
-            <span>{labels.fieldLane}</span>
-            <select
-              name="laneSelector"
+          <div className="form-field finance-generate__field">
+            <span className="form-field__label">{labels.fieldLane}</span>
+            <LaneCombobox
+              options={tradableLanes}
               value={selectedLane?.assetId ?? ''}
-              onChange={(event) => setSelectedAssetId(event.target.value)}
-            >
-              {tradableLanes.map((lane) => (
-                <option key={lane.assetId} value={lane.assetId}>
-                  {lane.symbol} · {lane.assetClass.toUpperCase()}
-                </option>
-              ))}
-            </select>
-          </label>
+              onChange={setSelectedAssetId}
+              label={labels.fieldLane}
+            />
+          </div>
 
           <label className="form-field finance-generate__field">
             <span>{labels.fieldSide}</span>

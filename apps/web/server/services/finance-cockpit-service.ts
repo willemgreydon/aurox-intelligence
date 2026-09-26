@@ -1,5 +1,6 @@
 import { evaluateBrokerDecision, type BrokerDecision, type BrokerReadinessStatus } from '@repo/agents';
 import {
+  getInvestmentUniverse,
   getRecentSimulationAgentDecisionsForUser,
   insertSimulationAgentDecision,
   type SimulationAgentDecisionSummaryRow,
@@ -17,7 +18,12 @@ import { getRequestLocale } from '../i18n/locale';
 import { loadQuoteSnapshots } from './stock-simulation-service';
 import { getPortfolioIntelligenceViewModel } from './portfolio-intelligence-service';
 import { getSimulationWorkstationStateForCurrentUser } from './simulation-workstation-service';
-import { mapBrokerDecisionToActivity, mapRecentDecision, financeMapperFormat } from '../mappers/finance-mapper';
+import {
+  mapBrokerDecisionToActivity,
+  mapInvestmentUniverseToLaneOptions,
+  mapRecentDecision,
+  financeMapperFormat,
+} from '../mappers/finance-mapper';
 
 /**
  * Claude Finance cockpit service.
@@ -56,11 +62,16 @@ export async function getClaudeFinanceCockpitData(): Promise<ClaudeFinanceCockpi
   const auth = await requireCurrentSession('/finance');
   const locale = await getRequestLocale();
 
-  const [intelligenceResult, workstation, recentRows] = await Promise.all([
+  const [intelligenceResult, workstation, recentRows, universe] = await Promise.all([
     getPortfolioIntelligenceViewModel().catch(() => null),
     getSimulationWorkstationStateForCurrentUser({ assetLimit: 48, watchlistLimit: 24 }).catch(() => null),
     getRecentSimulationAgentDecisionsForUser(auth.user.id, 8).catch((): SimulationAgentDecisionSummaryRow[] => []),
+    getInvestmentUniverse().catch((): Awaited<ReturnType<typeof getInvestmentUniverse>> => []),
   ]);
+
+  // Full simulation-tradable universe for the activity generator's lane selector
+  // (grouped/searched in the UI). Shaping lives in the pure mapper.
+  const simulationLaneOptions = mapInvestmentUniverseToLaneOptions(universe);
 
   const degraded = !intelligenceResult || intelligenceResult.status === 'degraded' || !workstation;
 
@@ -145,6 +156,7 @@ export async function getClaudeFinanceCockpitData(): Promise<ClaudeFinanceCockpi
     starredLanes,
     starredEmptyMessage:
       starredLanes.length === 0 ? 'Star assets to build your Claude Finance lane.' : null,
+    simulationLaneOptions,
     recentDecisions: recentRows.map(mapRecentDecision),
     microTradingEnabled: microTradingEnabled(),
   };

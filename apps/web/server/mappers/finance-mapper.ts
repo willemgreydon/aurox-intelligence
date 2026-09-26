@@ -1,10 +1,59 @@
 import type { BrokerDecision } from '@repo/agents';
 import type {
   ClaudeFinanceActivityMode,
+  ClaudeFinanceLaneOption,
   ClaudeFinanceQuoteSnapshot,
   ClaudeFinanceRecentDecision,
   SimulatedBrokerActivity,
 } from '@repo/api-contracts';
+
+/**
+ * Minimal structural view of an investment-universe asset — only the fields the
+ * lane-option projection needs. Structural (not the @repo/db type) so this
+ * mapper stays decoupled from the repository shape.
+ */
+export type LaneUniverseAsset = {
+  assetId: string;
+  symbol: string;
+  name: string;
+  assetClass: 'stock' | 'etf' | 'crypto';
+  actionAvailability: string;
+  isSimulated: boolean;
+};
+
+const LANE_ASSET_CLASS_ORDER: Record<ClaudeFinanceLaneOption['assetClass'], number> = {
+  stock: 0,
+  etf: 1,
+  crypto: 2,
+};
+
+/**
+ * Project the investment universe into simulation lane options for the activity
+ * generator's selector. Keeps only assets the simulation engine can price and
+ * act on (the same gate as canGenerateActivity), then sorts by asset class then
+ * symbol for a stable, scannable, groupable list. Pure and deterministic.
+ */
+export function mapInvestmentUniverseToLaneOptions(
+  universe: readonly LaneUniverseAsset[],
+): ClaudeFinanceLaneOption[] {
+  return universe
+    .filter(
+      (asset) =>
+        asset.isSimulated &&
+        (asset.actionAvailability === 'available' || asset.actionAvailability === 'simulated'),
+    )
+    .map((asset) => ({
+      assetId: asset.assetId,
+      symbol: asset.symbol,
+      name: asset.name,
+      assetClass: asset.assetClass,
+      canGenerateActivity: true as const,
+    }))
+    .sort((left, right) => {
+      const byClass = LANE_ASSET_CLASS_ORDER[left.assetClass] - LANE_ASSET_CLASS_ORDER[right.assetClass];
+      return byClass !== 0 ? byClass : left.symbol.localeCompare(right.symbol);
+    });
+}
 
 /**
  * Pure transformation layer for the Claude Finance cockpit.

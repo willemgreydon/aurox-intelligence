@@ -12012,6 +12012,129 @@ code,
 .finance-generate__micro-hint { color: var(--text-tertiary); }
 .finance-generate__msg--error { color: var(--status-danger-text); }
 
+/* Searchable, grouped lane selector (full simulation-tradable universe). Styled
+   to match the workstation form fields; the popup floats over the form row. */
+.lane-combobox {
+  position: relative;
+}
+
+.lane-combobox__control {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border: var(--border-width-thin) solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+}
+
+.lane-combobox__control:focus-within {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.lane-combobox__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  padding: var(--space-2) var(--space-3);
+}
+
+.lane-combobox__input:focus {
+  outline: none;
+}
+
+.lane-combobox__input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.lane-combobox__toggle {
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  color: var(--text-tertiary);
+  padding: 0 var(--space-2);
+  cursor: pointer;
+  font-size: 0.7rem;
+}
+
+.lane-combobox__listbox {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 18rem;
+  overflow-y: auto;
+  margin: 0;
+  padding: var(--space-1);
+  list-style: none;
+  background: var(--surface-raised, var(--surface-1));
+  border: var(--border-width-thin) solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+
+.lane-combobox__listbox[hidden] {
+  display: none;
+}
+
+.lane-combobox__group-label {
+  display: block;
+  padding: var(--space-1) var(--space-2);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.lane-combobox__group-items {
+  list-style: none;
+  margin: 0 0 var(--space-1);
+  padding: 0;
+}
+
+.lane-combobox__option {
+  display: flex;
+  gap: var(--space-2);
+  align-items: baseline;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.lane-combobox__option--active {
+  background: var(--surface-hover);
+}
+
+.lane-combobox__option--selected {
+  font-weight: 600;
+}
+
+.lane-combobox__option-symbol {
+  flex: 0 0 auto;
+  min-width: 6rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.lane-combobox__option-name {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.lane-combobox__empty {
+  padding: var(--space-2);
+  list-style: none;
+  color: var(--text-tertiary);
+}
+
 .finance-activity {
   display: flex;
   flex-direction: column;

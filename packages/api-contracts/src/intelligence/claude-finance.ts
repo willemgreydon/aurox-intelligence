@@ -115,6 +115,19 @@ export type ClaudeFinanceLaneCard = {
   canGenerateActivity: boolean;
 };
 
+/**
+ * A selectable simulation lane in the activity generator. Covers the full
+ * tradable universe (stock/etf/crypto), not just the starred set — sourced from
+ * the investment universe in the service, never the component. Display-ready.
+ */
+export type ClaudeFinanceLaneOption = {
+  assetId: string;
+  symbol: string;
+  name: string;
+  assetClass: 'stock' | 'etf' | 'crypto';
+  canGenerateActivity: boolean;
+};
+
 /** A previously saved Claude Finance decision, surfaced as recent history. */
 export type ClaudeFinanceRecentDecision = {
   id: string;
@@ -150,6 +163,11 @@ export type ClaudeFinanceCockpitViewModel = {
   };
   starredLanes: ClaudeFinanceLaneCard[];
   starredEmptyMessage: string | null;
+  /**
+   * The full simulation-tradable universe for the activity generator's lane
+   * selector (grouped/searched in the UI). Independent of the starred set.
+   */
+  simulationLaneOptions: ClaudeFinanceLaneOption[];
   recentDecisions: ClaudeFinanceRecentDecision[];
   microTradingEnabled: boolean;
 };

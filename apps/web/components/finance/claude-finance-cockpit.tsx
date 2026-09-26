@@ -22,12 +22,9 @@ type ClaudeFinanceCockpitProps = {
  * progressively disclosed. Simulation-only and preview-only throughout.
  */
 export function ClaudeFinanceCockpit({ cockpit, labels }: ClaudeFinanceCockpitProps) {
-  const laneOptions = cockpit.starredLanes.map((lane) => ({
-    assetId: lane.assetId,
-    symbol: lane.symbol,
-    assetClass: lane.assetClass,
-    canGenerateActivity: lane.canGenerateActivity,
-  }));
+  // Lane selector spans the full simulation-tradable universe (not just starred
+  // lanes) — already shaped, filtered, and sorted in the service.
+  const laneOptions = cockpit.simulationLaneOptions;
 
   return (
     <div className="finance-cockpit">
