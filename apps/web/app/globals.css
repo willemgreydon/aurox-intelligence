@@ -13957,19 +13957,25 @@ code,
      widen it here too — otherwise it stays at 76rem while the page-wide content
      widens, and the tabs no longer left-align with the sections below. */
   .page-wide .sim-section-nav__list,
-  /* Dense, data-first home bands use the full wide dashboard regime. */
+  /* Dense, data-first home bands use the full wide dashboard regime so their
+     left edges line up with the wide header content and the news band below.
+     The capabilities pillar grid and the "how it works" workflow strip are
+     multi-column data bands — they align left with the header rather than
+     staying inset at the contained --content-wide (which floors at 76rem on
+     large-but-not-ultrawide viewports and stranded them inside the header). */
   .section--hero > .shell-container,
   .home-fancy--portfolio > .shell-container,
+  .home-fancy--capabilities > .shell-container,
+  .home-fancy--workflow > .shell-container,
+  .home-fancy--trust > .shell-container,
   .home-news-section > .shell-container {
     width: min(calc(100% - 2 * var(--page-gutter)), var(--content-dashboard));
   }
 
-  /* Editorial / single-message home bands use a contained wide width so their
-     copy and small grids don't strand in empty space at 132rem. */
-  .home-fancy--capabilities > .shell-container,
-  .home-fancy--workflow > .shell-container,
+  /* Single-message centered accent CTA cards (featured module CTA, final CTA)
+     keep a contained wide width so their copy and single card don't strand in
+     empty space at 132rem. */
   .home-fancy--featured > .shell-container,
-  .home-fancy--trust > .shell-container,
   .home-fancy--final > .shell-container {
     width: min(calc(100% - 2 * var(--page-gutter)), var(--content-wide));
   }
