@@ -605,7 +605,7 @@ export default async function PortfolioIntelligencePage() {
   const hasActivePortfolio = portfolioContext.state === 'active-portfolio';
 
   return (
-    <>
+    <div className="page-wide">
       {/* ── Compact Command Header ── */}
       <header className="observe-command-header">
         <div className="observe-command-header__inner">
@@ -1056,6 +1056,6 @@ export default async function PortfolioIntelligencePage() {
       <Section className="dashboard-section">
         <ExecutePlanActions />
       </Section>
-    </>
+    </div>
   );
 }

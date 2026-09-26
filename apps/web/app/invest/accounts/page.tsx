@@ -13,7 +13,7 @@ export default async function InvestAccountsPage() {
   const invest = await getInvestOverviewData(locale, messages);
 
   return (
-    <>
+    <div className="page-wide">
       <Section className="dashboard-section dashboard-section--hero">
         <WorkstationPageHeader
           eyebrow="Invest / Accounts"
@@ -50,6 +50,6 @@ export default async function InvestAccountsPage() {
           ))}
         </div>
       </Section>
-    </>
+    </div>
   );
 }

@@ -128,7 +128,7 @@ export default async function PortfolioPage({
           : 'info';
 
   return (
-    <>
+    <div className="page-wide">
       <Section className="dashboard-section dashboard-section--hero">
         <WorkstationPageHeader
           eyebrow="Invest / Portfolio"
@@ -453,6 +453,6 @@ export default async function PortfolioPage({
           </Card>
         </Section>
       ) : null}
-    </>
+    </div>
   );
 }

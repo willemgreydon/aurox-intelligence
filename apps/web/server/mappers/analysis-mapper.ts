@@ -34,6 +34,7 @@ export type ForecastsPageViewModel = {
   forecasts: Array<
     Forecast & {
       assetName: string;
+      assetClass: SignalSummary['assetClass'];
       biasLabel: string;
       biasTone: 'success' | 'warning' | 'danger' | 'info';
       confidenceLabel: string;
@@ -182,6 +183,7 @@ export function mapForecastsPage(readModel: AnalysisReadModel): ForecastsPageVie
       return {
         ...forecast,
         assetName: signal.assetName,
+        assetClass: signal.assetClass,
         biasLabel: mapBiasLabel(forecast.directionalBias),
         biasTone: mapInterpretationTone(forecast.directionalBias),
         confidenceLabel: confidenceLabel(forecast.confidenceScore),

@@ -5,7 +5,9 @@ const routeStatusSchema = z.enum(['nominal', 'attention', 'degraded']);
 export const signalSummarySchema = z.object({
   assetId: z.string(),
   assetName: z.string(),
-  assetClass: z.enum(['stock', 'fx']),
+  // Canonical market asset classes (matches MarketAssetKind). Was ['stock','fx'],
+  // which forced crypto/etf/index assets to be mislabelled as stock downstream.
+  assetClass: z.enum(['stock', 'etf', 'crypto', 'fx', 'index']),
   status: routeStatusSchema,
   interpretation: z.enum(['bullish', 'bearish', 'neutral']),
   score: z.number(),

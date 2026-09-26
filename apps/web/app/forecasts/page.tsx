@@ -34,7 +34,6 @@ export default async function ForecastsPage() {
             key={forecast.assetId}
             forecast={{
               ...forecast,
-              assetClass: 'stock',
               symbol: forecast.assetId,
               keyDriverSummary: forecast.keyDrivers.join(' | '),
               riskSummary: forecast.riskFactors.join(' | '),

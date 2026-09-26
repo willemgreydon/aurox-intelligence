@@ -95,7 +95,7 @@ export default async function OrdersPage() {
           : 'danger';
 
   return (
-    <>
+    <div className="page-wide">
       <Section className="dashboard-section dashboard-section--hero">
         <WorkstationPageHeader
           eyebrow="Invest / Orders"
@@ -211,6 +211,6 @@ export default async function OrdersPage() {
           </Card>
         </Section>
       ) : null}
-    </>
+    </div>
   );
 }

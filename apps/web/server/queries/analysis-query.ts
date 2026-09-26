@@ -1,5 +1,5 @@
 import { getDashboardReadModel, getMarketHistoryBarsBySymbols, type DashboardOperationalReadModel } from '@repo/db';
-import { getMarketSymbols, getProviderEnv, type ProviderMarketObservation } from '@repo/providers';
+import { detectCanonicalAssetKind, getMarketSymbols, getProviderEnv, type MarketAssetKind, type ProviderMarketObservation } from '@repo/providers';
 import { cache } from 'react';
 import { hashSymbols } from '../lib/cache-key';
 import { perfLog, perfNow } from '../lib/perf';
@@ -10,7 +10,7 @@ import { withDbReadFallback } from '../lib/db-runtime';
 export type AssetAnalysisReadModel = {
   assetId: string;
   symbol: string;
-  assetClass: 'stock';
+  assetClass: MarketAssetKind;
   observation: ProviderMarketObservation | null;
   history: Array<{
     symbol: string;
@@ -134,7 +134,7 @@ export async function getAnalysisReadModel(): Promise<AnalysisReadModel> {
 
       const observation: ProviderMarketObservation = {
         symbol: snapshot.symbol,
-        assetKind: 'stock',
+        assetKind: detectCanonicalAssetKind(snapshot.symbol),
         price: snapshot.price,
         timestamp: snapshot.observedAt ?? snapshot.fetchedAt,
         source: snapshot.source as ProviderMarketObservation['source'],
@@ -158,7 +158,7 @@ export async function getAnalysisReadModel(): Promise<AnalysisReadModel> {
     assets: symbols.map((symbol) => ({
       assetId: toAssetId(symbol),
       symbol: toAssetId(symbol),
-      assetClass: 'stock',
+      assetClass: detectCanonicalAssetKind(symbol),
       observation: observationBySymbol.get(symbol) ?? null,
       history: (historyBySymbol[symbol] ?? []).map((bar) => ({
         symbol: bar.symbol,

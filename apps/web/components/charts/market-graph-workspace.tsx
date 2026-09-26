@@ -558,7 +558,10 @@ export function MarketGraphWorkspace({
   const maLine = hasRenderableSeries ? buildLine(ma, 980, 420) : '';
   const compareLine = useCompareMode && compareClosesNorm.length > 1 ? buildLine(compareClosesNorm, 980, 420) : null;
 
-  const candleBodyHalf = Math.max(1.5, Math.min(6, Math.floor((940 / Math.max(1, viewportVisible.length)) * 0.38)));
+  // Body width is ~38% of each bar's slot, clamped so candles never touch. The
+  // upper cap is generous so that with few bars on a wide canvas the bodies read
+  // as substantial candles instead of thin slivers lost in the plot.
+  const candleBodyHalf = Math.max(1.5, Math.min(16, Math.floor((940 / Math.max(1, viewportVisible.length)) * 0.38)));
 
   const lastClose = primaryClosesForLine.at(-1);
   const lastPriceY =

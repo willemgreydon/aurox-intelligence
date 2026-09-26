@@ -362,7 +362,7 @@ export default async function SimulationPage({
 
   if (!portfolio) {
     return (
-      <>
+      <div className="page-wide">
         <Section className="dashboard-section dashboard-section--hero">
           <WorkstationPageHeader
             eyebrow={messages.simulation.navLabel}
@@ -413,7 +413,7 @@ export default async function SimulationPage({
             </div>
           </Card>
         </Section>
-      </>
+      </div>
     );
   }
 
@@ -757,7 +757,7 @@ export default async function SimulationPage({
   };
 
   return (
-    <>
+    <div className="page-wide">
       <Section className="dashboard-section dashboard-section--hero">
         <WorkstationPageHeader
           eyebrow={messages.simulation.navLabel}
@@ -1181,7 +1181,7 @@ export default async function SimulationPage({
         label={messages.simulation.actions.simulationOnly}
         message={messages.common.simulationDisclosure}
       />
-    </>
+    </div>
   );
 }
 

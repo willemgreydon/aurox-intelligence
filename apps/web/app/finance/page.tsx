@@ -22,5 +22,9 @@ export default async function ClaudeFinancePage() {
     getRequestLocale(),
   ]);
   const messages = getMessages(locale);
-  return <ClaudeFinanceCockpit cockpit={cockpit} labels={messages.finance} />;
+  return (
+    <div className="page-wide">
+      <ClaudeFinanceCockpit cockpit={cockpit} labels={messages.finance} />
+    </div>
+  );
 }

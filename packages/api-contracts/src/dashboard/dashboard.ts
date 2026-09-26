@@ -29,7 +29,8 @@ export const dashboardForecastPreviewSchema = z.object({
   assetId: z.string(),
   symbol: z.string(),
   assetName: z.string(),
-  assetClass: z.enum(['stock', 'fx']),
+  // Canonical market asset classes (matches MarketAssetKind). Was ['stock','fx'].
+  assetClass: z.enum(['stock', 'etf', 'crypto', 'fx', 'index']),
   horizon: z.enum(['short', 'medium', 'long']),
   directionalBias: z.enum(['bullish', 'bearish', 'neutral']),
   confidenceLabel: z.string(),
