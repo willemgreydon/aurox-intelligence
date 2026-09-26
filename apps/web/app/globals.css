@@ -220,9 +220,27 @@ code,
   position: sticky;
   top: 0;
   z-index: var(--z-sticky);
+  /* Transparent at the top of the page so the header blends into the body; the
+     frosted background + border fade in only once scrolled (.site-header--scrolled
+     is toggled in header-client.tsx at scrollY > 12). */
+  background-color: transparent;
+  border-bottom: var(--border-width-thin) solid transparent;
+  transition:
+    background-color var(--duration-base) var(--ease-standard),
+    backdrop-filter var(--duration-base) var(--ease-standard),
+    border-color var(--duration-base) var(--ease-standard);
+}
+
+.site-header--scrolled {
   backdrop-filter: blur(20px);
-  background: color-mix(in srgb, var(--app-bg) 86%, transparent);
-  border-bottom: var(--border-width-thin) solid var(--border-subtle);
+  background-color: color-mix(in srgb, var(--app-bg) 86%, transparent);
+  border-bottom-color: var(--border-subtle);
+}
+
+/* The ticker's divider line only makes sense once the header has its own
+   surface — hide it while the header is transparent at the top. */
+.site-header:not(.site-header--scrolled) .market-ticker {
+  border-bottom-color: transparent;
 }
 
 .market-ticker {
@@ -7388,6 +7406,23 @@ code,
 
 .home-fancy .section__description {
   max-width: var(--layout-reading-width);
+}
+
+/* Portfolio pulse: a compact header so the metric cards sit higher (closer to
+   the fold on tall displays) and the eyebrow hugs the headline. Scoped to this
+   section so other home bands keep their editorial spacing. */
+.home-fancy--portfolio {
+  padding-top: clamp(1.25rem, 2.5vw, 2.25rem);
+}
+.home-fancy--portfolio .home-fancy__header {
+  gap: var(--space-1);
+  margin-bottom: var(--space-4);
+}
+.home-fancy--portfolio .section__eyebrow {
+  margin-bottom: 0;
+}
+.home-fancy--portfolio .analytics-strip {
+  margin-top: var(--space-3);
 }
 
 .home-fancy--pulse {

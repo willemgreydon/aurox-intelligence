@@ -21,9 +21,6 @@ export function PortfolioMetricsSection({ snapshot }: PortfolioMetricsSectionPro
       <header className="home-fancy__header">
         <div className="section__eyebrow">Portfolio metrics</div>
         <h2 className="section__title">Simulation portfolio pulse</h2>
-        <p className="section__description">
-          Live snapshot of your simulated portfolio value and deployed capital.
-        </p>
       </header>
       <div className="analytics-strip">
         <CompactStatCard
