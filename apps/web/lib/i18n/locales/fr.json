@@ -1120,7 +1120,10 @@
     "insufficientHistory": "Historique insuffisant pour la période sélectionnée.",
     "selectedTimeframe": "Période sélectionnée",
     "pointCount": "{{count}} points de données",
-    "actualResolution": "Résolution : {{resolution}}"
+    "actualResolution": "Résolution : {{resolution}}",
+    "candleIntelligence": "Intelligence des chandeliers",
+    "candleIntelligenceDailyOnly": "L'intelligence des chandeliers utilise la structure journalière — passez à une échéance journalière.",
+    "candleIntelligencePrimaryOnly": "L'intelligence des chandeliers s'applique uniquement à l'actif principal."
   },
   "stocks": {
     "providerUnavailableSummary": "L'instantané des actions en direct est indisponible : {{message}}",

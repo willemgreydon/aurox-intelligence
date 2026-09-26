@@ -6,6 +6,7 @@ import { getMessages } from '../../../lib/i18n/messages';
 import { getRequestLocale } from '../../../server/i18n/locale';
 import { getStockDetailPageData } from '../../../server/services/stock-simulation-service';
 import { deriveAssetDecisionIntelligence } from '../../../server/services/decision-intelligence-service';
+import { buildCandleIntelligenceViewModel } from '../../../server/mappers/candle-intelligence-mapper';
 import { getSnapshotsForAsset } from '../../../server/services/news-intelligence-service';
 
 export const dynamic = 'force-dynamic';
@@ -44,6 +45,13 @@ export default async function StockDetailPage({ params, searchParams }: StockDet
     quantity: stock.position?.quantity ?? 1,
     portfolioValue: stock.position?.marketValue ? Math.max(stock.position.marketValue * 4, 10000) : 100000,
     existingExposure: stock.position?.marketValue ?? 0,
+  });
+
+  const candleIntelligence = buildCandleIntelligenceViewModel({
+    symbol: stock.asset.symbol,
+    assetClass: 'stock',
+    bars: stock.history,
+    generatedAt: new Date().toISOString(),
   });
 
   const news: SymbolDetailNewsItem[] = newsSnapshots.slice(0, 3).map((snapshot) => ({
@@ -132,6 +140,7 @@ export default async function StockDetailPage({ params, searchParams }: StockDet
       positionUnitLabel="shares"
       actions={actions}
       news={news}
+      candleIntelligence={candleIntelligence}
     />
   );
 }

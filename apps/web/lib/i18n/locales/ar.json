@@ -1120,7 +1120,10 @@
     "insufficientHistory": "سجل غير كافٍ للإطار الزمني المحدّد.",
     "selectedTimeframe": "الإطار الزمني المحدّد",
     "pointCount": "{{count}} نقطة بيانات",
-    "actualResolution": "الدقّة: {{resolution}}"
+    "actualResolution": "الدقّة: {{resolution}}",
+    "candleIntelligence": "Candle intelligence",
+    "candleIntelligenceDailyOnly": "Candle intelligence uses daily structure — switch to a daily timeframe to see it.",
+    "candleIntelligencePrimaryOnly": "Candle intelligence applies to the primary asset only."
   },
   "stocks": {
     "providerUnavailableSummary": "لقطة الأسهم المباشرة غير متاحة: {{message}}",

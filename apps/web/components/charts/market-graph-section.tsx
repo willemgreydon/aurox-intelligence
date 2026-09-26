@@ -54,6 +54,9 @@ export function MarketGraphSection({ graph, messages, className, trackedSymbols 
           dailyFallback: messages.marketGraph.dailyFallback,
           candlesUnavailable: messages.marketGraph.candlesUnavailable,
           insufficientHistory: messages.marketGraph.insufficientHistory,
+          candleIntelligence: messages.marketGraph.candleIntelligence,
+          candleIntelligenceDailyOnly: messages.marketGraph.candleIntelligenceDailyOnly,
+          candleIntelligencePrimaryOnly: messages.marketGraph.candleIntelligencePrimaryOnly,
         }}
       />
     </section>

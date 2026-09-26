@@ -1120,7 +1120,10 @@
     "insufficientHistory": "선택한 기간에 대한 이력이 부족합니다.",
     "selectedTimeframe": "선택된 기간",
     "pointCount": "데이터 포인트 {{count}}개",
-    "actualResolution": "해상도: {{resolution}}"
+    "actualResolution": "해상도: {{resolution}}",
+    "candleIntelligence": "Candle intelligence",
+    "candleIntelligenceDailyOnly": "Candle intelligence uses daily structure — switch to a daily timeframe to see it.",
+    "candleIntelligencePrimaryOnly": "Candle intelligence applies to the primary asset only."
   },
   "stocks": {
     "providerUnavailableSummary": "실시간 주식 스냅샷을 사용할 수 없음: {{message}}",

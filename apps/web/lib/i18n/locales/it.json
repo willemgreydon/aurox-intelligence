@@ -1120,7 +1120,10 @@
     "insufficientHistory": "Storico insufficiente per l'intervallo temporale selezionato.",
     "selectedTimeframe": "Intervallo temporale selezionato",
     "pointCount": "{{count}} punti dati",
-    "actualResolution": "Risoluzione: {{resolution}}"
+    "actualResolution": "Risoluzione: {{resolution}}",
+    "candleIntelligence": "Intelligenza delle candele",
+    "candleIntelligenceDailyOnly": "L'intelligenza delle candele usa la struttura giornaliera — passa a un intervallo giornaliero.",
+    "candleIntelligencePrimaryOnly": "L'intelligenza delle candele si applica solo all'asset principale."
   },
   "stocks": {
     "providerUnavailableSummary": "Lo snapshot azionario live non è disponibile: {{message}}",

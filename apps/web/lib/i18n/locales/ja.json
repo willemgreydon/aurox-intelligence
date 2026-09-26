@@ -1120,7 +1120,10 @@
     "insufficientHistory": "選択した時間枠に対する履歴が不足しています。",
     "selectedTimeframe": "選択した時間枠",
     "pointCount": "{{count}}個のデータポイント",
-    "actualResolution": "解像度: {{resolution}}"
+    "actualResolution": "解像度: {{resolution}}",
+    "candleIntelligence": "Candle intelligence",
+    "candleIntelligenceDailyOnly": "Candle intelligence uses daily structure — switch to a daily timeframe to see it.",
+    "candleIntelligencePrimaryOnly": "Candle intelligence applies to the primary asset only."
   },
   "stocks": {
     "providerUnavailableSummary": "ライブ株式スナップショットを利用できません: {{message}}",

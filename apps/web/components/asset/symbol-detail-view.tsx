@@ -10,6 +10,8 @@ import { Card } from '../ui/card';
 import { SignalSummary } from '../signals/signal-summary';
 import { TradeRiskOverlay } from '../invest/trade-risk-overlay';
 import { AssetPriceExplorer } from './asset-price-explorer';
+import { CandleIntelligencePanel } from './candle-intelligence-panel';
+import type { CandleIntelligenceViewModel } from '../../server/mappers/candle-intelligence-mapper';
 import { SymbolDetailTabs, type SymbolDetailTab, type SymbolDetailTabId } from './symbol-detail-tabs';
 import { formatDateTimeLabel } from '../../lib/formatters';
 import { formatFreshnessLabel, formatPercentChange, formatUsdPrice, getQuoteTimestamp } from '../../server/lib/quote-display';
@@ -80,6 +82,8 @@ export type SymbolDetailViewModel = {
   actions: ReactNode;
   /** Optional news items (only the public /stocks route supplies these). */
   news?: SymbolDetailNewsItem[];
+  /** Optional pre-computed candlestick intelligence for the Signals tab. */
+  candleIntelligence?: CandleIntelligenceViewModel;
   /** Query params to preserve across tab navigation. */
   query?: Record<string, string | undefined>;
 };
@@ -269,26 +273,29 @@ function OverviewPanel({ vm, quoteTimestamp }: { vm: SymbolDetailViewModel; quot
 function SignalsPanel({ vm }: { vm: SymbolDetailViewModel }) {
   const { asset, decision } = vm;
   return (
-    <Card className="analytics-card">
-      <div className="analytics-card__header">
-        <div>
-          <div className="section__eyebrow">Signals</div>
-          <h3>Signal interpretation</h3>
-          <p>{asset.thesis}</p>
+    <div className="signals-panel">
+      <Card className="analytics-card">
+        <div className="analytics-card__header">
+          <div>
+            <div className="section__eyebrow">Signals</div>
+            <h3>Signal interpretation</h3>
+            <p>{asset.thesis}</p>
+          </div>
         </div>
-      </div>
-      <div className="analytics-card__body">
-        <p>{asset.riskSummary}</p>
-        <SignalSummary
-          score={decision.signal.score}
-          label={decision.signal.label}
-          confidence={decision.signal.confidence}
-          explanation={decision.signal.explanation}
-          indicators={decision.signal.contributingIndicators}
-          visualState={decision.signal.visualState}
-        />
-      </div>
-    </Card>
+        <div className="analytics-card__body">
+          <p>{asset.riskSummary}</p>
+          <SignalSummary
+            score={decision.signal.score}
+            label={decision.signal.label}
+            confidence={decision.signal.confidence}
+            explanation={decision.signal.explanation}
+            indicators={decision.signal.contributingIndicators}
+            visualState={decision.signal.visualState}
+          />
+        </div>
+      </Card>
+      {vm.candleIntelligence ? <CandleIntelligencePanel vm={vm.candleIntelligence} /> : null}
+    </div>
   );
 }
 

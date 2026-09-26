@@ -1114,7 +1114,10 @@
     "insufficientHistory": "所选时间周期的历史数据不足。",
     "selectedTimeframe": "所选时间周期",
     "pointCount": "{{count}} 个数据点",
-    "actualResolution": "分辨率：{{resolution}}"
+    "actualResolution": "分辨率：{{resolution}}",
+    "candleIntelligence": "Candle intelligence",
+    "candleIntelligenceDailyOnly": "Candle intelligence uses daily structure — switch to a daily timeframe to see it.",
+    "candleIntelligencePrimaryOnly": "Candle intelligence applies to the primary asset only."
   },
   "stocks": {
     "providerUnavailableSummary": "实时股票快照不可用：{{message}}",

@@ -1120,7 +1120,10 @@
     "insufficientHistory": "Historial insuficiente para el marco temporal seleccionado.",
     "selectedTimeframe": "Marco temporal seleccionado",
     "pointCount": "{{count}} puntos de datos",
-    "actualResolution": "Resolución: {{resolution}}"
+    "actualResolution": "Resolución: {{resolution}}",
+    "candleIntelligence": "Inteligencia de velas",
+    "candleIntelligenceDailyOnly": "La inteligencia de velas usa la estructura diaria — cambia a un marco temporal diario.",
+    "candleIntelligencePrimaryOnly": "La inteligencia de velas se aplica solo al activo principal."
   },
   "stocks": {
     "providerUnavailableSummary": "La instantánea de acciones en vivo no está disponible: {{message}}",

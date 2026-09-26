@@ -4,10 +4,34 @@
 :root {
   --site-header-offset: calc(var(--header-height) + 3.5rem + env(safe-area-inset-top));
   --page-arrival-offset: calc(var(--site-header-offset) + var(--space-3));
-  /* Executive terminal width — wider than the reading shell (76rem) so dense
-     multi-column dashboard grids can breathe. See Phase 3 evaluation in the
-     account-dashboard-layout-polish audit. */
-  --layout-dashboard-width: 90rem;
+
+  /* ── Responsive container system ────────────────────────────────────────
+     Single source of truth for page-width regimes. Reading content stays
+     bounded at every viewport; dense/analytical canvases grow on large and
+     ultrawide displays but always keep an intentional framing gutter instead
+     of stranding a fixed column in empty margin. The base --layout-* width
+     tokens and the --space-* scale come from @repo/design-tokens.
+     Structural breakpoint scale (reference; media queries use the literals
+     because CSS @media cannot read custom properties):
+       mobile 640 · tablet 960 · desktop 1280 · wide 1728 · ultrawide 2200 */
+  --page-gutter: clamp(1rem, 2.4vw, 3.5rem);
+
+  --content-reading: var(--layout-reading-width);   /* ~48rem — prose, forms, auth */
+  --content-standard: var(--layout-max-width);      /* ~76rem — general pages */
+  --content-wide: clamp(76rem, 80vw, 108rem);       /* wide analytical surfaces */
+  --content-dashboard: clamp(90rem, 84vw, 132rem);  /* dense dashboard/KPI grids */
+  --content-full: 160rem;                           /* near-full workstation canvases */
+
+  /* Executive dashboard shell — now fluid so ultrawide gains real estate
+     rather than centring a 90rem column. Consumed as a width cap, so smaller
+     viewports are unaffected (the clamp floor never exceeds the viewport once
+     min(100%, …) is applied by consumers). */
+  --layout-dashboard-width: var(--content-dashboard);
+
+  /* Observe / intelligence / cockpit surfaces read this. It was previously
+     undefined everywhere and only ever resolved to its fixed 90rem fallback;
+     defining it lets those surfaces scale with the dashboard regime. */
+  --content-max-width: var(--content-dashboard);
 }
 
 *,
@@ -186,7 +210,7 @@ code,
 }
 
 .shell-container {
-  width: min(calc(100% - var(--space-8)), var(--layout-max-width));
+  width: min(calc(100% - 2 * var(--page-gutter)), var(--content-standard));
   margin: 0 auto;
   /* Respect notch/curved-edge safe areas in landscape on mobile. */
   padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
@@ -1868,7 +1892,7 @@ code,
   grid-template-columns: minmax(18rem, 22rem) minmax(0, 1fr);
   gap: var(--space-6);
   align-items: start;
-  width: min(100%, 110rem);
+  width: min(100%, var(--content-wide));
   margin-inline: auto;
 }
 
@@ -5655,6 +5679,106 @@ code,
   text-transform: uppercase;
 }
 
+/* --- Candle intelligence overlay (opt-in; additive over the base chart) --- */
+.market-graph__intel {
+  pointer-events: none;
+}
+
+.market-graph__intel-level {
+  stroke-width: 1.2;
+  stroke-dasharray: 6 5;
+  opacity: 0.82;
+}
+
+.market-graph__intel-level--support {
+  stroke: color-mix(in srgb, var(--chart-positive) 70%, transparent);
+}
+
+.market-graph__intel-level--resistance {
+  stroke: color-mix(in srgb, var(--chart-negative) 70%, transparent);
+}
+
+.market-graph__intel-swing-tick {
+  stroke: color-mix(in srgb, var(--text-tertiary) 60%, transparent);
+  stroke-width: 1.1;
+  stroke-dasharray: 2 3;
+}
+
+.market-graph__intel-tag {
+  opacity: 0.92;
+}
+
+.market-graph__intel-tag--support {
+  fill: color-mix(in srgb, var(--chart-positive) 82%, black 4%);
+}
+
+.market-graph__intel-tag--resistance {
+  fill: color-mix(in srgb, var(--chart-negative) 82%, black 4%);
+}
+
+.market-graph__intel-tag--swing {
+  fill: color-mix(in srgb, var(--text-tertiary) 76%, transparent);
+}
+
+.market-graph__intel-tag-text {
+  fill: white;
+  font-size: 8px;
+  font-family: var(--font-family-mono);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.market-graph__intel-pattern-dot {
+  stroke: color-mix(in srgb, var(--surface-chart) 85%, transparent);
+  stroke-width: 1.5;
+  opacity: 0.95;
+}
+
+.market-graph__intel-pattern--bullish .market-graph__intel-pattern-dot {
+  fill: var(--chart-positive);
+}
+
+.market-graph__intel-pattern--bearish .market-graph__intel-pattern-dot {
+  fill: var(--chart-negative);
+}
+
+.market-graph__intel-pattern--neutral .market-graph__intel-pattern-dot {
+  fill: var(--chart-neutral);
+}
+
+.market-graph__intel-pattern-glyph {
+  fill: white;
+  font-size: 8px;
+  font-family: var(--font-family-mono);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.market-graph__intel-event-bg {
+  fill: color-mix(in srgb, var(--surface-raised) 90%, transparent);
+  stroke: color-mix(in srgb, var(--border-strong) 55%, transparent);
+  stroke-width: 1;
+}
+
+.market-graph__intel-event-text {
+  font-size: 9px;
+  font-family: var(--font-family-mono);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.market-graph__intel-event--bullish .market-graph__intel-event-text {
+  fill: var(--chart-positive);
+}
+
+.market-graph__intel-event--bearish .market-graph__intel-event-text {
+  fill: var(--chart-negative);
+}
+
+.market-graph__intel-event--neutral .market-graph__intel-event-text {
+  fill: var(--text-secondary);
+}
+
 :root {
   --market-workstation-height: clamp(35rem, calc(100vh - 11.25rem), 47.5rem);
   --market-sidebar-width: clamp(21.25rem, 28vw, 28.75rem);
@@ -5992,6 +6116,54 @@ code,
 }
 
 .market-graph__tooltip-value--down {
+  color: var(--status-danger-text);
+}
+
+.market-graph__tooltip-intel {
+  margin-top: 0.35rem;
+  padding-top: 0.35rem;
+  border-top: var(--border-width-thin) solid color-mix(in srgb, var(--border-subtle) 70%, transparent);
+  display: grid;
+  gap: 0.3rem;
+}
+
+.market-graph__tooltip-intel-head {
+  color: var(--text-tertiary);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: var(--font-weight-semibold);
+}
+
+.market-graph__tooltip-intel-item {
+  display: grid;
+  gap: 0.12rem;
+}
+
+.market-graph__tooltip-label--bullish {
+  color: var(--status-success-text);
+}
+
+.market-graph__tooltip-label--bearish {
+  color: var(--status-danger-text);
+}
+
+.market-graph__tooltip-label--neutral {
+  color: var(--text-secondary);
+}
+
+.market-graph__tooltip-intel-note {
+  margin: 0;
+  color: var(--text-tertiary);
+  font-size: 0.64rem;
+  line-height: 1.3;
+}
+
+.market-graph__tooltip-intel-note--pos {
+  color: var(--status-success-text);
+}
+
+.market-graph__tooltip-intel-note--neg {
   color: var(--status-danger-text);
 }
 
@@ -12687,4 +12859,240 @@ code,
   .watchlist-table-header {
     display: none;
   }
+}
+
+/* ── Candle Intelligence panel ─────────────────────────────────────────── */
+.signals-panel {
+  display: grid;
+  gap: 1rem;
+}
+.candle-intel__headline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 0.5rem;
+}
+.candle-intel__headline strong {
+  font-size: 1.05rem;
+}
+.candle-intel__score {
+  color: var(--text-tertiary);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+.candle-intel__confidence {
+  position: relative;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+.candle-intel__confidence-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--chart-series-a, var(--status-success));
+}
+.candle-intel__lowconf {
+  color: var(--status-warning-text, var(--color-warning));
+  font-size: 0.85rem;
+  margin: 0 0 0.5rem;
+}
+.candle-intel__summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem 1rem;
+  margin: 0.75rem 0;
+}
+.candle-intel__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--border-subtle, var(--table-row-border));
+}
+.candle-intel__row dt {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+.candle-intel__mtf {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 0.5rem 0 0.75rem;
+}
+.candle-intel__mtf-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.candle-intel__mtf-label {
+  color: var(--text-tertiary);
+  font-size: 0.8rem;
+}
+.candle-intel__patterns h4,
+.candle-intel__evidence h5 {
+  margin: 0.5rem 0 0.35rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+.candle-intel__patterns ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+.candle-intel__patterns li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem 0.6rem;
+}
+.candle-intel__pattern-strength {
+  color: var(--text-tertiary);
+  font-size: 0.8rem;
+}
+.candle-intel__pattern-detail {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  flex: 1 1 100%;
+}
+.candle-intel__why {
+  margin: 0.75rem 0 0.5rem;
+  border: 1px solid var(--border-subtle, var(--table-row-border));
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  background: var(--surface-2);
+}
+.candle-intel__why > summary {
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+.candle-intel__why-body {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+.candle-intel__evidence ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+.candle-intel__evidence--support h5 {
+  color: var(--status-success-text, var(--color-success));
+}
+.candle-intel__evidence--counter h5 {
+  color: var(--status-warning-text, var(--color-warning));
+}
+.candle-intel__evidence--invalidation h5 {
+  color: var(--status-danger-text, var(--color-danger));
+}
+.candle-intel__disclaimer {
+  margin-top: 0.75rem;
+  color: var(--text-tertiary);
+  font-size: 0.78rem;
+}
+.candle-intel__empty {
+  color: var(--text-secondary);
+}
+@media (max-width: 640px) {
+  .candle-intel__summary {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Large-desktop / ultrawide upscaling.
+   No min-width media queries existed before this block — below 1728px the app
+   relies on its base 3-col + auto-fit grids (auto-fit grids densify for free
+   now that dense containers are fluid). Here the fixed repeat(3, …) card/metric
+   grids gain a 4th column so >=1728px screens increase information density
+   instead of leaving empty margin.
+
+   Deliberately NOT widened here: reading content (.shell-container, legal,
+   auth, prose) stays capped, and semantic 2-pane grids (.analytics-two-grid,
+   sidebar+main splits) keep their pairing. Chart SVG geometry (980×420) and
+   the Candle Intelligence overlay are untouched.
+   ────────────────────────────────────────────────────────────────────────── */
+@media (min-width: 1728px) {
+  .dashboard-metric-grid,
+  .dashboard-module-grid,
+  .card-grid--three {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Home page was stranded at the 76rem standard shell (its chart is full-bleed,
+   but the portfolio-pulse metrics, hero panel and pillar grids stayed narrow —
+   a "desktop-width column in empty margin" on wide/ultrawide screens). Promote
+   the home sections to the fluid dashboard regime from 1280px up. Text inside
+   keeps its own reading caps (.hero__lede 42rem, .home-fancy__header
+   reading-width, h1 22ch), so only the GRIDS gain width. The full-bleed chart
+   is unaffected. */
+@media (min-width: 1280px) {
+  /* Header aligns to the wide content regime so brand/actions line up with the
+     dashboard + home content on large screens (was stranded at the 76rem
+     standard shell while the body widened). */
+  .site-header .shell-container,
+  /* Opt-in wide-workstation wrapper (e.g. /forecasts). Reusable: add
+     className="page-wide" around a page's sections to widen its shell
+     containers on large screens without touching the shared .dashboard-section
+     class (which ~40 pages, incl. reading-heavy /legal, rely on). */
+  .page-wide .shell-container,
+  /* Dense, data-first home bands use the full wide dashboard regime. */
+  .section--hero > .shell-container,
+  .home-fancy--portfolio > .shell-container,
+  .home-news-section > .shell-container {
+    width: min(calc(100% - 2 * var(--page-gutter)), var(--content-dashboard));
+  }
+
+  /* Editorial / single-message home bands use a contained wide width so their
+     copy and small grids don't strand in empty space at 132rem. */
+  .home-fancy--capabilities > .shell-container,
+  .home-fancy--workflow > .shell-container,
+  .home-fancy--featured > .shell-container,
+  .home-fancy--trust > .shell-container,
+  .home-fancy--final > .shell-container {
+    width: min(calc(100% - 2 * var(--page-gutter)), var(--content-wide));
+  }
+}
+
+/* Home hero is now split into a full-bleed chart band and this intro band
+   (headline copy + snapshot panel), with the portfolio pulse rendered between
+   them. This is the old ".hero" bottom row on its own — two columns that auto-
+   place content then panel (no graph area), collapsing to one column on tablet. */
+.hero-intro-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(22rem, 1.05fr);
+  gap: var(--space-8);
+  align-items: start;
+}
+.hero-intro-grid > .hero__content,
+.hero-intro-grid > .hero-panel {
+  grid-area: auto;
+}
+@media (max-width: 960px) {
+  .hero-intro-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Single-message accent bands are one card, not a grid — capping and centering
+   them keeps them from stretching into a wide, sparse ribbon on large screens.
+   (max-width only bites above these sizes, so narrow viewports are unaffected.) */
+.home-featured-band {
+  max-width: 72rem;
+  margin-inline: auto;
+}
+.home-final-cta {
+  max-width: 56rem;
+  margin-inline: auto;
 }

@@ -1120,7 +1120,10 @@
     "insufficientHistory": "Unzureichende Historie für den gewählten Zeitrahmen.",
     "selectedTimeframe": "Ausgewählter Zeitrahmen",
     "pointCount": "{{count}} Datenpunkte",
-    "actualResolution": "Auflösung: {{resolution}}"
+    "actualResolution": "Auflösung: {{resolution}}",
+    "candleIntelligence": "Kerzenanalyse",
+    "candleIntelligenceDailyOnly": "Die Kerzenanalyse nutzt die Tagesstruktur — wechsle zu einem Tages-Zeitfenster.",
+    "candleIntelligencePrimaryOnly": "Die Kerzenanalyse gilt nur für den primären Wert."
   },
   "stocks": {
     "providerUnavailableSummary": "Live-Aktien-Snapshot ist nicht verfügbar: {{message}}",

@@ -1120,7 +1120,10 @@
     "insufficientHistory": "Histórico insuficiente para o período selecionado.",
     "selectedTimeframe": "Período selecionado",
     "pointCount": "{{count}} pontos de dados",
-    "actualResolution": "Resolução: {{resolution}}"
+    "actualResolution": "Resolução: {{resolution}}",
+    "candleIntelligence": "Inteligência de velas",
+    "candleIntelligenceDailyOnly": "A inteligência de velas usa a estrutura diária — mude para um período diário.",
+    "candleIntelligencePrimaryOnly": "A inteligência de velas aplica-se apenas ao ativo principal."
   },
   "stocks": {
     "providerUnavailableSummary": "O snapshot de ações em direto está indisponível: {{message}}",
