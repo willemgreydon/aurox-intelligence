@@ -4946,9 +4946,12 @@ code,
 }
 
 /* Inner strip aligns to the same content column as the page sections
-   (.shell-container), so the tabs left-align with section content. */
+   (.shell-container), so the tabs left-align with section content. Uses the
+   same gutter formula as .shell-container; the .page-wide override below widens
+   it to the dashboard regime so it stays aligned when the page opts into wide
+   content on large screens. */
 .sim-section-nav__list {
-  width: min(calc(100% - var(--space-8)), var(--layout-max-width));
+  width: min(calc(100% - 2 * var(--page-gutter)), var(--layout-max-width));
   margin-inline: auto;
   padding: 0;
   padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
@@ -5968,6 +5971,121 @@ code,
   #market-roster .analytics-two-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
+}
+
+/* ── Volatility Pulse ────────────────────────────────────────────────────── */
+.detail-risk-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.volpulse {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.volpulse--empty {
+  padding: var(--space-4);
+  text-align: center;
+}
+
+.volpulse__empty-text {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.volpulse__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.volpulse__reading {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+.volpulse__value {
+  font-family: var(--font-family-mono);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.volpulse__label {
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+}
+
+.volpulse__band {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.15rem 0.55rem;
+  border-radius: var(--radius-pill);
+}
+
+.volpulse--quiet .volpulse__band { background: var(--status-success-bg); color: var(--status-success-text); }
+.volpulse--normal .volpulse__band { background: var(--status-info-bg); color: var(--status-info-text); }
+.volpulse--elevated .volpulse__band { background: var(--status-warning-bg); color: var(--status-warning-text); }
+.volpulse--extreme .volpulse__band { background: var(--status-danger-bg); color: var(--status-danger-text); }
+
+.volpulse__svg {
+  width: 100%;
+  height: 88px;
+  display: block;
+}
+
+.volpulse__area { fill: color-mix(in srgb, var(--chart-series-a) 18%, transparent); }
+.volpulse__line { fill: none; stroke: var(--chart-series-a); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.volpulse--elevated .volpulse__area { fill: color-mix(in srgb, var(--status-warning-text) 20%, transparent); }
+.volpulse--elevated .volpulse__line { stroke: var(--status-warning-text); }
+.volpulse--extreme .volpulse__area { fill: color-mix(in srgb, var(--chart-negative) 22%, transparent); }
+.volpulse--extreme .volpulse__line { stroke: var(--chart-negative); }
+
+.volpulse__range {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.volpulse__range-track {
+  position: relative;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+}
+
+.volpulse__range-marker {
+  position: absolute;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--text-primary);
+  transform: translate(-50%, -50%);
+}
+
+.volpulse__range-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.62rem;
+  color: var(--text-tertiary);
+}
+
+.volpulse__caption {
+  margin: 0;
+  font-size: 0.68rem;
+  color: var(--text-tertiary);
 }
 
 .market-graph__signal--bullish {
@@ -13463,6 +13581,10 @@ code,
      containers on large screens without touching the shared .dashboard-section
      class (which ~40 pages, incl. reading-heavy /legal, rely on). */
   .page-wide .shell-container,
+  /* The sticky simulation section-nav strip lives outside a .shell-container, so
+     widen it here too — otherwise it stays at 76rem while the page-wide content
+     widens, and the tabs no longer left-align with the sections below. */
+  .page-wide .sim-section-nav__list,
   /* Dense, data-first home bands use the full wide dashboard regime. */
   .section--hero > .shell-container,
   .home-fancy--portfolio > .shell-container,

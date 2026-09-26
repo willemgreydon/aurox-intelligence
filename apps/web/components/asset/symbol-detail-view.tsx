@@ -9,6 +9,8 @@ import { Section } from '../ui/section';
 import { Card } from '../ui/card';
 import { SignalSummary } from '../signals/signal-summary';
 import { TradeRiskOverlay } from '../invest/trade-risk-overlay';
+import { VolatilityPulse } from '../charts/volatility-pulse';
+import { computeVolatilityPulse } from '../../lib/volatility-pulse';
 import { AssetPriceExplorer } from './asset-price-explorer';
 import { CandleIntelligencePanel } from './candle-intelligence-panel';
 import type { CandleIntelligenceViewModel } from '../../server/mappers/candle-intelligence-mapper';
@@ -301,17 +303,30 @@ function SignalsPanel({ vm }: { vm: SymbolDetailViewModel }) {
 
 function RiskPanel({ vm }: { vm: SymbolDetailViewModel }) {
   const { decision, position } = vm;
+  const volatilityPulse = computeVolatilityPulse(vm.history);
   return (
-    <TradeRiskOverlay
-      maxPositionSizeSuggestion={Math.max(position?.marketValue ?? 0, 5000)}
-      estimatedVolatility={Math.max(0.001, decision.risk.exposureImpactPercent / 100)}
-      drawdownWarning={decision.risk.drawdownWarning}
-      liquidityWarning={decision.risk.liquidityWarning}
-      stopLossSuggestion={decision.risk.stopLossSuggestion}
-      exposureImpactPercent={decision.risk.exposureImpactPercent}
-      concentrationWarning={decision.risk.concentrationWarning}
-      riskLevel={decision.risk.label}
-    />
+    <div className="detail-risk-stack">
+      {volatilityPulse.hasData ? (
+        <section className="analytics-card">
+          <div className="analytics-card__header">
+            <div className="section__eyebrow">Volatility Pulse</div>
+          </div>
+          <div className="analytics-card__body">
+            <VolatilityPulse pulse={volatilityPulse} />
+          </div>
+        </section>
+      ) : null}
+      <TradeRiskOverlay
+        maxPositionSizeSuggestion={Math.max(position?.marketValue ?? 0, 5000)}
+        estimatedVolatility={Math.max(0.001, decision.risk.exposureImpactPercent / 100)}
+        drawdownWarning={decision.risk.drawdownWarning}
+        liquidityWarning={decision.risk.liquidityWarning}
+        stopLossSuggestion={decision.risk.stopLossSuggestion}
+        exposureImpactPercent={decision.risk.exposureImpactPercent}
+        concentrationWarning={decision.risk.concentrationWarning}
+        riskLevel={decision.risk.label}
+      />
+    </div>
   );
 }
 
