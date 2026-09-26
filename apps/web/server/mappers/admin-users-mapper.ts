@@ -19,12 +19,20 @@ export type AdminUserRowViewModel = {
   /** The role this user would be toggled to (the opposite of the current role). */
   nextRole: UserRole;
   nextRoleActionLabel: string;
-  /** Account lifecycle: whether the account is currently disabled. */
-  isDisabled: boolean;
-  /** The status the lifecycle button would set (toggle target). */
+  /** Account lifecycle: whether the account is awaiting verification. */
+  isPending: boolean;
+  /** The status the lifecycle button would set. */
   nextStatus: 'active' | 'disabled';
-  /** Label for the lifecycle toggle button ("Disable" / "Reactivate"). */
+  /**
+   * Label for the lifecycle button, chosen by current status:
+   * "Verify & activate" (pending) / "Disable" (active) / "Reactivate" (disabled).
+   */
   statusActionLabel: string;
+  /**
+   * True when the button drives a positive transition (→ active), so the UI can
+   * style it as a primary action; false for the destructive "Disable".
+   */
+  statusActionIsPositive: boolean;
 };
 
 export type AdminEventRowViewModel = {
@@ -87,7 +95,17 @@ export function mapAdminUsersViewModel(
   const rows: AdminUserRowViewModel[] = readModel.users.map((user) => {
     const isAdmin = user.role === 'admin';
     const nextRole: UserRole = isAdmin ? 'member' : 'admin';
-    const isDisabled = user.status === 'disabled';
+    const isActive = user.status === 'active';
+    const isPending = user.status === 'pending_verification';
+    // Active accounts can only be disabled; anything else (pending or disabled)
+    // transitions to active. Pending is a first-time verification, disabled is a
+    // reactivation — the label distinguishes them for the audit-conscious admin.
+    const nextStatus: 'active' | 'disabled' = isActive ? 'disabled' : 'active';
+    const statusActionLabel = isActive
+      ? 'Disable'
+      : isPending
+        ? 'Verify & activate'
+        : 'Reactivate';
     return {
       id: user.id,
       email: user.email,
@@ -103,9 +121,10 @@ export function mapAdminUsersViewModel(
       isAdmin,
       nextRole,
       nextRoleActionLabel: isAdmin ? 'Revoke admin' : 'Make admin',
-      isDisabled,
-      nextStatus: isDisabled ? 'active' : 'disabled',
-      statusActionLabel: isDisabled ? 'Reactivate' : 'Disable',
+      isPending,
+      nextStatus,
+      statusActionLabel,
+      statusActionIsPositive: nextStatus === 'active',
     };
   });
 

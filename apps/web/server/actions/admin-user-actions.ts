@@ -55,8 +55,10 @@ export async function setUserRoleAction(formData: FormData): Promise<void> {
 }
 
 /**
- * Disables or reactivates a user account. Disabling also revokes all of the
- * user's live sessions (in the same DB transaction), immediately cutting access.
+ * Sets a user account status. Activating a pending account clears the
+ * "pending verification" state and stamps it verified; activating a disabled
+ * account reactivates it. Disabling also revokes all of the user's live sessions
+ * (in the same DB transaction), immediately cutting access.
  * Admin-gated, Zod-validated, self-protected, and audited.
  */
 export async function setUserStatusAction(formData: FormData): Promise<void> {
@@ -72,7 +74,9 @@ export async function setUserStatusAction(formData: FormData): Promise<void> {
     );
   }
 
-  if (parsed.data.userId === auth.user.id) {
+  // Only self-DISABLE is forbidden (an admin must not lock themselves out).
+  // Self-activation (clearing your own pending state) is safe and allowed.
+  if (parsed.data.userId === auth.user.id && parsed.data.status === 'disabled') {
     throw new Error('self_status_change_forbidden: you cannot disable your own account');
   }
 
