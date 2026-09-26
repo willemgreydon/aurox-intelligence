@@ -475,7 +475,11 @@ export default async function InvestPage({
   const deferredDataPromise = getInvestDeferredData(locale, messages);
 
   return (
-    <>
+    // page-wide widens the shell containers to the dashboard regime on large
+    // screens (>=1280px), matching /finance, /forecasts and the home bands — so
+    // the invest hero + simulation grids use the available width instead of a
+    // narrow 76rem column stranded in empty margin.
+    <div className="page-wide">
       {/* ── Shell (renders immediately) ───────────────────────────────────── */}
       <Section className="dashboard-section dashboard-section--hero">
         <WorkstationPageHeader
@@ -635,6 +639,6 @@ export default async function InvestPage({
           </div>
         </Disclosure>
       </Section>
-    </>
+    </div>
   );
 }

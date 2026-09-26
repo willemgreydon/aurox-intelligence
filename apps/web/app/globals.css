@@ -5955,6 +5955,21 @@ code,
 .drawdown__stat--flat { color: var(--chart-positive); }
 .drawdown__stat--muted { color: var(--text-secondary); }
 
+/* Market roster: the roster container widens to the workstation regime, so on
+   large desktop / ultrawide the 2-column card grid becomes two oversized cards.
+   Step up the column count with the available width for a proper dense grid. */
+@media (min-width: 1600px) {
+  #market-roster .analytics-two-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 2100px) {
+  #market-roster .analytics-two-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
 .market-graph__signal--bullish {
   fill: var(--chart-positive);
 }
