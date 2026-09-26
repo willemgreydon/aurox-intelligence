@@ -9,6 +9,7 @@ import { getOptionalCurrentSession } from '../../../../server/auth/session';
 import { getInvestableAssetDetailPageData } from '../../../../server/services/stock-simulation-service';
 import { getSimulationSessionTradingContextForUser } from '../../../../server/services/simulation-workstation-service';
 import { deriveAssetDecisionIntelligence } from '../../../../server/services/decision-intelligence-service';
+import { buildCandleIntelligenceViewModel } from '../../../../server/mappers/candle-intelligence-mapper';
 
 export const dynamic = 'force-dynamic';
 
@@ -60,6 +61,13 @@ export default async function CryptoDetailPage({ params, searchParams }: CryptoD
     quantity: asset.position?.quantity ?? 1,
     portfolioValue: asset.position?.marketValue ? Math.max(asset.position.marketValue * 4, 10000) : 100000,
     existingExposure: asset.position?.marketValue ?? 0,
+  });
+
+  const candleIntelligence = buildCandleIntelligenceViewModel({
+    symbol: asset.asset.symbol,
+    assetClass: 'crypto',
+    bars: asset.history,
+    generatedAt: new Date().toISOString(),
   });
 
   const auth = await getOptionalCurrentSession();
@@ -181,6 +189,7 @@ export default async function CryptoDetailPage({ params, searchParams }: CryptoD
       title={`${asset.asset.symbol} digital asset lane`}
       positionUnitLabel="units"
       actions={actions}
+      candleIntelligence={candleIntelligence}
     />
   );
 }

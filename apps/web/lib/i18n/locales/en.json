@@ -1201,7 +1201,10 @@
     "insufficientHistory": "Insufficient history for selected timeframe.",
     "selectedTimeframe": "Selected timeframe",
     "pointCount": "{{count}} data points",
-    "actualResolution": "Resolution: {{resolution}}"
+    "actualResolution": "Resolution: {{resolution}}",
+    "candleIntelligence": "Candle intelligence",
+    "candleIntelligenceDailyOnly": "Candle intelligence uses daily structure — switch to a daily timeframe to see it.",
+    "candleIntelligencePrimaryOnly": "Candle intelligence applies to the primary asset only."
   },
   "stocks": {
     "providerUnavailableSummary": "Live stocks snapshot is unavailable: {{message}}",

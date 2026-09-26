@@ -1120,7 +1120,10 @@
     "insufficientHistory": "Onvoldoende historie voor geselecteerd tijdvenster.",
     "selectedTimeframe": "Geselecteerd tijdvenster",
     "pointCount": "{{count}} datapunten",
-    "actualResolution": "Resolutie: {{resolution}}"
+    "actualResolution": "Resolutie: {{resolution}}",
+    "candleIntelligence": "Kaarsanalyse",
+    "candleIntelligenceDailyOnly": "Kaarsanalyse gebruikt de dagstructuur — schakel naar een dag-tijdsbestek.",
+    "candleIntelligencePrimaryOnly": "Kaarsanalyse geldt alleen voor het primaire instrument."
   },
   "stocks": {
     "providerUnavailableSummary": "Live aandelenmomentopname is niet beschikbaar: {{message}}",

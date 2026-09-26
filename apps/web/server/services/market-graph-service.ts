@@ -11,6 +11,10 @@ import {
 import { perfLog, perfNow } from '../lib/perf';
 import { loadHistoryBars, loadQuoteSnapshots } from './stock-simulation-service';
 import type { MarketHistoryResolution } from '@repo/providers';
+import {
+  buildChartIntelligenceOverlay,
+  type ChartIntelligenceOverlay,
+} from '../mappers/chart-intelligence-overlay-mapper';
 
 type MarketGraphDataOptions = {
   assetClass?: 'stock' | 'etf' | 'crypto';
@@ -93,6 +97,12 @@ export type MarketGraphAssetResult = {
     /** Quote observation time (ISO) for freshness/staleness display. */
     observedAt?: string | null;
   } | null;
+  /**
+   * Optional deterministic candlestick-intelligence overlay, derived server-side
+   * from the asset's DAILY history. Consumed by the chart's opt-in overlay layer.
+   * Null when the current view is intraday (the engine is daily-only).
+   */
+  candleIntelligence: ChartIntelligenceOverlay | null;
 };
 
 export type MarketGraphResult = {
@@ -320,6 +330,13 @@ export async function getMarketGraphData(options: MarketGraphDataOptions = {}): 
     providerQuoteMode,
   };
 
+  // Candlestick intelligence is daily-only. Compute the overlay solely for daily
+  // views; intraday requests (1m/1h) skip it so we never imply intraday structure.
+  const overlayEligible = requestedResolution === '1d';
+  // Single request-level timestamp — the pure engine never reads ambient time.
+  const overlayGeneratedAt = new Date().toISOString();
+  const tOverlay = perfNow();
+
   // Build per-asset histories — send the full sorted bar set so the client can slice
   // client-side when the user switches timeframes. Downsampling is left to the client.
   // The server-side slice above is used only for metadata (pointCount, isDegraded, etc.).
@@ -328,17 +345,29 @@ export async function getMarketGraphData(options: MarketGraphDataOptions = {}): 
       .slice()
       .sort((l, r) => new Date(l.timestamp).getTime() - new Date(r.timestamp).getTime());
 
+    const barPoints = allBars.map(buildBarPoint);
+
     // Derive signal from the last 252 closes (1Y window) for a meaningful score.
     const signalCloses = allBars.slice(-252).map((bar) => bar.close);
+    const assetClass = asset.assetClass as 'stock' | 'etf' | 'crypto';
     return {
       assetId: asset.assetId,
       symbol: asset.symbol,
       name: asset.name,
-      assetClass: asset.assetClass as 'stock' | 'etf' | 'crypto',
-      history: allBars.map(buildBarPoint),
+      assetClass,
+      history: barPoints,
       signal: signalCloses.length > 1 ? deriveSignalSnapshot(asset.assetId, signalCloses) : null,
+      candleIntelligence: overlayEligible
+        ? buildChartIntelligenceOverlay({
+            symbol: asset.symbol,
+            assetClass,
+            bars: barPoints,
+            generatedAt: overlayGeneratedAt,
+          })
+        : null,
     };
   });
+  perfLog(`market-graph:candle-intelligence assets=${histories.length} eligible=${overlayEligible}`, tOverlay);
 
   const resultAssets: MarketGraphAssetResult[] = histories.map((asset) => ({
     ...asset,

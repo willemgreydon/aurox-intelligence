@@ -17,6 +17,8 @@ import {
 } from '../../lib/market-graph-timeframes';
 import { getQuoteRefreshIntervalMs, shouldPollQuotes } from '../../lib/market-refresh';
 import type { MarketGraphDataMeta } from '../../server/services/market-graph-service';
+import type { ChartIntelligenceOverlay } from '../../server/mappers/chart-intelligence-overlay-mapper';
+import { projectChartIntelligence } from '../../lib/chart-intelligence-projection';
 import { TimeframeSelect } from './timeframe-select';
 
 type HistoryPoint = {
@@ -41,6 +43,8 @@ type AssetSeries = {
     changePercent?: number;
     observedAt?: string | null;
   } | null;
+  /** Optional deterministic candlestick-intelligence overlay (daily-derived). */
+  candleIntelligence?: ChartIntelligenceOverlay | null;
 };
 
 type MarketGraphWorkspaceProps = {
@@ -84,6 +88,9 @@ type MarketGraphWorkspaceProps = {
     dailyFallback: string;
     candlesUnavailable: string;
     insufficientHistory: string;
+    candleIntelligence: string;
+    candleIntelligenceDailyOnly: string;
+    candleIntelligencePrimaryOnly: string;
   };
 };
 
@@ -270,6 +277,7 @@ export function MarketGraphWorkspace({
   const [graphType, setGraphType] = useState<'line' | 'candles'>('line');
   const [showMovingAverage, setShowMovingAverage] = useState(true);
   const [showSignals, setShowSignals] = useState(true);
+  const [showCandleIntelligence, setShowCandleIntelligence] = useState(false);
   const [viewportSize, setViewportSize] = useState<number | null>(null);
   const [viewportOffset, setViewportOffset] = useState(0);
   const [advancedOpen, setAdvancedOpen] = useState(false);
@@ -599,13 +607,47 @@ export function MarketGraphWorkspace({
           : null
       : null;
 
+  // --- Candle intelligence overlay (opt-in, additive; default OFF) ---
+  // Financial analysis is done server-side; here we only PROJECT the
+  // coordinate-independent overlay onto the current viewport (pure geometry).
+  const intelOverlay = selected.candleIntelligence ?? null;
+  const isTrueIntraday = isIntradayTimeframe && !visibleIsDailyFallback;
+  const intelActive =
+    showCandleIntelligence && !useCompareMode && !isTrueIntraday && Boolean(intelOverlay?.available);
+  const projectedIntel =
+    intelActive && hasRenderableSeries && intelOverlay
+      ? projectChartIntelligence(intelOverlay, {
+          timestamps: viewportVisible.map((point) => point.timestamp),
+          mode: graphType,
+          minPrice,
+          priceRange,
+          closeMin,
+          closeRange,
+        })
+      : null;
+  // Note shown when intelligence is enabled but cannot apply to the current view.
+  const intelUnavailableNote =
+    showCandleIntelligence && !intelActive
+      ? useCompareMode
+        ? labels.candleIntelligencePrimaryOnly
+        : isTrueIntraday
+          ? labels.candleIntelligenceDailyOnly
+          : null
+      : null;
+  // Per-candle patterns for the hovered candle (keyed by the confirming bar).
+  const hoveredIntelPatterns =
+    intelActive && intelOverlay && hoveredPoint
+      ? intelOverlay.patterns.filter((pattern) => pattern.anchorTimestamp === hoveredPoint.timestamp)
+      : [];
+
   const yLabelW = 72;
   const yLabelH = 18;
   const xLabelW = 84;
   const xLabelH = 17;
 
   const tooltipWidth = 188;
-  const tooltipHeight = graphType === 'candles' ? 140 : 108;
+  const intelTooltipExtra = hoveredIntelPatterns.length > 0 ? 78 : 0;
+  const tooltipHeight = (graphType === 'candles' ? 140 : 108) + intelTooltipExtra;
   // Tooltip clamping uses the canvas size captured in the hover handler (where
   // reading the ref is allowed), so nothing reads canvasRef during render.
   const tooltipLeft = hoverState
@@ -845,6 +887,14 @@ export function MarketGraphWorkspace({
                     <input type="checkbox" checked={showSignals} onChange={() => setShowSignals((value) => !value)} />
                     <span>{labels.signals}</span>
                   </label>
+                  <label className="market-graph__toggle">
+                    <input
+                      type="checkbox"
+                      checked={showCandleIntelligence}
+                      onChange={() => setShowCandleIntelligence((value) => !value)}
+                    />
+                    <span>{labels.candleIntelligence}</span>
+                  </label>
                 </div>
                 <div className="market-graph__meta-row">
                   <span className="market-graph__meta-item">
@@ -914,6 +964,12 @@ export function MarketGraphWorkspace({
             </div>
           ) : null}
 
+          {intelUnavailableNote ? (
+            <div className="market-graph__degraded-note market-graph__degraded-note--intel" role="status" aria-live="polite">
+              {intelUnavailableNote}
+            </div>
+          ) : null}
+
           <div className="market-graph__instrument" role="status" aria-live="polite">
             <div className="market-graph__instrument-identity">
               <strong className="market-graph__instrument-symbol">{selected.symbol}</strong>
@@ -937,7 +993,11 @@ export function MarketGraphWorkspace({
           viewBox="0 0 980 420"
           className="market-graph__svg"
           role="img"
-          aria-label={labels.chartAriaTemplate.replace('{{symbol}}', selected.symbol)}
+          aria-label={
+            intelActive && intelOverlay
+              ? `${labels.chartAriaTemplate.replace('{{symbol}}', selected.symbol)} — ${labels.candleIntelligence}: ${intelOverlay.headline}`
+              : labels.chartAriaTemplate.replace('{{symbol}}', selected.symbol)
+          }
           onMouseMove={handleChartMouseMove}
           onPointerMove={handleChartPointerMove}
           onMouseLeave={handleChartMouseLeave}
@@ -1026,6 +1086,84 @@ export function MarketGraphWorkspace({
               r="6"
               className={`market-graph__signal market-graph__signal--${selected.signal.interpretation}`}
             />
+          ) : null}
+
+          {projectedIntel ? (
+            <g className="market-graph__intel" aria-hidden="true">
+              {projectedIntel.levels.map((level) => {
+                const tagY = Math.max(2, Math.min(404, level.y - 7));
+                return (
+                  <g key={`intel-level-${level.kind}-${level.y.toFixed(1)}`}>
+                    <line
+                      x1="24"
+                      x2="980"
+                      y1={level.y}
+                      y2={level.y}
+                      className={`market-graph__intel-level market-graph__intel-level--${level.kind}`}
+                    />
+                    <rect
+                      x="2"
+                      y={tagY}
+                      width="20"
+                      height="14"
+                      rx="2"
+                      className={`market-graph__intel-tag market-graph__intel-tag--${level.kind}`}
+                    />
+                    <text x="12" y={tagY + 10} textAnchor="middle" className="market-graph__intel-tag-text">
+                      {level.label}
+                    </text>
+                  </g>
+                );
+              })}
+
+              {projectedIntel.swings.map((swing) => {
+                const tagY = Math.max(2, Math.min(404, swing.y - 7));
+                return (
+                  <g key={`intel-swing-${swing.kind}-${swing.y.toFixed(1)}`}>
+                    <line x1="900" x2="956" y1={swing.y} y2={swing.y} className="market-graph__intel-swing-tick" />
+                    <rect
+                      x="956"
+                      y={tagY}
+                      width="22"
+                      height="14"
+                      rx="2"
+                      className="market-graph__intel-tag market-graph__intel-tag--swing"
+                    />
+                    <text x="967" y={tagY + 10} textAnchor="middle" className="market-graph__intel-tag-text">
+                      {swing.label}
+                    </text>
+                  </g>
+                );
+              })}
+
+              {projectedIntel.patterns.map((pattern) => (
+                <g
+                  key={pattern.key}
+                  className={`market-graph__intel-pattern market-graph__intel-pattern--${pattern.direction}`}
+                >
+                  <circle cx={pattern.x} cy={pattern.y} r="8" className="market-graph__intel-pattern-dot" />
+                  <text x={pattern.x} y={pattern.y + 3} textAnchor="middle" className="market-graph__intel-pattern-glyph">
+                    {pattern.glyph}
+                  </text>
+                </g>
+              ))}
+
+              {projectedIntel.events.map((event, index) => {
+                const ex = Math.max(60, Math.min(920, event.x));
+                const ey = Math.max(16, Math.min(404, event.y - 22));
+                return (
+                  <g
+                    key={`intel-event-${event.kind}-${index}`}
+                    className={`market-graph__intel-event market-graph__intel-event--${event.direction}`}
+                  >
+                    <rect x={ex - 36} y={ey - 9} width="72" height="16" rx="3" className="market-graph__intel-event-bg" />
+                    <text x={ex} y={ey + 3} textAnchor="middle" className="market-graph__intel-event-text">
+                      {event.label}
+                    </text>
+                  </g>
+                );
+              })}
+            </g>
           ) : null}
 
           {hoveredPoint && hoveredX !== null && hoveredY !== null ? (
@@ -1123,6 +1261,38 @@ export function MarketGraphWorkspace({
               <div className="market-graph__tooltip-row">
                 <span className="market-graph__tooltip-label">MA(10)</span>
                 <span className="market-graph__tooltip-value">${ma[hoverState.index]!.toFixed(2)}</span>
+              </div>
+            ) : null}
+
+            {hoveredIntelPatterns.length > 0 ? (
+              <div className="market-graph__tooltip-intel">
+                <div className="market-graph__tooltip-intel-head">{labels.candleIntelligence}</div>
+                {hoveredIntelPatterns.slice(0, 2).map((pattern) => (
+                  <div key={pattern.key} className="market-graph__tooltip-intel-item">
+                    <div className="market-graph__tooltip-row">
+                      <span className={`market-graph__tooltip-label market-graph__tooltip-label--${pattern.direction}`}>
+                        {pattern.label}
+                      </span>
+                      <span className="market-graph__tooltip-value">
+                        {pattern.strengthLabel} · {(pattern.confidence * 100).toFixed(0)}%
+                      </span>
+                    </div>
+                    <p className="market-graph__tooltip-intel-note">{pattern.explanation}</p>
+                    {pattern.context ? (
+                      <p className="market-graph__tooltip-intel-note">{pattern.context}</p>
+                    ) : null}
+                    {pattern.supporting[0] ? (
+                      <p className="market-graph__tooltip-intel-note market-graph__tooltip-intel-note--pos">
+                        + {pattern.supporting[0]}
+                      </p>
+                    ) : null}
+                    {pattern.counter[0] ? (
+                      <p className="market-graph__tooltip-intel-note market-graph__tooltip-intel-note--neg">
+                        − {pattern.counter[0]}
+                      </p>
+                    ) : null}
+                  </div>
+                ))}
               </div>
             ) : null}
 

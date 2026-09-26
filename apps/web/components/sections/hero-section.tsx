@@ -63,6 +63,9 @@ type HeroSectionProps = {
       dailyFallback: string;
       candlesUnavailable: string;
       insufficientHistory: string;
+      candleIntelligence: string;
+      candleIntelligenceDailyOnly: string;
+      candleIntelligencePrimaryOnly: string;
     };
   };
 };
@@ -147,6 +150,9 @@ export function HeroSection({ stocks, marketGraph, labels, trackedSymbols = [], 
                 dailyFallback: labels.graphLabels.dailyFallback,
                 candlesUnavailable: labels.graphLabels.candlesUnavailable,
                 insufficientHistory: labels.graphLabels.insufficientHistory,
+                candleIntelligence: labels.graphLabels.candleIntelligence,
+                candleIntelligenceDailyOnly: labels.graphLabels.candleIntelligenceDailyOnly,
+                candleIntelligencePrimaryOnly: labels.graphLabels.candleIntelligencePrimaryOnly,
               }}
             />
           </Card>

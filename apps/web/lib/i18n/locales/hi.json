@@ -1120,7 +1120,10 @@
     "insufficientHistory": "चयनित टाइमफ़्रेम के लिए अपर्याप्त इतिहास।",
     "selectedTimeframe": "चयनित टाइमफ़्रेम",
     "pointCount": "{{count}} डेटा बिंदु",
-    "actualResolution": "रिज़ॉल्यूशन: {{resolution}}"
+    "actualResolution": "रिज़ॉल्यूशन: {{resolution}}",
+    "candleIntelligence": "Candle intelligence",
+    "candleIntelligenceDailyOnly": "Candle intelligence uses daily structure — switch to a daily timeframe to see it.",
+    "candleIntelligencePrimaryOnly": "Candle intelligence applies to the primary asset only."
   },
   "stocks": {
     "providerUnavailableSummary": "लाइव स्टॉक्स स्नैपशॉट अनुपलब्ध है: {{message}}",
