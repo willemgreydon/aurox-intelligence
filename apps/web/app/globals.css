@@ -13028,6 +13028,21 @@ code,
   .card-grid--three {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
+
+  /* Home spotlight chart on large/ultrawide screens. The canvas is full-bleed
+     wide but was capped at 40rem tall, so it read as a shallow ribbon; the SVG
+     (viewBox 980x420, preserveAspectRatio=meet) then letterboxed its drawing
+     into the centre, leaving empty grid on the sides. Giving the canvas more
+     height lets the aspect-locked drawing scale up and fill much more of the
+     width. Geometry + Candle Intelligence overlay are untouched. */
+  .hero-graph-card {
+    --market-workstation-height: clamp(42rem, 62vh, 58rem);
+  }
+  /* Let the floating control panel grow with the canvas instead of sitting as a
+     narrow 70rem island in the centre of a huge chart. */
+  .hero-graph-card .market-graph__control-panel {
+    width: min(100%, 84rem);
+  }
 }
 
 /* Home page was stranded at the 76rem standard shell (its chart is full-bleed,
