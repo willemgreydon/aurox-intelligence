@@ -618,6 +618,11 @@ export async function updateAuthUserRole(input: {
  * live sessions inside the same transaction, so a disabled account loses access
  * immediately (not just on next natural expiry). Status is read `for update` to
  * capture an accurate `before` value and serialize concurrent changes.
+ *
+ * Activating an account that was never email-verified (e.g. clearing a stuck
+ * `pending_verification` user from the admin console) stamps `email_verified_at`
+ * so the account is treated as fully verified going forward. Already-verified
+ * accounts keep their original timestamp; disabling never touches it.
  * Returns the updated user, or null if no row matched (no audit written).
  */
 export async function adminSetUserStatus(input: {
@@ -642,7 +647,17 @@ export async function adminSetUserStatus(input: {
     }
 
     await transactionClient.execute(
-      `update ${usersTable} set status = $2, updated_at = now() where id = $1`,
+      `
+        update ${usersTable}
+        set
+          status = $2,
+          email_verified_at = case
+            when $2 = 'active' and email_verified_at is null then now()
+            else email_verified_at
+          end,
+          updated_at = now()
+        where id = $1
+      `,
       [input.userId, input.status],
     );
 

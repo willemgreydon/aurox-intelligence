@@ -85,7 +85,22 @@ export default async function AdminUsersPage() {
                       <td>{row.lastLoginLabel}</td>
                       <td>
                         {row.isSelf ? (
-                          <span className="text-muted">Your account</span>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignItems: 'center' }}>
+                            <span className="text-muted">Your account</span>
+                            {row.isPending ? (
+                              <form action={setUserStatusAction}>
+                                <input type="hidden" name="userId" value={row.id} />
+                                <input type="hidden" name="status" value="active" />
+                                <button
+                                  type="submit"
+                                  className="button button--primary"
+                                  aria-label={`Verify and activate your account (${row.email})`}
+                                >
+                                  {row.statusActionLabel}
+                                </button>
+                              </form>
+                            ) : null}
+                          </div>
                         ) : (
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
                             <form action={setUserRoleAction}>
@@ -104,7 +119,7 @@ export default async function AdminUsersPage() {
                               <input type="hidden" name="status" value={row.nextStatus} />
                               <button
                                 type="submit"
-                                className={`button ${row.isDisabled ? 'button--primary' : 'button--secondary'}`}
+                                className={`button ${row.statusActionIsPositive ? 'button--primary' : 'button--secondary'}`}
                                 aria-label={`${row.statusActionLabel} account for ${row.email}`}
                               >
                                 {row.statusActionLabel}
