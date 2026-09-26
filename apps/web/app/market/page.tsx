@@ -19,6 +19,9 @@ import { mapCatalogEntriesToRoster } from '../../server/mappers/market-roster-ma
 import { getMarketStateConstellationData } from '../../server/services/market-state-constellation-service';
 import { mapMarketStateConstellation } from '../../server/mappers/market-state-constellation-mapper';
 import { MarketStateConstellation } from '../../components/charts/market-state-constellation';
+import { getMarketCorrelationData } from '../../server/services/market-correlation-service';
+import { mapMarketCorrelation } from '../../server/mappers/market-correlation-mapper';
+import { CorrelationHeatmap } from '../../components/charts/correlation-heatmap';
 import { formatPercentChange } from '../../server/lib/quote-display';
 import { getOptionalCurrentSession } from '../../server/auth/session';
 import { perfLog, perfNow } from '../../server/lib/perf';
@@ -53,7 +56,7 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
   ]);
   const messages = getMessages(locale);
 
-  const [graph, catalog, news, constellationRaw] = await Promise.all([
+  const [graph, catalog, news, constellationRaw, correlationRaw] = await Promise.all([
     getMarketGraphData({
       ...(assetClass !== 'all' ? { assetClass } : {}),
       ...(preferredSymbols.length > 0 ? { preferredSymbols } : {}),
@@ -61,8 +64,10 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
     getMarketCatalogPageData(query, { page, pageSize, assetClass }),
     getNewsStreamData().catch(() => ({ items: [] as never[] })),
     getMarketStateConstellationData().catch(() => null),
+    getMarketCorrelationData().catch(() => null),
   ]);
   const constellation = constellationRaw ? mapMarketStateConstellation(constellationRaw) : null;
+  const correlation = correlationRaw ? mapMarketCorrelation(correlationRaw) : null;
   perfLog('page:/market loaders', pageStart);
 
   // Sparklines for the visible roster entries only — bounded provider budget.
@@ -144,6 +149,26 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
             </div>
           </header>
           <MarketStateConstellation vm={constellation} />
+        </Section>
+      ) : null}
+
+      {correlation?.available ? (
+        <Section
+          id="market-correlation"
+          className="dashboard-section dashboard-section--compact"
+          containerClassName="shell-container--workstation"
+        >
+          <header className="dashboard-section-heading">
+            <div>
+              <div className="section__eyebrow">Relationships</div>
+              <h2 className="dashboard-section-heading__title">Correlation Matrix</h2>
+              <p className="dashboard-section-heading__description">
+                Pairwise correlation of synchronized daily returns across tracked assets — how they move
+                together (green) or apart (red). Insufficient overlap is shown honestly, never as zero.
+              </p>
+            </div>
+          </header>
+          <CorrelationHeatmap vm={correlation} />
         </Section>
       ) : null}
 

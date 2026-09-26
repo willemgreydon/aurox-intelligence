@@ -6245,6 +6245,108 @@ code,
   color: var(--text-tertiary);
 }
 
+/* ── Correlation Heatmap ─────────────────────────────────────────────────── */
+.corrheat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.corrheat--empty {
+  padding: var(--space-4);
+  text-align: center;
+}
+
+.corrheat__empty-text {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.corrheat__grid {
+  display: grid;
+  gap: 2px;
+  max-width: 48rem;
+}
+
+.corrheat__colhead,
+.corrheat__rowhead {
+  font-family: var(--font-family-mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.corrheat__rowhead {
+  justify-content: flex-end;
+  padding-inline-end: var(--space-2);
+}
+
+.corrheat__cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.8rem;
+  font-family: var(--font-family-mono);
+  font-size: 0.6rem;
+  color: var(--text-primary);
+  border-radius: 2px;
+  background: var(--surface-raised);
+}
+
+.corrheat__cell--diag {
+  background: var(--surface-base);
+  color: var(--text-tertiary);
+}
+
+.corrheat__cell--na {
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 3px,
+    var(--border-subtle) 3px,
+    var(--border-subtle) 4px
+  );
+  color: var(--text-tertiary);
+}
+
+.corrheat__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.corrheat__legend {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.65rem;
+  color: var(--text-tertiary);
+  font-family: var(--font-family-mono);
+}
+
+.corrheat__legend-bar {
+  width: 8rem;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(90deg, var(--chart-negative), var(--surface-raised), var(--chart-positive));
+}
+
+.corrheat__caption {
+  margin: 0;
+  font-size: 0.68rem;
+  color: var(--text-tertiary);
+  max-width: 46rem;
+}
+
 .market-graph__signal--bullish {
   fill: var(--chart-positive);
 }
