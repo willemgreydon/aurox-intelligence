@@ -15,6 +15,26 @@ Single user store, schema `app` (`packages/db/src/migrations/0001_auth_session_n
 
 Role is **flat two-tier**, not RBAC. There is no permissions table, no `plan`/`tier`, no `is_admin` boolean. The single source of truth for the enum is `userRoleSchema` in `packages/api-contracts/src/account/account.ts`.
 
+## 1a. User properties layer (migration `0021`)
+
+Additive analytics/lifecycle/satisfaction layer, kept **out of the auth-critical `app.users` table** so identity/auth is never touched. One row per user, 1:1.
+
+- **`app.user_properties`** (`packages/db/src/migrations/0021_user_properties.sql`) — `user_id` PK/FK → `app.users(id)` `on delete cascade`. Reversible: `drop table app.user_properties`. Group map (mirrors `packages/api-contracts/src/account/user-properties.ts`):
+  - **A profile** (user-editable): `job_title`, `organization`, `country`, `region`, `timezone`, `bio`.
+  - **B lifecycle** (system/admin): `lifecycle_stage`, `maturity_tier` (observer→operator), `onboarding_completed_at`, `first_simulation_at`, `activated_at`, `last_active_at`.
+  - **C engagement** (job-refreshed): `total_sessions`, `total_active_days`, `streak_days`, `total_simulation_orders`, `feature_adoption` (jsonb), `aggregates_refreshed_at`.
+  - **D satisfaction** (user-submitted): `nps_score`+derived `nps_category`, `csat_score`, submitted-at stamps, `satisfaction_notes`.
+  - **E acquisition** (capture-once): source/medium/campaign, `referral_code`, `landing_page`, `first_touch_at`.
+  - **F behavior** (system-derived): `risk_appetite`, `preferred_asset_scope`, `most_traded_asset_class`, `avg_position_size_usd`.
+  - **G consent** (privacy by default): `marketing_opt_in`, `product_updates_opt_in`, `research_participation_opt_in`, terms/privacy version+stamps.
+  - **H internal** (**admin-only, never in a user read model**): `health_score`, `churn_risk_score`, `internal_segments` (jsonb), `admin_notes`.
+- **Contract:** `userPropertiesSchema` (full/admin), `userPropertiesPublicSchema` + `toPublicUserProperties()` (strips group H for the user), `createDefaultUserProperties()` (a user with no row → fully-defaulted, never a throw), `deriveNpsCategory()`. All in `packages/api-contracts/src/account/user-properties.ts`.
+- **Repository:** `user-properties-repository.ts` — `getUserProperties`, `upsertUserProfileDetails` (A+G), `recordUserSatisfaction` (D), `updateUserPropertiesByAdmin` (B+H), `captureUserAcquisition` (E, write-once via coalesce), `saveUserEngagementAggregates`/`saveUserBehaviorAggregates` (C/F, for jobs), `listUserPropertiesAdminSummaries` (batched admin list, no N+1). Degrades to defaults on missing schema (`42P01`/`42703`) so **deploying code before running `0021` is safe**.
+- **Write path (user):** `updateUserProfileDetailsAction` + `submitUserSatisfactionAction` (`apps/web/server/actions/user-properties-actions.ts`, Zod-validated, user-scoped, `force-dynamic` account route). Read via `getAccountUserPropertiesData` → `mapAccountUserProperties` (strips H) on `/account/settings`.
+- **Read (admin):** `/admin/users` shows a read-only "User properties & lifecycle" table (lifecycle/maturity/health/NPS/marketing) via `listUserPropertiesAdminSummaries`.
+- **Rollout:** migration is **not** auto-applied on deploy — run `node packages/db/scripts/migrate.mjs` (needs `DIRECT_URL`/`DATABASE_URL_UNPOOLED`).
+- **Follow-ups:** admin _edit_ UI for B/H (write path `updateUserPropertiesByAdmin` exists), background jobs to populate C/E/F, and full i18n for the new account-form copy.
+
 ## 2. Read path (session)
 
 `getOptionalCurrentSession` (`apps/web/server/auth/session.ts`) reads the signed cookie → `findSessionByToken` (join `sessions`→`users`) → validates with `authenticatedSessionSchema`. **Role travels on the session.** Fails **closed → anonymous** on DB outage (never throws at root layout). `requireCurrentSession` / `requireCurrentUser` redirect to login. There is intentionally **no `requireAdmin` helper** — admin is checked inline.

@@ -3,6 +3,7 @@ export * from './assets/asset';
 export * from './candles/candles';
 export * from './ranking/ranking';
 export * from './account/account';
+export * from './account/user-properties';
 export * from './admin/admin';
 export * from './dashboard/dashboard';
 export * from './fx/fx';

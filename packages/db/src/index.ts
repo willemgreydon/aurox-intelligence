@@ -8,6 +8,7 @@ export * from './repositories/linked-investment-accounts-repository';
 export * from './repositories/market-data-repository';
 export * from './repositories/market-intelligence-repository';
 export * from './repositories/user-preferences-repository';
+export * from './repositories/user-properties-repository';
 export * from './repositories/provider-monitor-config-repository';
 export * from './repositories/simulated-trading-repository';
 export * from './repositories/simulation-session-repository';

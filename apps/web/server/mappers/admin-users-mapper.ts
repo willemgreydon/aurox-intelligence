@@ -1,7 +1,25 @@
-import type { UserRole } from '@repo/api-contracts';
+import type { UserProperties, UserRole } from '@repo/api-contracts';
 import type { AdminUsersReadModel } from '../queries/admin-users-query';
 
 type StatusTone = 'success' | 'warning' | 'danger' | 'info';
+
+const LIFECYCLE_LABELS: Record<NonNullable<UserProperties['lifecycleStage']>, string> = {
+  signed_up: 'Signed up',
+  onboarding: 'Onboarding',
+  activated: 'Activated',
+  engaged: 'Engaged',
+  power_user: 'Power user',
+  at_risk: 'At risk',
+  churned: 'Churned',
+  reactivated: 'Reactivated',
+};
+
+const MATURITY_LABELS: Record<NonNullable<UserProperties['maturityTier']>, string> = {
+  observer: 'Observer',
+  simulator: 'Simulator',
+  strategist: 'Strategist',
+  operator: 'Operator',
+};
 
 export type AdminUserRowViewModel = {
   id: string;
@@ -33,6 +51,12 @@ export type AdminUserRowViewModel = {
    * style it as a primary action; false for the destructive "Disable".
    */
   statusActionIsPositive: boolean;
+  /** Read-only user-properties analytics (defaults to "—" when unpopulated). */
+  lifecycleLabel: string;
+  maturityLabel: string;
+  healthScoreLabel: string;
+  npsLabel: string;
+  marketingLabel: string;
 };
 
 export type AdminEventRowViewModel = {
@@ -106,6 +130,14 @@ export function mapAdminUsersViewModel(
       : isPending
         ? 'Verify & activate'
         : 'Reactivate';
+    const properties = readModel.propertiesByUserId.get(user.id);
+    const npsLabel = (() => {
+      if (!properties || properties.npsScore === null) {
+        return '—';
+      }
+      const category = properties.npsCategory ? ` (${properties.npsCategory})` : '';
+      return `${properties.npsScore}${category}`;
+    })();
     return {
       id: user.id,
       email: user.email,
@@ -125,6 +157,11 @@ export function mapAdminUsersViewModel(
       nextStatus,
       statusActionLabel,
       statusActionIsPositive: nextStatus === 'active',
+      lifecycleLabel: properties?.lifecycleStage ? LIFECYCLE_LABELS[properties.lifecycleStage] : '—',
+      maturityLabel: properties?.maturityTier ? MATURITY_LABELS[properties.maturityTier] : '—',
+      healthScoreLabel: properties && properties.healthScore !== null ? String(Math.round(properties.healthScore)) : '—',
+      npsLabel,
+      marketingLabel: properties?.marketingOptIn ? 'Opted in' : '—',
     };
   });
 

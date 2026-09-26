@@ -1,11 +1,14 @@
 import { PasswordForm } from '../../../components/account/password-form';
 import { WorkspacePreferencesForm } from '../../../components/account/workspace-preferences-form';
+import { UserPropertiesForm } from '../../../components/account/user-properties-form';
+import { SatisfactionForm } from '../../../components/account/satisfaction-form';
 import { SignOutButton } from '../../../components/auth/sign-out-button';
 import { Card } from '../../../components/ui/card';
 import { getMessages } from '../../../lib/i18n/messages';
 import { requireCurrentSession } from '../../../server/auth/session';
 import { getRequestLocale } from '../../../server/i18n/locale';
 import { getAccountOverviewData } from '../../../server/services/account-service';
+import { getAccountUserPropertiesData } from '../../../server/services/user-properties-service';
 import { assertSerializableProps } from '../../../lib/assert-serializable-props';
 
 // User-specific account data — never cached at the route level.
@@ -15,9 +18,13 @@ export default async function AccountSettingsPage() {
   const auth = await requireCurrentSession('/account/settings');
   const locale = await getRequestLocale();
   const messages = getMessages(locale);
-  const overview = await getAccountOverviewData(auth);
+  const [overview, userProperties] = await Promise.all([
+    getAccountOverviewData(auth),
+    getAccountUserPropertiesData(auth.user.id),
+  ]);
 
   assertSerializableProps('account.preferences', overview.preferences as Record<string, unknown>);
+  assertSerializableProps('account.userProperties', userProperties as unknown as Record<string, unknown>);
 
   const count = overview.activeSessionCount;
   const sessionDescription =
@@ -113,6 +120,16 @@ export default async function AccountSettingsPage() {
             },
           }}
         />
+      </Card>
+
+      {/* Profile details & consent (user-properties groups A + G) */}
+      <Card>
+        <UserPropertiesForm viewModel={userProperties} />
+      </Card>
+
+      {/* Satisfaction / CSAT-NPS (user-properties group D) */}
+      <Card>
+        <SatisfactionForm viewModel={userProperties} />
       </Card>
 
       {/* Password / security */}

@@ -150,6 +150,50 @@ export default async function AdminUsersPage() {
       <Section className="dashboard-section">
         <div className="analytics-card">
           <div className="analytics-card__header">
+            <h2>User properties &amp; lifecycle</h2>
+            <p>
+              Read-only internal analytics — platform maturity, health, and satisfaction signals. Populated by
+              product/data-science tooling; blank fields show as “—”.
+            </p>
+          </div>
+          <div className="analytics-card__body" style={{ overflowX: 'auto' }}>
+            {model.rows.length === 0 ? (
+              <p>No users are registered yet.</p>
+            ) : (
+              <table className="table-panel__table">
+                <thead>
+                  <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col">Email</th>
+                    <th scope="col">Lifecycle stage</th>
+                    <th scope="col">Maturity tier</th>
+                    <th scope="col">Health</th>
+                    <th scope="col">NPS</th>
+                    <th scope="col">Marketing</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {model.rows.map((row) => (
+                    <tr key={`props-${row.id}`}>
+                      <td>{row.name}</td>
+                      <td>{row.email}</td>
+                      <td>{row.lifecycleLabel}</td>
+                      <td>{row.maturityLabel}</td>
+                      <td className="tabular-nums">{row.healthScoreLabel}</td>
+                      <td className="tabular-nums">{row.npsLabel}</td>
+                      <td>{row.marketingLabel}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      </Section>
+
+      <Section className="dashboard-section">
+        <div className="analytics-card">
+          <div className="analytics-card__header">
             <h2>Recent role changes</h2>
             <p>Append-only audit trail of administrator role grants and revocations.</p>
           </div>
