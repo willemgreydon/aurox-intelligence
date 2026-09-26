@@ -6347,6 +6347,119 @@ code,
   max-width: 46rem;
 }
 
+/* ── Signal Accuracy (Phase F) ───────────────────────────────────────────── */
+.sigacc {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.sigacc--empty {
+  padding: var(--space-5);
+  border: var(--border-width-thin) dashed var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--surface-base);
+}
+
+.sigacc__empty-text {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  max-width: 48rem;
+}
+
+.sigacc__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+@media (max-width: 720px) {
+  .sigacc__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sigacc__card {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  background: var(--surface-raised);
+}
+
+.sigacc__card--bullish { border-left: 3px solid var(--chart-positive); }
+.sigacc__card--bearish { border-left: 3px solid var(--chart-negative); }
+
+.sigacc__card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.sigacc__card-label {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.sigacc__reliability {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-pill);
+}
+
+.sigacc__reliability--insufficient { background: var(--surface-base); color: var(--text-tertiary); }
+.sigacc__reliability--low { background: var(--status-warning-bg); color: var(--status-warning-text); }
+.sigacc__reliability--moderate { background: var(--status-info-bg); color: var(--status-info-text); }
+.sigacc__reliability--high { background: var(--status-success-bg); color: var(--status-success-text); }
+
+.sigacc__hitrate {
+  font-family: var(--font-family-mono);
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.1;
+  margin-top: var(--space-2);
+}
+
+.sigacc__hitrate-label {
+  font-size: 0.68rem;
+  color: var(--text-tertiary);
+}
+
+.sigacc__stats {
+  display: flex;
+  gap: var(--space-5);
+  margin: var(--space-3) 0 0;
+}
+
+.sigacc__stats dt {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+}
+
+.sigacc__stats dd {
+  margin: 0;
+  font-family: var(--font-family-mono);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.sigacc__stat--positive { color: var(--chart-positive); }
+.sigacc__stat--negative { color: var(--chart-negative); }
+
+.sigacc__caption {
+  margin: 0;
+  font-size: 0.68rem;
+  color: var(--text-tertiary);
+  max-width: 48rem;
+}
+
 .market-graph__signal--bullish {
   fill: var(--chart-positive);
 }

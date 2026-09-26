@@ -1,5 +1,8 @@
 import { SignalsCockpit } from '../../components/signals/signals-cockpit';
 import { SimulationModeBadge } from '../../components/ui/simulation-mode-badge';
+import { Section } from '../../components/ui/section';
+import { SignalAccuracyMatrix } from '../../components/charts/signal-accuracy-matrix';
+import { getSignalAccuracyViewModel } from '../../server/services/signal-accuracy-service';
 import { getSignalsPageData } from '../../server/services/analysis-service';
 import { assertSerializableProps } from '../../lib/assert-serializable-props';
 import { getMessages } from '../../lib/i18n/messages';
@@ -10,7 +13,10 @@ export const dynamic = 'force-dynamic';
 export default async function SignalsPage() {
   const locale = await getRequestLocale();
   const messages = getMessages(locale);
-  const data = await getSignalsPageData();
+  const [data, signalAccuracy] = await Promise.all([
+    getSignalsPageData(),
+    getSignalAccuracyViewModel().catch(() => null),
+  ]);
 
   assertSerializableProps('signals.data', data as Record<string, unknown>);
 
@@ -55,6 +61,27 @@ export default async function SignalsPage() {
       </header>
 
       <SignalsCockpit data={data} labels={messages.signals} />
+
+      {signalAccuracy ? (
+        <Section
+          id="signal-accuracy"
+          className="dashboard-section dashboard-section--compact"
+          containerClassName="shell-container--workstation"
+        >
+          <header className="dashboard-section-heading">
+            <div>
+              <div className="section__eyebrow">Validation</div>
+              <h2 className="dashboard-section-heading__title">Signal Accuracy</h2>
+              <p className="dashboard-section-heading__description">
+                Empirical directional hit rate of the deterministic signal, measured against realized forward
+                returns from recorded signal history. Sample size is shown first — small samples are not
+                treated as authoritative.
+              </p>
+            </div>
+          </header>
+          <SignalAccuracyMatrix vm={signalAccuracy} />
+        </Section>
+      ) : null}
     </>
   );
 }

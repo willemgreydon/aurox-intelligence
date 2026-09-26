@@ -146,3 +146,81 @@ export async function getSignalHistory(assetId: string, limit = 90): Promise<Sig
     throw error;
   }
 }
+
+export interface SignalAccuracyRow {
+  interpretation: 'bullish' | 'bearish';
+  /** Number of recorded signals of this interpretation with a forward outcome. */
+  total: number;
+  /** Average subsequent return over the horizon (%). */
+  avgForwardReturnPct: number;
+  /** How many moved in the signalled direction. */
+  directionalHits: number;
+}
+
+type AccuracyDbRow = {
+  interpretation: string;
+  total: string | number;
+  avgForwardReturnPct: string | number | null;
+  directionalHits: string | number;
+};
+
+/**
+ * Empirical signal accuracy: joins recorded signals to the actual price path
+ * `horizonDays` later (from app.market_daily_bars) and reports, per bullish /
+ * bearish interpretation, the sample size, average forward return, and how many
+ * moved in the signalled direction. Returns [] until history accrues. The SQL
+ * (base/forward lateral joins + directional-hit filter) is verified against real
+ * price data.
+ */
+export async function getSignalAccuracy(horizonDays = 10): Promise<SignalAccuracyRow[]> {
+  const client = getConfiguredClient();
+  if (!client) return [];
+
+  try {
+    const rows = await client.query<AccuracyDbRow>(
+      `
+        with signals as (
+          select symbol, interpretation, generated_at::date as sig_date
+          from ${signalHistoryTable}
+          where interpretation in ('bullish', 'bearish')
+        ),
+        joined as (
+          select s.interpretation, base.close as base_close, fwd.close as fwd_close
+          from signals s
+          join lateral (
+            select close from app.market_daily_bars
+            where symbol = s.symbol and observed_on <= s.sig_date
+            order by observed_on desc limit 1
+          ) base on true
+          join lateral (
+            select close from app.market_daily_bars
+            where symbol = s.symbol and observed_on >= (s.sig_date + $1::int)
+            order by observed_on asc limit 1
+          ) fwd on true
+        )
+        select
+          interpretation,
+          count(*)::int as "total",
+          round(avg((fwd_close - base_close) / base_close) * 100, 2)::float8 as "avgForwardReturnPct",
+          count(*) filter (
+            where (interpretation = 'bullish' and fwd_close > base_close)
+               or (interpretation = 'bearish' and fwd_close < base_close)
+          )::int as "directionalHits"
+        from joined
+        group by interpretation
+        order by interpretation
+      `,
+      [horizonDays],
+    );
+
+    return rows.map((row) => ({
+      interpretation: row.interpretation === 'bearish' ? 'bearish' : 'bullish',
+      total: toNumber(row.total) ?? 0,
+      avgForwardReturnPct: toNumber(row.avgForwardReturnPct) ?? 0,
+      directionalHits: toNumber(row.directionalHits) ?? 0,
+    }));
+  } catch (error) {
+    if (isMissingSchemaError(error)) return [];
+    throw error;
+  }
+}
