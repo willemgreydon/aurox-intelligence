@@ -139,4 +139,40 @@ QUESTION ANSWERED · INPUT DATA · CALCULATION (engine) · ENCODING · INTERACTI
 LIMITATIONS · FAIL-SAFE BEHAVIOUR · RESPONSIVE/MOBILE · ACCESSIBILITY
 ```
 
-*(Entries added as Phases D–F land.)*
+### Market State Constellation — `/market`
+- **Question:** what is the state of the tracked market as a system, right now?
+- **Input:** tradable universe + batched daily OHLCV (`getMarketStateConstellationData`).
+- **Calculation:** per-asset scale-free momentum% + annualized realized-vol% (`computeRangeMetrics`) and deterministic signal/confidence (`deriveSignalSnapshot`). Pure normalization in the mapper (symmetric momentum → 0.5 centre; median-vol reference).
+- **Encoding:** x = momentum, y = volatility, colour = signal direction, size = confidence; four labelled quadrants + reference lines.
+- **Interaction:** node = `<Link>` to asset detail; native `<title>` tooltip.
+- **Limitations:** bounded to ~44 assets; snapshot (not temporal). **Fail-safe:** insufficient history → empty state.
+
+### Correlation Matrix — `/market`
+- **Question:** which assets move together vs. apart?
+- **Input:** bounded universe (14) + batched OHLCV → synchronized daily log-returns.
+- **Calculation:** pure Pearson matrix (`computeCorrelationMatrix`); pairwise overlap; unavailable pairs reported, never zero-filled.
+- **Encoding:** red → neutral → green by magnitude; muted unit diagonal; hatched "—" for insufficient overlap.
+- **Limitations:** N×N only legible for small N. **Fail-safe:** `< 2` series or no overlap → honest empty/"—".
+
+### Volatility Pulse — asset detail (risk tab)
+- **Question:** is this market unusually volatile — for itself?
+- **Input:** `vm.history` OHLCV. **Calculation:** pure rolling 20-session annualized realized vol + percentile within its own history (`computeVolatilityPulse`).
+- **Encoding:** area history + band (quiet/normal/elevated/extreme) + percentile marker. **Fail-safe:** `< 25` bars → empty.
+
+### Signal Confluence — asset detail (signals tab)
+- **Question:** do the deterministic evidence channels agree or diverge?
+- **Input/Calc:** `computeCandleIntelligence.confirmation` (trend/momentum/volume/volatility) exposed via the mapper.
+- **Encoding:** diverging bars around a zero centre (right = bullish) + overall confluence & confidence.
+
+### Support / Resistance Strength Map — asset detail (signals tab)
+- **Question:** where is the nearest structure, how strong, how far?
+- **Input/Calc:** `computeCandleIntelligence.structure.nearest{Support,Resistance}` (price, touches, distance).
+- **Encoding:** levels around current price; touch-count strength dots + distance.
+
+### Drawdown Underwater — `/account`
+- **Question:** how far below its high-water mark has the account been, and has it recovered?
+- **Input/Calc:** pure `computeDrawdownAnalytics` over the snapshot equity series.
+- **Encoding:** 0% line at top, shaded region hanging to the trough; max/current/trough stats. **Fail-safe:** `< 2` snapshots → empty.
+
+### Deferred (data-gated) — Phase F
+Forecast-vs-Reality, Signal Accuracy, Pattern Expectancy require persisted signal/forecast history. Migration `0020` + `signal_history`/`forecast` repositories exist (file-only), but they hold no history to backfill — these surfaces only become meaningful after the migration is applied and writers accumulate data forward over time.
