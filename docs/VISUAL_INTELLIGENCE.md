@@ -174,5 +174,24 @@ LIMITATIONS · FAIL-SAFE BEHAVIOUR · RESPONSIVE/MOBILE · ACCESSIBILITY
 - **Input/Calc:** pure `computeDrawdownAnalytics` over the snapshot equity series.
 - **Encoding:** 0% line at top, shaded region hanging to the trough; max/current/trough stats. **Fail-safe:** `< 2` snapshots → empty.
 
-### Deferred (data-gated) — Phase F
-Forecast-vs-Reality, Signal Accuracy, Pattern Expectancy require persisted signal/forecast history. Migration `0020` + `signal_history`/`forecast` repositories exist (file-only), but they hold no history to backfill — these surfaces only become meaningful after the migration is applied and writers accumulate data forward over time.
+### Signal Accuracy — `/signals` (Phase F)
+- **Question:** how accurate has the deterministic signal actually been?
+- **Pipeline (live):** migration `0020` applied to Neon; a daily cron
+  (`/api/cron/intelligence-history`) records the universe's signals into
+  `signal_history`. History accrues forward — nothing is backfilled.
+- **Calculation:** `getSignalAccuracy` joins each recorded signal to the realized
+  price `N` sessions later (`app.market_daily_bars`) → per bullish/bearish
+  interpretation: sample size, avg forward return, directional hits. Join + hit
+  logic verified against real price data.
+- **Encoding:** per-interpretation cards; **sample size is first-class** — hit
+  rate only shown at N≥20, reliability banded by N (a tiny sample never reads as
+  authoritative). Honest "still accumulating" empty state until data exists.
+
+### Remaining Phase F follow-ups
+- **Forecast-vs-Reality** — needs the forecast write-path wired (`forecasts` has a
+  FK to `assets.id` to reconcile) so produced forecasts persist for later
+  comparison to the realized path.
+- **Pattern Expectancy** — needs a `pattern_occurrences` table + writer to record
+  detected candle patterns with their forward outcomes.
+Both are data-gated the same way Signal Accuracy was: build + verify the stats
+once history has accrued.
