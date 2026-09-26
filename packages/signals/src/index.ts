@@ -6,6 +6,7 @@ export * from './indicators/ema';
 export * from './indicators/rsi';
 export * from './indicators/atr';
 export * from './analysis/derive-signal-snapshot';
+export * from './analysis/correlation';
 export * from './models/derived-signal';
 export * from './scoring/composite-score';
 export * from './util/clamp';

@@ -216,6 +216,29 @@ code,
   padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
 }
 
+/* Workstation-width content container. Mirrors `.observe-command-header__inner`
+   (max-width: var(--content-max-width); padding-inline: var(--space-5)) so a
+   page body's sections line up with the command header on large desktop /
+   ultrawide screens instead of being capped at the narrower --content-standard.
+   Applied alongside .shell-container via Section's containerClassName; declared
+   after .shell-container so the width/padding overrides win the cascade. */
+.shell-container--workstation {
+  width: 100%;
+  max-width: var(--content-max-width, var(--content-dashboard));
+  padding-inline: var(--space-5);
+}
+
+/* Account cockpit adapts to large desktop / ultrawide: every section container
+   widens from the narrow --content-standard to the workstation width so the
+   metric grids and tables use the available space instead of a 76rem column.
+   Scoped selector (.account-cockpit .shell-container) outranks the base
+   .shell-container width. */
+.account-cockpit .shell-container {
+  width: 100%;
+  max-width: var(--content-max-width, var(--content-dashboard));
+  padding-inline: var(--space-5);
+}
+
 .site-header {
   position: sticky;
   top: 0;
@@ -5642,6 +5665,296 @@ code,
   fill: color-mix(in srgb, var(--chart-negative) 82%, white);
 }
 
+/* Compare-lane candles: rebased to 100 alongside the primary and drawn in the
+   series-b hue (matching the compare line) so the two lanes stay visually
+   distinct from the green/red primary candles. */
+.market-graph__wick--compare {
+  stroke: var(--chart-series-b);
+  opacity: 0.6;
+}
+
+.market-graph__candle--compare {
+  stroke: var(--chart-series-b);
+  stroke-width: 1.1;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.85;
+}
+
+/* Up bars filled in the series-b hue, down bars hollow — direction stays legible
+   while the whole lane keeps its single "compare" (blue) identity. */
+.market-graph__candle--compare-up {
+  fill: color-mix(in srgb, var(--chart-series-b) 55%, transparent);
+}
+
+.market-graph__candle--compare-down {
+  fill: color-mix(in srgb, var(--chart-series-b) 12%, transparent);
+}
+
+/* Compare legend: names the primary vs compare lane with a colour swatch. The
+   primary swatch is a green/red split in candle mode (bicolour candles) and the
+   series-a line colour in line mode. */
+.market-graph__compare-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-1);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.market-graph__compare-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.market-graph__compare-chip--compare {
+  color: var(--chart-series-b);
+}
+
+.market-graph__compare-swatch {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 2px;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.market-graph__compare-swatch--primary {
+  background: var(--chart-series-a);
+}
+
+.market-graph__compare-swatch--candle-primary {
+  background: linear-gradient(90deg, var(--chart-positive) 50%, var(--chart-negative) 50%);
+}
+
+.market-graph__compare-swatch--compare {
+  background: var(--chart-series-b);
+}
+
+.market-graph__compare-legend-note {
+  font-size: 0.6rem;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MARKET STATE CONSTELLATION — signature momentum × volatility scatter
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.constellation {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.constellation__svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.constellation--empty {
+  display: grid;
+  place-items: center;
+  min-height: 12rem;
+  border: var(--border-width-thin) dashed var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--surface-base);
+}
+
+.constellation__empty-text {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  margin: 0;
+  padding: var(--space-4);
+  text-align: center;
+}
+
+.constellation__frame {
+  fill: color-mix(in srgb, var(--surface-raised) 60%, transparent);
+  stroke: var(--border-subtle);
+  stroke-width: 1;
+}
+
+.constellation__ref {
+  stroke: var(--border-strong);
+  stroke-width: 1;
+  stroke-dasharray: 4 5;
+  opacity: 0.6;
+}
+
+.constellation__quadrant {
+  fill: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.constellation__axis {
+  fill: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.constellation-node {
+  cursor: pointer;
+}
+
+.constellation-node__core {
+  stroke: var(--surface-base);
+  stroke-width: 1.25;
+  transition: r var(--duration-fast) var(--ease-standard);
+}
+
+.constellation-node__label {
+  fill: var(--text-secondary);
+  font-family: var(--font-family-mono);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.constellation-node:hover .constellation-node__core,
+.constellation-node:focus-visible .constellation-node__core {
+  stroke: var(--text-primary);
+  stroke-width: 2;
+}
+
+.constellation-node--bullish .constellation-node__core { fill: var(--chart-positive); }
+.constellation-node--bullish .constellation-node__halo { fill: var(--chart-positive); }
+.constellation-node--bearish .constellation-node__core { fill: var(--chart-negative); }
+.constellation-node--bearish .constellation-node__halo { fill: var(--chart-negative); }
+.constellation-node--neutral .constellation-node__core { fill: var(--chart-neutral); }
+.constellation-node--neutral .constellation-node__halo { fill: var(--chart-neutral); }
+
+.constellation__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.constellation__legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.constellation__legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.constellation__swatch {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.constellation__swatch--bullish { background: var(--chart-positive); }
+.constellation__swatch--bearish { background: var(--chart-negative); }
+.constellation__swatch--neutral { background: var(--chart-neutral); }
+
+.constellation__legend-note {
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
+.constellation__caption {
+  margin: 0;
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+  max-width: 42rem;
+}
+
+/* ── Drawdown Underwater ─────────────────────────────────────────────────── */
+.drawdown {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.drawdown__svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  aspect-ratio: 720 / 200;
+}
+
+.drawdown--empty {
+  display: grid;
+  place-items: center;
+  min-height: 8rem;
+  border: var(--border-width-thin) dashed var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--surface-base);
+}
+
+.drawdown__empty-text {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  margin: 0;
+  padding: var(--space-4);
+  text-align: center;
+}
+
+.drawdown__zero {
+  stroke: var(--border-strong);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+  opacity: 0.7;
+}
+
+.drawdown__area {
+  fill: color-mix(in srgb, var(--chart-negative) 22%, transparent);
+}
+
+.drawdown__line {
+  fill: none;
+  stroke: var(--chart-negative);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+
+.drawdown__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-5);
+  margin: 0;
+}
+
+.drawdown__stats dt {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  margin-bottom: 0.15rem;
+}
+
+.drawdown__stat {
+  font-family: var(--font-family-mono);
+  font-weight: 700;
+}
+
+.drawdown__stat--negative { color: var(--chart-negative); }
+.drawdown__stat--flat { color: var(--chart-positive); }
+.drawdown__stat--muted { color: var(--text-secondary); }
+
 .market-graph__signal--bullish {
   fill: var(--chart-positive);
 }
@@ -6586,6 +6899,10 @@ code,
   .broker-observer {
     position: static;
     min-height: 0;
+    /* height must be reset too: the base rule pins it to the fixed workstation
+       height (~40rem), which on mobile reserved a huge empty box under the
+       collapsed "Market sidebar" toggle. Let it size to its content instead. */
+    height: auto;
     max-height: none;
     overflow: visible;
   }
@@ -10390,6 +10707,13 @@ code,
 .finance-cockpit__grid {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  /* Gutter between the activity column ("Simulierte Broker-Aktivität") and the
+     starred-lanes column ("Markierte Lanes"). Responsive so it scales up as
+     .page-wide widens the cockpit to --content-dashboard on large screens (a
+     fixed 1.5rem was getting visually lost between two wide columns). Also acts
+     as the row gap once collapsed to a single column below 900px. */
+  gap: clamp(var(--space-6), 2.6vw, var(--space-12));
+  align-items: start;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -11155,6 +11479,14 @@ code,
 
 /* Generate panel + activity result */
 .finance-generate {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* The form stacks the field row, the optional micro-hint, and the generate
+   button. Without this the row and the submit button collapsed together. */
+.finance-generate__form {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);

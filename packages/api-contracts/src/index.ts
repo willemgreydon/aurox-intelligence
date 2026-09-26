@@ -1,3 +1,4 @@
+export * from './analytics/correlation';
 export * from './assets/asset';
 export * from './candles/candles';
 export * from './ranking/ranking';

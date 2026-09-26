@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { SeriesPoint } from '../../lib/dashboard/analytics-fixtures';
+import { buildLinePath, projectSeries } from '../../lib/charts/chart-geometry';
 import { ChartLegend } from './chart-legend';
 import { ChartPanel } from './chart-panel';
 
@@ -11,29 +12,7 @@ type LineTrendPanelProps = {
 };
 
 function buildPath(values: number[], width: number, height: number) {
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = Math.max(1, max - min);
-
-  return values
-    .map((value, index) => {
-      const x = (index / Math.max(1, values.length - 1)) * width;
-      const y = height - ((value - min) / range) * height;
-      return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
-    })
-    .join(' ');
-}
-
-function buildPoints(values: number[], width: number, height: number) {
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = Math.max(1, max - min);
-
-  return values.map((value, index) => {
-    const x = (index / Math.max(1, values.length - 1)) * width;
-    const y = height - ((value - min) / range) * height;
-    return `${x},${y}`;
-  });
+  return buildLinePath(values, { width, height });
 }
 
 export function LineTrendPanel({ title, subtitle, points, rail }: LineTrendPanelProps) {
@@ -55,8 +34,11 @@ export function LineTrendPanel({ title, subtitle, points, rail }: LineTrendPanel
   const benchmark = buildPath(points.map((point) => point.benchmark ?? point.primary), 520, 220);
   const upper = buildPath(points.map((point) => point.upper ?? point.primary), 520, 220);
   const lower = buildPath(points.map((point) => point.lower ?? point.primary), 520, 220);
-  const upperPoints = buildPoints(points.map((point) => point.upper ?? point.primary), 520, 220);
-  const lowerPoints = buildPoints(points.map((point) => point.lower ?? point.primary), 520, 220).reverse();
+  const toXY = (point: { x: number; y: number }) => `${point.x},${point.y}`;
+  const upperPoints = projectSeries(points.map((point) => point.upper ?? point.primary), { width: 520, height: 220 }).map(toXY);
+  // Reverse the PROJECTED points (not the values) so the band closes right→left
+  // while each point keeps its correct x coordinate.
+  const lowerPoints = projectSeries(points.map((point) => point.lower ?? point.primary), { width: 520, height: 220 }).map(toXY).reverse();
 
   return (
     <ChartPanel

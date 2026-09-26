@@ -16,6 +16,9 @@ import {
   type MarketCatalogClassFilter,
 } from '../../server/services/stock-simulation-service';
 import { mapCatalogEntriesToRoster } from '../../server/mappers/market-roster-mapper';
+import { getMarketStateConstellationData } from '../../server/services/market-state-constellation-service';
+import { mapMarketStateConstellation } from '../../server/mappers/market-state-constellation-mapper';
+import { MarketStateConstellation } from '../../components/charts/market-state-constellation';
 import { formatPercentChange } from '../../server/lib/quote-display';
 import { getOptionalCurrentSession } from '../../server/auth/session';
 import { perfLog, perfNow } from '../../server/lib/perf';
@@ -50,14 +53,16 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
   ]);
   const messages = getMessages(locale);
 
-  const [graph, catalog, news] = await Promise.all([
+  const [graph, catalog, news, constellationRaw] = await Promise.all([
     getMarketGraphData({
       ...(assetClass !== 'all' ? { assetClass } : {}),
       ...(preferredSymbols.length > 0 ? { preferredSymbols } : {}),
     }),
     getMarketCatalogPageData(query, { page, pageSize, assetClass }),
     getNewsStreamData().catch(() => ({ items: [] as never[] })),
+    getMarketStateConstellationData().catch(() => null),
   ]);
+  const constellation = constellationRaw ? mapMarketStateConstellation(constellationRaw) : null;
   perfLog('page:/market loaders', pageStart);
 
   // Sparklines for the visible roster entries only — bounded provider budget.
@@ -122,8 +127,32 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
 
       <MarketGraphSection graph={graph} messages={messages} trackedSymbols={preferredSymbols} newsItems={news.items} />
 
+      {constellation ? (
+        <Section
+          id="market-state-constellation"
+          className="dashboard-section dashboard-section--compact"
+          containerClassName="shell-container--workstation"
+        >
+          <header className="dashboard-section-heading">
+            <div>
+              <div className="section__eyebrow">Intelligence</div>
+              <h2 className="dashboard-section-heading__title">Market State Constellation</h2>
+              <p className="dashboard-section-heading__description">
+                Every tracked asset placed by momentum and realized volatility, coloured by deterministic
+                signal direction and sized by confidence. Observation of market structure — not advice.
+              </p>
+            </div>
+          </header>
+          <MarketStateConstellation vm={constellation} />
+        </Section>
+      ) : null}
+
       {/* ── Full market roster: every entry across stocks, ETFs, and crypto ── */}
-      <Section id="market-roster" className="dashboard-section dashboard-section--after-market-graph">
+      <Section
+        id="market-roster"
+        className="dashboard-section dashboard-section--after-market-graph"
+        containerClassName="shell-container--workstation"
+      >
         <header className="dashboard-section-heading">
           <div>
             <div className="section__eyebrow">Roster</div>

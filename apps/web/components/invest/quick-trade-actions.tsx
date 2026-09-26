@@ -13,6 +13,20 @@ import {
 } from '../../lib/simulation-asset-action-state';
 
 /**
+ * "Review Risk" targets the asset's own detail page on its risk tab, where the
+ * RiskPanel / TradeRiskOverlay actually lives (exposure impact, drawdown /
+ * liquidity warnings, stop-loss suggestion, concentration). The previous default
+ * pointed at /invest/live-readiness — the live-trading gated checklist — which
+ * is unrelated to reviewing a single asset's simulated risk.
+ */
+function withRiskTab(detailHref: string): string {
+  const [path, existingQuery] = detailHref.split('?');
+  const params = new URLSearchParams(existingQuery ?? '');
+  params.set('tab', 'risk');
+  return `${path}?${params.toString()}`;
+}
+
+/**
  * Localizable strings. Every field has an English default so existing call
  * sites that pass nothing keep their current copy; the simulation page passes
  * `messages`-derived strings to route the whole component through i18n.
@@ -73,7 +87,7 @@ export function QuickTradeActions({
   isWatched = false,
   watchlistLabelAdd = 'Add to watchlist',
   watchlistLabelRemove = 'Remove from watchlist',
-  reviewRiskHref = '/invest/live-readiness',
+  reviewRiskHref,
   hasSimulatedPosition = false,
   source,
   labels,
@@ -97,6 +111,11 @@ export function QuickTradeActions({
     source,
   });
   const inspectHref = resolveInspectHref({ symbol, assetClass, detailHref });
+  // Deep-link Review Risk to the asset's detail risk tab (where the risk overlay
+  // lives). An explicit reviewRiskHref still wins; live-readiness is only a last
+  // resort when the asset has no inspectable detail page.
+  const resolvedReviewRiskHref =
+    reviewRiskHref ?? (inspectHref ? withRiskTab(inspectHref) : '/invest/live-readiness');
 
   if (!isAuthenticated) {
     return (
@@ -218,7 +237,7 @@ export function QuickTradeActions({
 
       {/* Secondary actions */}
       <div className="asset-card-actions__grid asset-card-actions__grid--secondary">
-        <Link href={reviewRiskHref} className="button button--ghost asset-card-action asset-card-action--secondary">
+        <Link href={resolvedReviewRiskHref} className="button button--ghost asset-card-action asset-card-action--secondary">
           {reviewRiskLabel}
         </Link>
         {showWatchlist ? (

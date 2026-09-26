@@ -273,7 +273,7 @@ export function MarketGraphWorkspace({
 
   const [symbol, setSymbol] = useState(assets[0]?.symbol ?? '');
   const [compareSymbol, setCompareSymbol] = useState('');
-  const [timeframe, setTimeframe] = useState<MarketGraphTimeframeId>('1D');
+  const [timeframe, setTimeframe] = useState<MarketGraphTimeframeId>('1M');
   const [graphType, setGraphType] = useState<'line' | 'candles'>('line');
   const [showMovingAverage, setShowMovingAverage] = useState(true);
   const [showSignals, setShowSignals] = useState(true);
@@ -553,6 +553,42 @@ export function MarketGraphWorkspace({
     : [];
   const { paddedMin: minPrice, paddedMax: maxPrice, range: priceRange } = paddedBounds(allHighLow);
 
+  // Candle comparison: two candlestick lanes cannot share a raw-price axis, so in
+  // compare mode we rebase BOTH series' full OHLC to 100 at their own first close
+  // (the same base the compare LINE uses). In non-compare mode the "rebased" bars
+  // are just the raw bars and the candle scale equals the raw high/low bounds, so
+  // all downstream candle code is unified on candleMin/candleRange.
+  const primaryBase = closes[0] ?? 0;
+  const compareBase = compareCloses[0] ?? 0;
+  const rebaseVal = (value: number, base: number) => (base > 0 ? (value / base) * 100 : value);
+  const primaryCandleBars = useCompareMode
+    ? viewportVisible.map((bar) => ({
+        ...bar,
+        open: rebaseVal(bar.open, primaryBase),
+        high: rebaseVal(bar.high, primaryBase),
+        low: rebaseVal(bar.low, primaryBase),
+        close: rebaseVal(bar.close, primaryBase),
+      }))
+    : viewportVisible;
+  const compareCandleBars = useCompareMode
+    ? viewportCompare.map((bar) => ({
+        ...bar,
+        open: rebaseVal(bar.open, compareBase),
+        high: rebaseVal(bar.high, compareBase),
+        low: rebaseVal(bar.low, compareBase),
+        close: rebaseVal(bar.close, compareBase),
+      }))
+    : [];
+  const candleHighLow = useCompareMode
+    ? [
+        ...primaryCandleBars.map((p) => p.high),
+        ...primaryCandleBars.map((p) => p.low),
+        ...compareCandleBars.map((p) => p.high),
+        ...compareCandleBars.map((p) => p.low),
+      ]
+    : allHighLow;
+  const { paddedMin: candleMin, paddedMax: candleMax, range: candleRange } = paddedBounds(candleHighLow);
+
   const closeLine = hasRenderableSeries ? buildLine(primaryClosesForLine, 980, 420) : '';
   const closeArea = hasRenderableSeries && graphType === 'line' ? buildArea(primaryClosesForLine, 980, 420) : '';
   const maLine = hasRenderableSeries ? buildLine(ma, 980, 420) : '';
@@ -568,7 +604,7 @@ export function MarketGraphWorkspace({
     lastClose !== undefined && hasRenderableSeries
       ? graphType === 'line'
         ? 420 - ((lastClose - closeMin) / closeRange) * 420
-        : 400 - ((viewportVisible.at(-1)!.close - minPrice) / priceRange) * 360
+        : 400 - ((primaryCandleBars.at(-1)!.close - candleMin) / candleRange) * 360
       : null;
 
   const priceLabel = typeof selected.snapshot?.price === 'number' ? `$${selected.snapshot.price.toFixed(2)}` : labels.unavailable;
@@ -605,8 +641,8 @@ export function MarketGraphWorkspace({
     hoveredPrimaryClose !== null && hoveredX !== null
       ? graphType === 'line'
         ? 420 - ((hoveredPrimaryClose - closeMin) / closeRange) * 420
-        : hoveredPoint
-          ? 400 - ((hoveredPoint.close - minPrice) / priceRange) * 360
+        : hoveredPoint && hoverState && primaryCandleBars[hoverState.index]
+          ? 400 - ((primaryCandleBars[hoverState.index]!.close - candleMin) / candleRange) * 360
           : null
       : null;
 
@@ -664,9 +700,15 @@ export function MarketGraphWorkspace({
   const yAxisTicks = hasRenderableSeries
     ? Array.from({ length: 5 }, (_, index) => {
         const ratio = index / 4;
-        const value = useCompareMode
-          ? closeMax - ratio * closeRange
-          : maxPrice - ratio * priceRange;
+        // Candle mode is drawn on the high/low (candle) scale; line mode on the
+        // close scale. In compare mode both are rebased to 100, so labels drop the
+        // currency prefix and show the index value.
+        const value =
+          graphType === 'candles'
+            ? candleMax - ratio * candleRange
+            : useCompareMode
+              ? closeMax - ratio * closeRange
+              : maxPrice - ratio * priceRange;
         const y = 20 + ratio * 360;
         const label = useCompareMode ? `${value.toFixed(1)}` : `$${value.toFixed(2)}`;
         return { y, label };
@@ -962,8 +1004,19 @@ export function MarketGraphWorkspace({
           ) : null}
 
           {useCompareMode ? (
-            <div className="market-graph__compare-note" role="status" aria-live="polite">
-              Indexed to 100 at first shared bar
+            <div className="market-graph__compare-legend" role="status" aria-live="polite">
+              <span className="market-graph__compare-chip">
+                <span
+                  className={`market-graph__compare-swatch ${graphType === 'candles' ? 'market-graph__compare-swatch--candle-primary' : 'market-graph__compare-swatch--primary'}`}
+                  aria-hidden="true"
+                />
+                {selected.symbol}
+              </span>
+              <span className="market-graph__compare-chip market-graph__compare-chip--compare">
+                <span className="market-graph__compare-swatch market-graph__compare-swatch--compare" aria-hidden="true" />
+                {compare?.symbol ?? compareSymbol}
+              </span>
+              <span className="market-graph__compare-legend-note">indexed to 100</span>
             </div>
           ) : null}
 
@@ -1045,13 +1098,44 @@ export function MarketGraphWorkspace({
           ) : null}
 
           {hasRenderableSeries ? (
-            graphType === 'candles' && !useCompareMode
-              ? viewportVisible.map((point, index) => {
-                  const x = (index / Math.max(1, viewportVisible.length - 1)) * 940 + 20;
-                  const openY = 400 - ((point.open - minPrice) / priceRange) * 360;
-                  const closeY = 400 - ((point.close - minPrice) / priceRange) * 360;
-                  const highY = 400 - ((point.high - minPrice) / priceRange) * 360;
-                  const lowY = 400 - ((point.low - minPrice) / priceRange) * 360;
+            graphType === 'candles' ? (
+              <>
+                {/* Compare lane candles first (behind), rebased to the shared
+                    normalized axis and rendered in the series-b hue so they read
+                    as the secondary lane. */}
+                {useCompareMode
+                  ? compareCandleBars.map((point, index) => {
+                      const x = (index / Math.max(1, compareCandleBars.length - 1)) * 940 + 20;
+                      const openY = 400 - ((point.open - candleMin) / candleRange) * 360;
+                      const closeY = 400 - ((point.close - candleMin) / candleRange) * 360;
+                      const highY = 400 - ((point.high - candleMin) / candleRange) * 360;
+                      const lowY = 400 - ((point.low - candleMin) / candleRange) * 360;
+                      const top = Math.min(openY, closeY);
+                      const bodyHeight = Math.max(2, Math.abs(openY - closeY));
+                      return (
+                        <g key={`cmp-${point.timestamp}-${index}`}>
+                          <line x1={x} x2={x} y1={highY} y2={lowY} className="market-graph__wick market-graph__wick--compare" />
+                          <rect
+                            x={x - candleBodyHalf}
+                            y={top}
+                            width={candleBodyHalf * 2}
+                            height={bodyHeight}
+                            className={
+                              point.close >= point.open
+                                ? 'market-graph__candle market-graph__candle--compare market-graph__candle--compare-up'
+                                : 'market-graph__candle market-graph__candle--compare market-graph__candle--compare-down'
+                            }
+                          />
+                        </g>
+                      );
+                    })
+                  : null}
+                {primaryCandleBars.map((point, index) => {
+                  const x = (index / Math.max(1, primaryCandleBars.length - 1)) * 940 + 20;
+                  const openY = 400 - ((point.open - candleMin) / candleRange) * 360;
+                  const closeY = 400 - ((point.close - candleMin) / candleRange) * 360;
+                  const highY = 400 - ((point.high - candleMin) / candleRange) * 360;
+                  const lowY = 400 - ((point.low - candleMin) / candleRange) * 360;
                   const top = Math.min(openY, closeY);
                   const bodyHeight = Math.max(2, Math.abs(openY - closeY));
                   return (
@@ -1066,8 +1150,11 @@ export function MarketGraphWorkspace({
                       />
                     </g>
                   );
-                })
-              : <path d={closeLine} className="market-graph__line" />
+                })}
+              </>
+            ) : (
+              <path d={closeLine} className="market-graph__line" />
+            )
           ) : (
             <text x="490" y="210" textAnchor="middle" className="market-graph__empty">
               {labels.noData}
@@ -1078,14 +1165,18 @@ export function MarketGraphWorkspace({
             <path d={maLine} className="market-graph__average" />
           ) : null}
 
-          {hasRenderableSeries && compareLine ? (
+          {hasRenderableSeries && compareLine && graphType === 'line' ? (
             <path d={compareLine} className="market-graph__compare" />
           ) : null}
 
           {hasRenderableSeries && showSignals && selected.signal ? (
             <circle
               cx="950"
-              cy={400 - ((primaryClosesForLine.at(-1)! - closeMin) / closeRange) * (graphType === 'line' ? 420 : 360)}
+              cy={
+                graphType === 'line'
+                  ? 420 - ((primaryClosesForLine.at(-1)! - closeMin) / closeRange) * 420
+                  : 400 - ((primaryCandleBars.at(-1)!.close - candleMin) / candleRange) * 360
+              }
               r="6"
               className={`market-graph__signal market-graph__signal--${selected.signal.interpretation}`}
             />

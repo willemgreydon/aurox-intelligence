@@ -6,6 +6,8 @@ import { SectionHeader } from '../ui/section-header';
 import { Disclosure } from '../ui/disclosure';
 import { CompactStatCard } from '../stats/compact-stat-card';
 import { AccountPerformanceTimeline } from './account-performance-timeline';
+import { DrawdownUnderwater } from '../charts/drawdown-underwater';
+import { computeDrawdownAnalytics } from '../../lib/portfolio-drawdown';
 
 type Props = {
   vm: AccountIntelligenceViewModel;
@@ -66,6 +68,17 @@ export function AccountIntelligenceCockpit({ vm, membershipDisclosure }: Props) 
             description="Day-by-day simulated account value and P/L from recorded snapshots."
           />
           <AccountPerformanceTimeline timeline={vm.timeline} period={vm.hero} />
+        </Card>
+      </Section>
+
+      <Section>
+        <Card>
+          <SectionHeader
+            eyebrow="Drawdown"
+            title="Underwater curve"
+            description="How far the simulated account has fallen below its high-water mark, and whether it has recovered."
+          />
+          <DrawdownUnderwater analytics={computeDrawdownAnalytics(vm.timeline.points)} />
         </Card>
       </Section>
 
