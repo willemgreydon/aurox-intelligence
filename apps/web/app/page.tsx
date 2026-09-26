@@ -3,6 +3,7 @@ import { getMarketGraphData } from '../server/services/market-graph-service';
 import { getSimulationOverviewDataForUser } from '../server/services/stock-simulation-service';
 import { getOptionalCurrentSession } from '../server/auth/session';
 import { HeroSection } from '../components/sections/hero-section';
+import { PortfolioMetricsSection } from '../components/sections/portfolio-metrics-section';
 import { HomeFancySections } from '../components/sections/home-fancy-sections';
 import { NewsStreamWidget } from '../components/news/news-stream-widget';
 import { getMessages } from '../lib/i18n/messages';
@@ -99,6 +100,18 @@ export default async function HomePage() {
         marketGraph={marketGraph}
         trackedSymbols={preferredSymbols}
         newsItems={news.items}
+        betweenSlot={
+          portfolioOverview ? (
+            <PortfolioMetricsSection
+              snapshot={{
+                portfolioValue: portfolioOverview.summary.portfolioValue,
+                investedCapital: portfolioOverview.summary.investedCapital,
+                unrealizedPnl: portfolioOverview.summary.unrealizedPnl,
+                realizedPnl: portfolioOverview.summary.realizedPnl,
+              }}
+            />
+          ) : null
+        }
         labels={{
           eyebrow: messages.home.heroEyebrow,
           title: messages.home.heroTitle,
@@ -159,12 +172,6 @@ export default async function HomePage() {
       <HomeFancySections
         stocks={stocks}
         marketGraph={marketGraph}
-        portfolioSnapshot={portfolioOverview ? {
-          portfolioValue: portfolioOverview.summary.portfolioValue,
-          investedCapital: portfolioOverview.summary.investedCapital,
-          unrealizedPnl: portfolioOverview.summary.unrealizedPnl,
-          realizedPnl: portfolioOverview.summary.realizedPnl,
-        } : null}
         labels={{
           lanes: messages.homeSections.lanes,
           capabilities: messages.homeSections.capabilities,

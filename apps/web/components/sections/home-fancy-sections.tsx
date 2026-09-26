@@ -5,17 +5,10 @@ import { Card } from '../ui/card';
 import { Section } from '../ui/section';
 import { StatusBadge } from '../ui/status-badge';
 import { Disclosure } from '../ui/disclosure';
-import { CompactStatCard } from '../stats/compact-stat-card';
 
 type HomeFancySectionsProps = {
   stocks: StocksOverviewViewModel;
   marketGraph: Awaited<ReturnType<typeof getMarketGraphData>>;
-  portfolioSnapshot: {
-    portfolioValue: number;
-    investedCapital: number;
-    unrealizedPnl: number;
-    realizedPnl: number;
-  } | null;
   labels: {
     lanes: {
       eyebrow: string;
@@ -90,7 +83,7 @@ function toStatusTone(statusLabel: string): 'success' | 'warning' | 'danger' | '
   return 'success';
 }
 
-export function HomeFancySections({ portfolioSnapshot, labels }: HomeFancySectionsProps) {
+export function HomeFancySections({ labels }: HomeFancySectionsProps) {
   const featureCards = labels.capabilities.items.slice(0, 3);
   const extraCapabilities = labels.capabilities.items.slice(3);
   const featuredModule = labels.modules.items[0];
@@ -98,44 +91,6 @@ export function HomeFancySections({ portfolioSnapshot, labels }: HomeFancySectio
 
   return (
     <>
-      {portfolioSnapshot ? (
-        <Section className="home-fancy home-fancy--portfolio">
-          <header className="home-fancy__header">
-            <div className="section__eyebrow">Portfolio metrics</div>
-            <h2 className="section__title">Simulation portfolio pulse</h2>
-            <p className="section__description">
-              Live snapshot of your simulated portfolio value and deployed capital.
-            </p>
-          </header>
-          <div className="analytics-strip">
-            <CompactStatCard
-              label="Portfolio value"
-              value={`$${portfolioSnapshot.portfolioValue.toFixed(2)}`}
-              valueTone={portfolioSnapshot.portfolioValue > 0 ? 'positive' : portfolioSnapshot.portfolioValue < 0 ? 'negative' : 'neutral'}
-              detail="Current market value of active simulated positions."
-            />
-            <CompactStatCard
-              label="Invested capital"
-              value={`$${portfolioSnapshot.investedCapital.toFixed(2)}`}
-              valueTone={portfolioSnapshot.investedCapital > 0 ? 'positive' : portfolioSnapshot.investedCapital < 0 ? 'negative' : 'neutral'}
-              detail="Capital currently allocated across open positions."
-            />
-            <CompactStatCard
-              label="Unrealized P&L"
-              value={`${portfolioSnapshot.unrealizedPnl >= 0 ? '+' : ''}$${Math.abs(portfolioSnapshot.unrealizedPnl).toFixed(2)}`}
-              valueTone={portfolioSnapshot.unrealizedPnl > 0 ? 'positive' : portfolioSnapshot.unrealizedPnl < 0 ? 'negative' : 'neutral'}
-              detail="Mark-to-market gain/loss on currently open positions."
-            />
-            <CompactStatCard
-              label="Realized P&L"
-              value={`${portfolioSnapshot.realizedPnl >= 0 ? '+' : ''}$${Math.abs(portfolioSnapshot.realizedPnl).toFixed(2)}`}
-              valueTone={portfolioSnapshot.realizedPnl > 0 ? 'positive' : portfolioSnapshot.realizedPnl < 0 ? 'negative' : 'neutral'}
-              detail="Locked-in gain/loss from completed simulated trades."
-            />
-          </div>
-        </Section>
-      ) : null}
-
       {/* Platform capabilities — premium numbered pillars. Promoted to the primary
           supporting section right after the hero (the old "Top movers" band was
           redundant with the hero graph and the /market roster, so it was removed). */}

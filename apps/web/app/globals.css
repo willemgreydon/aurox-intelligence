@@ -4,10 +4,34 @@
 :root {
   --site-header-offset: calc(var(--header-height) + 3.5rem + env(safe-area-inset-top));
   --page-arrival-offset: calc(var(--site-header-offset) + var(--space-3));
-  /* Executive terminal width — wider than the reading shell (76rem) so dense
-     multi-column dashboard grids can breathe. See Phase 3 evaluation in the
-     account-dashboard-layout-polish audit. */
-  --layout-dashboard-width: 90rem;
+
+  /* ── Responsive container system ────────────────────────────────────────
+     Single source of truth for page-width regimes. Reading content stays
+     bounded at every viewport; dense/analytical canvases grow on large and
+     ultrawide displays but always keep an intentional framing gutter instead
+     of stranding a fixed column in empty margin. The base --layout-* width
+     tokens and the --space-* scale come from @repo/design-tokens.
+     Structural breakpoint scale (reference; media queries use the literals
+     because CSS @media cannot read custom properties):
+       mobile 640 · tablet 960 · desktop 1280 · wide 1728 · ultrawide 2200 */
+  --page-gutter: clamp(1rem, 2.4vw, 3.5rem);
+
+  --content-reading: var(--layout-reading-width);   /* ~48rem — prose, forms, auth */
+  --content-standard: var(--layout-max-width);      /* ~76rem — general pages */
+  --content-wide: clamp(76rem, 80vw, 108rem);       /* wide analytical surfaces */
+  --content-dashboard: clamp(90rem, 84vw, 132rem);  /* dense dashboard/KPI grids */
+  --content-full: 160rem;                           /* near-full workstation canvases */
+
+  /* Executive dashboard shell — now fluid so ultrawide gains real estate
+     rather than centring a 90rem column. Consumed as a width cap, so smaller
+     viewports are unaffected (the clamp floor never exceeds the viewport once
+     min(100%, …) is applied by consumers). */
+  --layout-dashboard-width: var(--content-dashboard);
+
+  /* Observe / intelligence / cockpit surfaces read this. It was previously
+     undefined everywhere and only ever resolved to its fixed 90rem fallback;
+     defining it lets those surfaces scale with the dashboard regime. */
+  --content-max-width: var(--content-dashboard);
 }
 
 *,
@@ -186,7 +210,7 @@ code,
 }
 
 .shell-container {
-  width: min(calc(100% - var(--space-8)), var(--layout-max-width));
+  width: min(calc(100% - 2 * var(--page-gutter)), var(--content-standard));
   margin: 0 auto;
   /* Respect notch/curved-edge safe areas in landscape on mobile. */
   padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
@@ -1868,7 +1892,7 @@ code,
   grid-template-columns: minmax(18rem, 22rem) minmax(0, 1fr);
   gap: var(--space-6);
   align-items: start;
-  width: min(100%, 110rem);
+  width: min(100%, var(--content-wide));
   margin-inline: auto;
 }
 
@@ -12983,4 +13007,87 @@ code,
   .candle-intel__summary {
     grid-template-columns: 1fr;
   }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Large-desktop / ultrawide upscaling.
+   No min-width media queries existed before this block — below 1728px the app
+   relies on its base 3-col + auto-fit grids (auto-fit grids densify for free
+   now that dense containers are fluid). Here the fixed repeat(3, …) card/metric
+   grids gain a 4th column so >=1728px screens increase information density
+   instead of leaving empty margin.
+
+   Deliberately NOT widened here: reading content (.shell-container, legal,
+   auth, prose) stays capped, and semantic 2-pane grids (.analytics-two-grid,
+   sidebar+main splits) keep their pairing. Chart SVG geometry (980×420) and
+   the Candle Intelligence overlay are untouched.
+   ────────────────────────────────────────────────────────────────────────── */
+@media (min-width: 1728px) {
+  .dashboard-metric-grid,
+  .dashboard-module-grid,
+  .card-grid--three {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Home page was stranded at the 76rem standard shell (its chart is full-bleed,
+   but the portfolio-pulse metrics, hero panel and pillar grids stayed narrow —
+   a "desktop-width column in empty margin" on wide/ultrawide screens). Promote
+   the home sections to the fluid dashboard regime from 1280px up. Text inside
+   keeps its own reading caps (.hero__lede 42rem, .home-fancy__header
+   reading-width, h1 22ch), so only the GRIDS gain width. The full-bleed chart
+   is unaffected. */
+@media (min-width: 1280px) {
+  /* Header aligns to the wide content regime so brand/actions line up with the
+     dashboard + home content on large screens (was stranded at the 76rem
+     standard shell while the body widened). */
+  .site-header .shell-container,
+  /* Dense, data-first home bands use the full wide dashboard regime. */
+  .section--hero > .shell-container,
+  .home-fancy--portfolio > .shell-container,
+  .home-news-section > .shell-container {
+    width: min(calc(100% - 2 * var(--page-gutter)), var(--content-dashboard));
+  }
+
+  /* Editorial / single-message home bands use a contained wide width so their
+     copy and small grids don't strand in empty space at 132rem. */
+  .home-fancy--capabilities > .shell-container,
+  .home-fancy--workflow > .shell-container,
+  .home-fancy--featured > .shell-container,
+  .home-fancy--trust > .shell-container,
+  .home-fancy--final > .shell-container {
+    width: min(calc(100% - 2 * var(--page-gutter)), var(--content-wide));
+  }
+}
+
+/* Home hero is now split into a full-bleed chart band and this intro band
+   (headline copy + snapshot panel), with the portfolio pulse rendered between
+   them. This is the old ".hero" bottom row on its own — two columns that auto-
+   place content then panel (no graph area), collapsing to one column on tablet. */
+.hero-intro-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(22rem, 1.05fr);
+  gap: var(--space-8);
+  align-items: start;
+}
+.hero-intro-grid > .hero__content,
+.hero-intro-grid > .hero-panel {
+  grid-area: auto;
+}
+@media (max-width: 960px) {
+  .hero-intro-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Single-message accent bands are one card, not a grid — capping and centering
+   them keeps them from stretching into a wide, sparse ribbon on large screens.
+   (max-width only bites above these sizes, so narrow viewports are unaffected.) */
+.home-featured-band {
+  max-width: 72rem;
+  margin-inline: auto;
+}
+.home-final-cta {
+  max-width: 56rem;
+  margin-inline: auto;
 }
