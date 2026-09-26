@@ -63,4 +63,36 @@ describe('buildCandleIntelligenceViewModel', () => {
     };
     expect(buildCandleIntelligenceViewModel(args)).toEqual(buildCandleIntelligenceViewModel(args));
   });
+
+  it('exposes null confluence/structure when data is insufficient', () => {
+    const vm = buildCandleIntelligenceViewModel({
+      symbol: 'TEST',
+      assetClass: 'stock',
+      bars: buildBars(5),
+      generatedAt: GENERATED_AT,
+    });
+    expect(vm.confluence).toBeNull();
+    expect(vm.structure).toBeNull();
+  });
+
+  it('exposes confluence channels and structure for sufficient data', () => {
+    const bars = buildBars(30);
+    const vm = buildCandleIntelligenceViewModel({
+      symbol: 'TEST',
+      assetClass: 'stock',
+      bars,
+      generatedAt: GENERATED_AT,
+    });
+    expect(vm.available).toBe(true);
+    expect(vm.confluence).not.toBeNull();
+    expect(vm.confluence!.channels.length).toBeGreaterThan(0);
+    const allowed = new Set(['trend', 'momentum', 'volume', 'volatility']);
+    for (const ch of vm.confluence!.channels) {
+      expect(allowed.has(ch.key)).toBe(true);
+      expect(ch.score).toBeGreaterThanOrEqual(-1);
+      expect(ch.score).toBeLessThanOrEqual(1);
+    }
+    expect(vm.structure).not.toBeNull();
+    expect(vm.structure!.currentPrice).toBeCloseTo(bars.at(-1)!.close, 6);
+  });
 });

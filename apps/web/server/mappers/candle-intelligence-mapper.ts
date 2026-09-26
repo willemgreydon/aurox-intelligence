@@ -23,6 +23,37 @@ export type CandleSummaryRow = { label: string; value: string; tone: Tone };
 export type CandlePatternRow = { label: string; direction: 'Bullish' | 'Bearish' | 'Neutral'; strength: string; detail: string };
 export type CandleTimeframeRow = { label: string; value: string; tone: Tone };
 
+/** One evidence channel for the Signal Confluence visualization. */
+export type ConfluenceChannelVM = {
+  key: 'trend' | 'momentum' | 'volume' | 'volatility';
+  label: string;
+  /** Agreement with the bias in [-1, 1]; sign = direction. */
+  score: number;
+  direction: CandleDirection;
+};
+
+export type SignalConfluenceVM = {
+  channels: ConfluenceChannelVM[];
+  overallScore: number;
+  overallDirection: CandleDirection;
+  confidencePct: number;
+};
+
+/** A support/resistance level for the S/R Strength Map. */
+export type SRLevelVM = {
+  kind: 'support' | 'resistance';
+  price: number;
+  touches: number;
+  /** Signed distance from the latest close as a fraction of price. */
+  distancePct: number;
+};
+
+export type StructureMapVM = {
+  currentPrice: number | null;
+  support: SRLevelVM | null;
+  resistance: SRLevelVM | null;
+};
+
 export type CandleIntelligenceViewModel = {
   available: boolean;
   headline: string;
@@ -38,6 +69,8 @@ export type CandleIntelligenceViewModel = {
   reasons: string[];
   warnings: string[];
   invalidation: string[];
+  confluence: SignalConfluenceVM | null;
+  structure: StructureMapVM | null;
   disclaimer: string;
   insufficientMessage: string | null;
 };
@@ -145,6 +178,8 @@ export function buildCandleIntelligenceViewModel(input: CandleIntelligenceMapper
       reasons: [],
       warnings: intel.warnings,
       invalidation: [],
+      confluence: null,
+      structure: null,
       disclaimer,
       insufficientMessage: intel.warnings[0] ?? 'Not enough price history for candlestick analysis.',
     };
@@ -172,6 +207,46 @@ export function buildCandleIntelligenceViewModel(input: CandleIntelligenceMapper
     tone: toneForDirection(b.direction),
   }));
 
+  const channelLabels: Record<ConfluenceChannelVM['key'], string> = {
+    trend: 'Trend',
+    momentum: 'Momentum',
+    volume: 'Volume',
+    volatility: 'Volatility',
+  };
+  const channelOrder: ConfluenceChannelVM['key'][] = ['trend', 'momentum', 'volume', 'volatility'];
+  const confluence: SignalConfluenceVM = {
+    channels: channelOrder
+      .map((key) => {
+        const ch = intel.confirmation.find((c) => c.key === key);
+        return ch ? { key, label: channelLabels[key], score: ch.score, direction: ch.label } : null;
+      })
+      .filter((c): c is ConfluenceChannelVM => c !== null),
+    overallScore: intel.score,
+    overallDirection: intel.direction,
+    confidencePct: Math.round(intel.confidence * 100),
+  };
+
+  const latestClose = input.bars.at(-1)?.close ?? null;
+  const structure: StructureMapVM = {
+    currentPrice: latestClose,
+    support: intel.structure.nearestSupport
+      ? {
+          kind: 'support',
+          price: intel.structure.nearestSupport.price,
+          touches: intel.structure.nearestSupport.touches,
+          distancePct: intel.structure.nearestSupport.distancePct,
+        }
+      : null,
+    resistance: intel.structure.nearestResistance
+      ? {
+          kind: 'resistance',
+          price: intel.structure.nearestResistance.price,
+          touches: intel.structure.nearestResistance.touches,
+          distancePct: intel.structure.nearestResistance.distancePct,
+        }
+      : null,
+  };
+
   return {
     available: true,
     headline: buildHeadline(intel.direction, intel.score, intel.confidence),
@@ -187,6 +262,8 @@ export function buildCandleIntelligenceViewModel(input: CandleIntelligenceMapper
     reasons: intel.reasons,
     warnings: intel.warnings,
     invalidation: intel.invalidation,
+    confluence,
+    structure,
     disclaimer,
     insufficientMessage: null,
   };

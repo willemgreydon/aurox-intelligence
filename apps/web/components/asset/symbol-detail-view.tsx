@@ -11,6 +11,8 @@ import { SignalSummary } from '../signals/signal-summary';
 import { TradeRiskOverlay } from '../invest/trade-risk-overlay';
 import { VolatilityPulse } from '../charts/volatility-pulse';
 import { computeVolatilityPulse } from '../../lib/volatility-pulse';
+import { SignalConfluence } from '../charts/signal-confluence';
+import { SRStrengthMap } from '../charts/sr-strength-map';
 import { AssetPriceExplorer } from './asset-price-explorer';
 import { CandleIntelligencePanel } from './candle-intelligence-panel';
 import type { CandleIntelligenceViewModel } from '../../server/mappers/candle-intelligence-mapper';
@@ -297,6 +299,37 @@ function SignalsPanel({ vm }: { vm: SymbolDetailViewModel }) {
         </div>
       </Card>
       {vm.candleIntelligence ? <CandleIntelligencePanel vm={vm.candleIntelligence} /> : null}
+
+      {vm.candleIntelligence?.confluence && vm.candleIntelligence.confluence.channels.length > 0 ? (
+        <Card className="analytics-card">
+          <div className="analytics-card__header">
+            <div>
+              <div className="section__eyebrow">Confluence</div>
+              <h3>Signal confluence</h3>
+              <p>How the deterministic evidence channels agree or diverge right now.</p>
+            </div>
+          </div>
+          <div className="analytics-card__body">
+            <SignalConfluence confluence={vm.candleIntelligence.confluence} />
+          </div>
+        </Card>
+      ) : null}
+
+      {vm.candleIntelligence?.structure &&
+      (vm.candleIntelligence.structure.support || vm.candleIntelligence.structure.resistance) ? (
+        <Card className="analytics-card">
+          <div className="analytics-card__header">
+            <div>
+              <div className="section__eyebrow">Structure</div>
+              <h3>Support / resistance strength</h3>
+              <p>Nearest deterministic levels around the current price, with touch-count strength.</p>
+            </div>
+          </div>
+          <div className="analytics-card__body">
+            <SRStrengthMap structure={vm.candleIntelligence.structure} />
+          </div>
+        </Card>
+      ) : null}
     </div>
   );
 }

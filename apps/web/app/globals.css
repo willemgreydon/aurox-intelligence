@@ -6088,6 +6088,163 @@ code,
   color: var(--text-tertiary);
 }
 
+/* ── Signal Confluence ───────────────────────────────────────────────────── */
+.confluence {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.confluence__rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.confluence__row {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr 3rem;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.confluence__label {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.confluence__track {
+  position: relative;
+  height: 12px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+  display: block;
+}
+
+.confluence__center {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--border-strong);
+}
+
+.confluence__fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+.confluence__row--bullish .confluence__fill { background: var(--chart-positive); }
+.confluence__row--bearish .confluence__fill { background: var(--chart-negative); }
+.confluence__row--neutral .confluence__fill { background: var(--chart-neutral); }
+
+.confluence__score {
+  font-family: var(--font-family-mono);
+  font-size: 0.72rem;
+  text-align: right;
+  color: var(--text-secondary);
+}
+
+.confluence__overall {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.confluence__overall-label {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+}
+
+.confluence__overall-value {
+  font-weight: 700;
+  font-family: var(--font-family-mono);
+}
+
+.confluence__overall--bullish .confluence__overall-value { color: var(--chart-positive); }
+.confluence__overall--bearish .confluence__overall-value { color: var(--chart-negative); }
+.confluence__overall--neutral .confluence__overall-value { color: var(--text-primary); }
+
+.confluence__overall-conf {
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+}
+
+/* ── Support / Resistance Strength Map ───────────────────────────────────── */
+.srmap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.srmap__level {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.srmap__level--resistance { border-left: 3px solid var(--chart-negative); }
+.srmap__level--support { border-left: 3px solid var(--chart-positive); }
+.srmap__level--current {
+  border-left: 3px solid var(--border-strong);
+  background: var(--surface-raised);
+}
+
+.srmap__head {
+  display: flex;
+  flex-direction: column;
+}
+
+.srmap__kind {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+}
+
+.srmap__strength-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.srmap__price {
+  font-family: var(--font-family-mono);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.srmap__strength {
+  letter-spacing: 2px;
+  font-size: 0.72rem;
+}
+
+.srmap__level--resistance .srmap__strength { color: var(--chart-negative); }
+.srmap__level--support .srmap__strength { color: var(--chart-positive); }
+
+.srmap__dist {
+  margin-left: auto;
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+}
+
 .market-graph__signal--bullish {
   fill: var(--chart-positive);
 }
