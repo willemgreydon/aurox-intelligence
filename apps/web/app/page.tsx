@@ -5,6 +5,7 @@ import { getOptionalCurrentSession } from '../server/auth/session';
 import { HeroSection } from '../components/sections/hero-section';
 import { PortfolioMetricsSection } from '../components/sections/portfolio-metrics-section';
 import { HomeFancySections } from '../components/sections/home-fancy-sections';
+import { HomeMarketIntelligenceSection } from '../components/sections/home-market-intelligence-section';
 import { NewsStreamWidget } from '../components/news/news-stream-widget';
 import { getMessages } from '../lib/i18n/messages';
 import { getRequestLocale } from '../server/i18n/locale';
@@ -13,6 +14,10 @@ import { withDbReadFallback, getHomeWidgetTimeoutMs } from '../server/lib/db-run
 import type { StocksOverviewViewModel } from '../server/mappers/stocks-mapper';
 import { getNewsStreamData } from '../server/services/news-service';
 import { getWorkspaceTrackedSymbols } from '../server/services/workspace-service';
+import { getMarketStateConstellationData } from '../server/services/market-state-constellation-service';
+import { mapMarketStateConstellation } from '../server/mappers/market-state-constellation-mapper';
+import { getMarketCorrelationData } from '../server/services/market-correlation-service';
+import { mapMarketCorrelation } from '../server/mappers/market-correlation-mapper';
 
 export const dynamic = 'force-dynamic';
 
@@ -64,7 +69,12 @@ export default async function HomePage() {
   const portfolioPromise = auth
     ? withDbReadFallback('home:simulation-overview', null, () => getSimulationOverviewDataForUser(auth.user.id), HOME_WIDGET_TIMEOUT_MS)
     : Promise.resolve({ value: null, degraded: false, reason: null as string | null });
-  const [stocksResult, marketGraphResult, portfolioResult] = await Promise.all([
+  // Market-intelligence visualizations (Market State Constellation + Correlation
+  // Matrix). Public, read-model-driven, and bounded (a single batched daily-bar
+  // read each). They don't depend on preferredSymbols, so they run fully in
+  // parallel and are timeout-guarded: if either degrades it renders nothing
+  // rather than blocking or breaking the landing page.
+  const [stocksResult, marketGraphResult, portfolioResult, constellationResult, correlationResult] = await Promise.all([
     withDbReadFallback('home:stocks-overview', buildFallbackStocks(messages), () =>
       getStocksOverviewData(locale, messages, {
         ...(preferredSymbols.length > 0 ? { preferredSymbols } : {}),
@@ -77,11 +87,18 @@ export default async function HomePage() {
       preferCached: true,
     }), HOME_WIDGET_TIMEOUT_MS),
     portfolioPromise,
+    withDbReadFallback('home:constellation', null, () => getMarketStateConstellationData(), HOME_WIDGET_TIMEOUT_MS),
+    withDbReadFallback('home:correlation', null, () => getMarketCorrelationData(), HOME_WIDGET_TIMEOUT_MS),
   ]);
   const stocks = stocksResult.value;
   const marketGraph = marketGraphResult.value;
   const portfolioOverview = portfolioResult.value;
   const news = newsResult.value;
+  // Optional enhancement surfaces — map to view models only when the read
+  // resolved; a degraded constellation/correlation just omits its panel and does
+  // NOT flip the sitewide db-degraded banner.
+  const constellation = constellationResult.value ? mapMarketStateConstellation(constellationResult.value) : null;
+  const correlation = correlationResult.value ? mapMarketCorrelation(correlationResult.value) : null;
   const dbDegraded = stocksResult.degraded || marketGraphResult.degraded || portfolioResult.degraded || newsResult.degraded;
   const marketNewsEnabled = process.env.NEXT_PUBLIC_ENABLE_MARKET_NEWS !== 'false';
   perfLog('page:/ total', pageStart);
@@ -169,6 +186,7 @@ export default async function HomePage() {
           },
         }}
       />
+      <HomeMarketIntelligenceSection constellation={constellation} correlation={correlation} />
       <HomeFancySections
         stocks={stocks}
         marketGraph={marketGraph}

@@ -8705,6 +8705,65 @@ code,
   }
 }
 
+/* Homepage "Live market intelligence" band — reuses the /market constellation
+   and correlation viz. Two panels side-by-side on wide/ultrawide, stacking on
+   smaller screens. Widened to --content-dashboard via the @media block above so
+   it left-aligns with the header and the other home bands. */
+.home-market-intel {
+  padding-top: var(--space-8);
+  padding-bottom: var(--space-8);
+}
+
+.home-market-intel__inner {
+  width: 100%;
+}
+
+.home-market-intel__header {
+  max-width: 60rem;
+  margin-bottom: var(--space-6);
+}
+
+.home-market-intel__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(34rem, 1fr));
+  gap: var(--space-5);
+  align-items: start;
+}
+
+.home-market-intel__panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+  padding: var(--space-5);
+  border: var(--border-width-thin) solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--surface-1);
+}
+
+.home-market-intel__panel-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.home-market-intel__panel-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.home-market-intel__panel-desc {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.home-market-intel__actions {
+  margin-top: var(--space-6);
+}
+
 .home-news-section {
   padding-top: var(--space-6);
   padding-bottom: calc(var(--space-12) + var(--space-4));
@@ -14091,6 +14150,7 @@ code,
   .home-fancy--capabilities > .shell-container,
   .home-fancy--workflow > .shell-container,
   .home-fancy--trust > .shell-container,
+  .home-market-intel > .shell-container,
   .home-news-section > .shell-container {
     width: min(calc(100% - 2 * var(--page-gutter)), var(--content-dashboard));
   }
