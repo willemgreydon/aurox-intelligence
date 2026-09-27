@@ -4,6 +4,8 @@ export * from './queries/asset-detail-query';
 export * from './repositories/auth-repository';
 export * from './repositories/asset-repository';
 export * from './repositories/investment-universe-repository';
+export * from './repositories/investor-profile-repository';
+export * from './repositories/tax-lot-repository';
 export * from './repositories/linked-investment-accounts-repository';
 export * from './repositories/market-data-repository';
 export * from './repositories/market-intelligence-repository';

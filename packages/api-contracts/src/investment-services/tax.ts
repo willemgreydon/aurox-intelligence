@@ -204,3 +204,7 @@ export const portfolioTaxViewSchema = z.object({
   computedAt: z.string(),
 });
 export type PortfolioTaxView = z.infer<typeof portfolioTaxViewSchema>;
+
+/** Fields a caller supplies when persisting a lot (`lotId` is server-assigned). */
+export const taxLotInputSchema = taxLotSchema.omit({ lotId: true });
+export type TaxLotInput = z.infer<typeof taxLotInputSchema>;

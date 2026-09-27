@@ -1433,7 +1433,15 @@ code,
   inset: var(--space-6) var(--space-4);
   border: var(--border-width-thin) solid var(--border-subtle);
   border-radius: var(--radius-xl);
-  background: linear-gradient(180deg, var(--surface-base), transparent);
+  /* A contained, subtly-elevated panel. Previously this faded to `transparent`,
+     which read as the section dissolving into the page background. Both stops are
+     opaque, theme-aware surfaces so the panel stays a deliberate, self-contained
+     tint in dark and light. */
+  background: linear-gradient(
+    180deg,
+    var(--surface-raised),
+    color-mix(in srgb, var(--surface-raised) 88%, var(--surface-base))
+  );
   pointer-events: none;
 }
 
@@ -8530,14 +8538,14 @@ code,
     transform var(--duration-fast, 140ms) var(--ease-standard, ease),
     border-color var(--duration-fast, 140ms) var(--ease-standard, ease);
 }
-/* Accent hairline along the top edge, brightened on hover. */
+/* Accent bar along the top edge, brightened on hover. */
 .home-pillar-card::before {
   content: '';
   position: absolute;
   inset: 0 0 auto 0;
-  height: 2px;
+  height: 3px;
   background: linear-gradient(90deg, var(--text-accent), transparent 70%);
-  opacity: 0.55;
+  opacity: 0.7;
   transition: opacity var(--duration-fast, 140ms) var(--ease-standard, ease);
 }
 .home-pillar-card:hover {
@@ -8550,21 +8558,25 @@ code,
 .home-pillar-card--ghost::before {
   background: linear-gradient(90deg, color-mix(in srgb, var(--text-accent) 60%, transparent), transparent 70%);
 }
+/* Big, placative numeral — three headline selling points read as 01 / 02 / 03. */
 .home-pillar-card__index {
   display: block;
   font-family: var(--font-family-mono);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  letter-spacing: 0.12em;
+  font-size: var(--font-size-4xl);
+  line-height: 1;
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
   color: var(--text-accent);
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-4);
 }
 .home-pillar-card__title {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-xl);
   font-weight: var(--font-weight-semibold);
   color: var(--text-primary);
   margin-bottom: var(--space-2);
   letter-spacing: -0.01em;
+  text-wrap: balance;
 }
 .home-pillar-card__body {
   color: var(--text-secondary);

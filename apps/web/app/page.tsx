@@ -83,7 +83,9 @@ export default async function HomePage() {
       HOME_WIDGET_TIMEOUT_MS,
     ),
     withDbReadFallback('home:market-graph', { meta: { provider: 'cache', selectedTimeframe: '1D' as const, requestedResolution: '1day', actualResolution: 'unknown' as const, pointCount: 0, minAcceptablePoints: 10, isFresh: false, isFallback: false, fallbackReason: null, isDegraded: true, degradedReason: 'Database unavailable.', lastBarTimestamp: null, totalBarsInCache: 0, requestedStart: '', actualStart: null, coverageRatio: 0 }, assets: [] }, () => getMarketGraphData({
-      ...(preferredSymbols.length > 0 ? { preferredSymbols } : {}),
+      // The hero spotlight defaults to AMD (primary) vs NVDA (compare); prioritize
+      // them into the selected assets so both series are present and backfilled.
+      preferredSymbols: Array.from(new Set(['AMD', 'NVDA', ...preferredSymbols])),
       preferCached: true,
     }), HOME_WIDGET_TIMEOUT_MS),
     portfolioPromise,
