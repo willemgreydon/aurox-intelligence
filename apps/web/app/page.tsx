@@ -204,6 +204,17 @@ export default async function HomePage() {
                 whatChanged: stocks.latestInsight.whatChanged,
                 stance: stocks.latestInsight.stance,
                 confidence: stocks.latestInsight.confidence,
+                factors: stocks.latestInsight.factors.map((f) => ({
+                  label: f.label,
+                  value: f.value,
+                  impact: f.impact,
+                  confidence: f.confidence,
+                })),
+                riskFlags: stocks.latestInsight.riskFlags.map((r) => ({
+                  label: r.label,
+                  severity: r.severity,
+                  detail: r.detail,
+                })),
               }
             : null
         }
@@ -218,6 +229,7 @@ export default async function HomePage() {
             status: order.status,
             quantity: order.quantity,
             executedPrice: order.executedPrice,
+            realizedPnl: order.realizedPnl,
             createdAt: order.createdAt,
           }))}
           labels={messages.homeLive.activity}
