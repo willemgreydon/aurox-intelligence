@@ -46,9 +46,8 @@ export function MarketPulseSection({
   const avgTone = (snapshot.averageMovePercent ?? 0) >= 0 ? 'is-positive' : 'is-negative';
 
   return (
-    <Section className="section home-live home-pulse">
-      <div className="shell-container">
-        <header className="home-live__header">
+    <Section className="home-live home-pulse">
+      <header className="home-live__header">
           <div className="section__eyebrow">{labels.eyebrow}</div>
           <h1 className="section__title home-live__title">{labels.title}</h1>
         </header>
@@ -92,7 +91,6 @@ export function MarketPulseSection({
             </dl>
           </div>
         )}
-      </div>
     </Section>
   );
 }

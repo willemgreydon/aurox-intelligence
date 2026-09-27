@@ -54,9 +54,8 @@ export function MoversSignalsSection({
   const rows = movers.slice(0, 6);
 
   return (
-    <Section className="section home-live home-movers">
-      <div className="shell-container">
-        <header className="home-live__header">
+    <Section className="home-live home-movers">
+      <header className="home-live__header">
           <div className="section__eyebrow">{labels.eyebrow}</div>
           <h2 className="section__title home-live__title">{labels.title}</h2>
           <p className="home-live__subtitle">{labels.subtitle}</p>
@@ -103,7 +102,6 @@ export function MoversSignalsSection({
             })}
           </ul>
         )}
-      </div>
     </Section>
   );
 }
