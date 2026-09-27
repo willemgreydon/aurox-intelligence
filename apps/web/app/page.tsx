@@ -176,6 +176,9 @@ export default async function HomePage() {
             candleIntelligence: messages.marketGraph.candleIntelligence,
             candleIntelligenceDailyOnly: messages.marketGraph.candleIntelligenceDailyOnly,
             candleIntelligencePrimaryOnly: messages.marketGraph.candleIntelligencePrimaryOnly,
+            unavailableTitle: messages.marketGraph.unavailableTitle,
+            unavailableBody: messages.marketGraph.unavailableBody,
+            unavailableAutoUpdating: messages.marketGraph.unavailableAutoUpdating,
           },
         }}
       />
