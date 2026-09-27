@@ -89,7 +89,6 @@ function toStatusTone(statusLabel: string): 'success' | 'warning' | 'danger' | '
 export function HomeFancySections({ labels, afterCapabilitiesSlot }: HomeFancySectionsProps) {
   const featureCards = labels.capabilities.items.slice(0, 3);
   const extraCapabilities = labels.capabilities.items.slice(3);
-  const featuredModule = labels.modules.items[0];
   const flowSteps = labels.explainability.flow.slice(0, 4);
 
   return (
@@ -159,24 +158,6 @@ export function HomeFancySections({ labels, afterCapabilitiesSlot }: HomeFancySe
           ))}
         </ol>
       </Section>
-
-      {/* One featured module — a single guided next step, not a competing grid. */}
-      {featuredModule ? (
-        <Section className="home-fancy home-fancy--featured">
-          <Card tone="accent" className="home-featured-band">
-            <div className="home-featured-band__content">
-              <div className="module-card__eyebrow">{featuredModule.eyebrow}</div>
-              <h2 className="section__title">{featuredModule.title}</h2>
-              <p className="home-featured-band__body">{featuredModule.description}</p>
-            </div>
-            <div className="home-featured-band__action">
-              <Link href={featuredModule.href} className="button button--primary">
-                {labels.home.featuredModuleCta}
-              </Link>
-            </div>
-          </Card>
-        </Section>
-      ) : null}
 
       {/* Compact trust line — one claim + 3 method chips, full method behind disclosure. */}
       <Section className="home-fancy home-fancy--trust section section--tinted">
