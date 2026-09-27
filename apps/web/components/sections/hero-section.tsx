@@ -108,6 +108,11 @@ export function HeroSection({ stocks, marketGraph, labels, trackedSymbols = [], 
               assets={marketGraph.assets}
               trackedSymbols={trackedSymbols}
               newsItems={newsItems}
+              defaultSymbol="AMD"
+              defaultCompareSymbol="NVDA"
+              defaultTimeframe="3M"
+              defaultGraphType="candles"
+              defaultCandleIntelligence
               labels={{
                 timeframe: labels.graphLabels.timeframe,
                 graphType: labels.graphLabels.graphType,

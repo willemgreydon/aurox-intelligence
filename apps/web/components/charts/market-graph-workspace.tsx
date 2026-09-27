@@ -63,6 +63,16 @@ type MarketGraphWorkspaceProps = {
     tickers?: string[];
   }>;
   variant?: 'default' | 'spotlight';
+  /**
+   * Optional initial selection overrides (used by the homepage hero spotlight).
+   * Symbol overrides fall back to the first available asset when the requested
+   * symbol is not in `assets`, so callers can never select an empty series.
+   */
+  defaultSymbol?: string;
+  defaultCompareSymbol?: string;
+  defaultTimeframe?: MarketGraphTimeframeId;
+  defaultGraphType?: 'line' | 'candles';
+  defaultCandleIntelligence?: boolean;
   labels: {
     timeframe: string;
     graphType: string;
@@ -198,6 +208,11 @@ export function MarketGraphWorkspace({
   variant = 'default',
   trackedSymbols = [],
   newsItems = [],
+  defaultSymbol,
+  defaultCompareSymbol,
+  defaultTimeframe,
+  defaultGraphType,
+  defaultCandleIntelligence,
 }: MarketGraphWorkspaceProps) {
   const rawId = useId();
   const chartId = rawId.replace(/[^a-z0-9]/gi, '');
@@ -271,13 +286,21 @@ export function MarketGraphWorkspace({
     return [...deduped.values()].slice(0, 5);
   }, [newsItems, prioritizedTrackedSymbols]);
 
-  const [symbol, setSymbol] = useState(assets[0]?.symbol ?? '');
-  const [compareSymbol, setCompareSymbol] = useState('');
-  const [timeframe, setTimeframe] = useState<MarketGraphTimeframeId>('1M');
-  const [graphType, setGraphType] = useState<'line' | 'candles'>('line');
+  const [symbol, setSymbol] = useState(
+    defaultSymbol && assets.some((asset) => asset.symbol === defaultSymbol)
+      ? defaultSymbol
+      : (assets[0]?.symbol ?? ''),
+  );
+  const [compareSymbol, setCompareSymbol] = useState(
+    defaultCompareSymbol && assets.some((asset) => asset.symbol === defaultCompareSymbol)
+      ? defaultCompareSymbol
+      : '',
+  );
+  const [timeframe, setTimeframe] = useState<MarketGraphTimeframeId>(defaultTimeframe ?? '1M');
+  const [graphType, setGraphType] = useState<'line' | 'candles'>(defaultGraphType ?? 'line');
   const [showMovingAverage, setShowMovingAverage] = useState(true);
   const [showSignals, setShowSignals] = useState(true);
-  const [showCandleIntelligence, setShowCandleIntelligence] = useState(false);
+  const [showCandleIntelligence, setShowCandleIntelligence] = useState(defaultCandleIntelligence ?? false);
   const [viewportSize, setViewportSize] = useState<number | null>(null);
   const [viewportOffset, setViewportOffset] = useState(0);
   const [advancedOpen, setAdvancedOpen] = useState(false);
