@@ -994,7 +994,7 @@ export function MarketGraphWorkspace({
                     </>
                   ) : null}
                   {lastUpdatedDisplay ? (
-                    <span className="market-graph__meta-item">
+                    <span className="market-graph__meta-item" suppressHydrationWarning>
                       Updated {lastUpdatedDisplay}
                     </span>
                   ) : null}
@@ -1539,7 +1539,7 @@ export function MarketGraphWorkspace({
                     </a>
                   ) : <strong>{item.title}</strong>}
                   <p>{item.summary || 'Market headline update.'}</p>
-                  <span className="broker-observer__meta">{item.source || 'Source'} · {new Date(item.publishedAt).toLocaleString('en-US')}</span>
+                  <span className="broker-observer__meta" suppressHydrationWarning>{item.source || 'Source'} · {new Date(item.publishedAt).toLocaleString('en-US')}</span>
                 </li>
               )) : <li className="broker-observer__empty">No relevant headlines available.</li>}
             </ul>

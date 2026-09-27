@@ -35,10 +35,14 @@ type StocksCacheEntry = {
 
 const stocksReadCache = new Map<string, StocksCacheEntry>();
 
+// Homepage + dashboard aggregate (forecasts, latest observation). It changes on
+// the order of minutes, not seconds; a 30s window revalidated far more often than
+// the data changed and added avoidable Neon load. 120s keeps the market-pulse /
+// movers / engine reads fresh enough while cutting revalidations ~4x.
 const loadDashboardReadModel = unstable_cache(
   async () => getDashboardReadModel(),
   ['stocks-dashboard-read-model-v1'],
-  { revalidate: 30 },
+  { revalidate: 120 },
 );
 
 const loadInvestmentUniverse = unstable_cache(
