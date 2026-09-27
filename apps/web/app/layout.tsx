@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
-import { IBM_Plex_Mono, IBM_Plex_Sans } from 'next/font/google';
+import localFont from 'next/font/local';
 import { Suspense, type ReactNode } from 'react';
 import './globals.css';
 import { getMessages } from '../lib/i18n/messages';
@@ -11,16 +11,30 @@ import { PagePreloader } from '../components/layout/page-preloader';
 import { ScrollResetter } from '../components/layout/scroll-resetter';
 import { getRequestLocale } from '../server/i18n/locale';
 
-const sans = IBM_Plex_Sans({
-  subsets: ['latin'],
+// Self-hosted IBM Plex (OFL) — bundled woff2 in ./fonts. Previously loaded via
+// next/font/google, which fetches from Google Fonts at build time and
+// intermittently failed the whole Vercel deploy on a network blip. Local files
+// make builds deterministic and offline-safe (no behaviour/appearance change:
+// same family, weights, and CSS variables).
+const sans = localFont({
   variable: '--font-family-sans',
-  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+  src: [
+    { path: './fonts/ibm-plex-sans-latin-400-normal.woff2', weight: '400', style: 'normal' },
+    { path: './fonts/ibm-plex-sans-latin-500-normal.woff2', weight: '500', style: 'normal' },
+    { path: './fonts/ibm-plex-sans-latin-600-normal.woff2', weight: '600', style: 'normal' },
+    { path: './fonts/ibm-plex-sans-latin-700-normal.woff2', weight: '700', style: 'normal' },
+  ],
 });
 
-const mono = IBM_Plex_Mono({
-  subsets: ['latin'],
+const mono = localFont({
   variable: '--font-family-mono',
-  weight: ['400', '500', '600'],
+  display: 'swap',
+  src: [
+    { path: './fonts/ibm-plex-mono-latin-400-normal.woff2', weight: '400', style: 'normal' },
+    { path: './fonts/ibm-plex-mono-latin-500-normal.woff2', weight: '500', style: 'normal' },
+    { path: './fonts/ibm-plex-mono-latin-600-normal.woff2', weight: '600', style: 'normal' },
+  ],
 });
 
 export const metadata: Metadata = {
