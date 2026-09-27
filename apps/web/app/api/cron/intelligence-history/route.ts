@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { recordUniverseSignalHistory } from '../../../../server/services/intelligence-history-service';
+import { runIntelligenceRetention } from '../../../../server/services/intelligence-retention-service';
 
 /**
  * Vercel Cron target — records a daily deterministic signal snapshot for the
@@ -29,7 +30,11 @@ export async function GET(request: Request) {
 
   try {
     const result = await recordUniverseSignalHistory();
-    return NextResponse.json({ ok: true, ...result });
+    // Best-effort retention sweep — never throws, so it cannot fail the cron.
+    // This is the only prod execution path that runs the (previously dead)
+    // prune helpers, keeping append-only intelligence tables bounded.
+    const retention = await runIntelligenceRetention();
+    return NextResponse.json({ ok: true, ...result, retention });
   } catch (error) {
     return NextResponse.json(
       { ok: false, error: error instanceof Error ? error.message : 'record_failed' },
