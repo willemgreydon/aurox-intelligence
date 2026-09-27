@@ -102,6 +102,13 @@ export async function Header({ locale, messages }: HeaderProps) {
       ],
     },
     {
+      id: 'lab',
+      label: messages.shell.nav.lab,
+      items: [
+        { href: '/lab', label: 'Path Explorer', icon: 'PX', description: 'Deterministic Monte Carlo portfolio simulator — offline-capable.' },
+      ],
+    },
+    {
       id: 'admin',
       label: messages.shell.nav.admin,
       items: [
