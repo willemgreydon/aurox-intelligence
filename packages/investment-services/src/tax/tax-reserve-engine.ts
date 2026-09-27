@@ -7,7 +7,6 @@ import type {
   TaxReserveResult,
 } from '@repo/api-contracts';
 import {
-  addMoney,
   applyRatePpm,
   clampNonNegative,
   minMoney,
@@ -77,6 +76,31 @@ export function computeTaxReserve(
 
   const gross = input.grossRealizedGain;
   base.grossRealizedGain = gross;
+
+  // 1b. All money used in arithmetic must share currency + scale. Mixed inputs
+  //     are individually schema-valid, so fail CLOSED with a typed status rather
+  //     than letting the money layer throw an uncaught mismatch. FX is explicit.
+  const arithmeticInputs: (Money | null)[] = [
+    gross,
+    input.offsettableLosses,
+    input.domesticTaxWithheld,
+    input.foreignWithholdingTax,
+    input.creditableForeignWithholding,
+  ];
+  const hasMixedShape = arithmeticInputs
+    .filter((m): m is Money => m !== null)
+    .some((m) => m.currency !== currency || m.scale !== scale);
+  if (hasMixedShape) {
+    return {
+      ...base,
+      status: 'requires_review',
+      policyVersion: policy.version,
+      warnings: [
+        'Inputs use inconsistent currency/scale; a reserve cannot be computed. Convert to a single currency first (FX is an explicit, provenance-carrying step).',
+      ],
+      sources: policy.sources,
+    };
+  }
 
   // 2. Find the applicable rule for this class as of the realisation date.
   const rule = getApplicableRule(policy, input.taxAssetClass, input.realizationDate);
@@ -205,6 +229,3 @@ function yearOf(isoDate: string): number {
   }
   return year;
 }
-
-// Re-exported so callers assembling portfolio-wide views can sum reserves safely.
-export { addMoney };

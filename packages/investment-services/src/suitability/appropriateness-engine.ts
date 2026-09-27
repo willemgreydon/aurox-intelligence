@@ -1,15 +1,11 @@
-import type {
-  AppropriatenessResult,
-  ExperienceLevel,
-  InstrumentOntology,
-  InvestorProfile,
-  KnowledgeLevel,
-} from '@repo/api-contracts';
+import type { AppropriatenessResult, InstrumentOntology, InvestorProfile } from '@repo/api-contracts';
+import { experienceLevelSchema, knowledgeLevelSchema } from '@repo/api-contracts';
 
 export const APPROPRIATENESS_POLICY_VERSION = 'appropriateness-2026.1';
 
-const KNOWLEDGE_ORDER: KnowledgeLevel[] = ['none', 'basic', 'informed', 'advanced', 'expert'];
-const EXPERIENCE_ORDER: ExperienceLevel[] = ['none', 'limited', 'moderate', 'extensive'];
+// Derived from the contract enums (single source of truth with the profile shape).
+const KNOWLEDGE_ORDER = knowledgeLevelSchema.options;
+const EXPERIENCE_ORDER = experienceLevelSchema.options;
 
 /**
  * Appropriateness is the DIFFERENT question from suitability: does the investor

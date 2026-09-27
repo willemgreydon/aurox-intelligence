@@ -1,5 +1,5 @@
 import type { Money, TaxLot } from '@repo/api-contracts';
-import { addMoney, mulMoneyByWholeQuantity, subMoney, zeroMoney } from '../money/money';
+import { addMoney, makeMoney, mulMoneyByWholeQuantity, subMoney, zeroMoney } from '../money/money';
 
 export type LotMatchMethod = 'fifo';
 
@@ -53,11 +53,9 @@ export function matchDisposal(
     const take = Math.min(remaining, Math.floor(lot.remainingQuantity));
     if (take <= 0) continue;
 
-    const unitCost = addMoney(
-      lot.acquisitionUnitPrice,
-      perUnitCosts(lot.acquisitionCosts, lot.acquisitionQuantity),
-    );
-    const costBasis = mulMoneyByWholeQuantity(unitCost, take);
+    const priceBasis = mulMoneyByWholeQuantity(lot.acquisitionUnitPrice, take);
+    const costsBasis = proRataCosts(lot.acquisitionCosts, take, lot.acquisitionQuantity);
+    const costBasis = addMoney(priceBasis, costsBasis);
     const proceeds = mulMoneyByWholeQuantity(disposalUnitPrice, take);
     const realizedGain = subMoney(proceeds, costBasis);
 
@@ -79,14 +77,22 @@ export function matchDisposal(
 }
 
 /**
- * Pro-rata acquisition cost per unit, rounded down to the minor unit (integer
- * division) so the total never over-allocates cost.
+ * Pro-rata share of a lot's acquisition costs for `take` of `acquisitionQuantity`
+ * units. The allocation is `round(costs * take / qty)` computed in BigInt with
+ * half-up rounding — NOT floor-per-unit-then-multiply, which silently dropped
+ * remainder cents (understating cost basis and overstating the taxable gain).
+ * Full-lot consumption (`take === qty`) is exact.
  */
-function perUnitCosts(acquisitionCosts: Money, acquisitionQuantity: number): Money {
+function proRataCosts(acquisitionCosts: Money, take: number, acquisitionQuantity: number): Money {
   const qty = Math.floor(acquisitionQuantity);
   if (qty <= 0) {
     return zeroMoney(acquisitionCosts.currency, acquisitionCosts.scale);
   }
-  const perUnitMinor = Math.floor(acquisitionCosts.minorUnits / qty);
-  return { minorUnits: perUnitMinor, currency: acquisitionCosts.currency, scale: acquisitionCosts.scale };
+  const sign = acquisitionCosts.minorUnits < 0 ? -1 : 1;
+  const raw = BigInt(Math.abs(acquisitionCosts.minorUnits)) * BigInt(take);
+  const denom = BigInt(qty);
+  const quotient = raw / denom;
+  const remainder = raw % denom;
+  const roundedAbs = remainder * 2n >= denom ? quotient + 1n : quotient;
+  return makeMoney(Number(roundedAbs) * sign, acquisitionCosts.currency, acquisitionCosts.scale);
 }

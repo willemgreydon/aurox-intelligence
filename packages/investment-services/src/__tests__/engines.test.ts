@@ -60,6 +60,31 @@ describe('tax-lot FIFO matching', () => {
     const result = matchDisposal(lots, 25, eur(150), 'fifo');
     expect(result.unmatchedQuantity).toBe(5);
   });
+
+  it('includes the full acquisition costs in cost basis without dropping remainder cents', () => {
+    // €10.00 of acquisition costs over 3 units must be fully credited to cost
+    // basis (regression: floor-per-unit previously dropped a cent → €9.99).
+    const costed: TaxLot[] = [
+      {
+        lotId: 'lot-costed',
+        instrumentSymbol: 'AAPL',
+        jurisdiction: 'AT',
+        taxAssetClass: 'securities_capital_gain',
+        acquisitionDate: '2025-01-01',
+        acquisitionQuantity: 3,
+        acquisitionUnitPrice: eur(100),
+        acquisitionCosts: eur(10),
+        remainingQuantity: 3,
+        currency: 'EUR',
+        fxProvenance: null,
+        broker: null,
+      },
+    ];
+    const result = matchDisposal(costed, 3, eur(150), 'fifo');
+    // price basis €300 + full €10 costs = €310 cost basis; proceeds €450 → gain €140.
+    expect(result.matched[0]!.costBasis).toEqual(eur(310));
+    expect(result.totalRealizedGain).toEqual(eur(140));
+  });
 });
 
 describe('loss offsetting within income categories', () => {
@@ -114,6 +139,34 @@ describe('suitability engine', () => {
     const result = evaluateSuitability(makeProfile({ riskTolerance: null }), NON_COMPLEX_EQUITY, AT);
     expect(result.status).toBe('insufficient_information');
     expect(result.missingInformation).toContain('riskTolerance');
+  });
+
+  it('does not conclude suitable when objective or horizon is unknown', () => {
+    const result = evaluateSuitability(
+      makeProfile({ objective: null, horizon: null }),
+      NON_COMPLEX_EQUITY,
+      AT,
+    );
+    expect(result.status).toBe('insufficient_information');
+    expect(result.missingInformation).toEqual(expect.arrayContaining(['objective', 'horizon']));
+  });
+
+  it('scores a derivative-class instrument as high risk (not cash-equivalent)', () => {
+    // Regression: assetClass 'derivative' with isDerivative:false previously fell
+    // through instrumentRiskBand to band 0 and was scored as suitable for low risk.
+    const derivativeInstrument = {
+      ...NON_COMPLEX_EQUITY,
+      assetClass: 'derivative' as const,
+      isDerivative: false,
+      leverage: null,
+    };
+    const result = evaluateSuitability(
+      makeProfile({ riskTolerance: 'low' }),
+      derivativeInstrument,
+      AT,
+    );
+    expect(result.status).toBe('not_suitable');
+    expect(result.dimensions.find((d) => d.dimension === 'risk')!.verdict).toBe('mismatch');
   });
 
   it('models risk tolerance and loss capacity independently', () => {

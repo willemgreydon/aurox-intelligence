@@ -103,10 +103,13 @@ export function getApplicableRule(
   taxAssetClass: TaxAssetClass,
   isoDate: string,
 ): TaxRule | null {
+  // Compare on the calendar day only, so a datetime input (e.g. "2026-06-30T14:00Z")
+  // is not lexically excluded on a rule's final date-only effective day.
+  const day = isoDate.slice(0, 10);
   const candidates = policy.rules
     .filter((rule) => rule.appliesTo.includes(taxAssetClass))
-    .filter((rule) => rule.effectiveFrom <= isoDate)
-    .filter((rule) => rule.effectiveUntil === null || isoDate <= rule.effectiveUntil)
+    .filter((rule) => rule.effectiveFrom <= day)
+    .filter((rule) => rule.effectiveUntil === null || day <= rule.effectiveUntil)
     .sort((a, b) => (a.effectiveFrom < b.effectiveFrom ? 1 : -1));
   return candidates[0] ?? null;
 }

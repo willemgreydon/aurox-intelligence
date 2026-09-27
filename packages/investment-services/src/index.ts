@@ -31,7 +31,7 @@ export {
 export type { Rounding } from './money/money';
 
 // Provenance helpers
-export { daysBetweenIso, makeEvidence, makeSource } from './provenance/provenance';
+export { daysBetweenIso } from './provenance/provenance';
 
 // Tax
 export {

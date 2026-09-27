@@ -2,24 +2,34 @@ import type {
   DimensionVerdict,
   InstrumentOntology,
   InvestorProfile,
-  KnowledgeLevel,
-  LossBearingCapacity,
-  RiskTolerance,
   SuitabilityResult,
+} from '@repo/api-contracts';
+import {
+  knowledgeLevelSchema,
+  lossBearingCapacitySchema,
+  riskToleranceSchema,
 } from '@repo/api-contracts';
 
 export const SUITABILITY_POLICY_VERSION = 'suitability-2026.1';
 
-const RISK_ORDER: RiskTolerance[] = ['very_low', 'low', 'moderate', 'high', 'very_high'];
-const CAPACITY_ORDER: LossBearingCapacity[] = ['none', 'limited', 'moderate', 'substantial', 'full'];
-const KNOWLEDGE_ORDER: KnowledgeLevel[] = ['none', 'basic', 'informed', 'advanced', 'expert'];
+// Ordinal scales derived from the contract enums so there is a single source of
+// truth — adding/reordering a level in the schema updates these automatically.
+const RISK_ORDER = riskToleranceSchema.options;
+const CAPACITY_ORDER = lossBearingCapacitySchema.options;
+const KNOWLEDGE_ORDER = knowledgeLevelSchema.options;
 
 /** Coarse instrument risk band on the same 0..4 scale as risk tolerance. */
 function instrumentRiskBand(instrument: InstrumentOntology): number {
   if (instrument.complexity === 'highly_complex') return 4;
   if (instrument.isDerivative || (instrument.leverage ?? 1) > 1) return 3;
   if (instrument.complexity === 'complex') return 3;
-  if (instrument.assetClass === 'crypto' || instrument.assetClass === 'commodity') return 3;
+  if (
+    instrument.assetClass === 'crypto' ||
+    instrument.assetClass === 'commodity' ||
+    instrument.assetClass === 'derivative'
+  ) {
+    return 3;
+  }
   if (instrument.assetClass === 'equity' || instrument.assetClass === 'structured_product') return 2;
   if (instrument.assetClass === 'fund' || instrument.assetClass === 'multi_asset') return 1;
   return 0; // cash, money_market, fixed_income baseline
@@ -145,12 +155,20 @@ export function evaluateSuitability(
   };
 }
 
-const HARD_DIMENSIONS = new Set(['risk', 'loss_capacity', 'knowledge', 'complexity']);
+// A positive "suitable" conclusion requires these to be known — objective and
+// horizon are core suitability inputs, not optional. If any is unknown we cannot
+// conclude suitability.
+const REQUIRED_FOR_SUITABLE = new Set(['risk', 'loss_capacity', 'knowledge', 'objective', 'horizon']);
+// A mismatch on any of these blocks suitability outright.
+const MISMATCH_BLOCKS = new Set(['risk', 'loss_capacity', 'knowledge', 'complexity']);
 
 function deriveStatus(dimensions: DimensionVerdict[]): SuitabilityResult['status'] {
-  const hard = dimensions.filter((d) => HARD_DIMENSIONS.has(d.dimension));
-  if (hard.some((d) => d.verdict === 'unknown')) return 'insufficient_information';
-  if (hard.some((d) => d.verdict === 'mismatch')) return 'not_suitable';
+  if (dimensions.some((d) => REQUIRED_FOR_SUITABLE.has(d.dimension) && d.verdict === 'unknown')) {
+    return 'insufficient_information';
+  }
+  if (dimensions.some((d) => MISMATCH_BLOCKS.has(d.dimension) && d.verdict === 'mismatch')) {
+    return 'not_suitable';
+  }
   if (dimensions.some((d) => d.verdict === 'partial')) return 'conditionally_suitable';
   return 'suitable';
 }

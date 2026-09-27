@@ -1,15 +1,3 @@
-import type { InvestmentEvidence, SourceReference } from '@repo/api-contracts';
-
-/** Convenience constructor for a source reference (keeps callers honest). */
-export function makeSource(input: SourceReference): SourceReference {
-  return input;
-}
-
-/** Convenience constructor for a piece of evidence. */
-export function makeEvidence(input: InvestmentEvidence): InvestmentEvidence {
-  return input;
-}
-
 /**
  * Whole days between two ISO dates (b - a), UTC, deterministic. Uses `Date.parse`
  * on explicit strings only — never `Date.now()` — so it stays pure/reproducible.

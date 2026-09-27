@@ -157,4 +157,26 @@ describe('Austrian tax reserve engine', () => {
     expect(result.creditableWithholding).toEqual(eur(150));
     expect(result.remainingTaxLiability).toEqual(eur(125)); // 275 − 150
   });
+
+  it('degrades to requires_review on inconsistent currency inputs instead of throwing', () => {
+    // gross is EUR, withheld is USD — individually schema-valid but not combinable.
+    const result = computeTaxReserve(
+      baseInput({ domesticTaxWithheld: { minorUnits: 27_500, currency: 'USD', scale: 2 } }),
+      AUSTRIAN_TAX_POLICY,
+      AS_OF,
+    );
+    expect(result.status).toBe('requires_review');
+    expect(result.estimatedTax).toEqual(eur(0));
+    expect(result.warnings.join(' ')).toMatch(/currency\/scale/);
+  });
+
+  it('selects the effective-dated rule when the realisation date carries a time component', () => {
+    const result = computeTaxReserve(
+      baseInput({ realizationDate: '2026-01-15T14:30:00Z' }),
+      AUSTRIAN_TAX_POLICY,
+      AS_OF,
+    );
+    expect(result.status).toBe('calculated');
+    expect(result.appliedRuleIds).toEqual(['AT-CAP-SPECIAL-275']);
+  });
 });
