@@ -2,6 +2,7 @@ import { getDatabaseSizeReport } from '@repo/db';
 import { NextResponse } from 'next/server';
 import { recordUniverseSignalHistory } from '../../../../server/services/intelligence-history-service';
 import { runIntelligenceRetention } from '../../../../server/services/intelligence-retention-service';
+import { getNeonConsumption } from '../../../../server/services/neon-consumption-service';
 
 const MB = 1024 * 1024;
 
@@ -63,7 +64,20 @@ export async function GET(request: Request) {
       );
     }
 
-    return NextResponse.json({ ok: true, ...result, retention, dbSize });
+    // Authoritative egress (Neon "Network transfer") — the free-plan cap that
+    // takes the site down. Not SQL-queryable, so read via the Neon API. Opt-in
+    // (NEON_API_KEY + NEON_PROJECT_ID) and fail-safe: null when unconfigured.
+    const neonConsumption = await getNeonConsumption();
+    if (neonConsumption) {
+      console.info(
+        `[cron:intelligence-history] neon-usage egress=${neonConsumption.egressMb ?? '?'}MB/` +
+          `${neonConsumption.egressCapMb}MB (${neonConsumption.egressPctOfCap ?? '?'}% of free cap) ` +
+          `storage=${neonConsumption.storageMb ?? '?'}MB compute=${neonConsumption.computeHours ?? '?'}h ` +
+          `period=${neonConsumption.periodStart ?? '?'}→${neonConsumption.periodEnd ?? '?'}`,
+      );
+    }
+
+    return NextResponse.json({ ok: true, ...result, retention, dbSize, neonConsumption });
   } catch (error) {
     return NextResponse.json(
       { ok: false, error: error instanceof Error ? error.message : 'record_failed' },
