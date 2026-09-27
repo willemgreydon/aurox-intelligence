@@ -148,3 +148,8 @@ vite.config.ts.timestamp-*
 
 # OS artifacts
 .DS_Store
+
+# Playwright
+apps/web/test-results/
+apps/web/playwright-report/
+apps/web/playwright/.cache/
