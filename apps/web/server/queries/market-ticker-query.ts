@@ -24,10 +24,16 @@ export type MarketTickerReadModel = {
   sourceSummary: string;
 };
 
+// This runs in the root-layout header, so it executes on effectively every page
+// render across the whole site — a short revalidate window made it the single
+// largest source of Neon reads (and, during a quota outage, of revalidation
+// errors). 60s is the display-quote cache ceiling (cache-safety-rule) and cuts
+// site-wide revalidation frequency ~3x with no meaningful freshness cost for an
+// ambient ticker.
 const loadTickerQuotes = unstable_cache(
   async () => loadQuoteSnapshots(tickerUniverse.map((item) => item.symbol), undefined, { preferCached: true, maxSymbols: 12 }),
   ['market-ticker-quotes-v1'],
-  { revalidate: 20 },
+  { revalidate: 60 },
 );
 
 export async function getMarketTickerReadModel(): Promise<MarketTickerReadModel> {
