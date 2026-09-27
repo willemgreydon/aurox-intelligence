@@ -1449,5 +1449,48 @@
       "microHint": "Mikrohandelsmodus ist aktiviert — Vorschauen bevorzugen kleine, kontrollierte simulierte Größen.",
       "generateCta": "Simulierte Aktivität erzeugen"
     }
+  },
+  "homeLive": {
+    "pulse": {
+      "eyebrow": "Marktpuls",
+      "title": "Marktüberblick",
+      "advancing": "steigend",
+      "declining": "fallend",
+      "unchanged": "unverändert",
+      "averageMove": "Durchschnittliche Bewegung",
+      "strongest": "Stärkster",
+      "weakest": "Schwächster",
+      "empty": "Derzeit keine Marktdaten verfügbar."
+    },
+    "movers": {
+      "eyebrow": "Bewegungen & Signale",
+      "title": "Größte Bewegungen",
+      "subtitle": "Die größten Bewegungen in deinem beobachteten Universum – mit der Richtungseinschätzung der Engine.",
+      "empty": "Derzeit keine Bewegungen verfügbar.",
+      "signalHeading": "Signal"
+    },
+    "engine": {
+      "eyebrow": "Engine-Einschätzung",
+      "title": "Was die Engine sieht",
+      "empty": "Noch keine Engine-Einschätzung verfügbar.",
+      "confidenceLabel": "Konfidenz",
+      "highConfidenceHeading": "Prognosen mit höchster Konfidenz",
+      "indicativeNote": "Nur indikativ – keine Anlageberatung."
+    },
+    "activity": {
+      "eyebrow": "Deine Aktivität",
+      "title": "Letzte Simulationsorders",
+      "empty": "Noch keine aktuellen Orders.",
+      "buy": "Kauf",
+      "sell": "Verkauf",
+      "filled": "Ausgeführt",
+      "rejected": "Abgelehnt",
+      "cancelled": "Storniert"
+    },
+    "bias": {
+      "bullish": "Bullisch",
+      "bearish": "Bärisch",
+      "neutral": "Neutral"
+    }
   }
 }

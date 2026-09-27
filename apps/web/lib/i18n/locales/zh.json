@@ -1443,5 +1443,48 @@
       "microHint": "微交易模式已启用 — 预览偏向小额、可控的模拟规模。",
       "generateCta": "生成模拟活动"
     }
+  },
+  "homeLive": {
+    "pulse": {
+      "eyebrow": "Market pulse",
+      "title": "Market overview",
+      "advancing": "advancing",
+      "declining": "declining",
+      "unchanged": "unchanged",
+      "averageMove": "Average move",
+      "strongest": "Strongest",
+      "weakest": "Weakest",
+      "empty": "No market data available right now."
+    },
+    "movers": {
+      "eyebrow": "Movers & signals",
+      "title": "Biggest movers",
+      "subtitle": "The largest moves across your tracked universe, with the engine's directional read.",
+      "empty": "No movers available right now.",
+      "signalHeading": "Signal"
+    },
+    "engine": {
+      "eyebrow": "Engine read",
+      "title": "What the engine sees",
+      "empty": "No engine read available yet.",
+      "confidenceLabel": "Confidence",
+      "highConfidenceHeading": "Highest-confidence forecasts",
+      "indicativeNote": "Indicative only — not financial advice."
+    },
+    "activity": {
+      "eyebrow": "Your activity",
+      "title": "Recent simulation orders",
+      "empty": "No recent orders yet.",
+      "buy": "Buy",
+      "sell": "Sell",
+      "filled": "Filled",
+      "rejected": "Rejected",
+      "cancelled": "Cancelled"
+    },
+    "bias": {
+      "bullish": "Bullish",
+      "bearish": "Bearish",
+      "neutral": "Neutral"
+    }
   }
 }

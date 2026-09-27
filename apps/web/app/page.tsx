@@ -4,8 +4,10 @@ import { getSimulationOverviewDataForUser } from '../server/services/stock-simul
 import { getOptionalCurrentSession } from '../server/auth/session';
 import { HeroSection } from '../components/sections/hero-section';
 import { PortfolioMetricsSection } from '../components/sections/portfolio-metrics-section';
-import { HomeFancySections } from '../components/sections/home-fancy-sections';
-import { HomeMarketIntelligenceSection } from '../components/sections/home-market-intelligence-section';
+import { MarketPulseSection } from '../components/sections/home/market-pulse-section';
+import { MoversSignalsSection } from '../components/sections/home/movers-signals-section';
+import { EngineReadSection } from '../components/sections/home/engine-read-section';
+import { RecentActivitySection } from '../components/sections/home/recent-activity-section';
 import { NewsStreamWidget } from '../components/news/news-stream-widget';
 import { getMessages } from '../lib/i18n/messages';
 import { getRequestLocale } from '../server/i18n/locale';
@@ -14,10 +16,6 @@ import { withDbReadFallback, getHomeWidgetTimeoutMs } from '../server/lib/db-run
 import type { StocksOverviewViewModel } from '../server/mappers/stocks-mapper';
 import { getNewsStreamData } from '../server/services/news-service';
 import { getWorkspaceTrackedSymbols } from '../server/services/workspace-service';
-import { getMarketStateConstellationData } from '../server/services/market-state-constellation-service';
-import { mapMarketStateConstellation } from '../server/mappers/market-state-constellation-mapper';
-import { getMarketCorrelationData } from '../server/services/market-correlation-service';
-import { mapMarketCorrelation } from '../server/mappers/market-correlation-mapper';
 
 export const dynamic = 'force-dynamic';
 
@@ -74,7 +72,7 @@ export default async function HomePage() {
   // read each). They don't depend on preferredSymbols, so they run fully in
   // parallel and are timeout-guarded: if either degrades it renders nothing
   // rather than blocking or breaking the landing page.
-  const [stocksResult, marketGraphResult, portfolioResult, constellationResult, correlationResult] = await Promise.all([
+  const [stocksResult, marketGraphResult, portfolioResult] = await Promise.all([
     withDbReadFallback('home:stocks-overview', buildFallbackStocks(messages), () =>
       getStocksOverviewData(locale, messages, {
         ...(preferredSymbols.length > 0 ? { preferredSymbols } : {}),
@@ -89,18 +87,11 @@ export default async function HomePage() {
       preferCached: true,
     }), HOME_WIDGET_TIMEOUT_MS),
     portfolioPromise,
-    withDbReadFallback('home:constellation', null, () => getMarketStateConstellationData(), HOME_WIDGET_TIMEOUT_MS),
-    withDbReadFallback('home:correlation', null, () => getMarketCorrelationData(), HOME_WIDGET_TIMEOUT_MS),
   ]);
   const stocks = stocksResult.value;
   const marketGraph = marketGraphResult.value;
   const portfolioOverview = portfolioResult.value;
   const news = newsResult.value;
-  // Optional enhancement surfaces — map to view models only when the read
-  // resolved; a degraded constellation/correlation just omits its panel and does
-  // NOT flip the sitewide db-degraded banner.
-  const constellation = constellationResult.value ? mapMarketStateConstellation(constellationResult.value) : null;
-  const correlation = correlationResult.value ? mapMarketCorrelation(correlationResult.value) : null;
   const dbDegraded = stocksResult.degraded || marketGraphResult.degraded || portfolioResult.degraded || newsResult.degraded;
   const marketNewsEnabled = process.env.NEXT_PUBLIC_ENABLE_MARKET_NEWS !== 'false';
   perfLog('page:/ total', pageStart);
@@ -188,30 +179,51 @@ export default async function HomePage() {
           },
         }}
       />
-      <HomeFancySections
-        stocks={stocks}
-        marketGraph={marketGraph}
-        afterCapabilitiesSlot={
-          <HomeMarketIntelligenceSection constellation={constellation} correlation={correlation} />
-        }
-        labels={{
-          lanes: messages.homeSections.lanes,
-          capabilities: messages.homeSections.capabilities,
-          modules: messages.homeSections.modules,
-          explainability: messages.homeSections.explainability,
-          home: {
-            viewAllMarkets: messages.home.viewAllMarkets,
-            featuredModuleCta: messages.home.featuredModuleCta,
-            showMoreLanes: messages.home.showMoreLanes,
-            showAllCapabilities: messages.home.showAllCapabilities,
-            finalCtaTitle: messages.home.finalCtaTitle,
-            finalCtaSubtitle: messages.home.finalCtaSubtitle,
-            workflowEyebrow: messages.home.workflowEyebrow,
-            trustLineLabel: messages.home.trustLineLabel,
-          },
-        }}
-        common={{ unavailable: messages.common.unavailable }}
+      <MarketPulseSection
+        snapshot={stocks.marketSnapshot}
+        labels={{ ...messages.homeLive.pulse, unavailable: messages.common.unavailable }}
       />
+      <MoversSignalsSection
+        movers={stocks.topMovers.map((item) => ({
+          symbol: item.symbol,
+          name: item.name,
+          priceLabel: item.priceLabel,
+          changeLabel: item.changeLabel,
+          changePercent: item.changePercent,
+          forecastBias: item.forecastBias,
+        }))}
+        forecasts={stocks.forecastPreview}
+        labels={{ ...messages.homeLive.movers, ...messages.homeLive.bias }}
+      />
+      <EngineReadSection
+        insight={
+          stocks.latestInsight
+            ? {
+                symbol: stocks.latestInsight.symbol,
+                headline: stocks.latestInsight.headline,
+                whatChanged: stocks.latestInsight.whatChanged,
+                stance: stocks.latestInsight.stance,
+                confidence: stocks.latestInsight.confidence,
+              }
+            : null
+        }
+        forecasts={stocks.forecastPreview}
+        labels={{ ...messages.homeLive.engine, ...messages.homeLive.bias }}
+      />
+      {portfolioOverview && portfolioOverview.recentOrders.length > 0 ? (
+        <RecentActivitySection
+          orders={portfolioOverview.recentOrders.map((order) => ({
+            symbol: order.symbol,
+            side: order.side,
+            status: order.status,
+            quantity: order.quantity,
+            executedPrice: order.executedPrice,
+            createdAt: order.createdAt,
+          }))}
+          labels={messages.homeLive.activity}
+          locale={locale}
+        />
+      ) : null}
       {marketNewsEnabled ? (
         <section className="dashboard-section home-news-section">
           <div className="shell-container home-news-section__inner">
