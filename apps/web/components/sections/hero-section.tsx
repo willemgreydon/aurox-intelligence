@@ -1,11 +1,9 @@
 import type { ReactNode } from 'react';
-import Link from 'next/link';
 import type { StocksOverviewViewModel } from '../../server/mappers/stocks-mapper';
 import type { getMarketGraphData } from '../../server/services/market-graph-service';
 import type { NewsItem } from '@repo/api-contracts';
 import { Card } from '../ui/card';
 import { Section } from '../ui/section';
-import { StatusBadge } from '../ui/status-badge';
 import { MarketGraphWorkspace } from '../charts/market-graph-workspace';
 
 type HeroSectionProps = {
@@ -74,30 +72,10 @@ type HeroSectionProps = {
 };
 
 export function HeroSection({ stocks, marketGraph, labels, trackedSymbols = [], newsItems = [], betweenSlot }: HeroSectionProps) {
-  const positiveBreadth = stocks.trackedStocks.length > 0 ? Math.round((stocks.trackedStocks.filter((item) => (item.changePercent ?? 0) > 0).length / stocks.trackedStocks.length) * 100) : 0;
-  const featuredMove = stocks.topMovers[0];
-  const metrics = [
-    {
-      label: labels.liveTrackedStocks,
-      value: String(stocks.trackedStocks.length),
-      caption: labels.liveTrackedStocksCaption,
-    },
-    {
-      label: labels.positiveBreadth,
-      value: `${positiveBreadth}%`,
-      caption: labels.positiveBreadthCaption,
-    },
-    {
-      label: labels.topMover,
-      value: featuredMove ? `${featuredMove.symbol} ${featuredMove.changeLabel}` : labels.unavailable,
-      caption: labels.topMoverCaption,
-    },
-  ] as const;
-
-  // Home page band order: 1) full-bleed chart spotlight, 2) betweenSlot
-  // (portfolio pulse), 3) hero intro (headline + snapshot panel). The chart and
-  // intro are rendered as separate sections so the portfolio pulse can sit
-  // between them.
+  // The hero is now just the full-bleed chart spotlight followed by the
+  // portfolio pulse (betweenSlot). The former marketing intro band (headline +
+  // snapshot panel + CTAs) was removed in favour of the live data sections that
+  // follow on the page.
   return (
     <>
       {marketGraph.assets.length > 0 ? (
@@ -148,54 +126,6 @@ export function HeroSection({ stocks, marketGraph, labels, trackedSymbols = [], 
       ) : null}
 
       {betweenSlot}
-
-      <Section className="section--hero hero-intro-section">
-        <div className="hero-intro-grid">
-          <article className="hero__content">
-            <div className="section__eyebrow">{labels.eyebrow}</div>
-            <h1>{labels.title}</h1>
-            <p className="hero__lede">{labels.description}</p>
-
-            <div className="hero__actions">
-              <Link href="/invest" className="button button--primary">
-                {labels.openStocks}
-              </Link>
-              <Link href="/invest/simulation" className="button button--secondary">
-                {labels.viewSimulation}
-              </Link>
-              <Link href="/dashboard" className="button button--secondary">
-                {labels.reviewRiskLayer}
-              </Link>
-            </div>
-
-            <div className="hero__meta" aria-label={labels.platformHighlights}>
-              <span className="pill">{stocks.freshnessSummary}</span>
-              <span className="pill">{labels.provider}: {stocks.metrics.find((metric) => metric.id === 'provider')?.value ?? labels.unavailable}</span>
-              <span className="pill">{stocks.lastUpdatedLabel}</span>
-            </div>
-          </article>
-
-          <Card tone="accent" className="hero-panel">
-            <div className="hero-panel__header">
-              <div>
-                <h2 className="hero-panel__title">{labels.currentSnapshotTitle}</h2>
-                <p className="hero-panel__subtext">{labels.currentSnapshotSubtitle}</p>
-              </div>
-              <StatusBadge tone={stocks.statusTone}>{stocks.statusLabel}</StatusBadge>
-            </div>
-
-            <div className="metric-stack">
-              {metrics.map((metric) => (
-                <article key={metric.label} className="metric-card">
-                  <div className="metric-card__label">{metric.label}</div>
-                  <div className="metric-card__value">{metric.value}</div>
-                  <p className="metric-card__caption">{metric.caption}</p>
-                </article>
-              ))}
-            </div>
-          </Card>
-        </div>
-      </Section>
     </>
   );
 }
