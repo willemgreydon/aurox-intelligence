@@ -14162,6 +14162,7 @@ code,
   .home-fancy--capabilities > .shell-container,
   .home-fancy--workflow > .shell-container,
   .home-fancy--trust > .shell-container,
+  .home-live > .shell-container,
   .home-market-intel > .shell-container,
   .home-news-section > .shell-container {
     width: min(calc(100% - 2 * var(--page-gutter)), var(--content-dashboard));

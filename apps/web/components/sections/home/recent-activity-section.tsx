@@ -48,9 +48,8 @@ export function RecentActivitySection({
   const rows = orders.slice(0, 5);
 
   return (
-    <Section className="section home-live home-activity">
-      <div className="shell-container">
-        <header className="home-live__header">
+    <Section className="home-live home-activity">
+      <header className="home-live__header">
           <div className="section__eyebrow">{labels.eyebrow}</div>
           <h2 className="section__title home-live__title">{labels.title}</h2>
         </header>
@@ -77,7 +76,6 @@ export function RecentActivitySection({
             ))}
           </ul>
         )}
-      </div>
     </Section>
   );
 }

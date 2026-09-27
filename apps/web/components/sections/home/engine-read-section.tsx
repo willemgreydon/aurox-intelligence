@@ -55,9 +55,8 @@ export function EngineReadSection({
   const isEmpty = insight === null && ranked.length === 0;
 
   return (
-    <Section className="section home-live home-engine">
-      <div className="shell-container">
-        <header className="home-live__header">
+    <Section className="home-live home-engine">
+      <header className="home-live__header">
           <div className="section__eyebrow">{labels.eyebrow}</div>
           <h2 className="section__title home-live__title">{labels.title}</h2>
         </header>
@@ -100,7 +99,6 @@ export function EngineReadSection({
             ) : null}
           </div>
         )}
-      </div>
     </Section>
   );
 }
