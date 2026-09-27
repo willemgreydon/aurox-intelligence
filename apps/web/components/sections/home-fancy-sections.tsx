@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import type { StocksOverviewViewModel } from '../../server/mappers/stocks-mapper';
 import type { getMarketGraphData } from '../../server/services/market-graph-service';
 import { Card } from '../ui/card';
@@ -67,6 +68,8 @@ type HomeFancySectionsProps = {
   common: {
     unavailable: string;
   };
+  /** Optional slot rendered immediately after the capabilities section. */
+  afterCapabilitiesSlot?: ReactNode;
 };
 
 function toStatusTone(statusLabel: string): 'success' | 'warning' | 'danger' | 'info' {
@@ -83,7 +86,7 @@ function toStatusTone(statusLabel: string): 'success' | 'warning' | 'danger' | '
   return 'success';
 }
 
-export function HomeFancySections({ labels }: HomeFancySectionsProps) {
+export function HomeFancySections({ labels, afterCapabilitiesSlot }: HomeFancySectionsProps) {
   const featureCards = labels.capabilities.items.slice(0, 3);
   const extraCapabilities = labels.capabilities.items.slice(3);
   const featuredModule = labels.modules.items[0];
@@ -133,6 +136,10 @@ export function HomeFancySections({ labels }: HomeFancySectionsProps) {
           </Disclosure>
         ) : null}
       </Section>
+
+      {/* Optional slot — e.g. the "Live market intelligence" band — placed
+          directly after the capabilities section. */}
+      {afterCapabilitiesSlot}
 
       {/* Workflow strip — Data → Signals → Risk → Decision. */}
       <Section className="home-fancy home-fancy--workflow section section--tinted">

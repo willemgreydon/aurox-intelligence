@@ -186,10 +186,12 @@ export default async function HomePage() {
           },
         }}
       />
-      <HomeMarketIntelligenceSection constellation={constellation} correlation={correlation} />
       <HomeFancySections
         stocks={stocks}
         marketGraph={marketGraph}
+        afterCapabilitiesSlot={
+          <HomeMarketIntelligenceSection constellation={constellation} correlation={correlation} />
+        }
         labels={{
           lanes: messages.homeSections.lanes,
           capabilities: messages.homeSections.capabilities,
