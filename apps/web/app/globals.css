@@ -15057,3 +15057,58 @@ code,
 .candle-narrative__icon--positive { color: var(--chart-positive, #29c07a); }
 .candle-narrative__icon--negative { color: var(--chart-negative, #ff5a5f); }
 .candle-narrative__icon--neutral { color: var(--chart-neutral, #d9a441); }
+
+/* ── Aurox Lab · Volatility Cone ───────────────────────────────────────── */
+.vol-cone { display: flex; flex-direction: column; gap: var(--space-4, 1rem); }
+.vol-cone__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2.4fr) minmax(0, 1fr);
+  gap: var(--space-4, 1rem);
+  align-items: start;
+}
+@media (max-width: 900px) { .vol-cone__grid { grid-template-columns: 1fr; } }
+
+/* Cone bands */
+.vol-cone__band { stroke: none; }
+.vol-cone__band--outer { fill: color-mix(in srgb, var(--chart-series-a, #4f9cff) 10%, transparent); }
+.vol-cone__band--mid { fill: color-mix(in srgb, var(--chart-series-a, #4f9cff) 16%, transparent); }
+.vol-cone__band--inner { fill: color-mix(in srgb, var(--chart-series-a, #4f9cff) 26%, transparent); }
+.vol-cone__median { fill: none; stroke: var(--chart-series-a, #4f9cff); stroke-width: 2; }
+.vol-cone__current-line { fill: none; stroke: var(--text-secondary, #b7becb); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.vol-cone__cursor { stroke: var(--text-tertiary, #7f889b); stroke-width: 1; stroke-dasharray: 3 3; }
+.vol-cone__marker { stroke: var(--surface-base, #0d1117); stroke-width: 1.25; }
+.vol-cone__marker--positive { fill: var(--chart-positive, #29c07a); }
+.vol-cone__marker--negative { fill: var(--chart-negative, #ff5a5f); }
+.vol-cone__marker--neutral { fill: var(--chart-series-a, #4f9cff); }
+
+.vol-swatch { width: 12px; height: 12px; border-radius: 2px; display: inline-block; }
+.vol-swatch--outer { background: color-mix(in srgb, var(--chart-series-a, #4f9cff) 12%, transparent); }
+.vol-swatch--mid { background: color-mix(in srgb, var(--chart-series-a, #4f9cff) 18%, transparent); }
+.vol-swatch--inner { background: color-mix(in srgb, var(--chart-series-a, #4f9cff) 30%, transparent); }
+.vol-swatch--median { background: var(--chart-series-a, #4f9cff); }
+.vol-swatch--current { background: var(--text-secondary, #b7becb); border-radius: 999px; }
+
+/* Side panel */
+.vol-cone__verdict { display: flex; flex-direction: column; gap: var(--space-4, 1rem); }
+.vol-cone__note { margin: 0; font-size: var(--font-size-xs, 0.72rem); color: var(--text-tertiary, #7f889b); line-height: 1.45; }
+.vol-cone__spark { width: 100%; height: 56px; display: block; }
+.vol-cone__spark-line { fill: none; stroke: var(--chart-series-a, #4f9cff); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+
+/* Term-structure table */
+.vol-cone__table-wrap { overflow-x: auto; }
+.vol-cone__table { width: 100%; border-collapse: collapse; font-size: var(--font-size-sm, 0.82rem); }
+.vol-cone__table th, .vol-cone__table td {
+  padding: 0.4rem 0.6rem; text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-family-mono, ui-monospace, monospace);
+  border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+}
+.vol-cone__table thead th {
+  color: var(--text-tertiary, #7f889b); font-weight: var(--font-weight-semibold, 600);
+  font-family: var(--font-family-base, inherit); text-transform: uppercase; letter-spacing: 0.04em; font-size: var(--font-size-xs, 0.7rem);
+}
+.vol-cone__table th[scope="row"] { text-align: left; color: var(--text-primary, #eef1f7); font-family: var(--font-family-base, inherit); }
+.vol-cone__row--hover td, .vol-cone__row--hover th { background: color-mix(in srgb, var(--chart-series-a, #4f9cff) 8%, transparent); }
+.vol-cone__cur--positive { color: var(--chart-positive, #29c07a); }
+.vol-cone__cur--negative { color: var(--chart-negative, #ff5a5f); }
+.vol-cone__cur--neutral { color: var(--text-secondary, #b7becb); }

@@ -543,7 +543,8 @@
     "tabs": {
       "pathExplorer": "Path Explorer",
       "signalXRay": "Signal X-Ray",
-      "candlestickAnnotator": "Candlestick Annotator"
+      "candlestickAnnotator": "Candlestick Annotator",
+      "volatilityCone": "Volatility Cone"
     },
     "pathExplorer": {
       "eyebrow": "Monte Carlo",
@@ -559,6 +560,11 @@
       "eyebrow": "Price action",
       "title": "Candlestick Annotator",
       "description": "Run the deterministic candlestick engine on illustrative scenarios and see the patterns, support/resistance, swing points, and multi-timeframe bias it detects — with the full reasoning."
+    },
+    "volatilityCone": {
+      "eyebrow": "Risk",
+      "title": "Volatility Cone",
+      "description": "See how annualized realized volatility is distributed across rolling windows on a seeded synthetic path, with the latest reading overlaid to show whether it is high or low versus its own history."
     }
   },
   "home": {

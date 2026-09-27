@@ -5,13 +5,20 @@ import type { AppMessages } from '../../lib/i18n/messages';
 import { CandlestickAnnotator } from './candlestick-annotator';
 import { PathExplorer } from './path-explorer';
 import { SignalXRay } from './signal-x-ray';
+import { VolatilityCone } from './volatility-cone';
 
-type Tool = 'path' | 'xray' | 'candles';
+type Tool = 'path' | 'xray' | 'candles' | 'vol';
+
+const META_BY_TOOL: Record<Tool, keyof AppMessages['lab'] & ('pathExplorer' | 'signalXRay' | 'candlestickAnnotator' | 'volatilityCone')> = {
+  path: 'pathExplorer',
+  xray: 'signalXRay',
+  candles: 'candlestickAnnotator',
+  vol: 'volatilityCone',
+};
 
 export function LabCockpit({ labels }: { labels: AppMessages['lab'] }) {
   const [tool, setTool] = useState<Tool>('path');
-  const meta =
-    tool === 'path' ? labels.pathExplorer : tool === 'xray' ? labels.signalXRay : labels.candlestickAnnotator;
+  const meta = labels[META_BY_TOOL[tool]];
 
   return (
     <section className="section">
@@ -44,6 +51,15 @@ export function LabCockpit({ labels }: { labels: AppMessages['lab'] }) {
           >
             {labels.tabs.candlestickAnnotator}
           </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tool === 'vol'}
+            className={`lab-tab${tool === 'vol' ? ' lab-tab--active' : ''}`}
+            onClick={() => setTool('vol')}
+          >
+            {labels.tabs.volatilityCone}
+          </button>
         </div>
 
         <header className="dashboard-section-heading lab-cockpit__heading">
@@ -54,7 +70,15 @@ export function LabCockpit({ labels }: { labels: AppMessages['lab'] }) {
           </div>
         </header>
 
-        {tool === 'path' ? <PathExplorer /> : tool === 'xray' ? <SignalXRay /> : <CandlestickAnnotator />}
+        {tool === 'path' ? (
+          <PathExplorer />
+        ) : tool === 'xray' ? (
+          <SignalXRay />
+        ) : tool === 'candles' ? (
+          <CandlestickAnnotator />
+        ) : (
+          <VolatilityCone />
+        )}
       </div>
     </section>
   );
