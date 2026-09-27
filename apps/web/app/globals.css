@@ -14622,3 +14622,163 @@ code,
   .home-movers__name { display: none; }
   .home-activity__realized { display: none; }
 }
+
+/* ─────────────────────────────────────────────────────────────
+   Aurox Lab — Path Explorer (Monte Carlo)
+   SVG-native, house tokens with defensive fallbacks.
+   ───────────────────────────────────────────────────────────── */
+.path-explorer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4, 1rem);
+}
+.path-explorer__controls-inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4, 1rem);
+}
+.path-explorer__presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2, 0.5rem);
+}
+.path-chip {
+  appearance: none;
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.14));
+  background: var(--surface-base, rgba(255, 255, 255, 0.02));
+  color: var(--text-secondary, #b7becb);
+  font: inherit;
+  font-size: var(--font-size-sm, 0.85rem);
+  padding: 0.35rem 0.8rem;
+  border-radius: var(--radius-pill, 999px);
+  cursor: pointer;
+  transition: border-color var(--duration-fast, 120ms) var(--ease-standard, ease),
+    color var(--duration-fast, 120ms) var(--ease-standard, ease),
+    background var(--duration-fast, 120ms) var(--ease-standard, ease);
+}
+.path-chip:hover { border-color: var(--chart-series-a, #4f9cff); color: var(--text-primary, #eef1f7); }
+.path-chip--active {
+  border-color: var(--chart-series-a, #4f9cff);
+  color: var(--text-primary, #eef1f7);
+  background: color-mix(in srgb, var(--chart-series-a, #4f9cff) 16%, transparent);
+}
+.path-chip--ghost { margin-left: auto; }
+.path-chip:focus-visible { outline: 2px solid var(--chart-series-a, #4f9cff); outline-offset: 2px; }
+
+.path-explorer__sliders {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-4, 1rem) var(--space-5, 1.25rem);
+}
+.path-slider { display: flex; flex-direction: column; gap: 0.35rem; }
+.path-slider__label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-2, 0.5rem);
+  font-size: var(--font-size-sm, 0.85rem);
+  color: var(--text-secondary, #b7becb);
+}
+.path-slider__value {
+  font-family: var(--font-family-mono, ui-monospace, monospace);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary, #eef1f7);
+  font-weight: var(--font-weight-semibold, 600);
+}
+.path-slider__input { width: 100%; accent-color: var(--chart-series-a, #4f9cff); cursor: pointer; }
+
+.path-explorer__svg { width: 100%; height: auto; overflow: visible; display: block; }
+.path-explorer__grid { stroke: var(--border-chart-grid, rgba(255, 255, 255, 0.08)); stroke-width: 1; }
+.path-explorer__axis {
+  fill: var(--text-axis, var(--text-tertiary, #7f889b));
+  font-family: var(--font-family-mono, ui-monospace, monospace);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.path-explorer__band { stroke: none; }
+.path-explorer__band--outer { fill: color-mix(in srgb, var(--chart-series-a, #4f9cff) 12%, transparent); }
+.path-explorer__band--inner { fill: color-mix(in srgb, var(--chart-series-a, #4f9cff) 24%, transparent); }
+.path-explorer__sample {
+  fill: none;
+  stroke: color-mix(in srgb, var(--chart-series-a, #4f9cff) 30%, transparent);
+  stroke-width: 1;
+}
+.path-explorer__contributed {
+  fill: none;
+  stroke: var(--text-tertiary, #7f889b);
+  stroke-width: 1.25;
+  stroke-dasharray: 5 4;
+}
+.path-explorer__median {
+  fill: none;
+  stroke: var(--chart-series-a, #4f9cff);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.path-explorer__target {
+  stroke: var(--chart-positive, #29c07a);
+  stroke-width: 1.25;
+  stroke-dasharray: 6 4;
+}
+.path-explorer__cursor { stroke: var(--text-secondary, #b7becb); stroke-width: 1; stroke-dasharray: 3 3; }
+.path-explorer__cursor-dot { fill: var(--chart-series-a, #4f9cff); stroke: var(--surface-base, #0b0e14); stroke-width: 1.5; }
+
+.path-explorer__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3, 0.75rem) var(--space-4, 1rem);
+  list-style: none;
+  padding: 0;
+  margin: var(--space-3, 0.75rem) 0 0;
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--text-secondary, #b7becb);
+}
+.path-explorer__legend li { display: inline-flex; align-items: center; gap: 0.4rem; }
+.path-swatch { width: 0.85rem; height: 0.5rem; border-radius: 2px; display: inline-block; }
+.path-swatch--median { background: var(--chart-series-a, #4f9cff); }
+.path-swatch--inner { background: color-mix(in srgb, var(--chart-series-a, #4f9cff) 40%, transparent); }
+.path-swatch--outer { background: color-mix(in srgb, var(--chart-series-a, #4f9cff) 18%, transparent); }
+.path-swatch--contributed { background: repeating-linear-gradient(90deg, var(--text-tertiary, #7f889b) 0 4px, transparent 4px 7px); }
+.path-explorer__readout {
+  margin: var(--space-2, 0.5rem) 0 0;
+  font-family: var(--font-family-mono, ui-monospace, monospace);
+  font-size: var(--font-size-xs, 0.75rem);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-tertiary, #7f889b);
+}
+
+.path-explorer__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-3, 0.75rem);
+}
+.path-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
+  border-radius: var(--radius-md, 10px);
+  background: var(--surface-raised, rgba(255, 255, 255, 0.03));
+}
+.path-stat__label {
+  font-size: var(--font-size-xs, 0.72rem);
+  color: var(--text-tertiary, #7f889b);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.path-stat__value {
+  font-family: var(--font-family-mono, ui-monospace, monospace);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--font-size-lg, 1.1rem);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--text-primary, #eef1f7);
+}
+.path-stat--positive .path-stat__value { color: var(--chart-positive, #29c07a); }
+.path-stat--negative .path-stat__value { color: var(--chart-negative, #ff5a5f); }
+.path-explorer__disclaimer {
+  font-size: var(--font-size-xs, 0.72rem);
+  color: var(--text-tertiary, #7f889b);
+  margin: 0;
+}

@@ -102,7 +102,8 @@
       "investCrypto": "Crypto lane",
       "investAccounts": "Account connections",
       "admin": "Admin",
-      "monitoring": "Monitoring"
+      "monitoring": "Monitoring",
+      "lab": "Lab"
     },
     "auth": {
       "login": "Log in",
@@ -533,6 +534,17 @@
     "fundingTitle": "Bank-connection readiness",
     "actionModel": "Action model",
     "planningFirst": "Planning-first"
+  },
+  "lab": {
+    "eyebrow": "Aurox Lab",
+    "title": "Interactive Lab",
+    "description": "Deterministic, offline-capable finance tools — they run entirely in your browser and work even when market data is unavailable.",
+    "offlineBadge": "Works offline",
+    "pathExplorer": {
+      "eyebrow": "Monte Carlo",
+      "title": "Path Explorer",
+      "description": "Simulate thousands of seeded portfolio paths from your own assumptions and read the full distribution of outcomes over time."
+    }
   },
   "home": {
     "heroEyebrow": "Aurox Intelligence",
