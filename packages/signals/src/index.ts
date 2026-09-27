@@ -19,3 +19,4 @@ export * from './candles/patterns';
 export * from './candles/resample';
 export * from './candles/candle-intelligence';
 export * from './candles/validation';
+export * from './candles/lab-scenarios';

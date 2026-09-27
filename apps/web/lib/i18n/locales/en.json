@@ -542,7 +542,8 @@
     "offlineBadge": "Works offline",
     "tabs": {
       "pathExplorer": "Path Explorer",
-      "signalXRay": "Signal X-Ray"
+      "signalXRay": "Signal X-Ray",
+      "candlestickAnnotator": "Candlestick Annotator"
     },
     "pathExplorer": {
       "eyebrow": "Monte Carlo",
@@ -553,6 +554,11 @@
       "eyebrow": "Explainability",
       "title": "Signal X-Ray",
       "description": "See exactly how the deterministic signal engine turns a price series into a score — decomposed into moving-average, momentum, and trend contributions."
+    },
+    "candlestickAnnotator": {
+      "eyebrow": "Price action",
+      "title": "Candlestick Annotator",
+      "description": "Run the deterministic candlestick engine on illustrative scenarios and see the patterns, support/resistance, swing points, and multi-timeframe bias it detects — with the full reasoning."
     }
   },
   "home": {

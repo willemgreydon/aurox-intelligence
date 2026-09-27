@@ -2,14 +2,16 @@
 
 import { useState } from 'react';
 import type { AppMessages } from '../../lib/i18n/messages';
+import { CandlestickAnnotator } from './candlestick-annotator';
 import { PathExplorer } from './path-explorer';
 import { SignalXRay } from './signal-x-ray';
 
-type Tool = 'path' | 'xray';
+type Tool = 'path' | 'xray' | 'candles';
 
 export function LabCockpit({ labels }: { labels: AppMessages['lab'] }) {
   const [tool, setTool] = useState<Tool>('path');
-  const meta = tool === 'path' ? labels.pathExplorer : labels.signalXRay;
+  const meta =
+    tool === 'path' ? labels.pathExplorer : tool === 'xray' ? labels.signalXRay : labels.candlestickAnnotator;
 
   return (
     <section className="section">
@@ -33,6 +35,15 @@ export function LabCockpit({ labels }: { labels: AppMessages['lab'] }) {
           >
             {labels.tabs.signalXRay}
           </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tool === 'candles'}
+            className={`lab-tab${tool === 'candles' ? ' lab-tab--active' : ''}`}
+            onClick={() => setTool('candles')}
+          >
+            {labels.tabs.candlestickAnnotator}
+          </button>
         </div>
 
         <header className="dashboard-section-heading lab-cockpit__heading">
@@ -43,7 +54,7 @@ export function LabCockpit({ labels }: { labels: AppMessages['lab'] }) {
           </div>
         </header>
 
-        {tool === 'path' ? <PathExplorer /> : <SignalXRay />}
+        {tool === 'path' ? <PathExplorer /> : tool === 'xray' ? <SignalXRay /> : <CandlestickAnnotator />}
       </div>
     </section>
   );
