@@ -544,7 +544,8 @@
       "pathExplorer": "Path Explorer",
       "signalXRay": "Signal X-Ray",
       "candlestickAnnotator": "Candlestick Annotator",
-      "volatilityCone": "Volatility Cone"
+      "volatilityCone": "Volatility Cone",
+      "returnDistribution": "Return Distribution"
     },
     "pathExplorer": {
       "eyebrow": "Monte Carlo",
@@ -565,6 +566,11 @@
       "eyebrow": "Risk",
       "title": "Volatility Cone",
       "description": "See how annualized realized volatility is distributed across rolling windows on a seeded synthetic path, with the latest reading overlaid to show whether it is high or low versus its own history."
+    },
+    "returnDistribution": {
+      "eyebrow": "Tail risk",
+      "title": "Return Distribution + VaR",
+      "description": "See the shape of holding-period returns and the Value-at-Risk they imply — with the empirical tail compared to the naive normal assumption, so fat-tail and skew risk is explicit."
     }
   },
   "home": {

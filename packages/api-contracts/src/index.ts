@@ -2,6 +2,7 @@ export * from './analytics/correlation';
 export * from './assets/asset';
 export * from './lab/monte-carlo';
 export * from './lab/volatility-cone';
+export * from './lab/return-distribution';
 export * from './candles/candles';
 export * from './ranking/ranking';
 export * from './account/account';

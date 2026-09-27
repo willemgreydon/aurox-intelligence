@@ -4,16 +4,21 @@ import { useState } from 'react';
 import type { AppMessages } from '../../lib/i18n/messages';
 import { CandlestickAnnotator } from './candlestick-annotator';
 import { PathExplorer } from './path-explorer';
+import { ReturnDistribution } from './return-distribution';
 import { SignalXRay } from './signal-x-ray';
 import { VolatilityCone } from './volatility-cone';
 
-type Tool = 'path' | 'xray' | 'candles' | 'vol';
+type Tool = 'path' | 'xray' | 'candles' | 'vol' | 'returns';
 
-const META_BY_TOOL: Record<Tool, keyof AppMessages['lab'] & ('pathExplorer' | 'signalXRay' | 'candlestickAnnotator' | 'volatilityCone')> = {
+const META_BY_TOOL: Record<
+  Tool,
+  keyof AppMessages['lab'] & ('pathExplorer' | 'signalXRay' | 'candlestickAnnotator' | 'volatilityCone' | 'returnDistribution')
+> = {
   path: 'pathExplorer',
   xray: 'signalXRay',
   candles: 'candlestickAnnotator',
   vol: 'volatilityCone',
+  returns: 'returnDistribution',
 };
 
 export function LabCockpit({ labels }: { labels: AppMessages['lab'] }) {
@@ -60,6 +65,15 @@ export function LabCockpit({ labels }: { labels: AppMessages['lab'] }) {
           >
             {labels.tabs.volatilityCone}
           </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tool === 'returns'}
+            className={`lab-tab${tool === 'returns' ? ' lab-tab--active' : ''}`}
+            onClick={() => setTool('returns')}
+          >
+            {labels.tabs.returnDistribution}
+          </button>
         </div>
 
         <header className="dashboard-section-heading lab-cockpit__heading">
@@ -76,8 +90,10 @@ export function LabCockpit({ labels }: { labels: AppMessages['lab'] }) {
           <SignalXRay />
         ) : tool === 'candles' ? (
           <CandlestickAnnotator />
-        ) : (
+        ) : tool === 'vol' ? (
           <VolatilityCone />
+        ) : (
+          <ReturnDistribution />
         )}
       </div>
     </section>
