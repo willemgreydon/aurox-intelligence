@@ -14782,3 +14782,110 @@ code,
   color: var(--text-tertiary, #7f889b);
   margin: 0;
 }
+
+/* ── Aurox Lab tabs ── */
+.lab-cockpit { display: flex; flex-direction: column; gap: var(--space-4, 1rem); }
+.lab-cockpit__tabs {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
+  border-radius: var(--radius-pill, 999px);
+  align-self: flex-start;
+  background: var(--surface-base, rgba(255, 255, 255, 0.02));
+}
+.lab-tab {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary, #b7becb);
+  font: inherit;
+  font-size: var(--font-size-sm, 0.85rem);
+  font-weight: var(--font-weight-medium, 500);
+  padding: 0.4rem 1rem;
+  border-radius: var(--radius-pill, 999px);
+  cursor: pointer;
+  transition: background var(--duration-fast, 120ms) var(--ease-standard, ease),
+    color var(--duration-fast, 120ms) var(--ease-standard, ease);
+}
+.lab-tab:hover { color: var(--text-primary, #eef1f7); }
+.lab-tab--active {
+  background: color-mix(in srgb, var(--chart-series-a, #4f9cff) 20%, transparent);
+  color: var(--text-primary, #eef1f7);
+}
+.lab-tab:focus-visible { outline: 2px solid var(--chart-series-a, #4f9cff); outline-offset: 2px; }
+.lab-cockpit__heading { margin-bottom: var(--space-2, 0.5rem); }
+
+/* ── Signal X-Ray ── */
+.signal-xray { display: flex; flex-direction: column; gap: var(--space-4, 1rem); }
+.signal-xray__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4, 1rem);
+}
+.signal-xray__noise { min-width: 180px; flex: 0 1 220px; }
+.signal-xray__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: var(--space-4, 1rem);
+}
+@media (max-width: 720px) { .signal-xray__grid { grid-template-columns: 1fr; } }
+.signal-xray__panel-title {
+  margin: 0 0 var(--space-3, 0.75rem);
+  font-size: var(--font-size-sm, 0.85rem);
+  color: var(--text-secondary, #b7becb);
+  font-weight: var(--font-weight-semibold, 600);
+}
+.signal-xray__ma { stroke-width: 1.25; stroke-dasharray: 5 4; }
+.signal-xray__ma--short { stroke: var(--chart-positive, #29c07a); }
+.signal-xray__ma--long { stroke: var(--chart-neutral, #f0b429); }
+
+.signal-xray__verdict { display: flex; flex-direction: column; gap: var(--space-3, 0.75rem); }
+.signal-xray__badge {
+  align-self: flex-start;
+  padding: 0.25rem 0.7rem;
+  border-radius: var(--radius-pill, 999px);
+  font-family: var(--font-family-mono, ui-monospace, monospace);
+  font-size: var(--font-size-xs, 0.72rem);
+  font-weight: var(--font-weight-semibold, 600);
+  letter-spacing: 0.05em;
+}
+.signal-xray__badge--positive { background: color-mix(in srgb, var(--chart-positive, #29c07a) 20%, transparent); color: var(--chart-positive, #29c07a); }
+.signal-xray__badge--negative { background: color-mix(in srgb, var(--chart-negative, #ff5a5f) 20%, transparent); color: var(--chart-negative, #ff5a5f); }
+.signal-xray__badge--neutral { background: color-mix(in srgb, var(--chart-neutral, #f0b429) 20%, transparent); color: var(--chart-neutral, #f0b429); }
+.signal-xray__composite { display: flex; flex-direction: column; gap: 0.15rem; }
+.signal-xray__composite-value {
+  font-family: var(--font-family-mono, ui-monospace, monospace);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--font-size-3xl, 2rem);
+  font-weight: var(--font-weight-semibold, 600);
+  line-height: 1.1;
+}
+.signal-xray__composite-value--positive { color: var(--chart-positive, #29c07a); }
+.signal-xray__composite-value--negative { color: var(--chart-negative, #ff5a5f); }
+.signal-xray__composite-value--neutral { color: var(--text-primary, #eef1f7); }
+.signal-xray__confidence-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.3rem; }
+.signal-xray__confidence-track { height: 6px; border-radius: 999px; background: var(--surface-base, rgba(255, 255, 255, 0.06)); overflow: hidden; }
+.signal-xray__confidence-fill { height: 100%; background: var(--chart-series-a, #4f9cff); border-radius: 999px; }
+
+.signal-xray__bar--positive { fill: var(--chart-positive, #29c07a); }
+.signal-xray__bar--negative { fill: var(--chart-negative, #ff5a5f); }
+.signal-xray__bar--total { fill: var(--chart-series-a, #4f9cff); }
+.signal-xray__connector { stroke: var(--text-tertiary, #7f889b); stroke-width: 1; stroke-dasharray: 3 3; }
+.signal-xray__bar-value {
+  fill: var(--text-secondary, #b7becb);
+  font-family: var(--font-family-mono, ui-monospace, monospace);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.signal-xray__factors { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-3, 0.75rem); }
+.signal-xray__factor { border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12)); border-radius: var(--radius-md, 10px); background: var(--surface-raised, rgba(255, 255, 255, 0.03)); padding: var(--space-3, 0.75rem); }
+.signal-xray__factor-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.3rem; }
+.signal-xray__factor-label { font-size: var(--font-size-sm, 0.85rem); font-weight: var(--font-weight-semibold, 600); color: var(--text-primary, #eef1f7); }
+.signal-xray__factor-value { font-family: var(--font-family-mono, ui-monospace, monospace); font-variant-numeric: tabular-nums; }
+.signal-xray__factor-value--positive { color: var(--chart-positive, #29c07a); }
+.signal-xray__factor-value--negative { color: var(--chart-negative, #ff5a5f); }
+.signal-xray__factor-explain { margin: 0; font-size: var(--font-size-xs, 0.72rem); color: var(--text-tertiary, #7f889b); line-height: 1.45; }

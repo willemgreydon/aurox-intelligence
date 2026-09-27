@@ -1,12 +1,12 @@
 import type { Metadata } from 'next';
-import { PathExplorer } from '../../components/lab/path-explorer';
-import { Section } from '../../components/ui/section';
+import { LabCockpit } from '../../components/lab/lab-cockpit';
 import { getMessages } from '../../lib/i18n/messages';
 import { getRequestLocale } from '../../server/i18n/locale';
 
 export const metadata: Metadata = {
-  title: 'Aurox Lab — Path Explorer',
-  description: 'Deterministic, DB-free interactive finance tools. Monte Carlo portfolio path simulation.',
+  title: 'Aurox Lab',
+  description:
+    'Deterministic, DB-free interactive finance tools: Monte Carlo path simulation and signal explainability.',
 };
 
 export default async function LabPage() {
@@ -31,16 +31,7 @@ export default async function LabPage() {
         </div>
       </header>
 
-      <Section className="dashboard-section">
-        <header className="dashboard-section-heading">
-          <div>
-            <div className="section__eyebrow">{lab.pathExplorer.eyebrow}</div>
-            <h2 className="dashboard-section-heading__title">{lab.pathExplorer.title}</h2>
-            <p className="dashboard-section-heading__sub">{lab.pathExplorer.description}</p>
-          </div>
-        </header>
-        <PathExplorer />
-      </Section>
+      <LabCockpit labels={lab} />
     </>
   );
 }

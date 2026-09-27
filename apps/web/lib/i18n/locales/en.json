@@ -540,10 +540,19 @@
     "title": "Interactive Lab",
     "description": "Deterministic, offline-capable finance tools — they run entirely in your browser and work even when market data is unavailable.",
     "offlineBadge": "Works offline",
+    "tabs": {
+      "pathExplorer": "Path Explorer",
+      "signalXRay": "Signal X-Ray"
+    },
     "pathExplorer": {
       "eyebrow": "Monte Carlo",
       "title": "Path Explorer",
       "description": "Simulate thousands of seeded portfolio paths from your own assumptions and read the full distribution of outcomes over time."
+    },
+    "signalXRay": {
+      "eyebrow": "Explainability",
+      "title": "Signal X-Ray",
+      "description": "See exactly how the deterministic signal engine turns a price series into a score — decomposed into moving-average, momentum, and trend contributions."
     }
   },
   "home": {
