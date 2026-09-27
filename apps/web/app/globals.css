@@ -2114,6 +2114,108 @@ code,
   background-size: auto, auto, auto, 100% 25%, 12.5% 100%, auto;
 }
 
+/* Hero chart degraded state — "Chart temporarily unavailable" placeholder.
+   Occupies the chart's exact footprint so there is no layout shift when the
+   real market history returns. */
+.chart-unavailable {
+  position: relative;
+  min-height: var(--market-workstation-height, clamp(26rem, 54vh, 40rem));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  isolation: isolate;
+}
+.chart-unavailable__skeleton {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  background:
+    linear-gradient(var(--border-chart-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border-chart-grid) 1px, transparent 1px);
+  background-size: 100% 25%, 12.5% 100%;
+  opacity: 0.55;
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 32%);
+          mask-image: linear-gradient(180deg, transparent, #000 32%);
+}
+.chart-unavailable__ghost { position: absolute; inset: 0; width: 100%; height: 100%; }
+.chart-unavailable__ghost-area { fill: color-mix(in srgb, var(--text-accent) 8%, transparent); }
+.chart-unavailable__ghost-line {
+  fill: none;
+  stroke: color-mix(in srgb, var(--text-accent) 30%, transparent);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 5 7;
+}
+.chart-unavailable__shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%, color-mix(in srgb, var(--text-primary) 6%, transparent) 50%, transparent 70%);
+  transform: translateX(-100%);
+  animation: chart-unavailable-shimmer 2.6s ease-in-out infinite;
+}
+.chart-unavailable__content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-2);
+  max-width: 44ch;
+  padding: var(--space-6);
+}
+.chart-unavailable__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  margin-bottom: var(--space-1);
+  border-radius: 50%;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--surface-raised) 80%, transparent);
+  border: var(--border-width-thin) solid var(--border-subtle);
+}
+.chart-unavailable__title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+}
+.chart-unavailable__body {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+.chart-unavailable__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  margin-top: var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.chart-unavailable__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--status-info-text, var(--text-accent));
+  animation: chart-unavailable-pulse 1.8s ease-in-out infinite;
+}
+@keyframes chart-unavailable-shimmer { to { transform: translateX(100%); } }
+@keyframes chart-unavailable-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--status-info-text, var(--text-accent)) 45%, transparent); }
+  50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--status-info-text, var(--text-accent)) 0%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chart-unavailable__shimmer { display: none; }
+  .chart-unavailable__dot { animation: none; }
+}
+
 .hero-graph-card__header {
   display: flex;
   align-items: start;

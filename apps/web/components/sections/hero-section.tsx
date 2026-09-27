@@ -5,6 +5,7 @@ import type { NewsItem } from '@repo/api-contracts';
 import { Card } from '../ui/card';
 import { Section } from '../ui/section';
 import { MarketGraphWorkspace } from '../charts/market-graph-workspace';
+import { MarketGraphUnavailable } from '../charts/market-graph-unavailable';
 
 type HeroSectionProps = {
   stocks: StocksOverviewViewModel;
@@ -67,6 +68,9 @@ type HeroSectionProps = {
       candleIntelligence: string;
       candleIntelligenceDailyOnly: string;
       candleIntelligencePrimaryOnly: string;
+      unavailableTitle: string;
+      unavailableBody: string;
+      unavailableAutoUpdating: string;
     };
   };
 };
@@ -123,7 +127,19 @@ export function HeroSection({ stocks, marketGraph, labels, trackedSymbols = [], 
             />
           </Card>
         </Section>
-      ) : null}
+      ) : (
+        <Section className="section--hero hero-chart-section">
+          <Card className="hero-graph-card hero-graph-card--unavailable">
+            <MarketGraphUnavailable
+              labels={{
+                title: labels.graphLabels.unavailableTitle,
+                body: labels.graphLabels.unavailableBody,
+                autoUpdating: labels.graphLabels.unavailableAutoUpdating,
+              }}
+            />
+          </Card>
+        </Section>
+      )}
 
       {betweenSlot}
     </>
