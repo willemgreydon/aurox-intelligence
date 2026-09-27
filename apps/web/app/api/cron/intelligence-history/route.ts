@@ -1,6 +1,13 @@
+import { getDatabaseSizeReport } from '@repo/db';
 import { NextResponse } from 'next/server';
 import { recordUniverseSignalHistory } from '../../../../server/services/intelligence-history-service';
 import { runIntelligenceRetention } from '../../../../server/services/intelligence-retention-service';
+
+const MB = 1024 * 1024;
+
+function toMb(bytes: number): number {
+  return Math.round((bytes / MB) * 10) / 10;
+}
 
 /**
  * Vercel Cron target — records a daily deterministic signal snapshot for the
@@ -34,7 +41,29 @@ export async function GET(request: Request) {
     // This is the only prod execution path that runs the (previously dead)
     // prune helpers, keeping append-only intelligence tables bounded.
     const retention = await runIntelligenceRetention();
-    return NextResponse.json({ ok: true, ...result, retention });
+
+    // Lightweight size-trend line. Egress (the failing Neon quota) is not
+    // SQL-queryable — read it from the Neon console. DB size + top tables are the
+    // actionable proxy: they show what is growing so retention can be tuned.
+    // Best-effort: getDatabaseSizeReport returns null on any failure.
+    const sizeReport = await getDatabaseSizeReport();
+    const dbSize = sizeReport
+      ? {
+          databaseMb: toMb(sizeReport.databaseBytes),
+          topTables: sizeReport.topTables.map((t) => ({ table: t.table, mb: toMb(t.bytes) })),
+        }
+      : null;
+    if (dbSize) {
+      console.info(
+        `[cron:intelligence-history] db-size ${dbSize.databaseMb}MB | top: ` +
+          dbSize.topTables
+            .slice(0, 5)
+            .map((t) => `${t.table}=${t.mb}MB`)
+            .join(', '),
+      );
+    }
+
+    return NextResponse.json({ ok: true, ...result, retention, dbSize });
   } catch (error) {
     return NextResponse.json(
       { ok: false, error: error instanceof Error ? error.message : 'record_failed' },
