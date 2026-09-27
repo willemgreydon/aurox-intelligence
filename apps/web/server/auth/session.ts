@@ -12,6 +12,9 @@ export type CurrentAuthSession = {
   session: AuthSession;
 };
 
+// Minimum gap between last-seen writes. See the touch call site below.
+const SESSION_TOUCH_INTERVAL_MS = 5 * 60 * 1000;
+
 export const getOptionalCurrentSession = cache(async (): Promise<CurrentAuthSession | null> => {
   try {
     const cookieStore = await cookies();
@@ -30,10 +33,23 @@ export const getOptionalCurrentSession = cache(async (): Promise<CurrentAuthSess
 
     // Best-effort last-seen update — a write failure must never drop an
     // otherwise valid, readable session.
-    try {
-      await touchAuthSession(record.session.id);
-    } catch (error) {
-      console.warn('[auth] touchAuthSession failed (non-fatal)', error);
+    //
+    // Throttled: getOptionalCurrentSession runs in the root layout (Header), so
+    // it fires on effectively every authenticated request across the site. An
+    // unconditional touch meant one Neon WRITE per page view — pure
+    // data-transfer/compute cost for a "last seen" field that needs no
+    // per-request precision. Session lifetime is governed by expiresAt (which
+    // this write never changes), so skipping recent touches is safe. Write at
+    // most once per SESSION_TOUCH_INTERVAL_MS.
+    const lastSeenMs = record.session.lastSeenAt
+      ? new Date(record.session.lastSeenAt).getTime()
+      : 0;
+    if (Date.now() - lastSeenMs > SESSION_TOUCH_INTERVAL_MS) {
+      try {
+        await touchAuthSession(record.session.id);
+      } catch (error) {
+        console.warn('[auth] touchAuthSession failed (non-fatal)', error);
+      }
     }
 
     return authenticatedSessionSchema.parse({
