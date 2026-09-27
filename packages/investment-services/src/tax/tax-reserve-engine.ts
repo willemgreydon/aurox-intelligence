@@ -65,6 +65,22 @@ export function computeTaxReserve(
     computedAt: asOfIso,
   };
 
+  // 0. The policy must be for the SAME jurisdiction as the input. Applying an
+  //    AT policy to a US realisation (matching only on asset class + date) would
+  //    silently compute an Austrian rate for a non-Austrian taxpayer.
+  if (input.jurisdiction !== policy.jurisdiction) {
+    return {
+      ...base,
+      status: 'requires_review',
+      grossRealizedGain: input.grossRealizedGain ?? zero,
+      policyVersion: policy.version,
+      warnings: [
+        `No tax policy for jurisdiction "${input.jurisdiction}" (policy ${policy.version} covers ${policy.jurisdiction}); manual review required.`,
+      ],
+      sources: policy.sources,
+    };
+  }
+
   // 1. Missing the realised amount → we cannot compute anything.
   if (input.grossRealizedGain === null) {
     return {

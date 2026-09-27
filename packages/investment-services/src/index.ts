@@ -59,3 +59,7 @@ export type { AggregateCostOptions } from './cost/cost-engine';
 
 // Shared policy (auditable single source of truth)
 export { COMPLEXITY_REQUIREMENTS } from './policy/complexity-policy';
+
+// Portfolio-wide tax view
+export { buildPortfolioTaxView } from './portfolio/portfolio-tax-view';
+export type { PortfolioTaxViewInput } from './portfolio/portfolio-tax-view';
