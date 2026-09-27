@@ -1454,14 +1454,23 @@
       "averageMove": "Average move",
       "strongest": "Strongest",
       "weakest": "Weakest",
-      "empty": "No market data available right now."
+      "empty": "No market data available right now.",
+      "breadth": "Breadth",
+      "instruments": "instruments",
+      "sentimentRiskOn": "Risk-on",
+      "sentimentConstructive": "Constructive",
+      "sentimentMixed": "Mixed",
+      "sentimentRiskOff": "Risk-off"
     },
     "movers": {
       "eyebrow": "Movers & signals",
       "title": "Biggest movers",
       "subtitle": "The largest moves across your tracked universe, with the engine's directional read.",
       "empty": "No movers available right now.",
-      "signalHeading": "Signal"
+      "signalHeading": "Signal",
+      "filterAll": "All",
+      "filterGainers": "Gainers",
+      "filterLosers": "Losers"
     },
     "engine": {
       "eyebrow": "Engine read",
@@ -1469,7 +1478,9 @@
       "empty": "No engine read available yet.",
       "confidenceLabel": "Confidence",
       "highConfidenceHeading": "Highest-confidence forecasts",
-      "indicativeNote": "Indicative only — not financial advice."
+      "indicativeNote": "Indicative only — not financial advice.",
+      "factorsHeading": "Key factors",
+      "risksHeading": "Risk flags"
     },
     "activity": {
       "eyebrow": "Your activity",
@@ -1479,7 +1490,9 @@
       "sell": "Sell",
       "filled": "Filled",
       "rejected": "Rejected",
-      "cancelled": "Cancelled"
+      "cancelled": "Cancelled",
+      "notional": "Notional",
+      "realized": "Realized"
     },
     "bias": {
       "bullish": "Bullish",

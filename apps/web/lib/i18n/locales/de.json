@@ -1460,14 +1460,23 @@
       "averageMove": "Durchschnittliche Bewegung",
       "strongest": "Stärkster",
       "weakest": "Schwächster",
-      "empty": "Derzeit keine Marktdaten verfügbar."
+      "empty": "Derzeit keine Marktdaten verfügbar.",
+      "breadth": "Marktbreite",
+      "instruments": "Instrumente",
+      "sentimentRiskOn": "Risk-on",
+      "sentimentConstructive": "Konstruktiv",
+      "sentimentMixed": "Gemischt",
+      "sentimentRiskOff": "Risk-off"
     },
     "movers": {
       "eyebrow": "Bewegungen & Signale",
       "title": "Größte Bewegungen",
       "subtitle": "Die größten Bewegungen in deinem beobachteten Universum – mit der Richtungseinschätzung der Engine.",
       "empty": "Derzeit keine Bewegungen verfügbar.",
-      "signalHeading": "Signal"
+      "signalHeading": "Signal",
+      "filterAll": "Alle",
+      "filterGainers": "Gewinner",
+      "filterLosers": "Verlierer"
     },
     "engine": {
       "eyebrow": "Engine-Einschätzung",
@@ -1475,7 +1484,9 @@
       "empty": "Noch keine Engine-Einschätzung verfügbar.",
       "confidenceLabel": "Konfidenz",
       "highConfidenceHeading": "Prognosen mit höchster Konfidenz",
-      "indicativeNote": "Nur indikativ – keine Anlageberatung."
+      "indicativeNote": "Nur indikativ – keine Anlageberatung.",
+      "factorsHeading": "Schlüsselfaktoren",
+      "risksHeading": "Risikohinweise"
     },
     "activity": {
       "eyebrow": "Deine Aktivität",
@@ -1485,7 +1496,9 @@
       "sell": "Verkauf",
       "filled": "Ausgeführt",
       "rejected": "Abgelehnt",
-      "cancelled": "Storniert"
+      "cancelled": "Storniert",
+      "notional": "Volumen",
+      "realized": "Realisiert"
     },
     "bias": {
       "bullish": "Bullisch",

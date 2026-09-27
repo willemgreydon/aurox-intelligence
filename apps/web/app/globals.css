@@ -14389,3 +14389,134 @@ code,
   .home-movers__row { gap: var(--space-2); font-size: var(--font-size-sm); }
   .home-movers__name { display: none; }
 }
+
+/* ── Home live sections — god-tier upgrade ─────────────────────────────── */
+.home-live__header--split {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+/* Sentiment / regime badge (market pulse) */
+.home-pulse__sentiment {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0.4em 0.8em;
+  border-radius: 999px;
+  border: var(--border-width-thin) solid var(--border-subtle);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  background: var(--surface-raised);
+}
+.home-pulse__sentiment-dot { width: 8px; height: 8px; border-radius: 50%; }
+.home-pulse__sentiment--positive { color: var(--status-success-text); border-color: color-mix(in srgb, var(--status-success-text) 40%, transparent); }
+.home-pulse__sentiment--positive .home-pulse__sentiment-dot { background: var(--status-success-text); box-shadow: 0 0 0 3px color-mix(in srgb, var(--status-success-text) 22%, transparent); }
+.home-pulse__sentiment--negative { color: var(--status-danger-text); border-color: color-mix(in srgb, var(--status-danger-text) 40%, transparent); }
+.home-pulse__sentiment--negative .home-pulse__sentiment-dot { background: var(--status-danger-text); box-shadow: 0 0 0 3px color-mix(in srgb, var(--status-danger-text) 22%, transparent); }
+.home-pulse__sentiment--neutral { color: var(--text-secondary); }
+.home-pulse__sentiment--neutral .home-pulse__sentiment-dot { background: var(--text-secondary); }
+.home-pulse__sentiment-value { opacity: 0.85; }
+.home-pulse__bar-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: var(--space-2);
+  font-size: var(--font-size-xs); color: var(--text-secondary);
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.home-pulse__bar { height: 16px; }
+.home-pulse__ticker { font-weight: var(--font-weight-semibold); text-decoration: none; }
+.home-pulse__ticker:hover { text-decoration: underline; }
+
+/* Segmented control */
+.home-seg {
+  display: inline-flex; gap: 2px; padding: 3px;
+  border-radius: 999px; background: var(--surface-raised);
+  border: var(--border-width-thin) solid var(--border-subtle);
+}
+.home-seg__btn {
+  appearance: none; border: 0; background: transparent; color: var(--text-secondary);
+  font: inherit; font-size: var(--font-size-sm); padding: 0.3em 0.85em;
+  border-radius: 999px; cursor: pointer;
+  transition: background var(--duration-fast, 140ms) ease, color var(--duration-fast, 140ms) ease;
+}
+.home-seg__btn:hover { color: var(--text-primary); }
+.home-seg__btn.is-active { background: var(--surface-base); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12); }
+
+/* Meters */
+.home-meter {
+  display: inline-block; width: 100%; max-width: 72px; height: 4px;
+  border-radius: 999px; background: color-mix(in srgb, var(--text-secondary) 20%, transparent);
+  overflow: hidden; vertical-align: middle;
+}
+.home-meter--lg { max-width: none; height: 6px; flex: 1; }
+.home-meter__fill { display: block; height: 100%; border-radius: 999px; }
+.home-meter__fill--bullish { background: var(--status-success-text); }
+.home-meter__fill--bearish { background: var(--status-danger-text); }
+.home-meter__fill--neutral { background: var(--text-secondary); }
+
+/* Movers upgrades */
+.home-movers__row {
+  grid-template-columns: auto minmax(0, 1fr) auto auto minmax(88px, auto) auto;
+  padding-inline: var(--space-2);
+  border-radius: var(--radius-md);
+  transition: background var(--duration-fast, 140ms) ease;
+}
+.home-movers__row:hover { background: color-mix(in srgb, var(--surface-raised) 60%, transparent); }
+.home-movers__rank { font-family: var(--font-family-mono); font-size: var(--font-size-xs); color: var(--text-secondary); opacity: 0.7; }
+.home-movers__arrow { font-size: 0.8em; margin-right: 0.2em; }
+.home-movers__signal { display: inline-flex; align-items: center; gap: var(--space-2); justify-content: flex-end; }
+.home-movers__chevron {
+  color: var(--text-accent); opacity: 0; transform: translateX(-4px);
+  transition: opacity var(--duration-fast, 140ms) ease, transform var(--duration-fast, 140ms) ease;
+}
+.home-movers__row:hover .home-movers__chevron { opacity: 1; transform: translateX(0); }
+
+/* Engine upgrades */
+.home-engine__conf-row { display: flex; align-items: center; gap: var(--space-3); margin: var(--space-3) 0; }
+.home-engine__conf-label { font-size: var(--font-size-xs); color: var(--text-secondary); white-space: nowrap; }
+.home-engine__conf-value { font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); }
+.home-engine__meta-head { font-size: var(--font-size-2xs); text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-secondary); margin: var(--space-3) 0 var(--space-2); }
+.home-engine__factor-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
+.home-engine__factor { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-2); align-items: center; }
+.home-engine__factor-label { color: var(--text-primary); font-size: var(--font-size-sm); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.home-engine__factor-value { color: var(--text-secondary); font-size: var(--font-size-sm); }
+.home-dot { width: 7px; height: 7px; border-radius: 50%; }
+.home-dot--bullish { background: var(--status-success-text); }
+.home-dot--bearish { background: var(--status-danger-text); }
+.home-dot--neutral { background: var(--text-secondary); }
+.home-engine__risk-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.home-risk { font-size: var(--font-size-xs); padding: 0.15em 0.55em; border-radius: 999px; border: var(--border-width-thin) solid transparent; cursor: default; }
+.home-risk--low { color: var(--text-secondary); border-color: var(--border-subtle); }
+.home-risk--medium { color: var(--status-warning-text, var(--status-danger-text)); border-color: color-mix(in srgb, var(--status-warning-text, var(--status-danger-text)) 40%, transparent); background: color-mix(in srgb, var(--status-warning-text, var(--status-danger-text)) 10%, transparent); }
+.home-risk--high { color: var(--status-danger-text); border-color: color-mix(in srgb, var(--status-danger-text) 45%, transparent); background: color-mix(in srgb, var(--status-danger-text) 12%, transparent); }
+.home-engine__signal { border-bottom: var(--border-width-thin) solid var(--border-subtle); padding-bottom: var(--space-3); display: grid; gap: var(--space-2); }
+.home-engine__signal-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.home-engine__signal-summary { color: var(--text-secondary); font-size: var(--font-size-sm); line-height: 1.5; }
+
+/* Activity upgrades */
+.home-activity__row {
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto auto;
+  padding-inline: var(--space-2);
+  border-radius: var(--radius-md);
+  transition: background var(--duration-fast, 140ms) ease;
+}
+.home-activity__row:hover { background: color-mix(in srgb, var(--surface-raised) 60%, transparent); }
+.home-activity__side { display: inline-flex; align-items: center; gap: 0.3em; }
+.home-activity__side-arrow { font-size: 0.85em; }
+.home-activity__detail { text-decoration: none; color: var(--text-primary); }
+.home-activity__detail:hover .home-activity__symbol { color: var(--text-accent); }
+.home-activity__notional, .home-activity__realized { display: inline-flex; flex-direction: column; align-items: flex-end; line-height: 1.2; }
+.home-activity__meta-label { font-size: var(--font-size-2xs); text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); }
+
+@media (max-width: 720px) {
+  .home-movers__row { grid-template-columns: auto minmax(0, 1fr) auto minmax(76px, auto); }
+  .home-movers__rank, .home-movers__chevron { display: none; }
+  .home-activity__row { grid-template-columns: auto minmax(0, 1fr) auto auto; }
+  .home-activity__notional { display: none; }
+}
+@media (max-width: 440px) {
+  .home-movers__name { display: none; }
+  .home-activity__realized { display: none; }
+}
