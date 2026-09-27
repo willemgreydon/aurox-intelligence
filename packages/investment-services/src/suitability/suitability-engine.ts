@@ -4,19 +4,15 @@ import type {
   InvestorProfile,
   SuitabilityResult,
 } from '@repo/api-contracts';
-import {
-  knowledgeLevelSchema,
-  lossBearingCapacitySchema,
-  riskToleranceSchema,
-} from '@repo/api-contracts';
+import { lossBearingCapacitySchema, riskToleranceSchema } from '@repo/api-contracts';
+import { knowledgeIndex, requiredKnowledgeIndex } from '../policy/complexity-policy';
 
 export const SUITABILITY_POLICY_VERSION = 'suitability-2026.1';
 
-// Ordinal scales derived from the contract enums so there is a single source of
-// truth — adding/reordering a level in the schema updates these automatically.
+// Risk / capacity scales are suitability-specific; knowledge thresholds live in
+// the shared complexity policy so they stay aligned with the appropriateness engine.
 const RISK_ORDER = riskToleranceSchema.options;
 const CAPACITY_ORDER = lossBearingCapacitySchema.options;
-const KNOWLEDGE_ORDER = knowledgeLevelSchema.options;
 
 /** Coarse instrument risk band on the same 0..4 scale as risk tolerance. */
 function instrumentRiskBand(instrument: InstrumentOntology): number {
@@ -40,12 +36,6 @@ function requiredCapacityIndex(instrument: InstrumentOntology): number {
   const band = instrumentRiskBand(instrument);
   // Map a risk band to a minimum required capacity (ability to absorb loss).
   return Math.min(band, CAPACITY_ORDER.length - 1);
-}
-
-function requiredKnowledgeIndex(instrument: InstrumentOntology): number {
-  if (instrument.complexity === 'highly_complex') return KNOWLEDGE_ORDER.indexOf('advanced');
-  if (instrument.complexity === 'complex') return KNOWLEDGE_ORDER.indexOf('informed');
-  return KNOWLEDGE_ORDER.indexOf('basic');
 }
 
 /**
@@ -101,8 +91,8 @@ export function evaluateSuitability(
     dimensions.push({ dimension: 'knowledge', verdict: 'unknown', reason: 'Knowledge not captured.', ruleId: 'SUIT-KNOWLEDGE' });
     missingInformation.push('knowledge');
   } else {
-    const knowledge = KNOWLEDGE_ORDER.indexOf(profile.knowledge);
-    const required = requiredKnowledgeIndex(instrument);
+    const knowledge = knowledgeIndex(profile.knowledge);
+    const required = requiredKnowledgeIndex(instrument.complexity);
     if (knowledge >= required) {
       dimensions.push({ dimension: 'knowledge', verdict: 'fit', reason: `Knowledge ${knowledge} covers required ${required}.`, ruleId: 'SUIT-KNOWLEDGE' });
     } else {

@@ -56,3 +56,6 @@ export {
 // Cost
 export { aggregateCosts } from './cost/cost-engine';
 export type { AggregateCostOptions } from './cost/cost-engine';
+
+// Shared policy (auditable single source of truth)
+export { COMPLEXITY_REQUIREMENTS } from './policy/complexity-policy';

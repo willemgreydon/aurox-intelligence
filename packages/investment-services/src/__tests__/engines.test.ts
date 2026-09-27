@@ -209,6 +209,16 @@ describe('appropriateness engine', () => {
     expect(result.status).toBe('insufficient_information');
     expect(result.missingInformation).toEqual(['knowledge', 'experience']);
   });
+
+  it('shares the knowledge threshold with the suitability engine (no divergence)', () => {
+    const atThreshold = makeProfile({ knowledge: 'advanced', experience: 'moderate' });
+    const belowThreshold = makeProfile({ knowledge: 'informed', experience: 'moderate' });
+    expect(evaluateAppropriateness(atThreshold, COMPLEX_LEVERAGED_ETP, AT).status).toBe('appropriate');
+    expect(evaluateAppropriateness(belowThreshold, COMPLEX_LEVERAGED_ETP, AT).status).toBe('not_appropriate');
+    // Suitability reads the same required index → 'informed' is a knowledge mismatch.
+    const suit = evaluateSuitability(belowThreshold, COMPLEX_LEVERAGED_ETP, AT);
+    expect(suit.dimensions.find((d) => d.dimension === 'knowledge')!.verdict).toBe('mismatch');
+  });
 });
 
 describe('cost aggregation', () => {

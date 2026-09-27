@@ -1,11 +1,12 @@
 import type { AppropriatenessResult, InstrumentOntology, InvestorProfile } from '@repo/api-contracts';
-import { experienceLevelSchema, knowledgeLevelSchema } from '@repo/api-contracts';
+import {
+  experienceIndex,
+  knowledgeIndex,
+  requiredExperienceIndex,
+  requiredKnowledgeIndex,
+} from '../policy/complexity-policy';
 
 export const APPROPRIATENESS_POLICY_VERSION = 'appropriateness-2026.1';
-
-// Derived from the contract enums (single source of truth with the profile shape).
-const KNOWLEDGE_ORDER = knowledgeLevelSchema.options;
-const EXPERIENCE_ORDER = experienceLevelSchema.options;
 
 /**
  * Appropriateness is the DIFFERENT question from suitability: does the investor
@@ -51,17 +52,8 @@ export function evaluateAppropriateness(
     };
   }
 
-  const knowledge = KNOWLEDGE_ORDER.indexOf(profile.knowledge);
-  const experience = EXPERIENCE_ORDER.indexOf(profile.experience);
-  const requiredKnowledge = instrument.complexity === 'highly_complex'
-    ? KNOWLEDGE_ORDER.indexOf('advanced')
-    : KNOWLEDGE_ORDER.indexOf('informed');
-  const requiredExperience = instrument.complexity === 'highly_complex'
-    ? EXPERIENCE_ORDER.indexOf('moderate')
-    : EXPERIENCE_ORDER.indexOf('limited');
-
-  const knowledgeOk = knowledge >= requiredKnowledge;
-  const experienceOk = experience >= requiredExperience;
+  const knowledgeOk = knowledgeIndex(profile.knowledge) >= requiredKnowledgeIndex(instrument.complexity);
+  const experienceOk = experienceIndex(profile.experience) >= requiredExperienceIndex(instrument.complexity);
 
   if (knowledgeOk && experienceOk) {
     return {
