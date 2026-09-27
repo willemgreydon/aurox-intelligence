@@ -12,6 +12,7 @@ export * from './ingestion/ingestion-run';
 export * from './intelligence/market-intelligence';
 export * from './intelligence/claude-finance';
 export * from './invest/invest';
+export * from './investment-services';
 export * from './market/market';
 export * from './market/market-stream';
 export * from './macro/macro';
