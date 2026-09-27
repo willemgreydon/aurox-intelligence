@@ -101,3 +101,14 @@ export const investorProfileSchema = z.object({
   provenance: z.array(investmentEvidenceSchema),
 });
 export type InvestorProfile = z.infer<typeof investorProfileSchema>;
+
+/**
+ * The fields a caller supplies when appending a new profile version. `profileId`
+ * and `version` are assigned server-side by the repository (append-only), so a
+ * caller can never overwrite a historical version by re-specifying them.
+ */
+export const investorProfileInputSchema = investorProfileSchema.omit({
+  profileId: true,
+  version: true,
+});
+export type InvestorProfileInput = z.infer<typeof investorProfileInputSchema>;
