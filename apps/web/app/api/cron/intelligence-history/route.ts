@@ -75,6 +75,22 @@ export async function GET(request: Request) {
           `storage=${neonConsumption.storageMb ?? '?'}MB compute=${neonConsumption.computeHours ?? '?'}h ` +
           `period=${neonConsumption.periodStart ?? '?'}→${neonConsumption.periodEnd ?? '?'}`,
       );
+
+      // Budget alarm — the whole point of the telemetry is to be warned BEFORE the
+      // free-tier network-transfer cap takes the site down (PostgresError 53000).
+      // Fires at 80% of the billing-cycle cap so there is runway to react (tighten
+      // retention, extend cache TTLs, or upgrade the Neon plan) before exhaustion.
+      const EGRESS_ALERT_PCT = 80;
+      if (
+        neonConsumption.egressPctOfCap != null &&
+        neonConsumption.egressPctOfCap >= EGRESS_ALERT_PCT
+      ) {
+        console.warn(
+          `[cron:intelligence-history] ⚠ EGRESS BUDGET ALERT: ${neonConsumption.egressPctOfCap}% of the Neon ` +
+            `free network-transfer cap used this cycle (${neonConsumption.egressMb ?? '?'}MB/${neonConsumption.egressCapMb}MB). ` +
+            `Act before 100% (site goes down at the cap): tighten retention, raise cache TTLs, or upgrade the Neon plan.`,
+        );
+      }
     }
 
     return NextResponse.json({ ok: true, ...result, retention, dbSize, neonConsumption });

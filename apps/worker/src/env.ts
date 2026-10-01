@@ -69,6 +69,15 @@ const envSchema = z.object({
   WORKER_CONCURRENCY: z.coerce.number().int().positive().default(2),
   LOG_LEVEL: z.string().default('info'),
 
+  // Opt-in gate for the polling scheduler. The worker is DEV-ONLY (prod ingestion
+  // runs via Vercel crons, not this process), and its default ~12-min jobs re-read
+  // the full catalog from Neon — which, when `pnpm dev` points at the shared prod
+  // database, silently burns the free-tier egress quota even while idle. Default
+  // OFF so local dev no longer polls prod unless explicitly opted in. Set
+  // WORKER_SCHEDULER_ENABLED=true (ideally alongside a dev-only DATABASE_URL /
+  // Neon dev branch) to run background ingestion locally.
+  WORKER_SCHEDULER_ENABLED: booleanish.default(false),
+
   MARKET_DATA_PROVIDER: z
     .enum(['polygon', 'twelve-data', 'tiingo', 'coingecko', 'finnhub', 'eodhd'])
     .default('polygon'),
@@ -108,6 +117,7 @@ export const env = envSchema.parse({
   DATABASE_URL: process.env.DATABASE_URL,
   WORKER_CONCURRENCY: process.env.WORKER_CONCURRENCY,
   LOG_LEVEL: process.env.LOG_LEVEL,
+  WORKER_SCHEDULER_ENABLED: process.env.WORKER_SCHEDULER_ENABLED,
 
   MARKET_DATA_PROVIDER: process.env.MARKET_DATA_PROVIDER,
   POLYGON_API_KEY: process.env.POLYGON_API_KEY,
