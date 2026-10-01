@@ -20,3 +20,4 @@ export * from './repositories/alerts-repository';
 export * from './repositories/news-intelligence-repository';
 export * from './repositories/signal-history-repository';
 export * from './repositories/forecast-repository';
+export * from './repositories/database-stats-repository';
