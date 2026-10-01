@@ -102,7 +102,8 @@
       "investCrypto": "Crypto lane",
       "investAccounts": "Account connections",
       "admin": "Admin",
-      "monitoring": "Monitoring"
+      "monitoring": "Monitoring",
+      "lab": "Lab"
     },
     "auth": {
       "login": "Log in",
@@ -533,6 +534,44 @@
     "fundingTitle": "Bank-connection readiness",
     "actionModel": "Action model",
     "planningFirst": "Planning-first"
+  },
+  "lab": {
+    "eyebrow": "Aurox Lab",
+    "title": "Interactive Lab",
+    "description": "Deterministic, offline-capable finance tools — they run entirely in your browser and work even when market data is unavailable.",
+    "offlineBadge": "Works offline",
+    "tabs": {
+      "pathExplorer": "Path Explorer",
+      "signalXRay": "Signal X-Ray",
+      "candlestickAnnotator": "Candlestick Annotator",
+      "volatilityCone": "Volatility Cone",
+      "returnDistribution": "Return Distribution"
+    },
+    "pathExplorer": {
+      "eyebrow": "Monte Carlo",
+      "title": "Path Explorer",
+      "description": "Simulate thousands of seeded portfolio paths from your own assumptions and read the full distribution of outcomes over time."
+    },
+    "signalXRay": {
+      "eyebrow": "Explainability",
+      "title": "Signal X-Ray",
+      "description": "See exactly how the deterministic signal engine turns a price series into a score — decomposed into moving-average, momentum, and trend contributions."
+    },
+    "candlestickAnnotator": {
+      "eyebrow": "Price action",
+      "title": "Candlestick Annotator",
+      "description": "Run the deterministic candlestick engine on illustrative scenarios and see the patterns, support/resistance, swing points, and multi-timeframe bias it detects — with the full reasoning."
+    },
+    "volatilityCone": {
+      "eyebrow": "Risk",
+      "title": "Volatility Cone",
+      "description": "See how annualized realized volatility is distributed across rolling windows on a seeded synthetic path, with the latest reading overlaid to show whether it is high or low versus its own history."
+    },
+    "returnDistribution": {
+      "eyebrow": "Tail risk",
+      "title": "Return Distribution + VaR",
+      "description": "See the shape of holding-period returns and the Value-at-Risk they imply — with the empirical tail compared to the naive normal assumption, so fat-tail and skew risk is explicit."
+    }
   },
   "home": {
     "heroEyebrow": "Aurox Intelligence",
