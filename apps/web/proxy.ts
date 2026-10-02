@@ -2,9 +2,7 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import {
   AUTH_SESSION_COOKIE_NAME,
-  buildAuthenticatedRedirect,
   buildLoginRedirect,
-  isGuestOnlyPath,
   isProtectedPath,
 } from './server/auth/routing';
 import { parseSignedSessionValue } from './server/auth/session-token';
@@ -12,7 +10,7 @@ import { parseSignedSessionValue } from './server/auth/session-token';
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
-  if (!isProtectedPath(pathname) && !isGuestOnlyPath(pathname)) {
+  if (!isProtectedPath(pathname)) {
     return NextResponse.next();
   }
 
@@ -22,12 +20,6 @@ export async function proxy(request: NextRequest) {
 
   if (isProtectedPath(pathname) && !hasSignedSession) {
     const redirectUrl = new URL(buildLoginRedirect(`${pathname}${search}`), request.url);
-    return NextResponse.redirect(redirectUrl);
-  }
-
-  if (isGuestOnlyPath(pathname) && hasSignedSession) {
-    const requestedNext = request.nextUrl.searchParams.get('next');
-    const redirectUrl = new URL(buildAuthenticatedRedirect(requestedNext), request.url);
     return NextResponse.redirect(redirectUrl);
   }
 
