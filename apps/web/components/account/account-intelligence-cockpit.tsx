@@ -32,7 +32,7 @@ type Props = {
 export function AccountIntelligenceCockpit({ vm, membershipDisclosure, identityCardLabels }: Props) {
   return (
     <div className="account-cockpit">
-      <Section>
+      <Section className="account-cockpit__opening">
         <div className="account-hero">
           <AuroxIdentityCard
             userName={vm.identity.userName}

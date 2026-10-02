@@ -25,7 +25,10 @@ const VIEWPORTS = [
   { name: '412', width: 412, height: 915 },
   { name: '430', width: 430, height: 932 },
   { name: 'tablet-768', width: 768, height: 1024 },
+  { name: 'desktop-1024', width: 1024, height: 900 },
   { name: 'desktop-1280', width: 1280, height: 800 },
+  { name: 'desktop-1440', width: 1440, height: 1000 },
+  { name: 'desktop-1536', width: 1536, height: 1000 },
 ] as const;
 
 export default defineConfig({
