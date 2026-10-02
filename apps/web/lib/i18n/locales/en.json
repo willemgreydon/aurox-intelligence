@@ -500,6 +500,7 @@
     }
   },
   "account": {
+    "identityCard": { "ariaLabel": "Aurox Intelligence identity card", "demoLabel": "Demo identity · not a payment card", "identityNumberLabel": "Aurox identity number", "accountHolderLabel": "Account identity", "simulationLabel": "Simulation only", "number": "2468 1357 9024 6801" },
     "preferencesTitle": "Workspace preferences",
     "preferencesDescription": "Control your locale, default chart behavior, visible dashboard modules, and tracked symbols.",
     "trackedSymbols": "Tracked symbols",

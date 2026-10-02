@@ -3,16 +3,20 @@ import { requireCurrentSession } from '../../server/auth/session';
 import { getAccountOverviewData } from '../../server/services/account-service';
 import { getAccountIntelligenceViewModel } from '../../server/services/account-intelligence-service';
 import { AccountIntelligenceCockpit } from '../../components/account/account-intelligence-cockpit';
+import { getMessages } from '../../lib/i18n/messages';
+import { getRequestLocale } from '../../server/i18n/locale';
 
 // User-specific financial data — never cached at the route level.
 export const dynamic = 'force-dynamic';
 
 export default async function AccountOverviewPage() {
   const auth = await requireCurrentSession('/account');
-  const [overview, vm] = await Promise.all([
+  const [overview, vm, locale] = await Promise.all([
     getAccountOverviewData(auth),
     getAccountIntelligenceViewModel(),
+    getRequestLocale(),
   ]);
+  const messages = getMessages(locale);
 
   // Identity + session detail is preserved but demoted into a disclosure so the
   // overview leads with the performance cockpit. Workspace preferences live on
@@ -44,5 +48,11 @@ export default async function AccountOverviewPage() {
     </div>
   );
 
-  return <AccountIntelligenceCockpit vm={vm} membershipDisclosure={membershipDisclosure} />;
+  return (
+    <AccountIntelligenceCockpit
+      vm={vm}
+      membershipDisclosure={membershipDisclosure}
+      identityCardLabels={messages.account.identityCard}
+    />
+  );
 }

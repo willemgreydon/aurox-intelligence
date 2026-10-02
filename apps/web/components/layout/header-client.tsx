@@ -285,15 +285,20 @@ export function HeaderClient({ locale, messages, ticker, auth, navGroups, portfo
             aria-label="Site navigation overlay"
           >
             <div className="site-menu-overlay__header">
-              <div className="site-menu-overlay__brand">
+              <Link
+                href="/"
+                className="site-menu-overlay__brand"
+                aria-label="Aurox Intelligence home"
+                onClick={() => setMenuOpen(false)}
+              >
                 <span className="site-brand__mark" aria-hidden="true">
                   <Image src="/aurox.svg" alt="" width={44} height={44} className="site-brand__mark-icon" />
                 </span>
-                <div className="site-menu-overlay__brand-copy">
+                <span className="site-menu-overlay__brand-copy">
                   <strong>{messages.shell.brandTitle}</strong>
                   <span>{messages.shell.mobileMenuDescription}</span>
-                </div>
-              </div>
+                </span>
+              </Link>
 
               <div className="site-menu-overlay__header-actions">
                 <LocaleSwitcher locale={locale} label={messages.shell.language} compact />
@@ -423,4 +428,3 @@ export function HeaderClient({ locale, messages, ticker, auth, navGroups, portfo
     </>
   );
 }
-

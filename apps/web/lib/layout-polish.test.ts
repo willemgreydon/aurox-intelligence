@@ -111,6 +111,18 @@ describe('components are wired to the layout-polish primitives', () => {
     expect(cockpit).toContain('account-metric-grid');
   });
 
+  it('keeps the account cockpit on the canonical bounded content shell', () => {
+    expect(css).not.toContain('.account-cockpit .shell-container');
+    expect(css).toContain('--content-standard');
+  });
+
+  it('defines a proportionate, reduced-motion-safe Aurox identity card', () => {
+    expect(css).toContain('.aurox-identity-card');
+    expect(css).toContain('aspect-ratio: 85.6 / 53.98');
+    expect(css).toContain('transform-style: preserve-3d');
+    expect(css).toContain('@media (prefers-reduced-motion: reduce)');
+  });
+
   it('market-graph timeframe count renders as a labelled numeric bubble', () => {
     const tf = read('../components/charts/timeframe-select.tsx');
     expect(tf).toContain('num-bubble');

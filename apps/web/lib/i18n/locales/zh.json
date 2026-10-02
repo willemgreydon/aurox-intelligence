@@ -55,7 +55,8 @@
       "investCrypto": "加密通道",
       "investAccounts": "账户连接",
       "admin": "管理",
-      "monitoring": "监控"
+      "monitoring": "监控",
+      "lab": "实验室"
     },
     "auth": {
       "login": "登录",
@@ -418,6 +419,7 @@
     }
   },
   "account": {
+    "identityCard": { "ariaLabel": "Aurox Intelligence 身份卡", "demoLabel": "演示身份 · 非支付卡", "identityNumberLabel": "Aurox 身份编号", "accountHolderLabel": "账户身份", "simulationLabel": "仅限模拟", "number": "2468 1357 9024 6801" },
     "preferencesTitle": "工作区偏好",
     "preferencesDescription": "管理您的区域设置、默认图表行为、可见的仪表盘模块以及跟踪标的。",
     "trackedSymbols": "跟踪标的",
@@ -486,6 +488,44 @@
     "fundingTitle": "银行连接就绪度",
     "actionModel": "操作模式",
     "planningFirst": "规划优先"
+  },
+  "lab": {
+    "eyebrow": "Aurox Lab",
+    "title": "交互式实验室",
+    "description": "确定性、可离线使用的金融工具——它们完全在您的浏览器中运行，即使在无法获取市场数据时也能正常工作。",
+    "offlineBadge": "可离线使用",
+    "tabs": {
+      "pathExplorer": "路径浏览器",
+      "signalXRay": "信号透视",
+      "candlestickAnnotator": "K线标注器",
+      "volatilityCone": "波动率锥",
+      "returnDistribution": "收益分布"
+    },
+    "pathExplorer": {
+      "eyebrow": "蒙特卡洛",
+      "title": "路径浏览器",
+      "description": "基于您自己的假设模拟数千条带种子的投资组合路径，并读取结果随时间变化的完整分布。"
+    },
+    "signalXRay": {
+      "eyebrow": "可解释性",
+      "title": "信号透视",
+      "description": "准确了解确定性信号引擎如何将价格序列转化为评分——分解为移动平均、动量和趋势的各项贡献。"
+    },
+    "candlestickAnnotator": {
+      "eyebrow": "价格行为",
+      "title": "K线标注器",
+      "description": "在示例场景上运行确定性K线引擎，查看它检测到的形态、支撑/阻力、摆动点以及多周期倾向——并附带完整推理。"
+    },
+    "volatilityCone": {
+      "eyebrow": "风险",
+      "title": "波动率锥",
+      "description": "查看年化已实现波动率在带种子合成路径的滚动窗口中的分布情况，并叠加最新读数，以显示其相对于自身历史是高还是低。"
+    },
+    "returnDistribution": {
+      "eyebrow": "尾部风险",
+      "title": "收益分布 + VaR",
+      "description": "查看持有期收益的形态及其隐含的风险价值（VaR）——将经验尾部与朴素的正态假设进行比较，从而明确显示厚尾和偏度风险。"
+    }
   },
   "home": {
     "heroEyebrow": "金融智能平台",
@@ -1140,6 +1180,9 @@
     "historyRange": "历史区间",
     "chartAria": "{{symbol}} 市场图表",
     "noData": "当前视图暂无可用历史行情数据。",
+    "unavailableTitle": "图表暂时不可用",
+    "unavailableBody": "实时市场历史数据暂时不可用——一旦数据源恢复，它将自动重新显示。",
+    "unavailableAutoUpdating": "自动更新",
     "intradayUnavailable": "盘中K线不可用。显示每日历史数据。",
     "dailyFallback": "使用每日数据源历史数据。",
     "providerReturnedBars": "数据源返回了 {{count}} 根 {{timeframe}} K线。",

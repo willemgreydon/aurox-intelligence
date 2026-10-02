@@ -55,7 +55,8 @@
       "investCrypto": "Sezione crypto",
       "investAccounts": "Conti",
       "admin": "Amministrazione",
-      "monitoring": "Monitoraggio"
+      "monitoring": "Monitoraggio",
+      "lab": "Lab"
     },
     "auth": {
       "login": "Accedi",
@@ -418,6 +419,7 @@
     }
   },
   "account": {
+    "identityCard": { "ariaLabel": "Carta d’identità Aurox Intelligence", "demoLabel": "Identità demo · non è una carta di pagamento", "identityNumberLabel": "Numero identità Aurox", "accountHolderLabel": "Identità dell’account", "simulationLabel": "Solo simulazione", "number": "2468 1357 9024 6801" },
     "preferencesTitle": "Preferenze dell'area di lavoro",
     "preferencesDescription": "Controlla la tua localizzazione, il comportamento predefinito dei grafici, i moduli della dashboard visibili e i simboli monitorati.",
     "trackedSymbols": "Simboli monitorati",
@@ -486,6 +488,44 @@
     "fundingTitle": "Prontezza alla connessione bancaria",
     "actionModel": "Modello di azione",
     "planningFirst": "Pianificazione prima di tutto"
+  },
+  "lab": {
+    "eyebrow": "Aurox Lab",
+    "title": "Laboratorio interattivo",
+    "description": "Strumenti finanziari deterministici e utilizzabili offline: vengono eseguiti interamente nel tuo browser e funzionano anche quando i dati di mercato non sono disponibili.",
+    "offlineBadge": "Funziona offline",
+    "tabs": {
+      "pathExplorer": "Esploratore di traiettorie",
+      "signalXRay": "Radiografia del segnale",
+      "candlestickAnnotator": "Annotatore di candele",
+      "volatilityCone": "Cono di volatilità",
+      "returnDistribution": "Distribuzione dei rendimenti"
+    },
+    "pathExplorer": {
+      "eyebrow": "Monte Carlo",
+      "title": "Esploratore di traiettorie",
+      "description": "Simula migliaia di traiettorie di portafoglio con seed a partire dalle tue ipotesi e leggi la distribuzione completa dei risultati nel tempo."
+    },
+    "signalXRay": {
+      "eyebrow": "Spiegabilità",
+      "title": "Radiografia del segnale",
+      "description": "Osserva esattamente come il motore di segnali deterministico trasforma una serie di prezzi in un punteggio, scomposto nei contributi di media mobile, momentum e trend."
+    },
+    "candlestickAnnotator": {
+      "eyebrow": "Azione del prezzo",
+      "title": "Annotatore di candele",
+      "description": "Esegui il motore di candele deterministico su scenari illustrativi e osserva i pattern, i supporti/resistenze, i punti di svolta e il bias multi-timeframe che rileva, con il ragionamento completo."
+    },
+    "volatilityCone": {
+      "eyebrow": "Rischio",
+      "title": "Cono di volatilità",
+      "description": "Osserva come la volatilità realizzata annualizzata si distribuisce su finestre mobili lungo una traiettoria sintetica con seed, con l’ultima lettura sovrapposta per mostrare se è alta o bassa rispetto alla propria storia."
+    },
+    "returnDistribution": {
+      "eyebrow": "Rischio di coda",
+      "title": "Distribuzione dei rendimenti + VaR",
+      "description": "Osserva la forma dei rendimenti del periodo di detenzione e il Value-at-Risk che implicano, con la coda empirica confrontata con l’ingenua ipotesi normale, così che il rischio di code spesse e asimmetria sia esplicito."
+    }
   },
   "home": {
     "heroEyebrow": "Aurox Intelligence",
@@ -1146,6 +1186,9 @@
     "historyRange": "Intervallo storico",
     "chartAria": "Grafico di mercato di {{symbol}}",
     "noData": "Non è disponibile alcuno storico di mercato per questa vista.",
+    "unavailableTitle": "Grafico temporaneamente non disponibile",
+    "unavailableBody": "La cronologia di mercato in tempo reale non è disponibile per un breve momento — riapparirà automaticamente non appena il flusso di dati si sarà aggiornato.",
+    "unavailableAutoUpdating": "Aggiornamento automatico",
     "intradayUnavailable": "Barre intraday non disponibili. Visualizzazione dello storico giornaliero.",
     "dailyFallback": "Utilizzo dello storico giornaliero del provider.",
     "providerReturnedBars": "Il provider ha restituito {{count}} barre per {{timeframe}}.",

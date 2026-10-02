@@ -8,10 +8,19 @@ import { CompactStatCard } from '../stats/compact-stat-card';
 import { AccountPerformanceTimeline } from './account-performance-timeline';
 import { DrawdownUnderwater } from '../charts/drawdown-underwater';
 import { computeDrawdownAnalytics } from '../../lib/portfolio-drawdown';
+import { AuroxIdentityCard } from './aurox-identity-card';
 
 type Props = {
   vm: AccountIntelligenceViewModel;
   membershipDisclosure: React.ReactNode;
+  identityCardLabels: {
+    ariaLabel: string;
+    demoLabel: string;
+    identityNumberLabel: string;
+    accountHolderLabel: string;
+    simulationLabel: string;
+    number: string;
+  };
 };
 
 /**
@@ -20,11 +29,15 @@ type Props = {
  * moneyflow, activity, insights, recent actions. All values are pre-formatted
  * read-model strings; positive/negative carries a text sign, not just color.
  */
-export function AccountIntelligenceCockpit({ vm, membershipDisclosure }: Props) {
+export function AccountIntelligenceCockpit({ vm, membershipDisclosure, identityCardLabels }: Props) {
   return (
     <div className="account-cockpit">
       <Section>
         <div className="account-hero">
+          <AuroxIdentityCard
+            userName={vm.identity.userName}
+            labels={identityCardLabels}
+          />
           <div className="account-hero__head">
             <div>
               <span className="account-hero__badge">SIMULATION</span>

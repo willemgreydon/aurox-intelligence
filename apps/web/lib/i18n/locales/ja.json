@@ -55,7 +55,8 @@
       "investCrypto": "暗号資産レーン",
       "investAccounts": "口座連携",
       "admin": "管理",
-      "monitoring": "監視"
+      "monitoring": "監視",
+      "lab": "ラボ"
     },
     "auth": {
       "login": "ログイン",
@@ -418,6 +419,7 @@
     }
   },
   "account": {
+    "identityCard": { "ariaLabel": "Aurox Intelligence ID カード", "demoLabel": "デモ ID · 決済カードではありません", "identityNumberLabel": "Aurox ID 番号", "accountHolderLabel": "アカウント ID", "simulationLabel": "シミュレーション専用", "number": "2468 1357 9024 6801" },
     "preferencesTitle": "ワークスペース設定",
     "preferencesDescription": "ロケール、デフォルトのチャート動作、表示するダッシュボードモジュール、追跡シンボルを管理します。",
     "trackedSymbols": "追跡シンボル",
@@ -486,6 +488,44 @@
     "fundingTitle": "銀行接続の準備状況",
     "actionModel": "アクションモデル",
     "planningFirst": "プランニング優先"
+  },
+  "lab": {
+    "eyebrow": "Aurox Lab",
+    "title": "インタラクティブ・ラボ",
+    "description": "決定論的でオフラインでも使える金融ツール——ブラウザー内で完結して動作し、市場データが利用できないときでも機能します。",
+    "offlineBadge": "オフラインで動作",
+    "tabs": {
+      "pathExplorer": "パスエクスプローラー",
+      "signalXRay": "シグナルX線",
+      "candlestickAnnotator": "ローソク足アノテーター",
+      "volatilityCone": "ボラティリティコーン",
+      "returnDistribution": "リターン分布"
+    },
+    "pathExplorer": {
+      "eyebrow": "モンテカルロ",
+      "title": "パスエクスプローラー",
+      "description": "ご自身の前提から数千本のシード付きポートフォリオ・パスをシミュレーションし、時間経過に伴う結果の分布全体を読み取ります。"
+    },
+    "signalXRay": {
+      "eyebrow": "説明可能性",
+      "title": "シグナルX線",
+      "description": "決定論的なシグナルエンジンが価格系列をどのようにスコアへ変換するかを正確に確認できます——移動平均、モメンタム、トレンドの寄与に分解して表示します。"
+    },
+    "candlestickAnnotator": {
+      "eyebrow": "プライスアクション",
+      "title": "ローソク足アノテーター",
+      "description": "決定論的なローソク足エンジンを例示的なシナリオで実行し、検出されたパターン、サポート/レジスタンス、スイングポイント、複数時間軸のバイアスを——完全な根拠とともに確認できます。"
+    },
+    "volatilityCone": {
+      "eyebrow": "リスク",
+      "title": "ボラティリティコーン",
+      "description": "シード付き合成パス上のローリングウィンドウにわたって年率換算の実現ボラティリティがどのように分布するかを確認でき、最新値を重ねて、自身の履歴と比べて高いか低いかを示します。"
+    },
+    "returnDistribution": {
+      "eyebrow": "テールリスク",
+      "title": "リターン分布 + VaR",
+      "description": "保有期間リターンの形状と、それが示すバリュー・アット・リスクを確認できます——経験的なテールを単純な正規分布の仮定と比較し、ファットテールと歪度のリスクを明示します。"
+    }
   },
   "home": {
     "heroEyebrow": "Aurox Intelligence",
@@ -1146,6 +1186,9 @@
     "historyRange": "履歴範囲",
     "chartAria": "{{symbol}}のマーケットチャート",
     "noData": "このビューにはマーケット履歴がありません。",
+    "unavailableTitle": "チャートは一時的に利用できません",
+    "unavailableBody": "ライブの市場履歴が一時的に利用できません——データフィードが追いつき次第、自動的に再表示されます。",
+    "unavailableAutoUpdating": "自動更新",
     "intradayUnavailable": "日中足を利用できません。日次履歴を表示しています。",
     "dailyFallback": "日次のプロバイダー履歴を使用しています。",
     "providerReturnedBars": "プロバイダーは{{timeframe}}に対して{{count}}本のバーを返しました。",

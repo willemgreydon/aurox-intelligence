@@ -228,17 +228,6 @@ code,
   padding-inline: var(--space-5);
 }
 
-/* Account cockpit adapts to large desktop / ultrawide: every section container
-   widens from the narrow --content-standard to the workstation width so the
-   metric grids and tables use the available space instead of a 76rem column.
-   Scoped selector (.account-cockpit .shell-container) outranks the base
-   .shell-container width. */
-.account-cockpit .shell-container {
-  width: 100%;
-  max-width: var(--content-max-width, var(--content-dashboard));
-  padding-inline: var(--space-5);
-}
-
 .site-header {
   position: sticky;
   top: 0;
@@ -12880,6 +12869,89 @@ code,
 .account-cockpit { display: flex; flex-direction: column; }
 
 .account-hero { display: flex; flex-direction: column; gap: var(--space-4); }
+
+/* Identity surface: a calm, physical account marker rather than a payment
+   card. Interaction only changes transform/custom properties, never layout. */
+.aurox-identity-card {
+  --card-tilt-x: 0deg;
+  --card-tilt-y: 0deg;
+  --card-pointer-x: 50%;
+  --card-pointer-y: 50%;
+  position: relative;
+  width: min(100%, 46rem);
+  aspect-ratio: 85.6 / 53.98;
+  min-height: 12rem;
+  overflow: hidden;
+  isolation: isolate;
+  border: 1px solid rgb(153 210 255 / 0.28);
+  border-radius: clamp(1rem, 2.2vw, 1.6rem);
+  background: #09121d;
+  box-shadow: 0 1.5rem 3rem rgb(2 8 16 / 0.28), 0 0 0 1px rgb(255 255 255 / 0.04) inset;
+  color: #edf7ff;
+  perspective: 900px;
+  transform: perspective(900px) rotateX(var(--card-tilt-y)) rotateY(var(--card-tilt-x));
+  transform-style: preserve-3d;
+  transition: transform 420ms var(--ease-emphasis), box-shadow 320ms var(--ease-standard);
+}
+.aurox-identity-card__material,
+.aurox-identity-card__grid,
+.aurox-identity-card__specular,
+.aurox-identity-card__content { position: absolute; inset: 0; }
+.aurox-identity-card__material {
+  z-index: -3;
+  background:
+    radial-gradient(circle at var(--card-pointer-x) var(--card-pointer-y), rgb(94 190 255 / 0.2), transparent 24%),
+    linear-gradient(125deg, #0a1725 0%, #142b3d 42%, #07111d 72%, #0e1d2b 100%);
+}
+.aurox-identity-card__grid {
+  z-index: -2;
+  opacity: 0.25;
+  background-image:
+    linear-gradient(115deg, transparent 0 47%, rgb(126 213 255 / 0.3) 48%, transparent 49%),
+    linear-gradient(35deg, transparent 0 47%, rgb(126 213 255 / 0.2) 48%, transparent 49%);
+  background-size: 8rem 8rem;
+  mask-image: linear-gradient(135deg, black, transparent 62%);
+}
+.aurox-identity-card__specular {
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(ellipse 24% 90% at var(--card-pointer-x) var(--card-pointer-y), rgb(194 239 255 / 0.23), transparent 70%);
+  mix-blend-mode: screen;
+  opacity: 0.8;
+}
+.aurox-identity-card__content {
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: clamp(1rem, 3vw, 2.4rem);
+  text-shadow: 0 1px 1px rgb(0 0 0 / 0.35);
+}
+.aurox-identity-card__topline,
+.aurox-identity-card__bottomline { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.aurox-identity-card__brand { display: inline-flex; align-items: center; gap: 0.65rem; font-size: clamp(0.85rem, 1.5vw, 1.1rem); font-weight: 600; letter-spacing: 0.22em; }
+.aurox-identity-card__mark { width: clamp(1.8rem, 4vw, 2.5rem); height: auto; filter: drop-shadow(0 0 0.8rem rgb(93 177 255 / 0.25)); }
+.aurox-identity-card__demo,
+.aurox-identity-card__label { color: rgb(207 230 244 / 0.68); font-family: var(--font-family-mono); font-size: clamp(0.52rem, 1vw, 0.68rem); letter-spacing: 0.12em; text-transform: uppercase; }
+.aurox-identity-card__demo { padding: 0.3rem 0.5rem; border: 1px solid rgb(184 224 248 / 0.24); border-radius: 999px; }
+.aurox-identity-card__center { display: grid; gap: 0.45rem; }
+.aurox-identity-card__number { font-family: var(--font-family-mono); font-size: clamp(1rem, 3.1vw, 2rem); letter-spacing: clamp(0.08em, 0.8vw, 0.16em); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.aurox-identity-card__bottomline > div { display: grid; gap: 0.3rem; min-width: 0; }
+.aurox-identity-card__bottomline strong { max-width: 24ch; overflow: hidden; text-overflow: ellipsis; font-size: clamp(0.7rem, 1.6vw, 1rem); font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; }
+.aurox-identity-card__status { align-self: end; color: #87dcff; font-family: var(--font-family-mono); font-size: clamp(0.55rem, 1.1vw, 0.72rem); letter-spacing: 0.12em; text-transform: uppercase; }
+.aurox-identity-card:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 4px; }
+@media (hover: hover) and (pointer: fine) {
+  .aurox-identity-card:hover { box-shadow: 0 1.75rem 3.5rem rgb(2 8 16 / 0.34), 0 0 0 1px rgb(147 220 255 / 0.18) inset; }
+}
+@media (max-width: 430px) {
+  .aurox-identity-card { min-height: 0; }
+  .aurox-identity-card__content { padding: 0.9rem; }
+  .aurox-identity-card__topline { gap: 0.5rem; }
+  .aurox-identity-card__number { letter-spacing: 0.04em; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .aurox-identity-card { transform: none; transition: none; }
+}
 .account-hero__head {
   display: flex;
   flex-wrap: wrap;

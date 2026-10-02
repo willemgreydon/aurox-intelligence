@@ -55,7 +55,8 @@
       "investCrypto": "Crypto-baan",
       "investAccounts": "Accounts",
       "admin": "Beheer",
-      "monitoring": "Monitoring"
+      "monitoring": "Monitoring",
+      "lab": "Lab"
     },
     "auth": {
       "login": "Inloggen",
@@ -418,6 +419,7 @@
     }
   },
   "account": {
+    "identityCard": { "ariaLabel": "Aurox Intelligence-identiteitskaart", "demoLabel": "Demo-identiteit · geen betaalkaart", "identityNumberLabel": "Aurox-identiteitsnummer", "accountHolderLabel": "Accountidentiteit", "simulationLabel": "Alleen simulatie", "number": "2468 1357 9024 6801" },
     "preferencesTitle": "Werkruimtevoorkeuren",
     "preferencesDescription": "Beheer uw landinstelling, standaard grafiekgedrag, zichtbare dashboardmodules en gevolgde symbolen.",
     "trackedSymbols": "Gevolgde symbolen",
@@ -486,6 +488,44 @@
     "fundingTitle": "Gereedheid voor bankkoppeling",
     "actionModel": "Actiemodel",
     "planningFirst": "Planning eerst"
+  },
+  "lab": {
+    "eyebrow": "Aurox Lab",
+    "title": "Interactief lab",
+    "description": "Deterministische, offline-bruikbare financiële tools — ze draaien volledig in je browser en werken zelfs als er geen marktgegevens beschikbaar zijn.",
+    "offlineBadge": "Werkt offline",
+    "tabs": {
+      "pathExplorer": "Padverkenner",
+      "signalXRay": "Signaal-röntgen",
+      "candlestickAnnotator": "Candlestick-annotator",
+      "volatilityCone": "Volatiliteitskegel",
+      "returnDistribution": "Rendementsverdeling"
+    },
+    "pathExplorer": {
+      "eyebrow": "Monte Carlo",
+      "title": "Padverkenner",
+      "description": "Simuleer duizenden geseede portefeuillepaden op basis van je eigen aannames en lees de volledige verdeling van uitkomsten in de tijd."
+    },
+    "signalXRay": {
+      "eyebrow": "Verklaarbaarheid",
+      "title": "Signaal-röntgen",
+      "description": "Zie precies hoe de deterministische signaal-engine een prijsreeks omzet in een score — uitgesplitst naar bijdragen van voortschrijdend gemiddelde, momentum en trend."
+    },
+    "candlestickAnnotator": {
+      "eyebrow": "Koersbeweging",
+      "title": "Candlestick-annotator",
+      "description": "Voer de deterministische candlestick-engine uit op illustratieve scenario's en zie de patronen, steun/weerstand, keerpunten en de multi-timeframe-bias die hij detecteert — met de volledige redenering."
+    },
+    "volatilityCone": {
+      "eyebrow": "Risico",
+      "title": "Volatiliteitskegel",
+      "description": "Zie hoe de geannualiseerde gerealiseerde volatiliteit is verdeeld over voortschrijdende vensters op een geseed synthetisch pad, met de meest recente meting eroverheen om te tonen of deze hoog of laag is ten opzichte van de eigen historie."
+    },
+    "returnDistribution": {
+      "eyebrow": "Staartrisico",
+      "title": "Rendementsverdeling + VaR",
+      "description": "Zie de vorm van de rendementen over de aanhoudperiode en de Value-at-Risk die ze impliceren — waarbij de empirische staart wordt vergeleken met de naïeve normaalaanname, zodat dikke-staart- en scheefheidsrisico expliciet worden."
+    }
   },
   "home": {
     "heroEyebrow": "Aurox Intelligence",
@@ -1146,6 +1186,9 @@
     "historyRange": "Historiebereik",
     "chartAria": "{{symbol}} marktgrafiek",
     "noData": "Er is geen markthistorie beschikbaar voor deze weergave.",
+    "unavailableTitle": "Grafiek tijdelijk niet beschikbaar",
+    "unavailableBody": "De live markthistorie is even niet beschikbaar — deze verschijnt automatisch weer zodra de datafeed is bijgewerkt.",
+    "unavailableAutoUpdating": "Automatisch bijwerken",
     "intradayUnavailable": "Intraday-bars niet beschikbaar. Daghistorie wordt getoond.",
     "dailyFallback": "Daghistorie van provider wordt gebruikt.",
     "providerReturnedBars": "Provider gaf {{count}} bars terug voor {{timeframe}}.",

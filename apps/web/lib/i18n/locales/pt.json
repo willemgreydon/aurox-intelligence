@@ -55,7 +55,8 @@
       "investCrypto": "Painel cripto",
       "investAccounts": "Contas",
       "admin": "Admin",
-      "monitoring": "Monitoramento"
+      "monitoring": "Monitoramento",
+      "lab": "Lab"
     },
     "auth": {
       "login": "Entrar",
@@ -418,6 +419,7 @@
     }
   },
   "account": {
+    "identityCard": { "ariaLabel": "Cartão de identidade Aurox Intelligence", "demoLabel": "Identidade de demonstração · não é um cartão de pagamento", "identityNumberLabel": "Número de identidade Aurox", "accountHolderLabel": "Identidade da conta", "simulationLabel": "Apenas simulação", "number": "2468 1357 9024 6801" },
     "preferencesTitle": "Preferências do espaço de trabalho",
     "preferencesDescription": "Controle o seu idioma, o comportamento predefinido dos gráficos, os módulos visíveis do painel e os símbolos acompanhados.",
     "trackedSymbols": "Símbolos acompanhados",
@@ -486,6 +488,44 @@
     "fundingTitle": "Preparação para ligação bancária",
     "actionModel": "Modelo de ação",
     "planningFirst": "Planeamento em primeiro lugar"
+  },
+  "lab": {
+    "eyebrow": "Aurox Lab",
+    "title": "Laboratório interativo",
+    "description": "Ferramentas financeiras determinísticas e disponíveis offline — elas rodam inteiramente no seu navegador e funcionam mesmo quando os dados de mercado estão indisponíveis.",
+    "offlineBadge": "Funciona offline",
+    "tabs": {
+      "pathExplorer": "Explorador de trajetórias",
+      "signalXRay": "Raio-X de sinal",
+      "candlestickAnnotator": "Anotador de candles",
+      "volatilityCone": "Cone de volatilidade",
+      "returnDistribution": "Distribuição de retornos"
+    },
+    "pathExplorer": {
+      "eyebrow": "Monte Carlo",
+      "title": "Explorador de trajetórias",
+      "description": "Simule milhares de trajetórias de carteira com semente a partir das suas próprias premissas e leia a distribuição completa dos resultados ao longo do tempo."
+    },
+    "signalXRay": {
+      "eyebrow": "Explicabilidade",
+      "title": "Raio-X de sinal",
+      "description": "Veja exatamente como o motor de sinais determinístico transforma uma série de preços em uma pontuação — decomposta em contribuições de média móvel, momentum e tendência."
+    },
+    "candlestickAnnotator": {
+      "eyebrow": "Ação do preço",
+      "title": "Anotador de candles",
+      "description": "Execute o motor de candles determinístico em cenários ilustrativos e veja os padrões, suportes/resistências, pontos de reversão e o viés multitemporal que ele detecta — com o raciocínio completo."
+    },
+    "volatilityCone": {
+      "eyebrow": "Risco",
+      "title": "Cone de volatilidade",
+      "description": "Veja como a volatilidade realizada anualizada se distribui em janelas móveis ao longo de uma trajetória sintética com semente, com a leitura mais recente sobreposta para mostrar se está alta ou baixa em relação ao próprio histórico."
+    },
+    "returnDistribution": {
+      "eyebrow": "Risco de cauda",
+      "title": "Distribuição de retornos + VaR",
+      "description": "Veja o formato dos retornos do período de manutenção e o Value-at-Risk que eles implicam — com a cauda empírica comparada à ingênua suposição normal, de modo que o risco de caudas pesadas e assimetria fique explícito."
+    }
   },
   "home": {
     "heroEyebrow": "Aurox Intelligence",
@@ -1146,6 +1186,9 @@
     "historyRange": "Intervalo de histórico",
     "chartAria": "Gráfico de mercado de {{symbol}}",
     "noData": "Não há histórico de mercado disponível para esta vista.",
+    "unavailableTitle": "Gráfico temporariamente indisponível",
+    "unavailableBody": "O histórico de mercado ao vivo está indisponível por um instante — ele reaparecerá automaticamente assim que o fluxo de dados se atualizar.",
+    "unavailableAutoUpdating": "Atualização automática",
     "intradayUnavailable": "Barras intradiárias indisponíveis. A mostrar histórico diário.",
     "dailyFallback": "A usar histórico diário do fornecedor.",
     "providerReturnedBars": "O fornecedor devolveu {{count}} barras para {{timeframe}}.",

@@ -55,7 +55,8 @@
       "investCrypto": "Volet crypto",
       "investAccounts": "Comptes",
       "admin": "Admin",
-      "monitoring": "Surveillance"
+      "monitoring": "Surveillance",
+      "lab": "Labo"
     },
     "auth": {
       "login": "Connexion",
@@ -418,6 +419,7 @@
     }
   },
   "account": {
+    "identityCard": { "ariaLabel": "Carte d’identité Aurox Intelligence", "demoLabel": "Identité de démonstration · pas une carte de paiement", "identityNumberLabel": "Numéro d’identité Aurox", "accountHolderLabel": "Identité du compte", "simulationLabel": "Simulation uniquement", "number": "2468 1357 9024 6801" },
     "preferencesTitle": "Préférences de l'espace de travail",
     "preferencesDescription": "Contrôlez votre langue, le comportement par défaut des graphiques, les modules visibles du tableau de bord et les symboles suivis.",
     "trackedSymbols": "Symboles suivis",
@@ -486,6 +488,44 @@
     "fundingTitle": "Préparation à la connexion bancaire",
     "actionModel": "Modèle d'action",
     "planningFirst": "Planification d'abord"
+  },
+  "lab": {
+    "eyebrow": "Aurox Lab",
+    "title": "Labo interactif",
+    "description": "Des outils financiers déterministes et utilisables hors ligne — ils s'exécutent entièrement dans votre navigateur et fonctionnent même lorsque les données de marché sont indisponibles.",
+    "offlineBadge": "Fonctionne hors ligne",
+    "tabs": {
+      "pathExplorer": "Explorateur de trajectoires",
+      "signalXRay": "Radiographie du signal",
+      "candlestickAnnotator": "Annotateur de chandeliers",
+      "volatilityCone": "Cône de volatilité",
+      "returnDistribution": "Distribution des rendements"
+    },
+    "pathExplorer": {
+      "eyebrow": "Monte-Carlo",
+      "title": "Explorateur de trajectoires",
+      "description": "Simulez des milliers de trajectoires de portefeuille amorcées à partir de vos propres hypothèses et lisez la distribution complète des résultats dans le temps."
+    },
+    "signalXRay": {
+      "eyebrow": "Explicabilité",
+      "title": "Radiographie du signal",
+      "description": "Voyez exactement comment le moteur de signaux déterministe transforme une série de prix en score — décomposé en contributions de moyenne mobile, de momentum et de tendance."
+    },
+    "candlestickAnnotator": {
+      "eyebrow": "Action des prix",
+      "title": "Annotateur de chandeliers",
+      "description": "Exécutez le moteur de chandeliers déterministe sur des scénarios illustratifs et observez les figures, les supports/résistances, les points de retournement et le biais multi-horizons qu’il détecte — avec le raisonnement complet."
+    },
+    "volatilityCone": {
+      "eyebrow": "Risque",
+      "title": "Cône de volatilité",
+      "description": "Voyez comment la volatilité réalisée annualisée se répartit sur des fenêtres glissantes le long d’une trajectoire synthétique amorcée, avec la dernière mesure superposée pour montrer si elle est élevée ou faible par rapport à son propre historique."
+    },
+    "returnDistribution": {
+      "eyebrow": "Risque de queue",
+      "title": "Distribution des rendements + VaR",
+      "description": "Voyez la forme des rendements sur la période de détention et la Value-at-Risk qu’ils impliquent — la queue empirique étant comparée à l’hypothèse normale naïve, afin que le risque de queues épaisses et d’asymétrie soit explicite."
+    }
   },
   "home": {
     "heroEyebrow": "Aurox Intelligence",
@@ -1146,6 +1186,9 @@
     "historyRange": "Plage d'historique",
     "chartAria": "Graphique de marché de {{symbol}}",
     "noData": "Aucun historique de marché n'est disponible pour cette vue.",
+    "unavailableTitle": "Graphique temporairement indisponible",
+    "unavailableBody": "L'historique de marché en direct est brièvement indisponible — il réapparaîtra automatiquement dès que le flux de données aura rattrapé son retard.",
+    "unavailableAutoUpdating": "Mise à jour automatique",
     "intradayUnavailable": "Barres intrajournalières indisponibles. Affichage de l'historique quotidien.",
     "dailyFallback": "Utilisation de l'historique quotidien du fournisseur.",
     "providerReturnedBars": "Le fournisseur a renvoyé {{count}} barres pour {{timeframe}}.",

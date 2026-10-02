@@ -55,7 +55,8 @@
       "investCrypto": "Krypto-Lane",
       "investAccounts": "Kontoverbindungen",
       "admin": "Administration",
-      "monitoring": "Überwachung"
+      "monitoring": "Überwachung",
+      "lab": "Lab"
     },
     "auth": {
       "login": "Anmelden",
@@ -418,6 +419,7 @@
     }
   },
   "account": {
+    "identityCard": { "ariaLabel": "Aurox-Intelligence-Identitätskarte", "demoLabel": "Demo-Identität · keine Zahlungskarte", "identityNumberLabel": "Aurox-Identitätsnummer", "accountHolderLabel": "Account-Identität", "simulationLabel": "Nur Simulation", "number": "2468 1357 9024 6801" },
     "preferencesTitle": "Workstation-Einstellungen",
     "preferencesDescription": "Steuern Sie Ihre Sprache, Standard-Diagrammverhalten, sichtbare Dashboard-Module und verfolgte Symbole.",
     "trackedSymbols": "Verfolgte Symbole",
@@ -486,6 +488,44 @@
     "fundingTitle": "Bankverbindungs-Bereitschaft",
     "actionModel": "Aktionsmodell",
     "planningFirst": "Planung zuerst"
+  },
+  "lab": {
+    "eyebrow": "Aurox Lab",
+    "title": "Interaktives Lab",
+    "description": "Deterministische, offline-fähige Finanztools — sie laufen vollständig in Ihrem Browser und funktionieren selbst dann, wenn keine Marktdaten verfügbar sind.",
+    "offlineBadge": "Funktioniert offline",
+    "tabs": {
+      "pathExplorer": "Pfad-Explorer",
+      "signalXRay": "Signal-Röntgen",
+      "candlestickAnnotator": "Kerzenchart-Annotator",
+      "volatilityCone": "Volatilitätskegel",
+      "returnDistribution": "Renditeverteilung"
+    },
+    "pathExplorer": {
+      "eyebrow": "Monte Carlo",
+      "title": "Pfad-Explorer",
+      "description": "Simulieren Sie Tausende von seedbasierten Portfoliopfaden aus Ihren eigenen Annahmen und lesen Sie die vollständige Verteilung der Ergebnisse über die Zeit."
+    },
+    "signalXRay": {
+      "eyebrow": "Erklärbarkeit",
+      "title": "Signal-Röntgen",
+      "description": "Sehen Sie genau, wie die deterministische Signal-Engine eine Preisreihe in einen Score verwandelt — zerlegt in Beiträge von gleitendem Durchschnitt, Momentum und Trend."
+    },
+    "candlestickAnnotator": {
+      "eyebrow": "Kursbewegung",
+      "title": "Kerzenchart-Annotator",
+      "description": "Führen Sie die deterministische Kerzenchart-Engine an illustrativen Szenarien aus und sehen Sie die Muster, Unterstützungen/Widerstände, Swing-Punkte und die zeitrahmenübergreifende Tendenz, die sie erkennt — mit der vollständigen Begründung."
+    },
+    "volatilityCone": {
+      "eyebrow": "Risiko",
+      "title": "Volatilitätskegel",
+      "description": "Sehen Sie, wie die annualisierte realisierte Volatilität über rollierende Fenster auf einem seedbasierten synthetischen Pfad verteilt ist, wobei der aktuelle Wert überlagert wird, um zu zeigen, ob er im Vergleich zur eigenen Historie hoch oder niedrig ist."
+    },
+    "returnDistribution": {
+      "eyebrow": "Tail-Risiko",
+      "title": "Renditeverteilung + VaR",
+      "description": "Sehen Sie die Form der Renditen über die Halteperiode und den Value-at-Risk, den sie implizieren — wobei der empirische Rand mit der naiven Normalverteilungsannahme verglichen wird, sodass Fat-Tail- und Schiefe-Risiken explizit werden."
+    }
   },
   "home": {
     "heroEyebrow": "Aurox Intelligence",

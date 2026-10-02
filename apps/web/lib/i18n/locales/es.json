@@ -55,7 +55,8 @@
       "investCrypto": "Panel cripto",
       "investAccounts": "Cuentas",
       "admin": "Administración",
-      "monitoring": "Monitoreo"
+      "monitoring": "Monitoreo",
+      "lab": "Lab"
     },
     "auth": {
       "login": "Iniciar sesión",
@@ -418,6 +419,7 @@
     }
   },
   "account": {
+    "identityCard": { "ariaLabel": "Tarjeta de identidad de Aurox Intelligence", "demoLabel": "Identidad de demostración · no es una tarjeta de pago", "identityNumberLabel": "Número de identidad de Aurox", "accountHolderLabel": "Identidad de la cuenta", "simulationLabel": "Solo simulación", "number": "2468 1357 9024 6801" },
     "preferencesTitle": "Preferencias del espacio de trabajo",
     "preferencesDescription": "Controla tu configuración regional, el comportamiento predeterminado de los gráficos, los módulos visibles del panel y los símbolos rastreados.",
     "trackedSymbols": "Símbolos rastreados",
@@ -486,6 +488,44 @@
     "fundingTitle": "Preparación para la conexión bancaria",
     "actionModel": "Modelo de acción",
     "planningFirst": "Planificación primero"
+  },
+  "lab": {
+    "eyebrow": "Aurox Lab",
+    "title": "Laboratorio interactivo",
+    "description": "Herramientas financieras deterministas y disponibles sin conexión: se ejecutan por completo en tu navegador y funcionan incluso cuando los datos de mercado no están disponibles.",
+    "offlineBadge": "Funciona sin conexión",
+    "tabs": {
+      "pathExplorer": "Explorador de trayectorias",
+      "signalXRay": "Radiografía de señal",
+      "candlestickAnnotator": "Anotador de velas",
+      "volatilityCone": "Cono de volatilidad",
+      "returnDistribution": "Distribución de rendimientos"
+    },
+    "pathExplorer": {
+      "eyebrow": "Montecarlo",
+      "title": "Explorador de trayectorias",
+      "description": "Simula miles de trayectorias de cartera con semilla a partir de tus propias hipótesis y consulta la distribución completa de resultados a lo largo del tiempo."
+    },
+    "signalXRay": {
+      "eyebrow": "Explicabilidad",
+      "title": "Radiografía de señal",
+      "description": "Observa exactamente cómo el motor de señales determinista convierte una serie de precios en una puntuación, descompuesta en las contribuciones de media móvil, momentum y tendencia."
+    },
+    "candlestickAnnotator": {
+      "eyebrow": "Acción del precio",
+      "title": "Anotador de velas",
+      "description": "Ejecuta el motor de velas determinista en escenarios ilustrativos y observa los patrones, soportes/resistencias, puntos de giro y el sesgo multitemporal que detecta, con el razonamiento completo."
+    },
+    "volatilityCone": {
+      "eyebrow": "Riesgo",
+      "title": "Cono de volatilidad",
+      "description": "Observa cómo se distribuye la volatilidad realizada anualizada en ventanas móviles sobre una trayectoria sintética con semilla, con la última lectura superpuesta para mostrar si es alta o baja frente a su propio historial."
+    },
+    "returnDistribution": {
+      "eyebrow": "Riesgo de cola",
+      "title": "Distribución de rendimientos + VaR",
+      "description": "Observa la forma de los rendimientos del periodo de tenencia y el Valor en Riesgo que implican, con la cola empírica comparada con la ingenua hipótesis normal, de modo que el riesgo de colas anchas y asimetría quede explícito."
+    }
   },
   "home": {
     "heroEyebrow": "Aurox Intelligence",
@@ -1146,6 +1186,9 @@
     "historyRange": "Rango histórico",
     "chartAria": "Gráfico de mercado de {{symbol}}",
     "noData": "No hay historial de mercado disponible para esta vista.",
+    "unavailableTitle": "Gráfico temporalmente no disponible",
+    "unavailableBody": "El historial de mercado en vivo no está disponible por un momento; reaparecerá automáticamente en cuanto el flujo de datos se ponga al día.",
+    "unavailableAutoUpdating": "Actualización automática",
     "intradayUnavailable": "Barras intradía no disponibles. Mostrando el historial diario.",
     "dailyFallback": "Usando el historial diario del proveedor.",
     "providerReturnedBars": "El proveedor devolvió {{count}} barras para {{timeframe}}.",

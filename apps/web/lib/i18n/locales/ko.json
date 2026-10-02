@@ -55,7 +55,8 @@
       "investCrypto": "암호화폐 레인",
       "investAccounts": "계정 연결",
       "admin": "관리자",
-      "monitoring": "모니터링"
+      "monitoring": "모니터링",
+      "lab": "랩"
     },
     "auth": {
       "login": "로그인",
@@ -418,6 +419,7 @@
     }
   },
   "account": {
+    "identityCard": { "ariaLabel": "Aurox Intelligence ID 카드", "demoLabel": "데모 ID · 결제 카드 아님", "identityNumberLabel": "Aurox ID 번호", "accountHolderLabel": "계정 ID", "simulationLabel": "시뮬레이션 전용", "number": "2468 1357 9024 6801" },
     "preferencesTitle": "작업공간 환경설정",
     "preferencesDescription": "로케일, 기본 차트 동작, 표시할 대시보드 모듈, 추적 심볼을 관리하세요.",
     "trackedSymbols": "추적 심볼",
@@ -486,6 +488,44 @@
     "fundingTitle": "은행 연결 준비 상태",
     "actionModel": "액션 모델",
     "planningFirst": "계획 우선"
+  },
+  "lab": {
+    "eyebrow": "Aurox Lab",
+    "title": "인터랙티브 랩",
+    "description": "결정론적이며 오프라인에서도 사용할 수 있는 금융 도구입니다. 브라우저 안에서 완전히 실행되며 시장 데이터를 사용할 수 없을 때에도 작동합니다.",
+    "offlineBadge": "오프라인 작동",
+    "tabs": {
+      "pathExplorer": "경로 탐색기",
+      "signalXRay": "시그널 엑스레이",
+      "candlestickAnnotator": "캔들 주석기",
+      "volatilityCone": "변동성 콘",
+      "returnDistribution": "수익률 분포"
+    },
+    "pathExplorer": {
+      "eyebrow": "몬테카를로",
+      "title": "경로 탐색기",
+      "description": "직접 설정한 가정으로 시드가 지정된 수천 개의 포트폴리오 경로를 시뮬레이션하고 시간에 따른 결과의 전체 분포를 확인하세요."
+    },
+    "signalXRay": {
+      "eyebrow": "설명 가능성",
+      "title": "시그널 엑스레이",
+      "description": "결정론적 시그널 엔진이 가격 시계열을 어떻게 점수로 변환하는지 정확히 확인하세요. 이동평균, 모멘텀, 추세 기여도로 분해하여 보여줍니다."
+    },
+    "candlestickAnnotator": {
+      "eyebrow": "가격 흐름",
+      "title": "캔들 주석기",
+      "description": "예시 시나리오에서 결정론적 캔들 엔진을 실행하고 엔진이 감지하는 패턴, 지지/저항, 스윙 지점, 다중 시간대 편향을 전체 근거와 함께 확인하세요."
+    },
+    "volatilityCone": {
+      "eyebrow": "리스크",
+      "title": "변동성 콘",
+      "description": "시드가 지정된 합성 경로에서 롤링 윈도우에 걸쳐 연율화된 실현 변동성이 어떻게 분포하는지 확인하고, 최신 값을 겹쳐 자체 이력과 비교해 높은지 낮은지 보여줍니다."
+    },
+    "returnDistribution": {
+      "eyebrow": "꼬리 위험",
+      "title": "수익률 분포 + VaR",
+      "description": "보유 기간 수익률의 형태와 그것이 의미하는 최대예상손실(VaR)을 확인하세요. 경험적 꼬리를 단순한 정규분포 가정과 비교하여 팻테일과 왜도 위험을 명확히 드러냅니다."
+    }
   },
   "home": {
     "heroEyebrow": "Aurox Intelligence",
@@ -1146,6 +1186,9 @@
     "historyRange": "이력 범위",
     "chartAria": "{{symbol}} 시장 차트",
     "noData": "이 보기에 사용 가능한 시장 이력이 없습니다.",
+    "unavailableTitle": "차트를 일시적으로 사용할 수 없습니다",
+    "unavailableBody": "실시간 시장 이력을 잠시 사용할 수 없습니다. 데이터 피드가 따라잡는 대로 자동으로 다시 표시됩니다.",
+    "unavailableAutoUpdating": "자동 업데이트",
     "intradayUnavailable": "장중 바를 사용할 수 없습니다. 일간 이력을 표시합니다.",
     "dailyFallback": "일간 제공자 이력을 사용합니다.",
     "providerReturnedBars": "제공자가 {{timeframe}}에 대해 {{count}}개의 바를 반환했습니다.",
