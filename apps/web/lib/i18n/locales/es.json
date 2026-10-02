@@ -419,7 +419,7 @@
     }
   },
   "account": {
-    "identityCard": { "ariaLabel": "Tarjeta de identidad de Aurox Intelligence", "demoLabel": "Identidad de demostración · no es una tarjeta de pago", "identityNumberLabel": "Número de identidad de Aurox", "accountHolderLabel": "Identidad de la cuenta", "simulationLabel": "Solo simulación", "number": "2468 1357 9024 6801" },
+    "identityCard": { "ariaLabel": "Tarjeta de identidad de Aurox Intelligence", "demoLabel": "Identidad de demostración · no es una tarjeta de pago", "identityNumberLabel": "Número de identidad de Aurox", "accountHolderLabel": "Identidad de la cuenta", "simulationLabel": "Solo simulación", "number": "2468 1357 9024 6801", "back": { "heading": "Registro de identidad", "roleLabel": "Rol de acceso", "memberSinceLabel": "Miembro desde", "referenceLabel": "Referencia", "statement": "Identidad de simulación. No es un instrumento de pago ni está vinculada a ningún banco o red de tarjetas.", "flipToBackHint": "Mostrar detalles de identidad", "flipToFrontHint": "Mostrar el anverso de la tarjeta" } },
     "preferencesTitle": "Preferencias del espacio de trabajo",
     "preferencesDescription": "Controla tu configuración regional, el comportamiento predeterminado de los gráficos, los módulos visibles del panel y los símbolos rastreados.",
     "trackedSymbols": "Símbolos rastreados",

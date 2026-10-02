@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 type Labels = {
   ariaLabel: string;
@@ -10,14 +10,40 @@ type Labels = {
   accountHolderLabel: string;
   simulationLabel: string;
   number: string;
+  back?: {
+    heading?: string;
+    roleLabel?: string;
+    memberSinceLabel?: string;
+    referenceLabel?: string;
+    statement?: string;
+    flipToBackHint?: string;
+    flipToFrontHint?: string;
+  };
+};
+
+/** Pre-formatted, display-ready back-of-card details sourced from account state. */
+type Details = {
+  role: string;
+  memberSince: string;
 };
 
 type Props = {
   userName: string;
   labels: Labels;
+  details?: Details;
 };
 
 const DEFAULT_NUMBER = '2468 1357 9024 6801';
+
+const BACK_DEFAULTS = {
+  heading: 'Identity record',
+  roleLabel: 'Access role',
+  memberSinceLabel: 'Member since',
+  referenceLabel: 'Reference',
+  statement: 'Simulation identity. Not a payment instrument and not linked to any bank or card network.',
+  flipToBackHint: 'Show identity details',
+  flipToFrontHint: 'Show card front',
+} as const;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -25,11 +51,27 @@ function clamp(value: number, min: number, max: number) {
 
 /**
  * Aurox identity visualization, deliberately not a payment instrument.
- * The server render is always neutral; motion is a client-only enhancement.
+ *
+ * One physical two-sided object: a perspective container → a `preserve-3d`
+ * inner that rotates 180° → two `backface-visibility: hidden` faces. The server
+ * render is neutral; pointer tilt and the flip transition are client-only
+ * enhancements. The control is a real button so Enter/Space/tap all flip it, and
+ * `prefers-reduced-motion` keeps the front/back swap while dropping the spin.
  */
-export function AuroxIdentityCard({ userName, labels }: Props) {
-  const cardRef = useRef<HTMLElement | null>(null);
+export function AuroxIdentityCard({ userName, labels, details }: Props) {
+  const cardRef = useRef<HTMLButtonElement | null>(null);
+  const [flipped, setFlipped] = useState(false);
 
+  const toggleFlip = useCallback(() => setFlipped((value) => !value), []);
+
+  const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === 'Escape') {
+      setFlipped(false);
+    }
+  }, []);
+
+  // Bounded pointer tilt. Only mutates CSS custom properties / transform — never
+  // layout — and never triggers a flip (flip is an explicit click/key action).
   useEffect(() => {
     const card = cardRef.current;
     if (!card || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -106,40 +148,93 @@ export function AuroxIdentityCard({ userName, labels }: Props) {
   }, []);
 
   const number = labels.number || DEFAULT_NUMBER;
+  const back = { ...BACK_DEFAULTS, ...(labels.back ?? {}) };
+  const flipHint = flipped ? back.flipToFrontHint : back.flipToBackHint;
 
   return (
-    <section
+    <button
       ref={cardRef}
+      type="button"
       className="aurox-identity-card"
-      aria-label={labels.ariaLabel}
+      data-flipped={flipped ? 'true' : 'false'}
+      aria-pressed={flipped}
+      aria-label={`${labels.ariaLabel}. ${flipHint}.`}
+      onClick={toggleFlip}
+      onKeyDown={handleKeyDown}
     >
-      <div className="aurox-identity-card__material" aria-hidden="true" />
-      <div className="aurox-identity-card__grid" aria-hidden="true" />
-      <div className="aurox-identity-card__specular" aria-hidden="true" />
-      <div className="aurox-identity-card__content">
-        <div className="aurox-identity-card__topline">
-          <div className="aurox-identity-card__brand">
-            <Image src="/aurox.svg" alt="" width={34} height={34} className="aurox-identity-card__mark" />
-            <span>AUROX</span>
-          </div>
-          <span className="aurox-identity-card__demo">{labels.demoLabel}</span>
-        </div>
+      <span className="aurox-identity-card__inner">
+        {/* FRONT — preserved identity surface. */}
+        <span className="aurox-identity-card__face aurox-identity-card__face--front" aria-hidden={flipped}>
+          <span className="aurox-identity-card__material" />
+          <span className="aurox-identity-card__grid" />
+          <span className="aurox-identity-card__specular" />
+          <span className="aurox-identity-card__content">
+            <span className="aurox-identity-card__topline">
+              <span className="aurox-identity-card__brand">
+                <Image src="/aurox.svg" alt="" width={34} height={34} className="aurox-identity-card__mark" />
+                <span>AUROX</span>
+              </span>
+              <span className="aurox-identity-card__demo">{labels.demoLabel}</span>
+            </span>
 
-        <div className="aurox-identity-card__center">
-          <span className="aurox-identity-card__label">{labels.identityNumberLabel}</span>
-          <span className="aurox-identity-card__number" aria-label={`${labels.identityNumberLabel}: ${number}`}>
-            {number}
+            <span className="aurox-identity-card__center">
+              <span className="aurox-identity-card__label">{labels.identityNumberLabel}</span>
+              <span className="aurox-identity-card__number" aria-label={`${labels.identityNumberLabel}: ${number}`}>
+                {number}
+              </span>
+            </span>
+
+            <span className="aurox-identity-card__bottomline">
+              <span className="aurox-identity-card__field">
+                <span className="aurox-identity-card__label">{labels.accountHolderLabel}</span>
+                <strong>{userName}</strong>
+              </span>
+              <span className="aurox-identity-card__status">{labels.simulationLabel}</span>
+            </span>
           </span>
-        </div>
+        </span>
 
-        <div className="aurox-identity-card__bottomline">
-          <div>
-            <span className="aurox-identity-card__label">{labels.accountHolderLabel}</span>
-            <strong>{userName}</strong>
-          </div>
-          <span className="aurox-identity-card__status">{labels.simulationLabel}</span>
-        </div>
-      </div>
-    </section>
+        {/* BACK — same object, reverse side. Real, display-safe account metadata. */}
+        <span className="aurox-identity-card__face aurox-identity-card__face--back" aria-hidden={!flipped}>
+          <span className="aurox-identity-card__material aurox-identity-card__material--back" />
+          <span className="aurox-identity-card__magstripe" />
+          <span className="aurox-identity-card__content aurox-identity-card__content--back">
+            <span className="aurox-identity-card__topline">
+              <span className="aurox-identity-card__brand aurox-identity-card__brand--back">
+                <Image src="/aurox.svg" alt="" width={26} height={26} className="aurox-identity-card__mark" />
+                <span>{back.heading}</span>
+              </span>
+              <span className="aurox-identity-card__demo">{labels.simulationLabel}</span>
+            </span>
+
+            <dl className="aurox-identity-card__details">
+              <div>
+                <dt>{labels.accountHolderLabel}</dt>
+                <dd>{userName}</dd>
+              </div>
+              {details ? (
+                <>
+                  <div>
+                    <dt>{back.roleLabel}</dt>
+                    <dd>{details.role}</dd>
+                  </div>
+                  <div>
+                    <dt>{back.memberSinceLabel}</dt>
+                    <dd>{details.memberSince}</dd>
+                  </div>
+                </>
+              ) : null}
+              <div>
+                <dt>{back.referenceLabel}</dt>
+                <dd className="aurox-identity-card__ref">{number}</dd>
+              </div>
+            </dl>
+
+            <span className="aurox-identity-card__signature" aria-hidden="true" />
+            <p className="aurox-identity-card__statement">{back.statement}</p>
+          </span>
+        </span>
+      </span>
+    </button>
   );
 }

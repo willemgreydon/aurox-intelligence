@@ -419,7 +419,7 @@
     }
   },
   "account": {
-    "identityCard": { "ariaLabel": "بطاقة هوية Aurox Intelligence", "demoLabel": "هوية تجريبية · ليست بطاقة دفع", "identityNumberLabel": "رقم هوية Aurox", "accountHolderLabel": "هوية الحساب", "simulationLabel": "للمحاكاة فقط", "number": "2468 1357 9024 6801" },
+    "identityCard": { "ariaLabel": "بطاقة هوية Aurox Intelligence", "demoLabel": "هوية تجريبية · ليست بطاقة دفع", "identityNumberLabel": "رقم هوية Aurox", "accountHolderLabel": "هوية الحساب", "simulationLabel": "للمحاكاة فقط", "number": "2468 1357 9024 6801", "back": { "heading": "سجل الهوية", "roleLabel": "دور الوصول", "memberSinceLabel": "عضو منذ", "referenceLabel": "المرجع", "statement": "هوية محاكاة. ليست أداة دفع وغير مرتبطة بأي بنك أو شبكة بطاقات.", "flipToBackHint": "عرض تفاصيل الهوية", "flipToFrontHint": "عرض واجهة البطاقة" } },
     "preferencesTitle": "تفضيلات مساحة العمل",
     "preferencesDescription": "تحكّم في لغتك المحلية وسلوك الرسم البياني الافتراضي ووحدات لوحة التحكم المرئية والرموز المتتبَّعة.",
     "trackedSymbols": "الرموز المتتبَّعة",

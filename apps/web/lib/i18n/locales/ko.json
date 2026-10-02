@@ -419,7 +419,7 @@
     }
   },
   "account": {
-    "identityCard": { "ariaLabel": "Aurox Intelligence ID 카드", "demoLabel": "데모 ID · 결제 카드 아님", "identityNumberLabel": "Aurox ID 번호", "accountHolderLabel": "계정 ID", "simulationLabel": "시뮬레이션 전용", "number": "2468 1357 9024 6801" },
+    "identityCard": { "ariaLabel": "Aurox Intelligence ID 카드", "demoLabel": "데모 ID · 결제 카드 아님", "identityNumberLabel": "Aurox ID 번호", "accountHolderLabel": "계정 ID", "simulationLabel": "시뮬레이션 전용", "number": "2468 1357 9024 6801", "back": { "heading": "ID 기록", "roleLabel": "액세스 역할", "memberSinceLabel": "가입일", "referenceLabel": "참조 번호", "statement": "시뮬레이션 ID입니다. 결제 수단이 아니며 어떤 은행이나 카드 네트워크와도 연결되지 않습니다.", "flipToBackHint": "ID 세부정보 표시", "flipToFrontHint": "카드 앞면 표시" } },
     "preferencesTitle": "작업공간 환경설정",
     "preferencesDescription": "로케일, 기본 차트 동작, 표시할 대시보드 모듈, 추적 심볼을 관리하세요.",
     "trackedSymbols": "추적 심볼",

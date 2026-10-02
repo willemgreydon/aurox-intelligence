@@ -20,7 +20,17 @@ type Props = {
     accountHolderLabel: string;
     simulationLabel: string;
     number: string;
+    back?: {
+      heading?: string;
+      roleLabel?: string;
+      memberSinceLabel?: string;
+      referenceLabel?: string;
+      statement?: string;
+      flipToBackHint?: string;
+      flipToFrontHint?: string;
+    };
   };
+  identityDetails?: { role: string; memberSince: string };
 };
 
 /**
@@ -29,7 +39,7 @@ type Props = {
  * moneyflow, activity, insights, recent actions. All values are pre-formatted
  * read-model strings; positive/negative carries a text sign, not just color.
  */
-export function AccountIntelligenceCockpit({ vm, membershipDisclosure, identityCardLabels }: Props) {
+export function AccountIntelligenceCockpit({ vm, membershipDisclosure, identityCardLabels, identityDetails }: Props) {
   return (
     <div className="account-cockpit">
       <Section className="account-cockpit__opening">
@@ -37,6 +47,7 @@ export function AccountIntelligenceCockpit({ vm, membershipDisclosure, identityC
           <AuroxIdentityCard
             userName={vm.identity.userName}
             labels={identityCardLabels}
+            details={identityDetails}
           />
           <div className="account-hero__head">
             <div>

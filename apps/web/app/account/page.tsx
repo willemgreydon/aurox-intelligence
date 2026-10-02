@@ -53,6 +53,7 @@ export default async function AccountOverviewPage() {
       vm={vm}
       membershipDisclosure={membershipDisclosure}
       identityCardLabels={messages.account.identityCard}
+      identityDetails={{ role: overview.user.role, memberSince: overview.memberSinceLabel }}
     />
   );
 }

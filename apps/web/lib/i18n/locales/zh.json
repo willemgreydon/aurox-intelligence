@@ -419,7 +419,7 @@
     }
   },
   "account": {
-    "identityCard": { "ariaLabel": "Aurox Intelligence 身份卡", "demoLabel": "演示身份 · 非支付卡", "identityNumberLabel": "Aurox 身份编号", "accountHolderLabel": "账户身份", "simulationLabel": "仅限模拟", "number": "2468 1357 9024 6801" },
+    "identityCard": { "ariaLabel": "Aurox Intelligence 身份卡", "demoLabel": "演示身份 · 非支付卡", "identityNumberLabel": "Aurox 身份编号", "accountHolderLabel": "账户身份", "simulationLabel": "仅限模拟", "number": "2468 1357 9024 6801", "back": { "heading": "身份记录", "roleLabel": "访问角色", "memberSinceLabel": "注册时间", "referenceLabel": "参考编号", "statement": "模拟身份。非支付工具，且不与任何银行或卡组织关联。", "flipToBackHint": "显示身份详情", "flipToFrontHint": "显示卡片正面" } },
     "preferencesTitle": "工作区偏好",
     "preferencesDescription": "管理您的区域设置、默认图表行为、可见的仪表盘模块以及跟踪标的。",
     "trackedSymbols": "跟踪标的",

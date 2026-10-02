@@ -419,7 +419,7 @@
     }
   },
   "account": {
-    "identityCard": { "ariaLabel": "Aurox Intelligence ID カード", "demoLabel": "デモ ID · 決済カードではありません", "identityNumberLabel": "Aurox ID 番号", "accountHolderLabel": "アカウント ID", "simulationLabel": "シミュレーション専用", "number": "2468 1357 9024 6801" },
+    "identityCard": { "ariaLabel": "Aurox Intelligence ID カード", "demoLabel": "デモ ID · 決済カードではありません", "identityNumberLabel": "Aurox ID 番号", "accountHolderLabel": "アカウント ID", "simulationLabel": "シミュレーション専用", "number": "2468 1357 9024 6801", "back": { "heading": "ID 記録", "roleLabel": "アクセスロール", "memberSinceLabel": "登録日", "referenceLabel": "参照番号", "statement": "シミュレーション ID です。決済手段ではなく、銀行やカードネットワークとは一切連携していません。", "flipToBackHint": "ID 詳細を表示", "flipToFrontHint": "カードの表面を表示" } },
     "preferencesTitle": "ワークスペース設定",
     "preferencesDescription": "ロケール、デフォルトのチャート動作、表示するダッシュボードモジュール、追跡シンボルを管理します。",
     "trackedSymbols": "追跡シンボル",

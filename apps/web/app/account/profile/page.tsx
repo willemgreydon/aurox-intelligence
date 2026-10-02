@@ -42,7 +42,7 @@ export default async function AccountProfilePage() {
           title="Identity & simulation profile"
           description="Your account identity and quick links. Simulation only — not a real brokerage account."
         />
-        <dl className="account-stats">
+        <dl className="account-stats account-stats--duo">
           <div><dt>Display name</dt><dd>{auth.user.name}</dd></div>
           <div><dt>Email</dt><dd>{auth.user.email}</dd></div>
           <div><dt>Account role</dt><dd>{auth.user.role}</dd></div>

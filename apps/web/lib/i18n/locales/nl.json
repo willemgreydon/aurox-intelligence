@@ -419,7 +419,7 @@
     }
   },
   "account": {
-    "identityCard": { "ariaLabel": "Aurox Intelligence-identiteitskaart", "demoLabel": "Demo-identiteit · geen betaalkaart", "identityNumberLabel": "Aurox-identiteitsnummer", "accountHolderLabel": "Accountidentiteit", "simulationLabel": "Alleen simulatie", "number": "2468 1357 9024 6801" },
+    "identityCard": { "ariaLabel": "Aurox Intelligence-identiteitskaart", "demoLabel": "Demo-identiteit · geen betaalkaart", "identityNumberLabel": "Aurox-identiteitsnummer", "accountHolderLabel": "Accountidentiteit", "simulationLabel": "Alleen simulatie", "number": "2468 1357 9024 6801", "back": { "heading": "Identiteitsrecord", "roleLabel": "Toegangsrol", "memberSinceLabel": "Lid sinds", "referenceLabel": "Referentie", "statement": "Simulatie-identiteit. Geen betaalmiddel en niet gekoppeld aan een bank of kaartnetwerk.", "flipToBackHint": "Identiteitsgegevens tonen", "flipToFrontHint": "Voorkant van de kaart tonen" } },
     "preferencesTitle": "Werkruimtevoorkeuren",
     "preferencesDescription": "Beheer uw landinstelling, standaard grafiekgedrag, zichtbare dashboardmodules en gevolgde symbolen.",
     "trackedSymbols": "Gevolgde symbolen",

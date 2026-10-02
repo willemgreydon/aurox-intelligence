@@ -111,6 +111,24 @@ describe('components are wired to the layout-polish primitives', () => {
     expect(cockpit).toContain('account-metric-grid');
   });
 
+  it('identity card is an accessible two-sided flip control with a back face', () => {
+    const card = read('../components/account/aurox-identity-card.tsx');
+    expect(card).toContain('aria-pressed');
+    expect(card).toContain("data-flipped");
+    expect(card).toContain('aurox-identity-card__face--front');
+    expect(card).toContain('aurox-identity-card__face--back');
+    // Real, display-safe account metadata on the back (no fabricated card data).
+    expect(card).toContain('aurox-identity-card__details');
+  });
+
+  it('account nav is a collapsible control with an aria-expanded trigger', () => {
+    const nav = read('../components/account/account-nav.tsx');
+    expect(nav).toContain('account-nav__trigger');
+    expect(nav).toContain('aria-expanded');
+    expect(nav).toContain('aria-controls');
+    expect(nav).toContain('aria-current');
+  });
+
   it('keeps the account cockpit on the canonical bounded content shell', () => {
     expect(css).not.toContain('.account-cockpit .shell-container');
     expect(css).toContain('--content-standard');
@@ -121,6 +139,30 @@ describe('components are wired to the layout-polish primitives', () => {
     expect(css).toContain('aspect-ratio: 85.6 / 53.98');
     expect(css).toContain('transform-style: preserve-3d');
     expect(css).toContain('@media (prefers-reduced-motion: reduce)');
+  });
+
+  it('defines the identity card as a two-sided flippable object', () => {
+    expect(css).toContain('.aurox-identity-card__inner');
+    expect(css).toContain('.aurox-identity-card__face--front');
+    expect(css).toContain('.aurox-identity-card__face--back');
+    expect(css).toContain('backface-visibility: hidden');
+    // Flip is driven by the data-flipped state attribute set on the button.
+    expect(css).toContain(".aurox-identity-card[data-flipped='true']");
+    // The back face is pre-rotated so it lands upright after the 180deg turn.
+    expect(css).toMatch(/\.aurox-identity-card__face--back\s*\{[^}]*rotateY\(180deg\)/s);
+  });
+
+  it('defines the collapsible mobile account navigation', () => {
+    expect(css).toContain('.account-nav__trigger');
+    expect(css).toContain('.account-nav__list');
+    expect(css).toContain('.account-nav--open .account-nav__list');
+    // Trigger is hidden on desktop (base rule) and the list is a visible grid.
+    expect(css).toMatch(/\.account-nav__trigger\s*\{\s*display:\s*none/s);
+  });
+
+  it('defines the scoped two-column account/activity grids', () => {
+    expect(css).toMatch(/\.account-stats--duo\s*\{[^}]*repeat\(2, minmax\(0, 1fr\)\)/s);
+    expect(css).toMatch(/\.analytics-strip--duo\s*\{[^}]*repeat\(2, minmax\(0, 1fr\)\)/s);
   });
 
   it('market-graph timeframe count renders as a labelled numeric bubble', () => {

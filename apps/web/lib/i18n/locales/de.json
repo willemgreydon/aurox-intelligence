@@ -419,7 +419,7 @@
     }
   },
   "account": {
-    "identityCard": { "ariaLabel": "Aurox-Intelligence-Identitätskarte", "demoLabel": "Demo-Identität · keine Zahlungskarte", "identityNumberLabel": "Aurox-Identitätsnummer", "accountHolderLabel": "Account-Identität", "simulationLabel": "Nur Simulation", "number": "2468 1357 9024 6801" },
+    "identityCard": { "ariaLabel": "Aurox-Intelligence-Identitätskarte", "demoLabel": "Demo-Identität · keine Zahlungskarte", "identityNumberLabel": "Aurox-Identitätsnummer", "accountHolderLabel": "Account-Identität", "simulationLabel": "Nur Simulation", "number": "2468 1357 9024 6801", "back": { "heading": "Identitätsnachweis", "roleLabel": "Zugriffsrolle", "memberSinceLabel": "Mitglied seit", "referenceLabel": "Referenz", "statement": "Simulationsidentität. Kein Zahlungsmittel und mit keiner Bank oder keinem Kartennetzwerk verknüpft.", "flipToBackHint": "Identitätsdetails anzeigen", "flipToFrontHint": "Kartenvorderseite anzeigen" } },
     "preferencesTitle": "Workstation-Einstellungen",
     "preferencesDescription": "Steuern Sie Ihre Sprache, Standard-Diagrammverhalten, sichtbare Dashboard-Module und verfolgte Symbole.",
     "trackedSymbols": "Verfolgte Symbole",

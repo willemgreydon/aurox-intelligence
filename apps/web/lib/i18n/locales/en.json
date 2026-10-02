@@ -500,7 +500,7 @@
     }
   },
   "account": {
-    "identityCard": { "ariaLabel": "Aurox Intelligence identity card", "demoLabel": "Demo identity · not a payment card", "identityNumberLabel": "Aurox identity number", "accountHolderLabel": "Account identity", "simulationLabel": "Simulation only", "number": "2468 1357 9024 6801" },
+    "identityCard": { "ariaLabel": "Aurox Intelligence identity card", "demoLabel": "Demo identity · not a payment card", "identityNumberLabel": "Aurox identity number", "accountHolderLabel": "Account identity", "simulationLabel": "Simulation only", "number": "2468 1357 9024 6801", "back": { "heading": "Identity record", "roleLabel": "Access role", "memberSinceLabel": "Member since", "referenceLabel": "Reference", "statement": "Simulation identity. Not a payment instrument and not linked to any bank or card network.", "flipToBackHint": "Show identity details", "flipToFrontHint": "Show card front" } },
     "preferencesTitle": "Workspace preferences",
     "preferencesDescription": "Control your locale, default chart behavior, visible dashboard modules, and tracked symbols.",
     "trackedSymbols": "Tracked symbols",

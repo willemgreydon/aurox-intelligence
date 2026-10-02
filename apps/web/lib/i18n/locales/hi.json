@@ -419,7 +419,7 @@
     }
   },
   "account": {
-    "identityCard": { "ariaLabel": "Aurox Intelligence पहचान कार्ड", "demoLabel": "डेमो पहचान · भुगतान कार्ड नहीं", "identityNumberLabel": "Aurox पहचान संख्या", "accountHolderLabel": "खाता पहचान", "simulationLabel": "केवल सिमुलेशन", "number": "2468 1357 9024 6801" },
+    "identityCard": { "ariaLabel": "Aurox Intelligence पहचान कार्ड", "demoLabel": "डेमो पहचान · भुगतान कार्ड नहीं", "identityNumberLabel": "Aurox पहचान संख्या", "accountHolderLabel": "खाता पहचान", "simulationLabel": "केवल सिमुलेशन", "number": "2468 1357 9024 6801", "back": { "heading": "पहचान रिकॉर्ड", "roleLabel": "एक्सेस भूमिका", "memberSinceLabel": "सदस्य बने", "referenceLabel": "संदर्भ", "statement": "सिमुलेशन पहचान। यह भुगतान साधन नहीं है और किसी बैंक या कार्ड नेटवर्क से जुड़ा नहीं है।", "flipToBackHint": "पहचान विवरण दिखाएँ", "flipToFrontHint": "कार्ड का अगला भाग दिखाएँ" } },
     "preferencesTitle": "वर्कस्पेस प्राथमिकताएँ",
     "preferencesDescription": "अपने लोकेल, डिफ़ॉल्ट चार्ट व्यवहार, दृश्यमान डैशबोर्ड मॉड्यूल और ट्रैक किए गए सिंबल को नियंत्रित करें।",
     "trackedSymbols": "ट्रैक किए गए सिंबल",

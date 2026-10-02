@@ -70,7 +70,7 @@ export default async function AccountActivityPage() {
 
       {/* KPI strip */}
       <Section className="dashboard-section dashboard-section--compact">
-        <div className="analytics-strip">
+        <div className="analytics-strip analytics-strip--duo">
           <CompactStatCard
             label="Portfolio value"
             value={formatUsdPrice(overview.summary.portfolioValue, locale, messages.common.unavailable)}
