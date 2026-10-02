@@ -1,7 +1,7 @@
 import { Section } from '../../components/ui/section';
 import { WorkstationPageHeader } from '../../components/asset/workstation-page-header';
 import { getNewsStreamData } from '../../server/services/news-service';
-import { listNewsIntelligenceSnapshots } from '../../server/services/news-intelligence-service';
+import { listPublicNewsIntelligenceSnapshots } from '../../server/services/news-intelligence-service';
 import { getRequestLocale } from '../../server/i18n/locale';
 import { getMessages } from '../../lib/i18n/messages';
 import { formatDateTimeLabel } from '../../lib/formatters';
@@ -9,7 +9,7 @@ import { decodeHtmlEntities } from '../../lib/text/decode-html-entities';
 import { withDbReadFallback } from '../../server/lib/db-runtime';
 import type { NewsStreamResponse } from '@repo/api-contracts';
 
-type NewsSnapshotRow = Awaited<ReturnType<typeof listNewsIntelligenceSnapshots>>[number];
+type NewsSnapshotRow = Awaited<ReturnType<typeof listPublicNewsIntelligenceSnapshots>>[number];
 
 export const dynamic = 'force-dynamic';
 
@@ -61,7 +61,7 @@ export default async function NewsPage() {
   const [newsResult, snapshotsResult, locale] = await Promise.all([
     withDbReadFallback('news:stream', EMPTY_NEWS, () => getNewsStreamData()),
     withDbReadFallback<NewsSnapshotRow[]>('news:snapshots', [], () =>
-      listNewsIntelligenceSnapshots({ limit: 80 }),
+      listPublicNewsIntelligenceSnapshots(80),
     ),
     getRequestLocale(),
   ]);

@@ -10,6 +10,7 @@ import {
 } from '@repo/db';
 import type { NewsArticleNormalized, NewsIntelligenceSnapshot, NewsItem } from '@repo/api-contracts';
 import { buildContentHash, extractNewsIntelligenceSnapshot } from '@repo/ai-market-intelligence';
+import { unstable_cache } from 'next/cache';
 import { getNewsReadModel } from '../queries/news-query';
 
 type AssetClass = 'stock' | 'etf' | 'crypto' | 'macro' | 'other';
@@ -163,6 +164,28 @@ export async function ingestNewsIntelligenceSnapshots(input?: { items?: NewsItem
 
 export async function listNewsIntelligenceSnapshots(filters: Parameters<typeof listNewsSnapshots>[0] = {}) {
   return listNewsSnapshots(filters);
+}
+
+/**
+ * Cross-request Data Cache for the PUBLIC news-intelligence snapshot list (no
+ * symbol / user / workspace scope — identical for every visitor). Snapshots only
+ * change when the daily 06:00 UTC news cron ingests, so a short TTL is purely to
+ * collapse the per-request re-reads of this 34-column / JSON-heavy join on the
+ * hot `/news` route (every render under the cookies()-forced dynamic root layout).
+ *
+ * Keyed by `limit` only (the sole public input). unstable_cache works under
+ * dynamic rendering, which route-level revalidate cannot — mirrors the existing
+ * news-service / market-ticker / stocks caches. User-scoped reads (per-symbol,
+ * per-asset) deliberately bypass this and keep using listNewsSnapshots directly.
+ */
+const getPublicNewsSnapshotsCached = unstable_cache(
+  async (limit: number) => listNewsSnapshots({ limit }),
+  ['news-intelligence-snapshots:public'],
+  { revalidate: 300, tags: ['news-intelligence-snapshots'] },
+);
+
+export async function listPublicNewsIntelligenceSnapshots(limit = 80) {
+  return getPublicNewsSnapshotsCached(limit);
 }
 
 export async function getSnapshotsForAsset(symbol: string) {
