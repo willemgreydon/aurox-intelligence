@@ -25,15 +25,14 @@ describe('formatUsdPrice', () => {
     expect(formatUsdPrice(null, 'de', '-')).toBe('-');
   });
 
-  it('renders a genuine zero as currency in the active locale', () => {
+  it('renders a genuine zero as USD currency with a stable USD presentation', () => {
     expect(formatUsdPrice(0, 'en', '-')).toBe('$0.00');
-    // German locale renders zero as "0,00 $" — the exact string users reported.
-    expect(formatUsdPrice(0, 'de', '-')).toBe('0,00 $');
+    expect(formatUsdPrice(0, 'de', '-')).toBe('$0.00');
   });
 
   it('formats real values per locale', () => {
     expect(formatUsdPrice(1234.5, 'en', '-')).toBe('$1,234.50');
-    expect(formatUsdPrice(1234.5, 'de', '-')).toBe('1.234,50 $');
+    expect(formatUsdPrice(1234.5, 'de', '-')).toBe('$1,234.50');
   });
 });
 

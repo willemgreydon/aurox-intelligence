@@ -72,7 +72,7 @@ describe('POST /api/auth/register', () => {
 
   it('returns 409 when email is already in use', async () => {
     const { EmailAlreadyInUseError } = await import('@repo/db');
-    mockRegisterWithEmailPassword.mockRejectedValueOnce(new EmailAlreadyInUseError('Email in use'));
+    mockRegisterWithEmailPassword.mockRejectedValueOnce(new EmailAlreadyInUseError());
 
     const { POST } = await import('./route');
     const response = await POST(new Request('http://localhost/api/auth/register', {

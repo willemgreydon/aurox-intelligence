@@ -37,13 +37,13 @@ export function AuroxIdentityCard({ userName, labels }: Props) {
     }
 
     const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
-    const coarsePointer = window.matchMedia('(pointer: coarse)');
     let frame = 0;
     let active = false;
     let targetX = 0;
     let targetY = 0;
     let currentX = 0;
     let currentY = 0;
+    let bounds: DOMRect | null = null;
 
     const render = () => {
       currentX += (targetX - currentX) * 0.12;
@@ -69,48 +69,38 @@ export function AuroxIdentityCard({ userName, labels }: Props) {
       active = false;
       targetX = 0;
       targetY = 0;
+      bounds = null;
+      card.style.setProperty('--card-pointer-x', '50%');
+      card.style.setProperty('--card-pointer-y', '50%');
       if (!frame) frame = window.requestAnimationFrame(render);
     };
 
+    const handlePointerEnter = () => {
+      bounds = card.getBoundingClientRect();
+      wake();
+    };
+
     const handlePointerMove = (event: PointerEvent) => {
-      const bounds = card.getBoundingClientRect();
+      if (!bounds) bounds = card.getBoundingClientRect();
       const x = (event.clientX - bounds.left) / bounds.width - 0.5;
       const y = (event.clientY - bounds.top) / bounds.height - 0.5;
-      targetX = clamp(x * 8, -4, 4);
-      targetY = clamp(y * -8, -4, 4);
+      targetX = clamp(x * 6, -3, 3);
+      targetY = clamp(y * -6, -3, 3);
       card.style.setProperty('--card-pointer-x', `${((x + 0.5) * 100).toFixed(2)}%`);
       card.style.setProperty('--card-pointer-y', `${((y + 0.5) * 100).toFixed(2)}%`);
       wake();
     };
 
-    const handleOrientation = (event: DeviceOrientationEvent) => {
-      if (event.gamma == null || event.beta == null) return;
-      targetX = clamp(event.gamma * 0.12, -3, 3);
-      targetY = clamp((event.beta - 45) * -0.08, -3, 3);
-      wake();
-    };
-
     if (finePointer.matches) {
       card.addEventListener('pointermove', handlePointerMove);
-      card.addEventListener('pointerenter', wake);
+      card.addEventListener('pointerenter', handlePointerEnter);
       card.addEventListener('pointerleave', rest);
-    } else if (coarsePointer.matches && typeof DeviceOrientationEvent !== 'undefined') {
-      // Some browsers expose orientation without a permission prompt. On iOS,
-      // requestPermission is intentionally not called automatically; the card
-      // remains complete and static until a future explicit opt-in exists.
-      const orientationApi = DeviceOrientationEvent as typeof DeviceOrientationEvent & {
-        requestPermission?: () => Promise<string>;
-      };
-      if (!orientationApi.requestPermission) {
-        window.addEventListener('deviceorientation', handleOrientation, { passive: true });
-      }
     }
 
     return () => {
       card.removeEventListener('pointermove', handlePointerMove);
-      card.removeEventListener('pointerenter', wake);
+      card.removeEventListener('pointerenter', handlePointerEnter);
       card.removeEventListener('pointerleave', rest);
-      window.removeEventListener('deviceorientation', handleOrientation);
       if (frame) window.cancelAnimationFrame(frame);
     };
   }, []);

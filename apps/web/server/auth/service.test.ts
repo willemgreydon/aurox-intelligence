@@ -8,6 +8,7 @@ const dbMocks = vi.hoisted(() => ({
   createSession: vi.fn(),
   createUser: vi.fn(),
   createVerificationToken: vi.fn(),
+  ensureSimulationAccountForUser: vi.fn(async () => undefined),
   findUserByEmail: vi.fn(),
   recordUserSignIn: vi.fn(),
   resetPasswordFromToken: vi.fn(),
@@ -42,6 +43,7 @@ const baseUser: AccountUser & { passwordHash?: string | null; status?: 'active' 
 describe('auth service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    dbMocks.ensureSimulationAccountForUser.mockResolvedValue(undefined);
     process.env.AUTH_SECRET = 'test-auth-secret-with-at-least-32-characters';
     process.env.AUTH_SESSION_DAYS = '30';
   });

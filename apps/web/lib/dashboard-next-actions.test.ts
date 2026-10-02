@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { computeNextBestActions, type NextActionInput } from './dashboard-next-actions';
+import { getMessages } from './i18n/messages';
+
+const messages = getMessages('en');
 
 const base: NextActionInput = {
   hasTrades: true,
@@ -15,7 +18,7 @@ const base: NextActionInput = {
 
 describe('computeNextBestActions', () => {
   it('leads with "first paper trade" for an empty account', () => {
-    const actions = computeNextBestActions({ ...base, hasTrades: false, totalTrades: 0, journalCoverageRatio: null, openPositions: 0 });
+    const actions = computeNextBestActions({ ...base, hasTrades: false, totalTrades: 0, journalCoverageRatio: null, openPositions: 0 }, messages);
     expect(actions[0]?.id).toBe('first-trade');
     expect(actions[0]?.tone).toBe('primary');
   });
@@ -25,7 +28,7 @@ describe('computeNextBestActions', () => {
       ...base,
       staleData: true,
       concentrationLevel: 'high',
-    });
+    }, messages);
     const ids = actions.map((a) => a.id);
     expect(ids.indexOf('stale-data')).toBeLessThan(ids.indexOf('concentration'));
     const conc = actions.find((a) => a.id === 'concentration');
@@ -33,33 +36,33 @@ describe('computeNextBestActions', () => {
   });
 
   it('flags low journal coverage only with enough trades', () => {
-    const low = computeNextBestActions({ ...base, journalCoverageRatio: 0.2 });
+    const low = computeNextBestActions({ ...base, journalCoverageRatio: 0.2 }, messages);
     expect(low.some((a) => a.id === 'journal-coverage')).toBe(true);
-    const fewTrades = computeNextBestActions({ ...base, totalTrades: 2, journalCoverageRatio: 0.2 });
+    const fewTrades = computeNextBestActions({ ...base, totalTrades: 2, journalCoverageRatio: 0.2 }, messages);
     expect(fewTrades.some((a) => a.id === 'journal-coverage')).toBe(false);
   });
 
   it('flags high cash deployment only with open positions', () => {
-    const deployed = computeNextBestActions({ ...base, cashDeploymentRatio: 0.95 });
+    const deployed = computeNextBestActions({ ...base, cashDeploymentRatio: 0.95 }, messages);
     expect(deployed.some((a) => a.id === 'cash-deployment')).toBe(true);
-    const noPos = computeNextBestActions({ ...base, cashDeploymentRatio: 0.95, openPositions: 0 });
+    const noPos = computeNextBestActions({ ...base, cashDeploymentRatio: 0.95, openPositions: 0 }, messages);
     expect(noPos.some((a) => a.id === 'cash-deployment')).toBe(false);
   });
 
   it('suggests reviewing watchlist when present', () => {
-    const actions = computeNextBestActions({ ...base, watchlistCount: 4 });
+    const actions = computeNextBestActions({ ...base, watchlistCount: 4 }, messages);
     const w = actions.find((a) => a.id === 'review-watchlist');
     expect(w?.detail).toContain('4 assets');
   });
 
   it('falls back to a generic performance review when nothing else applies', () => {
-    const actions = computeNextBestActions(base);
+    const actions = computeNextBestActions(base, messages);
     expect(actions).toHaveLength(1);
     expect(actions[0]?.id).toBe('review-performance');
   });
 
   it('uses non-advisory review/inspect language only', () => {
-    const actions = computeNextBestActions({ ...base, staleData: true, concentrationLevel: 'high', journalCoverageRatio: 0.1, watchlistCount: 2 });
+    const actions = computeNextBestActions({ ...base, staleData: true, concentrationLevel: 'high', journalCoverageRatio: 0.1, watchlistCount: 2 }, messages);
     const text = actions.map((a) => `${a.title} ${a.detail}`).join(' ').toLowerCase();
     expect(text).not.toMatch(/guaranteed|buy now|will profit|risk-free/);
   });

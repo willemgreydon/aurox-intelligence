@@ -33,8 +33,8 @@ const readModel = {
 describe('mapPositionItems — pricedFromCostBasis degraded flag', () => {
   it('does NOT flag a position that has a usable live quote', () => {
     const [item] = mapPositionItems([makePosition()], readModel);
-    expect(item.marketPrice).toBe(150);
-    expect(item.pricedFromCostBasis).toBe(false);
+    expect(item!.marketPrice).toBe(150);
+    expect(item!.pricedFromCostBasis).toBe(false);
   });
 
   it('flags an open position valued at cost basis (no usable quote) — not a live $0 P&L', () => {
@@ -44,8 +44,8 @@ describe('mapPositionItems — pricedFromCostBasis degraded flag', () => {
       [makePosition({ marketPrice: null, marketValue: 300, costBasis: 300, unrealizedPnl: 0 })],
       readModel,
     );
-    expect(item.marketPrice).toBeNull();
-    expect(item.pricedFromCostBasis).toBe(true);
+    expect(item!.marketPrice).toBeNull();
+    expect(item!.pricedFromCostBasis).toBe(true);
   });
 
   it('does not flag a zero-quantity position as degraded', () => {
@@ -53,6 +53,6 @@ describe('mapPositionItems — pricedFromCostBasis degraded flag', () => {
       [makePosition({ quantity: 0, marketPrice: null, marketValue: 0, costBasis: 0, unrealizedPnl: 0 })],
       readModel,
     );
-    expect(item.pricedFromCostBasis).toBe(false);
+    expect(item!.pricedFromCostBasis).toBe(false);
   });
 });

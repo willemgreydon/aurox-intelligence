@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { dashboardKpiLinksAreInternal, getDashboardExecutiveViewModel } from './dashboard-executive-service';
+import { getMessages } from '../../lib/i18n/messages';
+
+const messages = getMessages('en');
 
 vi.mock('./market-observation-service', () => ({
   getObserveViewModel: vi.fn(async () => ({
@@ -59,13 +62,13 @@ vi.mock('./admin-service', () => ({
 
 describe('dashboard-executive-service', () => {
   it('returns degraded-safe dashboard model', async () => {
-    const model = await getDashboardExecutiveViewModel({ userId: 'u1' });
+    const model = await getDashboardExecutiveViewModel({ userId: 'u1', messages });
     expect(model.degraded).toBe(true);
     expect(model.kpis.length).toBeGreaterThan(0);
   });
 
   it('keeps KPI links internal', async () => {
-    const model = await getDashboardExecutiveViewModel({ userId: 'u1' });
+    const model = await getDashboardExecutiveViewModel({ userId: 'u1', messages });
     expect(dashboardKpiLinksAreInternal(model)).toBe(true);
   });
 });

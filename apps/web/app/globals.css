@@ -12886,12 +12886,12 @@ code,
   border: 1px solid rgb(153 210 255 / 0.28);
   border-radius: clamp(1rem, 2.2vw, 1.6rem);
   background: #09121d;
-  box-shadow: 0 1.5rem 3rem rgb(2 8 16 / 0.28), 0 0 0 1px rgb(255 255 255 / 0.04) inset;
+  box-shadow: 0 1.25rem 2.5rem rgb(2 8 16 / 0.28), 0 0 0 1px rgb(255 255 255 / 0.05) inset;
   color: #edf7ff;
   perspective: 900px;
   transform: perspective(900px) rotateX(var(--card-tilt-y)) rotateY(var(--card-tilt-x));
   transform-style: preserve-3d;
-  transition: transform 420ms var(--ease-emphasis), box-shadow 320ms var(--ease-standard);
+  transition: box-shadow 320ms var(--ease-standard);
 }
 .aurox-identity-card__material,
 .aurox-identity-card__grid,
@@ -12900,7 +12900,7 @@ code,
 .aurox-identity-card__material {
   z-index: -3;
   background:
-    radial-gradient(circle at var(--card-pointer-x) var(--card-pointer-y), rgb(94 190 255 / 0.2), transparent 24%),
+    radial-gradient(circle at var(--card-pointer-x) var(--card-pointer-y), rgb(94 190 255 / 0.15), transparent 24%),
     linear-gradient(125deg, #0a1725 0%, #142b3d 42%, #07111d 72%, #0e1d2b 100%);
 }
 .aurox-identity-card__grid {
@@ -12915,9 +12915,9 @@ code,
 .aurox-identity-card__specular {
   z-index: 1;
   pointer-events: none;
-  background: radial-gradient(ellipse 24% 90% at var(--card-pointer-x) var(--card-pointer-y), rgb(194 239 255 / 0.23), transparent 70%);
+  background: radial-gradient(ellipse 24% 90% at var(--card-pointer-x) var(--card-pointer-y), rgb(194 239 255 / 0.16), transparent 70%);
   mix-blend-mode: screen;
-  opacity: 0.8;
+  opacity: 0.72;
 }
 .aurox-identity-card__content {
   z-index: 2;
@@ -12951,6 +12951,15 @@ code,
 }
 @media (prefers-reduced-motion: reduce) {
   .aurox-identity-card { transform: none; transition: none; }
+}
+
+@media (min-width: 1728px) {
+  /* Account is a two-pane workspace, not a reading column. Give the shell
+     enough width to carry the sidebar, identity object, and analytics rhythm
+     at ultrawide sizes without promoting the entire site to dashboard width. */
+  .account-section > .shell-container {
+    width: min(calc(100% - 2 * var(--page-gutter)), 105rem);
+  }
 }
 .account-hero__head {
   display: flex;
