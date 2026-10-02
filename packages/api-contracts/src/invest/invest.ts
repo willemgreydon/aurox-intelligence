@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { freshnessStateSchema, routeStatusSchema, sentimentStateSchema } from '../market/market';
 import { simulationLaneIdSchema } from '../simulation/simulation';
 import { assetRankingSchema } from '../ranking/ranking';
+import { portfolioTaxViewSchema } from '../investment-services/tax';
 
 export const actionAvailabilitySchema = z.enum(['available', 'simulated', 'planned', 'unavailable']);
 export const recommendationActionSchema = z.enum(['accumulate', 'hold', 'watch', 'trim', 'avoid']);
@@ -193,6 +194,7 @@ export const investPortfolioViewModelSchema = z.object({
   watchlistCount: z.number().int().nonnegative(),
   emptyStateMessage: z.string().nullable(),
   riskProfile: portfolioRiskProfileSchema.nullable(),
+  taxView: portfolioTaxViewSchema.nullable().default(null),
   asOf: z.string(),
 });
 

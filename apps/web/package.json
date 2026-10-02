@@ -19,6 +19,7 @@
     "@repo/db": "workspace:*",
     "@repo/design-tokens": "workspace:*",
     "@repo/forecasting": "workspace:*",
+    "@repo/investment-services": "workspace:*",
     "@repo/observability": "workspace:*",
     "@repo/providers": "workspace:*",
     "@repo/signals": "workspace:*",

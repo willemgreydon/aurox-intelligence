@@ -49,6 +49,15 @@ function formatPercent(value: number): string {
   return `${value.toFixed(2)}%`;
 }
 
+function formatCurrency(value: number, currency: string, locale: Locale): string {
+  if (!Number.isFinite(value)) return '-';
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
 function getAssetDetailHref(symbol: string, assetClass: 'stock' | 'etf' | 'crypto') {
   return getAssetInspectHref({ symbol, assetClass });
 }
@@ -213,6 +222,48 @@ export default async function PortfolioPage({
                 concentration in open positions. This is a simulation-environment assessment only.
                 No real capital is at risk.
               </p>
+            </div>
+          </Card>
+        </Section>
+      ) : null}
+
+      {portfolio.taxView ? (
+        <Section className="dashboard-section">
+          <Card className="analytics-card">
+            <div className="analytics-card__header">
+              <div>
+                <div className="section__eyebrow">Tax intelligence</div>
+                <h2>Estimated Austrian tax reserve</h2>
+                <p>
+                  Realized gains only. Unrealized P&amp;L is shown for context and is not taxed here.
+                  This is an estimate, not a tax filing or settlement statement.
+                </p>
+              </div>
+              <span className={`status-pill status-pill--${portfolio.taxView.status === 'calculated' ? 'success' : 'warning'}`}>
+                {portfolio.taxView.status === 'calculated' ? 'Estimated' : 'Review required'}
+              </span>
+            </div>
+            <div className="analytics-strip">
+              <CompactStatCard
+                label="Gross realized P&L"
+                value={formatCurrency(portfolio.taxView.realizedPnl.minorUnits / 10 ** portfolio.taxView.realizedPnl.scale, portfolio.taxView.currency, locale)}
+                detail="Closed simulation P&L before estimated tax."
+              />
+              <CompactStatCard
+                label="Estimated tax"
+                value={formatCurrency(portfolio.taxView.estimatedTaxLiability.minorUnits / 10 ** portfolio.taxView.estimatedTaxLiability.scale, portfolio.taxView.currency, locale)}
+                detail="Policy-based estimate; withholding and offsets are not connected yet."
+              />
+              <CompactStatCard
+                label="Recommended reserve"
+                value={formatCurrency(portfolio.taxView.taxReserve.minorUnits / 10 ** portfolio.taxView.taxReserve.scale, portfolio.taxView.currency, locale)}
+                detail="Amount to set aside pending complete tax-lot and withholding data."
+              />
+              <CompactStatCard
+                label="Estimated after-tax wealth"
+                value={formatCurrency(portfolio.taxView.estimatedAfterTaxWealth.minorUnits / 10 ** portfolio.taxView.estimatedAfterTaxWealth.scale, portfolio.taxView.currency, locale)}
+                detail="Gross equity less the recommended reserve; not spendable-profit advice."
+              />
             </div>
           </Card>
         </Section>

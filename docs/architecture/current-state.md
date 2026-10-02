@@ -60,6 +60,12 @@ Portfolio now includes:
 - recent trades with source attribution
 - loading and error route states
 
+Portfolio tax intelligence now includes:
+- a route-facing `taxView` derived from the existing versioned Investment Services tax engine
+- explicit realized P&L, unrealized P&L, estimated liability, recommended reserve, and estimated after-tax wealth
+- Austrian residency-aware behavior: missing or non-AT residency returns `requires_review` without guessing a tax rate
+- a documented portfolio-level securities-gain approximation; tax-lot classification, loss offsets, and withholding integration remain follow-up work
+
 ## Simulation Engine State
 
 Current simulation engine supports:

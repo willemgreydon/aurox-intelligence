@@ -8,6 +8,8 @@
   PortfolioRiskProfile,
   RouteStatus,
 } from '@repo/api-contracts';
+import type { InvestorProfile } from '@repo/api-contracts';
+import { buildPortfolioTaxView } from '@repo/investment-services';
 import { investPortfolioViewModelSchema } from '@repo/api-contracts';
 import type { PortfolioReadModel } from '../queries/portfolio-query';
 
@@ -203,6 +205,7 @@ function computeRiskProfile(
 export function mapInvestPortfolioViewModel(
   readModel: PortfolioReadModel,
   rawFilters?: PortfolioFilterInput,
+  taxResidency: InvestorProfile['taxResidency'] | null = null,
 ): InvestPortfolioViewModel {
   const filters = normalizeFilters(rawFilters);
   const workspace = readModel.workstation.workspace;
@@ -223,6 +226,7 @@ export function mapInvestPortfolioViewModel(
       watchlistCount: readModel.workstation.watchlist.length,
       emptyStateMessage: 'No simulation portfolio is active yet. Start a session to build positions.',
       riskProfile: null,
+      taxView: null,
       asOf: new Date().toISOString(),
     });
   }
@@ -278,6 +282,15 @@ export function mapInvestPortfolioViewModel(
       source: inferOrderSource(order.notes),
     }));
 
+  const taxView = buildPortfolioTaxView({
+    currency: workspace.summary.currency,
+    portfolioValue: workspace.summary.equityValue,
+    unrealizedPnl: workspace.summary.unrealizedPnl,
+    realizedPnl: workspace.summary.realizedPnl,
+    taxResidency,
+    asOfIso: workspace.summary.updatedAt,
+  });
+
   return investPortfolioViewModelSchema.parse({
     status: toRouteStatus(readModel.workstation.workstationStatus),
     statusReason: readModel.workstation.statusMessage,
@@ -309,7 +322,7 @@ export function mapInvestPortfolioViewModel(
       workspace.summary,
       computeAllocationItems(openPositions, (item) => item.symbol, (item) => item.symbol).slice(0, 12),
     ),
+    taxView,
     asOf: new Date().toISOString(),
   });
 }
-

@@ -55,6 +55,9 @@ importers:
       '@repo/forecasting':
         specifier: workspace:*
         version: link:../../packages/forecasting
+      '@repo/investment-services':
+        specifier: workspace:*
+        version: link:../../packages/investment-services
       '@repo/observability':
         specifier: workspace:*
         version: link:../../packages/observability
