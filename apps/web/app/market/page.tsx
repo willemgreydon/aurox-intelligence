@@ -122,55 +122,15 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
           </div>
           <nav className="observe-command-header__actions" aria-label="Market primary actions">
             <a href="#market-roster" className="button button--secondary observe-command-action">Browse all</a>
-            <a href="/observe" className="button button--secondary observe-command-action">Observer</a>
+            <Link href="/observe" className="button button--secondary observe-command-action">Observer</Link>
             <a href="/signals" className="button button--secondary observe-command-action">Signals</a>
-            <a href="/stocks" className="button button--secondary observe-command-action">Stocks</a>
+            <Link href="/stocks" className="button button--secondary observe-command-action">Stocks</Link>
             <a href="/invest/simulation" className="button button--secondary observe-command-action">Simulation</a>
           </nav>
         </div>
       </header>
 
       <MarketGraphSection graph={graph} messages={messages} trackedSymbols={preferredSymbols} newsItems={news.items} />
-
-      {constellation ? (
-        <Section
-          id="market-state-constellation"
-          className="dashboard-section dashboard-section--compact"
-          containerClassName="shell-container--workstation"
-        >
-          <header className="dashboard-section-heading">
-            <div>
-              <div className="section__eyebrow">Intelligence</div>
-              <h2 className="dashboard-section-heading__title">Market State Constellation</h2>
-              <p className="dashboard-section-heading__description">
-                Every tracked asset placed by momentum and realized volatility, coloured by deterministic
-                signal direction and sized by confidence. Observation of market structure — not advice.
-              </p>
-            </div>
-          </header>
-          <MarketStateConstellation vm={constellation} />
-        </Section>
-      ) : null}
-
-      {correlation?.available ? (
-        <Section
-          id="market-correlation"
-          className="dashboard-section dashboard-section--compact"
-          containerClassName="shell-container--workstation"
-        >
-          <header className="dashboard-section-heading">
-            <div>
-              <div className="section__eyebrow">Relationships</div>
-              <h2 className="dashboard-section-heading__title">Correlation Matrix</h2>
-              <p className="dashboard-section-heading__description">
-                Pairwise correlation of synchronized daily returns across tracked assets — how they move
-                together (green) or apart (red). Insufficient overlap is shown honestly, never as zero.
-              </p>
-            </div>
-          </header>
-          <CorrelationHeatmap vm={correlation} />
-        </Section>
-      ) : null}
 
       {/* ── Full market roster: every entry across stocks, ETFs, and crypto ── */}
       <Section
@@ -284,6 +244,20 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
           </div>
         ) : null}
       </Section>
+
+      {constellation ? (
+        <Section id="market-state-constellation" className="dashboard-section dashboard-section--compact" containerClassName="shell-container--workstation">
+          <header className="dashboard-section-heading"><div><div className="section__eyebrow">Intelligence</div><h2 className="dashboard-section-heading__title">{messages.marketConstellation.title}</h2><p className="dashboard-section-heading__description">{messages.marketConstellation.description}</p></div></header>
+          <MarketStateConstellation vm={constellation} labels={messages.marketConstellation} />
+        </Section>
+      ) : null}
+
+      {correlation?.available ? (
+        <Section id="market-correlation" className="dashboard-section dashboard-section--compact" containerClassName="shell-container--workstation">
+          <header className="dashboard-section-heading"><div><div className="section__eyebrow">Relationships</div><h2 className="dashboard-section-heading__title">Correlation Matrix</h2><p className="dashboard-section-heading__description">Pairwise correlation of synchronized daily returns across tracked assets — how they move together (green) or apart (red). Insufficient overlap is shown honestly, never as zero.</p></div></header>
+          <CorrelationHeatmap vm={correlation} />
+        </Section>
+      ) : null}
     </>
   );
 }

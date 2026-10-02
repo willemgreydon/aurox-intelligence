@@ -9,6 +9,7 @@ import { MoversSignalsSection } from '../components/sections/home/movers-signals
 import { EngineReadSection } from '../components/sections/home/engine-read-section';
 import { RecentActivitySection } from '../components/sections/home/recent-activity-section';
 import { NewsStreamWidget } from '../components/news/news-stream-widget';
+import { HomeMarketIntelligenceSection } from '../components/sections/home-market-intelligence-section';
 import { getMessages } from '../lib/i18n/messages';
 import { getRequestLocale } from '../server/i18n/locale';
 import { perfLog, perfNow } from '../server/lib/perf';
@@ -16,6 +17,8 @@ import { withDbReadFallback, getHomeWidgetTimeoutMs } from '../server/lib/db-run
 import type { StocksOverviewViewModel } from '../server/mappers/stocks-mapper';
 import { getNewsStreamData } from '../server/services/news-service';
 import { getWorkspaceTrackedSymbols } from '../server/services/workspace-service';
+import { getMarketStateConstellationData } from '../server/services/market-state-constellation-service';
+import { mapMarketStateConstellation } from '../server/mappers/market-state-constellation-mapper';
 
 export const dynamic = 'force-dynamic';
 
@@ -57,21 +60,21 @@ export default async function HomePage() {
   // to a bounded fallback instead of stalling the whole page render. Tracked
   // symbols previously ran unguarded and could hang for the full connection
   // wait, stacking with the simulation-overview timeout into a ~17s render.
-  const [preferredSymbolsResult, newsResult, auth] = await Promise.all([
+  const [preferredSymbolsResult, newsResult, auth, constellationResult] = await Promise.all([
     withDbReadFallback('home:tracked-symbols', [] as string[], () => getWorkspaceTrackedSymbols(16), HOME_WIDGET_TIMEOUT_MS),
     withDbReadFallback('home:news-stream', { items: [], providerHealth: [], updatedAt: new Date().toISOString(), degraded: true, message: 'Database unavailable — showing local fallback data.' }, () => getNewsStreamData(), HOME_WIDGET_TIMEOUT_MS),
     getOptionalCurrentSession(),
+    withDbReadFallback('home:market-constellation', null, () => getMarketStateConstellationData(), HOME_WIDGET_TIMEOUT_MS),
   ]);
   const preferredSymbols = preferredSymbolsResult.value;
+  const constellation = constellationResult.value ? mapMarketStateConstellation(constellationResult.value) : null;
   // Start portfolio fetch concurrently — it doesn't depend on stocks/graph results.
   const portfolioPromise = auth
     ? withDbReadFallback('home:simulation-overview', null, () => getSimulationOverviewDataForUser(auth.user.id), HOME_WIDGET_TIMEOUT_MS)
     : Promise.resolve({ value: null, degraded: false, reason: null as string | null });
-  // Market-intelligence visualizations (Market State Constellation + Correlation
-  // Matrix). Public, read-model-driven, and bounded (a single batched daily-bar
-  // read each). They don't depend on preferredSymbols, so they run fully in
-  // parallel and are timeout-guarded: if either degrades it renders nothing
-  // rather than blocking or breaking the landing page.
+  // Market State Constellation is public, read-model-driven, bounded to one
+  // batched daily-bar read, and timeout-guarded so a sparse/degraded DEV data
+  // set never blocks or breaks the landing page.
   const [stocksResult, marketGraphResult, portfolioResult] = await Promise.all([
     withDbReadFallback('home:stocks-overview', buildFallbackStocks(messages), () =>
       getStocksOverviewData(locale, messages, {
@@ -182,6 +185,7 @@ export default async function HomePage() {
           },
         }}
       />
+      <HomeMarketIntelligenceSection constellation={constellation} correlation={null} labels={messages.marketConstellation} />
       <MarketPulseSection
         snapshot={stocks.marketSnapshot}
         labels={{ ...messages.homeLive.pulse, unavailable: messages.common.unavailable }}

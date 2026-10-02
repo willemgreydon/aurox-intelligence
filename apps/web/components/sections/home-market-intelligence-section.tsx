@@ -1,11 +1,13 @@
 import type { MarketStateConstellationViewModel } from '../../server/mappers/market-state-constellation-mapper';
 import type { CorrelationHeatmapViewModel } from '../../server/mappers/market-correlation-mapper';
+import Link from 'next/link';
 import { MarketStateConstellation } from '../charts/market-state-constellation';
 import { CorrelationHeatmap } from '../charts/correlation-heatmap';
 
 type HomeMarketIntelligenceSectionProps = {
   constellation: MarketStateConstellationViewModel | null;
   correlation: CorrelationHeatmapViewModel | null;
+  labels: Parameters<typeof MarketStateConstellation>[0]['labels'];
 };
 
 /**
@@ -17,7 +19,7 @@ type HomeMarketIntelligenceSectionProps = {
  *
  * Server component. No domain math here; it paints pre-shaped view models.
  */
-export function HomeMarketIntelligenceSection({ constellation, correlation }: HomeMarketIntelligenceSectionProps) {
+export function HomeMarketIntelligenceSection({ constellation, correlation, labels }: HomeMarketIntelligenceSectionProps) {
   const showCorrelation = correlation?.available === true;
   if (!constellation && !showCorrelation) {
     return null;
@@ -27,13 +29,12 @@ export function HomeMarketIntelligenceSection({ constellation, correlation }: Ho
     <section className="section home-market-intel" aria-labelledby="home-market-intel-title">
       <div className="shell-container home-market-intel__inner">
         <header className="home-market-intel__header">
-          <div className="section__eyebrow">Live market intelligence</div>
+          <div className="section__eyebrow">{labels.homeEyebrow}</div>
           <h2 id="home-market-intel-title" className="section__title">
-            The market as a system, right now.
+            {labels.homeTitle}
           </h2>
           <p className="section__description">
-            The same deterministic surfaces that power the workstation — computed live from real market data,
-            not a mock. Observation of market structure, not investment advice.
+            {labels.homeDescription}
           </p>
         </header>
 
@@ -41,29 +42,27 @@ export function HomeMarketIntelligenceSection({ constellation, correlation }: Ho
           {constellation ? (
             <article className="home-market-intel__panel" aria-labelledby="home-constellation-title">
               <div className="home-market-intel__panel-head">
-                <div className="section__eyebrow">Structure</div>
+                <div className="section__eyebrow">{labels.structure}</div>
                 <h3 id="home-constellation-title" className="home-market-intel__panel-title">
-                  Market State Constellation
+                  {labels.title}
                 </h3>
                 <p className="home-market-intel__panel-desc">
-                  Every tracked asset placed by momentum and realized volatility, coloured by deterministic
-                  signal direction and sized by confidence.
+                  {labels.description}
                 </p>
               </div>
-              <MarketStateConstellation vm={constellation} />
+              <MarketStateConstellation vm={constellation} labels={labels} />
             </article>
           ) : null}
 
           {showCorrelation && correlation ? (
             <article className="home-market-intel__panel" aria-labelledby="home-correlation-title">
               <div className="home-market-intel__panel-head">
-                <div className="section__eyebrow">Relationships</div>
+                <div className="section__eyebrow">{labels.relationships}</div>
                 <h3 id="home-correlation-title" className="home-market-intel__panel-title">
-                  Correlation Matrix
+                  {labels.correlationTitle}
                 </h3>
                 <p className="home-market-intel__panel-desc">
-                  Pairwise correlation of synchronized daily returns — how assets move together (green) or
-                  apart (red). Insufficient overlap is shown honestly, never as zero.
+                  {labels.correlationDescription}
                 </p>
               </div>
               <CorrelationHeatmap vm={correlation} />
@@ -72,9 +71,7 @@ export function HomeMarketIntelligenceSection({ constellation, correlation }: Ho
         </div>
 
         <div className="home-market-intel__actions">
-          <a className="button button--secondary" href="/market">
-            Open the market workstation
-          </a>
+          <Link className="button button--secondary" href="/market">{labels.openWorkstation}</Link>
         </div>
       </div>
     </section>

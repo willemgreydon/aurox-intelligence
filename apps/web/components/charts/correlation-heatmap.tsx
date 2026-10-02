@@ -29,12 +29,13 @@ export function CorrelationHeatmap({ vm }: { vm: CorrelationHeatmapViewModel }) 
 
   return (
     <div className="corrheat">
-      <div
-        className="corrheat__grid"
-        style={{ gridTemplateColumns: `auto repeat(${n}, minmax(0, 1fr))` }}
-        role="img"
-        aria-label={`Correlation heatmap of ${n} assets — ${vm.coverageLabel}, ${vm.windowLabel}.`}
-      >
+      <div className="corrheat__viewport">
+        <div
+          className="corrheat__grid"
+          style={{ gridTemplateColumns: `auto repeat(${n}, minmax(0, 1fr))` }}
+          role="img"
+          aria-label={`Correlation heatmap of ${n} assets — ${vm.coverageLabel}, ${vm.windowLabel}.`}
+        >
         <span className="corrheat__corner" aria-hidden="true" />
         {vm.symbols.map((symbol) => (
           <span key={`col-${symbol}`} className="corrheat__colhead">
@@ -64,6 +65,7 @@ export function CorrelationHeatmap({ vm }: { vm: CorrelationHeatmapViewModel }) 
             </Fragment>
           );
         })}
+        </div>
       </div>
 
       <div className="corrheat__footer">

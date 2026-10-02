@@ -5862,6 +5862,32 @@ code,
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  min-width: 0;
+}
+
+.constellation__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.constellation__toolbar-summary,
+.constellation__select-prompt,
+.constellation__inspector-kicker {
+  color: var(--text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
+.constellation__toolbar-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.constellation__stage {
+  min-width: 0;
 }
 
 .constellation__svg {
@@ -5919,6 +5945,11 @@ code,
   cursor: pointer;
 }
 
+.constellation-node__hit {
+  fill: transparent;
+  pointer-events: all;
+}
+
 .constellation-node__core {
   stroke: var(--surface-base);
   stroke-width: 1.25;
@@ -5933,9 +5964,15 @@ code,
 }
 
 .constellation-node:hover .constellation-node__core,
-.constellation-node:focus-visible .constellation-node__core {
+.constellation-node:focus-visible .constellation-node__core,
+.constellation a:focus-visible .constellation-node__core {
   stroke: var(--text-primary);
   stroke-width: 2;
+}
+
+.constellation-node--selected .constellation-node__core {
+  stroke: var(--text-primary);
+  stroke-width: 2.5;
 }
 
 .constellation-node--bullish .constellation-node__core { fill: var(--chart-positive); }
@@ -5993,6 +6030,102 @@ code,
   font-size: 0.7rem;
   color: var(--text-tertiary);
   max-width: 42rem;
+}
+
+.constellation__inspector {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: var(--border-width-thin) solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+}
+
+.constellation__inspector-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.constellation__inspector-head h3 {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin: var(--space-1) 0 0;
+  color: var(--text-primary);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-lg);
+}
+
+.constellation__inspector-head h3 span {
+  color: var(--text-secondary);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
+}
+
+.constellation__metrics {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.constellation__metrics div {
+  min-width: 0;
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface-base);
+}
+
+.constellation__metrics dt {
+  color: var(--text-tertiary);
+  font-size: var(--font-size-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.constellation__metrics dd {
+  margin: var(--space-1) 0 0;
+  color: var(--text-primary);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.constellation__explanation {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+}
+
+.constellation__fullscreen-layer {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: grid;
+  padding: max(var(--space-3), env(safe-area-inset-top)) max(var(--space-3), env(safe-area-inset-right)) max(var(--space-3), env(safe-area-inset-bottom)) max(var(--space-3), env(safe-area-inset-left));
+  background: var(--app-bg);
+}
+
+.constellation--fullscreen {
+  width: 100%;
+  min-height: 0;
+  height: 100%;
+  gap: var(--space-2);
+}
+
+.constellation--fullscreen .constellation__stage {
+  min-height: 0;
+  flex: 1;
+  touch-action: none;
+}
+
+.constellation--fullscreen .constellation__svg {
+  height: 100%;
+  max-height: calc(100dvh - 14rem);
 }
 
 /* ── Drawdown Underwater ─────────────────────────────────────────────────── */
@@ -6360,6 +6493,14 @@ code,
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  min-width: 0;
+}
+
+.corrheat__viewport {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  padding-bottom: var(--space-1);
 }
 
 .corrheat--empty {
@@ -8905,6 +9046,52 @@ code,
 .home-news-card__body {
   display: grid;
   gap: var(--space-3);
+}
+
+@media (max-width: 640px) {
+  .home-market-intel {
+    padding-top: var(--space-8);
+    padding-bottom: var(--space-8);
+  }
+
+  .home-market-intel__grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-4);
+  }
+
+  .home-market-intel__panel {
+    padding: var(--space-3);
+  }
+
+  .constellation__toolbar-actions,
+  .constellation__toolbar-actions .button {
+    width: 100%;
+  }
+
+  .constellation__toolbar-actions .button {
+    justify-content: center;
+  }
+
+  .constellation__svg {
+    min-height: 14rem;
+  }
+
+  .constellation__metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .constellation__footer {
+    align-items: flex-start;
+  }
+
+  .constellation__legend {
+    gap: var(--space-2);
+  }
+
+  .constellation--fullscreen .constellation__svg {
+    min-height: 0;
+    max-height: calc(100dvh - 18rem);
+  }
 }
 
 .home-news-card__actions {
