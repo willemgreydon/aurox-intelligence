@@ -3,6 +3,7 @@ import { requireCurrentSession } from '../../server/auth/session';
 import { getAccountOverviewData } from '../../server/services/account-service';
 import { getAccountIntelligenceViewModel } from '../../server/services/account-intelligence-service';
 import { AccountIntelligenceCockpit } from '../../components/account/account-intelligence-cockpit';
+import { AccountIdentityPanel } from '../../components/account/account-identity-panel';
 import { getMessages } from '../../lib/i18n/messages';
 import { getRequestLocale } from '../../server/i18n/locale';
 
@@ -48,12 +49,25 @@ export default async function AccountOverviewPage() {
     </div>
   );
 
+  // Relocated to appear after Recent simulated actions on mobile only (CSS). The
+  // same content renders in the desktop sidebar — one shared component, no
+  // duplicated markup.
+  const accountDetails = (
+    <AccountIdentityPanel
+      name={auth.user.name}
+      email={auth.user.email}
+      role={auth.user.role}
+      headingTag="h2"
+    />
+  );
+
   return (
     <AccountIntelligenceCockpit
       vm={vm}
       membershipDisclosure={membershipDisclosure}
       identityCardLabels={messages.account.identityCard}
       identityDetails={{ role: overview.user.role, memberSince: overview.memberSinceLabel }}
+      accountDetails={accountDetails}
     />
   );
 }

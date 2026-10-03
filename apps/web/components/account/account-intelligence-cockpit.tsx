@@ -31,6 +31,11 @@ type Props = {
     };
   };
   identityDetails?: { role: string; memberSince: string };
+  /**
+   * Relocated account identity summary, shown only on mobile (CSS) directly after
+   * Recent simulated actions. On desktop the same content lives in the sidebar.
+   */
+  accountDetails?: React.ReactNode;
 };
 
 /**
@@ -39,7 +44,7 @@ type Props = {
  * moneyflow, activity, insights, recent actions. All values are pre-formatted
  * read-model strings; positive/negative carries a text sign, not just color.
  */
-export function AccountIntelligenceCockpit({ vm, membershipDisclosure, identityCardLabels, identityDetails }: Props) {
+export function AccountIntelligenceCockpit({ vm, membershipDisclosure, identityCardLabels, identityDetails, accountDetails }: Props) {
   return (
     <div className="account-cockpit">
       <Section className="account-cockpit__opening">
@@ -289,6 +294,14 @@ export function AccountIntelligenceCockpit({ vm, membershipDisclosure, identityC
           )}
         </Card>
       </Section>
+
+      {accountDetails ? (
+        <Section className="account-details-mobile">
+          <Card className="account-details-mobile__card">
+            {accountDetails}
+          </Card>
+        </Section>
+      ) : null}
 
       <Section>
         <Card>

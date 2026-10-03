@@ -54,7 +54,10 @@ test('authenticated account aligns its workspace and identity opening', async ({
   const card = page.locator('.aurox-identity-card');
   const hero = page.locator('.account-hero__head');
   await expect(sidebar).toBeVisible();
-  await expect(sidebar.getByText('Account workspace', { exact: true })).toBeVisible();
+  // The workspace identity summary lives in the sidebar on desktop and relocates
+  // below Recent simulated actions on mobile — assert it is visible exactly once,
+  // wherever the breakpoint places it.
+  await expect(page.locator('.section__eyebrow:visible', { hasText: 'Account workspace' })).toHaveCount(1);
   await expect(card).toBeVisible();
   await expect(hero).toBeVisible();
   await expect(page.locator('.page-preloader')).toHaveCount(0);
@@ -226,4 +229,43 @@ test('activity analytics render as two columns on desktop with all metrics', asy
     const cards = await strip.locator('> *').count();
     expect(cards).toBeGreaterThanOrEqual(6);
   }
+});
+
+test('mobile relocates the account summary below Recent simulated actions', async ({ page }) => {
+  await ensureSession(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/account');
+  await expect(page.locator('.page-preloader')).toHaveCount(0);
+
+  // The sidebar collapses to navigation only; the identity summary is hidden there.
+  await expect(page.locator('.account-sidebar__intro')).toBeHidden();
+  await expect(page.locator('.account-nav__trigger')).toBeVisible();
+
+  // The relocated Account details section is shown, exactly once, after Recent actions.
+  const details = page.locator('.account-details-mobile');
+  await expect(details).toBeVisible();
+  await expect(page.locator('.account-sidebar__title:visible')).toHaveCount(1);
+
+  const order = await page.evaluate(() => {
+    const recent = Array.from(document.querySelectorAll('h3')).find((h) => /Recent simulated actions/i.test(h.textContent ?? ''));
+    const recentSection = recent?.closest('.section');
+    const relocated = document.querySelector('.account-details-mobile');
+    if (!recentSection || !relocated) return false;
+    return Boolean(recentSection.compareDocumentPosition(relocated) & Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+  expect(order).toBe(true);
+
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  expect(overflow).toBeLessThanOrEqual(1);
+});
+
+test('desktop keeps the account summary in the sidebar without duplication', async ({ page }) => {
+  await ensureSession(page);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/account');
+  await expect(page.locator('.page-preloader')).toHaveCount(0);
+
+  await expect(page.locator('.account-sidebar__intro')).toBeVisible();
+  // The mobile relocation is hidden on desktop — the summary is never shown twice.
+  await expect(page.locator('.account-details-mobile')).toBeHidden();
 });

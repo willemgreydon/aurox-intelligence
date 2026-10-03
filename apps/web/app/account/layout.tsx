@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { AccountIdentityPanel } from '../../components/account/account-identity-panel';
 import { AccountNav } from '../../components/account/account-nav';
 import { Card } from '../../components/ui/card';
 import { Section } from '../../components/ui/section';
@@ -12,27 +13,16 @@ export default async function AccountLayout({ children }: { children: ReactNode 
       <div className="account-layout">
         <aside className="account-sidebar">
           <Card className="account-sidebar__card">
-            <div className="account-sidebar__header">
-              <div className="section__eyebrow">Account workspace</div>
-              <h1 className="account-sidebar__title">Signed in as {auth.user.name}</h1>
-              <p className="account-sidebar__description">
-                Manage your profile, keep your login secure, and monitor your active account session footprint.
-              </p>
-            </div>
-
-            <div className="account-sidebar__summary account-meta-list">
-              <div className="account-meta-row">
-                <span>Email</span>
-                <strong title={auth.user.email}>{auth.user.email}</strong>
-              </div>
-              <div className="account-meta-row">
-                <span>Role</span>
-                <span className="status-pill status-pill--xs status-pill--info">{auth.user.role}</span>
-              </div>
-              <div className="account-meta-row">
-                <span>Status</span>
-                <span className="status-pill status-pill--xs status-pill--simulation">SIMULATION</span>
-              </div>
+            {/* Desktop-only identity summary. On mobile the sidebar collapses to the
+                nav alone; this same content is relocated below "Recent simulated
+                actions" as an Account details section (shared AccountIdentityPanel). */}
+            <div className="account-sidebar__intro">
+              <AccountIdentityPanel
+                name={auth.user.name}
+                email={auth.user.email}
+                role={auth.user.role}
+                headingTag="h1"
+              />
             </div>
 
             <AccountNav />

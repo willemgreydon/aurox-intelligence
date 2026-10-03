@@ -1987,6 +1987,14 @@ code,
   margin-top: var(--space-5);
 }
 
+/* Relocated mobile account summary: hidden on desktop (the identity summary lives
+   in the sidebar) and revealed on mobile after Recent simulated actions. The
+   sidebar's identity block (.account-sidebar__intro) is the mirror toggle in the
+   ≤960 block below — one shared component, one copy visible per breakpoint. */
+.account-details-mobile {
+  display: none;
+}
+
 /* The collapsed trigger only materialises at the mobile breakpoint; on desktop
    the full list is always visible and the trigger is removed from the flow. */
 .account-nav__trigger { display: none; }
@@ -4662,6 +4670,18 @@ code,
     position: static;
   }
 
+  /* Mobile: the sidebar becomes a navigation surface only. The identity summary is
+     relocated below Recent simulated actions as the Account details section. */
+  .account-sidebar__intro {
+    display: none;
+  }
+  .account-nav {
+    margin-top: 0;
+  }
+  .account-details-mobile {
+    display: block;
+  }
+
   /* Compact account navigation: a single current-page control that expands the
      full menu on demand, reclaiming the vertical space the stacked list took. */
   .account-nav__trigger {
@@ -6260,16 +6280,15 @@ code,
 /* Market roster: the roster container widens to the workstation regime, so on
    large desktop / ultrawide the 2-column card grid becomes two oversized cards.
    Step up the column count with the available width for a proper dense grid. */
-@media (min-width: 1600px) {
-  #market-roster .analytics-two-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 2100px) {
-  #market-roster .analytics-two-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
+/* Market roster: fluid workstation grid. auto-fit flows the roster 1 → 2 → 3 → 4+
+   columns as the container grows, keeping a comfortable ~23rem card floor instead
+   of stranding two 600px+ columns across the whole 1100–1600px range. The
+   min(100%, 23rem) floor guarantees a single column never overflows a narrow
+   container, and auto-fit's own collapse (the 23rem track stops fitting) handles
+   mobile/tablet — this id-scoped rule intentionally outranks the generic
+   `.analytics-two-grid` 2-col base and the ≤960 → 1fr collapse. */
+#market-roster .analytics-two-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 21.5rem), 1fr));
 }
 
 /* ── Volatility Pulse ────────────────────────────────────────────────────── */
@@ -7548,8 +7567,15 @@ code,
   }
 
   .mobile-quick-nav__icon {
-    font-size: 0.72rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     color: var(--text-tertiary);
+  }
+
+  .mobile-quick-nav__icon svg {
+    width: 1.35rem;
+    height: 1.35rem;
   }
 
   .mobile-drawer {
@@ -7774,8 +7800,9 @@ code,
     font-size: 0.7rem;
   }
 
-  .mobile-quick-nav__icon {
-    font-size: 0.68rem;
+  .mobile-quick-nav__icon svg {
+    width: 1.25rem;
+    height: 1.25rem;
   }
 
   .market-graph__toolbar {
@@ -9025,9 +9052,9 @@ code,
   padding-bottom: var(--space-8);
 }
 
-.home-market-intel__inner {
-  width: 100%;
-}
+/* No width override here: inherit the .shell-container gutter so the band breathes
+   on mobile/tablet (it previously went full-bleed to the viewport edges). The
+   ≥1280 promotion below widens it to the dashboard regime. */
 
 .home-market-intel__header {
   max-width: 60rem;
@@ -9080,9 +9107,8 @@ code,
   padding-bottom: calc(var(--space-12) + var(--space-4));
 }
 
-.home-news-section__inner {
-  width: 100%;
-}
+/* No width override: inherit the .shell-container gutter (previously full-bleed on
+   mobile/tablet). The ≥1280 promotion widens it to the dashboard regime. */
 
 .home-news-card {
   width: 100%;
@@ -12933,7 +12959,20 @@ code,
    Account Intelligence cockpit (/account) — simulated-performance self-review.
    Reuses existing tokens + .analytics-strip / .account-stats / .data-table.
    ────────────────────────────────────────────────────────────────────────── */
-.account-cockpit { display: flex; flex-direction: column; }
+.account-cockpit {
+  display: flex;
+  flex-direction: column;
+  /* Single spacing owner. Each cockpit block is a marketing <Section> (80px top +
+     80px bottom = ~160px of dead space between every card). Neutralize that rhythm
+     and replace it with one calm, responsive gap so the cockpit reads as a dense
+     dashboard rather than a stack of landing bands. */
+  gap: clamp(var(--space-6), 3.2vw, var(--space-12));
+  padding-bottom: var(--space-12);
+}
+
+.account-cockpit > .section {
+  padding-block: 0;
+}
 
 /* The workspace grid owns the opening top line. Nested section padding would
    inset the identity object below the sidebar; stacked layouts keep the grid gap. */
@@ -13156,14 +13195,115 @@ code,
       0 0 0 1px rgb(147 220 255 / 0.2) inset;
   }
 }
-/* Light environment: deepen the drop shadow so the dark object reads as a
-   physical card resting on a bright page rather than a flat panel. */
+/* ──────────────────────────────────────────────────────────────────────────
+   Light-theme Aurox Identity Card. A deliberately designed light material — a
+   cool pearl / frosted-ceramic surface with restrained Aurox-blue spectral
+   accents — so the card reads as the same premium physical object as the dark
+   edition rather than an inverted dark card. Front and back are themed as two
+   faces of one object.
+
+   Firefox-safety is preserved: NO stacking-context creators (overflow,
+   isolation, mix-blend-mode, filter, opacity<1, clip-path, contain:paint) are
+   added to .aurox-identity-card__face. All light treatment lives on the face
+   background/border/shadow and on the decorative child layers + pseudos, which
+   may safely carry opacity and background-blend-mode. */
+[data-theme='light'] .aurox-identity-card {
+  color: #17293b;
+}
 [data-theme='light'] .aurox-identity-card__face {
+  border-color: rgb(120 148 180 / 0.4);
+  background: #e9eef5;
   box-shadow:
-    0 0.25rem 0.5rem rgb(12 26 40 / 0.35),
-    0 1.5rem 3rem rgb(12 26 40 / 0.28),
-    0 2.5rem 5rem rgb(12 26 40 / 0.12),
-    0 0 0 1px rgb(255 255 255 / 0.08) inset;
+    0 0.25rem 0.5rem rgb(40 64 96 / 0.16),
+    0 1.25rem 2.5rem rgb(40 64 96 / 0.14),
+    0 2.75rem 5rem rgb(40 64 96 / 0.1),
+    0 0 0 1px rgb(255 255 255 / 0.7) inset;
+}
+[data-theme='light'] .aurox-identity-card__content {
+  /* Crisp ink on a bright surface: a fine light emboss, not a dark drop. */
+  text-shadow: 0 1px 0 rgb(255 255 255 / 0.6);
+}
+[data-theme='light'] .aurox-identity-card__material {
+  background:
+    repeating-radial-gradient(circle at 18% 24%, rgb(40 70 110 / 0.03) 0 0.5px, transparent 0.5px 3px),
+    radial-gradient(circle at var(--card-pointer-x) var(--card-pointer-y), rgb(120 180 255 / 0.22), transparent 26%),
+    linear-gradient(125deg, #f4f7fc 0%, #e3eaf3 44%, #eef3f9 72%, #dde6f0 100%);
+  background-blend-mode: normal;
+}
+[data-theme='light'] .aurox-identity-card__material--back {
+  background:
+    repeating-radial-gradient(circle at 82% 78%, rgb(40 70 110 / 0.028) 0 0.5px, transparent 0.5px 3px),
+    radial-gradient(circle at 78% 18%, rgb(120 180 255 / 0.18), transparent 30%),
+    linear-gradient(300deg, #f4f7fc 0%, #e6edf5 46%, #eef3f9 74%, #dfe8f1 100%);
+  background-blend-mode: normal;
+}
+[data-theme='light'] .aurox-identity-card__grid {
+  opacity: 0.4;
+  background-image:
+    linear-gradient(115deg, transparent 0 47%, rgb(70 120 190 / 0.16) 48%, transparent 49%),
+    linear-gradient(35deg, transparent 0 47%, rgb(70 120 190 / 0.1) 48%, transparent 49%);
+}
+[data-theme='light'] .aurox-identity-card__specular {
+  /* A soft pearl gloss travelling with the pointer — the light-surface analogue
+     of the dark card's cyan specular. */
+  background: radial-gradient(
+    ellipse 24% 90% at var(--card-pointer-x) var(--card-pointer-y),
+    rgb(255 255 255 / 0.72),
+    transparent 72%
+  );
+  opacity: 0.9;
+}
+[data-theme='light'] .aurox-identity-card__face::before {
+  border-color: rgb(120 148 180 / 0.32);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.55) inset, 0 -1px 0 rgb(40 64 96 / 0.08) inset;
+}
+[data-theme='light'] .aurox-identity-card__face::after {
+  background: linear-gradient(112deg, rgb(255 255 255 / 0.62), transparent 20% 64%, rgb(120 180 255 / 0.1));
+  opacity: 0.58;
+}
+[data-theme='light'] .aurox-identity-card__demo,
+[data-theme='light'] .aurox-identity-card__label,
+[data-theme='light'] .aurox-identity-card__details dt {
+  color: rgb(63 86 112 / 0.92);
+}
+[data-theme='light'] .aurox-identity-card__demo {
+  border-color: rgb(50 90 140 / 0.32);
+}
+[data-theme='light'] .aurox-identity-card__number,
+[data-theme='light'] .aurox-identity-card__details dd,
+[data-theme='light'] .aurox-identity-card__bottomline strong {
+  color: #16293c;
+}
+[data-theme='light'] .aurox-identity-card__status {
+  color: #1f68d8;
+}
+[data-theme='light'] .aurox-identity-card__statement {
+  color: rgb(63 86 112 / 0.94);
+}
+[data-theme='light'] .aurox-identity-card__mark {
+  filter: drop-shadow(0 0 0.5rem rgb(47 120 240 / 0.3));
+}
+[data-theme='light'] .aurox-identity-card__magstripe {
+  background:
+    repeating-linear-gradient(90deg, rgb(44 60 78 / 0.92) 0 3px, rgb(62 82 104 / 0.92) 3px 5px),
+    linear-gradient(180deg, #33475c, #243343);
+  border-block-color: rgb(20 36 52 / 0.3);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.5);
+}
+[data-theme='light'] .aurox-identity-card__signature {
+  background:
+    repeating-linear-gradient(135deg, rgb(40 70 110 / 0.06) 0 6px, transparent 6px 12px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.6), rgb(255 255 255 / 0.3));
+  border-color: rgb(120 148 180 / 0.36);
+}
+@media (hover: hover) and (pointer: fine) {
+  [data-theme='light'] .aurox-identity-card:hover .aurox-identity-card__face {
+    box-shadow:
+      0 0.3rem 0.6rem rgb(40 64 96 / 0.2),
+      0 1.6rem 3rem rgb(40 64 96 / 0.18),
+      0 3rem 5.5rem rgb(40 64 96 / 0.12),
+      0 0 0 1px rgb(80 140 220 / 0.3) inset;
+  }
 }
 @media (max-width: 430px) {
   .aurox-identity-card { min-height: 0; }
