@@ -1,5 +1,6 @@
 import { getDatabaseSizeReport } from '@repo/db';
 import { NextResponse } from 'next/server';
+import { evaluateMatureEvidence } from '../../../../server/services/intelligence-evaluation-service';
 import { recordUniverseSignalHistory } from '../../../../server/services/intelligence-history-service';
 import { runIntelligenceRetention } from '../../../../server/services/intelligence-retention-service';
 import { getNeonConsumption } from '../../../../server/services/neon-consumption-service';
@@ -37,7 +38,19 @@ export async function GET(request: Request) {
   }
 
   try {
-    const result = await recordUniverseSignalHistory();
+    const now = new Date().toISOString();
+    const result = await recordUniverseSignalHistory(now);
+
+    // Evaluate matured signals and forecasts (horizon = 10 trading days).
+    // Best-effort: never throws, partial failures are reported in the response.
+    // Bounded to BATCH_LIMIT items per run so it stays within the 60s maxDuration.
+    const evaluation = await evaluateMatureEvidence(now).catch((err) => ({
+      signalOutcomes: 0,
+      forecastEvaluations: 0,
+      skipped: 0,
+      errors: [{ id: 'evaluation', error: err instanceof Error ? err.message : String(err) }],
+    }));
+
     // Best-effort retention sweep — never throws, so it cannot fail the cron.
     // This is the only prod execution path that runs the (previously dead)
     // prune helpers, keeping append-only intelligence tables bounded.
@@ -93,7 +106,7 @@ export async function GET(request: Request) {
       }
     }
 
-    return NextResponse.json({ ok: true, ...result, retention, dbSize, neonConsumption });
+    return NextResponse.json({ ok: true, ...result, evaluation, retention, dbSize, neonConsumption });
   } catch (error) {
     return NextResponse.json(
       { ok: false, error: error instanceof Error ? error.message : 'record_failed' },

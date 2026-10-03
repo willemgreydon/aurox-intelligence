@@ -78,12 +78,17 @@ export async function recordSignalSnapshots(records: readonly SignalSnapshotReco
   try {
     await client.transaction(async (tx) => {
       for (const record of records) {
+        // generated_date is the UTC calendar date of generated_at — stored explicitly
+        // so a plain unique index (not a functional one) can guarantee one signal per
+        // (asset, day). ON CONFLICT DO NOTHING makes this idempotent.
+        const generatedDate = record.generatedAt.substring(0, 10);
         await tx.execute(
           `
             insert into ${signalHistoryTable} (
               asset_id, symbol, asset_class, interpretation,
-              composite_score, confidence, latest_price, generated_at
-            ) values ($1, $2, $3, $4, $5, $6, $7, $8)
+              composite_score, confidence, latest_price, generated_at, generated_date
+            ) values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            on conflict (asset_id, generated_date) do nothing
           `,
           [
             record.assetId,
@@ -94,6 +99,7 @@ export async function recordSignalSnapshots(records: readonly SignalSnapshotReco
             record.confidence,
             record.latestPrice ?? null,
             record.generatedAt,
+            generatedDate,
           ],
         );
       }
