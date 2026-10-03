@@ -14,6 +14,7 @@ export * from './forecasts/forecast';
 export * from './ingestion/ingestion-run';
 export * from './intelligence/market-intelligence';
 export * from './intelligence/claude-finance';
+export * from './intelligence/evaluation';
 export * from './invest/invest';
 export * from './investment-services';
 export * from './market/market';
