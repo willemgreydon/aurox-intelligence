@@ -32,7 +32,7 @@ export function CorrelationHeatmap({ vm }: { vm: CorrelationHeatmapViewModel }) 
       <div className="corrheat__viewport">
         <div
           className="corrheat__grid"
-          style={{ gridTemplateColumns: `auto repeat(${n}, minmax(0, 1fr))` }}
+          style={{ gridTemplateColumns: `var(--corrheat-rowhead, 3rem) repeat(${n}, minmax(var(--corrheat-cell, 2.85rem), 1fr))` }}
           role="img"
           aria-label={`Correlation heatmap of ${n} assets — ${vm.coverageLabel}, ${vm.windowLabel}.`}
         >

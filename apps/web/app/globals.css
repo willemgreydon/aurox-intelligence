@@ -6592,13 +6592,18 @@ code,
 .corrheat__grid {
   display: grid;
   gap: 2px;
+  /* On desktop the grid fills the panel (cells grow via the 1fr side of the
+     minmax). On narrow viewports the per-cell minimum (--corrheat-cell) keeps
+     every cell legible, so the grid's intrinsic width exceeds the phone
+     viewport and the .corrheat__viewport scroll container takes over instead of
+     collapsing cells on top of each other. */
   max-width: 48rem;
 }
 
 .corrheat__colhead,
 .corrheat__rowhead {
   font-family: var(--font-family-mono);
-  font-size: 0.6rem;
+  font-size: 0.72rem;
   font-weight: 700;
   color: var(--text-secondary);
   display: flex;
@@ -6607,6 +6612,17 @@ code,
   padding: 2px;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Keep the row labels (and the top-left corner) pinned while the matrix pans
+   horizontally so each row stays identifiable. Opaque background prevents cells
+   scrolling visibly underneath. */
+.corrheat__corner,
+.corrheat__rowhead {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--surface-base);
 }
 
 .corrheat__rowhead {
@@ -6618,9 +6634,9 @@ code,
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 1.8rem;
+  min-height: var(--corrheat-cell, 2.85rem);
   font-family: var(--font-family-mono);
-  font-size: 0.6rem;
+  font-size: 0.72rem;
   color: var(--text-primary);
   border-radius: 2px;
   background: var(--surface-raised);
@@ -8177,6 +8193,10 @@ code,
 }
 
 .market-card {
+  /* Establishes a query container so the quote/move/sparkline row can adapt to
+     the card's own width (it is narrow at several viewports, not just phones)
+     rather than the viewport. */
+  container-type: inline-size;
   transition:
     transform var(--duration-fast) var(--ease-standard),
     border-color var(--duration-fast) var(--ease-standard),
@@ -8208,6 +8228,34 @@ code,
   align-self: stretch;
   justify-self: end;
   width: min(9rem, 100%);
+}
+
+/* Narrow cards: a three-across QUOTE | MOVE | sparkline row leaves the large
+   mono quote value too little room, so it overflows its track and paints over
+   the Move column + chart (and long Move labels like "Beobachtungsliste" spill
+   across the quote). Give Quote and Move half the width each and drop the
+   sparkline to its own full-width row below. */
+@container (max-width: 25rem) {
+  .market-card__quote-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+    column-gap: var(--space-5);
+    row-gap: var(--space-4);
+  }
+
+  .market-card__quote-grid .comparison-stat__value {
+    font-size: var(--font-size-xl);
+  }
+
+  .market-card__quote-grid .comparison-stat__subvalue {
+    overflow-wrap: anywhere;
+  }
+
+  .market-card__chart {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+    width: 100%;
+  }
 }
 
 .market-card__chart--recommendation {
