@@ -3,6 +3,7 @@ import { ingestMarketDataJob } from '../jobs/ingest-market-data.js';
 import { extractMarketIntelligenceJob } from '../jobs/extract-market-intelligence.js';
 import { extractNewsIntelligenceJob } from '../jobs/extract-news-intelligence.js';
 import { ingestIntradayMarketDataJob } from '../jobs/ingest-intraday-market-data.js';
+import { evaluateOutcomesJob } from '../jobs/evaluate-outcomes.js';
 import { recomputeForecastsJob } from '../jobs/recompute-forecasts.js';
 import { recomputeSignalsJob } from '../jobs/recompute-signals.js';
 import { runJob } from '../runners/run-job.js';
@@ -43,6 +44,11 @@ const scheduledJobs: ScheduledJob[] = [
     name: 'recompute-forecasts',
     intervalMs: 20 * 60 * 1000,
     execute: recomputeForecastsJob,
+  },
+  {
+    name: 'evaluate-outcomes',
+    intervalMs: 25 * 60 * 1000,
+    execute: evaluateOutcomesJob,
   },
   {
     name: 'ingest-macro-data',

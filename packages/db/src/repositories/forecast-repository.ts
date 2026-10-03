@@ -77,13 +77,17 @@ export async function recordForecast(record: ForecastRecord): Promise<void> {
   if (!client) return;
 
   try {
+    // generated_date = UTC calendar date of generated_at, stored for the unique
+    // constraint (uq_forecasts_asset_date). ON CONFLICT DO NOTHING = idempotent.
+    const generatedDate = record.generatedAt.substring(0, 10);
     await client.execute(
       `
         insert into ${forecastsTable} (
           asset_id, symbol, horizon, directional_bias,
           confidence_score, scenario_summary, reference_price,
-          produced_at, generated_at
-        ) values ($1, $2, $3, $4, $5, $6, $7, $8, $8)
+          produced_at, generated_at, generated_date
+        ) values ($1, $2, $3, $4, $5, $6, $7, $8, $8, $9)
+        on conflict (asset_id, generated_date) do nothing
       `,
       [
         record.assetId,
@@ -94,6 +98,7 @@ export async function recordForecast(record: ForecastRecord): Promise<void> {
         record.scenarioSummary,
         record.referencePrice ?? null,
         record.generatedAt,
+        generatedDate,
       ],
     );
   } catch (error) {
