@@ -23,14 +23,30 @@ export function getTrendDirection(changePercent: number | null | undefined): Tre
 type AssetClassHint = 'stock' | 'etf' | 'crypto' | 'fx' | 'index' | null | undefined;
 
 function isStockMarketOpen(): boolean {
-  const now = new Date();
-  const day = now.getUTCDay(); // 0=Sun, 6=Sat
-  if (day === 0 || day === 6) return false;
-  const hours = now.getUTCHours();
-  const minutes = now.getUTCMinutes();
-  const totalMinutes = hours * 60 + minutes;
-  // NYSE: 14:30–21:00 UTC (9:30 AM–4:00 PM ET)
-  return totalMinutes >= 870 && totalMinutes < 1260;
+  // Resolve the current wall-clock time in US Eastern so DST (EST↔EDT) is handled
+  // automatically — a fixed UTC window would be an hour off for ~8 months/year.
+  // NYSE regular session is 09:30–16:00 ET, Mon–Fri. (Exchange holidays are not
+  // modelled here; on a holiday this returns "open" during those hours — a minor
+  // over-report that only affects freshness labelling, never execution.)
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    weekday: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(new Date());
+  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? '';
+
+  const weekday = get('weekday');
+  if (weekday === 'Sat' || weekday === 'Sun') return false;
+
+  let hour = Number.parseInt(get('hour'), 10);
+  if (hour === 24) hour = 0; // some ICU builds emit "24" for midnight
+  const minute = Number.parseInt(get('minute'), 10);
+  if (Number.isNaN(hour) || Number.isNaN(minute)) return false;
+
+  const totalMinutes = hour * 60 + minute;
+  return totalMinutes >= 570 && totalMinutes < 960; // 09:30 (570) – 16:00 (960) ET
 }
 
 const EQUITY_ASSET_CLASSES = new Set<string>(['stock', 'etf', 'index', 'equity']);
