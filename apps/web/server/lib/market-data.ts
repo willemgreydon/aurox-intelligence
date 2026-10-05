@@ -33,6 +33,21 @@ function isStockMarketOpen(): boolean {
   return totalMinutes >= 870 && totalMinutes < 1260;
 }
 
+const EQUITY_ASSET_CLASSES = new Set<string>(['stock', 'etf', 'index', 'equity']);
+
+/**
+ * True when the asset trades on the US equity session and that session is
+ * currently closed (weekend / outside NYSE hours). Crypto and FX trade 24/7 (or
+ * on separate sessions) and always return false. Used to badge equity ticker
+ * items as "market closed" rather than surfacing a misleading "N days ago"
+ * freshness label when the last real quote is simply the previous session close.
+ */
+export function isEquityMarketClosed(assetClass?: string | null): boolean {
+  if (!assetClass) return false;
+  if (!EQUITY_ASSET_CLASSES.has(assetClass.toLowerCase())) return false;
+  return !isStockMarketOpen();
+}
+
 export function getFreshnessState(timestamp: TimestampLike, assetClass?: AssetClassHint): FreshnessState {
   if (!timestamp) {
     return 'unavailable';

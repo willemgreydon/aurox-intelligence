@@ -88,7 +88,8 @@
     "emptyAria": "市场行情不可用",
     "sourceSummary": "来自 {{provider}} 的可刷新行情快照。",
     "errorSummary": "行情快照不可用：{{message}}",
-    "emptyState": "当前配置的数据提供商暂时无法提供行情数据。"
+    "emptyState": "当前配置的数据提供商暂时无法提供行情数据。",
+    "marketClosed": "休市"
   },
   "status": {
     "nominal": "正常",

@@ -88,7 +88,8 @@
     "emptyAria": "Marktticker niet beschikbaar",
     "sourceSummary": "Verversbare tickermomentopname van {{provider}}.",
     "errorSummary": "Tickermomentopname niet beschikbaar: {{message}}",
-    "emptyState": "Tickergegevens zijn momenteel niet beschikbaar bij de geconfigureerde provider."
+    "emptyState": "Tickergegevens zijn momenteel niet beschikbaar bij de geconfigureerde provider.",
+    "marketClosed": "Markt gesloten"
   },
   "status": {
     "nominal": "Nominaal",

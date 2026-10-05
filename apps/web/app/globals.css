@@ -370,6 +370,23 @@ code,
   color: var(--status-info-text);
 }
 
+.market-ticker__badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.market-ticker__badge--closed {
+  padding: 0 var(--space-2);
+  border: var(--border-width-thin) solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  background: var(--surface-muted);
+  color: var(--text-tertiary);
+}
+
 .site-header__inner {
   display: flex;
   align-items: center;

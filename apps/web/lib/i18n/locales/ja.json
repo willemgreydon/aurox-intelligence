@@ -88,7 +88,8 @@
     "emptyAria": "マーケットティッカーを利用できません",
     "sourceSummary": "{{provider}}から取得した更新可能なティッカースナップショット。",
     "errorSummary": "ティッカースナップショットを利用できません: {{message}}",
-    "emptyState": "設定済みのプロバイダーからティッカーデータを現在取得できません。"
+    "emptyState": "設定済みのプロバイダーからティッカーデータを現在取得できません。",
+    "marketClosed": "市場休場"
   },
   "status": {
     "nominal": "正常",

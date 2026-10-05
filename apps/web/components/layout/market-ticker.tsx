@@ -68,7 +68,13 @@ export function MarketTicker({ ticker, labels }: MarketTickerProps) {
               >
                 {item.changeLabel}
               </span>
-              <span className="market-ticker__meta">{item.freshnessLabel}</span>
+              {item.marketClosed ? (
+                <span className="market-ticker__badge market-ticker__badge--closed">
+                  {item.marketClosedLabel}
+                </span>
+              ) : (
+                <span className="market-ticker__meta">{item.freshnessLabel}</span>
+              )}
             </Link>
           ))}
         </div>

@@ -88,7 +88,8 @@
     "emptyAria": "시장 티커를 사용할 수 없음",
     "sourceSummary": "{{provider}}에서 제공하는 새로고침 가능한 티커 스냅샷.",
     "errorSummary": "티커 스냅샷을 사용할 수 없음: {{message}}",
-    "emptyState": "현재 구성된 제공자로부터 티커 데이터를 사용할 수 없습니다."
+    "emptyState": "현재 구성된 제공자로부터 티커 데이터를 사용할 수 없습니다.",
+    "marketClosed": "장 마감"
   },
   "status": {
     "nominal": "정상",

@@ -169,7 +169,8 @@
     "emptyAria": "Market ticker unavailable",
     "sourceSummary": "Refreshable ticker snapshot from {{provider}}.",
     "errorSummary": "Ticker snapshot unavailable: {{message}}",
-    "emptyState": "Ticker data is currently unavailable from the configured provider."
+    "emptyState": "Ticker data is currently unavailable from the configured provider.",
+    "marketClosed": "Market closed"
   },
   "status": {
     "nominal": "Nominal",

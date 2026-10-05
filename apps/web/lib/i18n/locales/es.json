@@ -88,7 +88,8 @@
     "emptyAria": "Cinta de mercado no disponible",
     "sourceSummary": "Instantánea de la cinta actualizable de {{provider}}.",
     "errorSummary": "Instantánea de la cinta no disponible: {{message}}",
-    "emptyState": "Los datos de la cinta no están disponibles actualmente desde el proveedor configurado."
+    "emptyState": "Los datos de la cinta no están disponibles actualmente desde el proveedor configurado.",
+    "marketClosed": "Mercado cerrado"
   },
   "status": {
     "nominal": "Nominal",

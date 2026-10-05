@@ -2,7 +2,7 @@ import type { Locale, MarketTicker } from '@repo/api-contracts';
 import type { AppMessages } from '../../lib/i18n/messages';
 import type { MarketTickerReadModel } from '../queries/market-ticker-query';
 import { mapOptionalTimestamp, mapRouteStatusLabel, mapRouteStatusTone } from './route-presentation';
-import { formatSignedPercent, getFreshnessState, getLatestTimestamp, getTrendDirection } from '../lib/market-data';
+import { formatSignedPercent, getFreshnessState, getLatestTimestamp, getTrendDirection, isEquityMarketClosed } from '../lib/market-data';
 import { formatFreshnessLabel, toFiniteNumber } from '../lib/quote-display';
 
 export type MarketTickerViewModel = MarketTicker & {
@@ -14,6 +14,8 @@ export type MarketTickerViewModel = MarketTicker & {
       priceLabel: string;
       changeLabel: string;
       freshnessLabel: string;
+      marketClosed: boolean;
+      marketClosedLabel: string;
     }
   >;
 };
@@ -71,18 +73,27 @@ export function mapMarketTicker(
 export function mapMarketTickerViewModel(
   snapshot: MarketTicker,
   locale: Locale,
-  messages: Pick<AppMessages, 'common' | 'status'>,
+  messages: Pick<AppMessages, 'common' | 'status' | 'ticker'>,
 ): MarketTickerViewModel {
   return {
     ...snapshot,
     statusLabel: mapRouteStatusLabel(snapshot.status, messages.status),
     statusTone: mapRouteStatusTone(snapshot.status),
     lastUpdatedLabel: mapOptionalTimestamp(snapshot.lastUpdatedAt, locale, messages).relative,
-    items: snapshot.items.map((item) => ({
-      ...item,
-      priceLabel: formatPrice(item.price, messages.common.unavailable),
-      changeLabel: formatChange(item.changePercent, messages.common.partial),
-      freshnessLabel: formatFreshnessLabel(item.lastUpdatedAt, locale, messages.common.unavailable, item.assetClass),
-    })),
+    items: snapshot.items.map((item) => {
+      // Badge equity items as "market closed" instead of a misleading relative
+      // freshness ("N days ago") when the session is shut and the last real quote
+      // is simply the prior close. Only when we actually have a prior quote —
+      // genuinely missing data still shows the unavailable freshness label.
+      const marketClosed = item.lastUpdatedAt != null && isEquityMarketClosed(item.assetClass);
+      return {
+        ...item,
+        priceLabel: formatPrice(item.price, messages.common.unavailable),
+        changeLabel: formatChange(item.changePercent, messages.common.partial),
+        freshnessLabel: formatFreshnessLabel(item.lastUpdatedAt, locale, messages.common.unavailable, item.assetClass),
+        marketClosed,
+        marketClosedLabel: messages.ticker.marketClosed,
+      };
+    }),
   };
 }

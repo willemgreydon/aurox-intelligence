@@ -88,7 +88,8 @@
     "emptyAria": "Bandeau de marché indisponible",
     "sourceSummary": "Instantané du bandeau actualisable depuis {{provider}}.",
     "errorSummary": "Instantané du bandeau indisponible : {{message}}",
-    "emptyState": "Les données du bandeau sont actuellement indisponibles auprès du fournisseur configuré."
+    "emptyState": "Les données du bandeau sont actuellement indisponibles auprès du fournisseur configuré.",
+    "marketClosed": "Marché fermé"
   },
   "status": {
     "nominal": "Nominal",

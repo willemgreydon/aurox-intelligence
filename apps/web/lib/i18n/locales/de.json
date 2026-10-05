@@ -88,7 +88,8 @@
     "emptyAria": "Markt-Ticker nicht verfügbar",
     "sourceSummary": "Aktualisierbarer Ticker-Snapshot von {{provider}}.",
     "errorSummary": "Ticker-Snapshot nicht verfügbar: {{message}}",
-    "emptyState": "Ticker-Daten sind vom konfigurierten Anbieter derzeit nicht verfügbar."
+    "emptyState": "Ticker-Daten sind vom konfigurierten Anbieter derzeit nicht verfügbar.",
+    "marketClosed": "Markt geschlossen"
   },
   "status": {
     "nominal": "Normal",

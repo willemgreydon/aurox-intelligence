@@ -88,7 +88,8 @@
     "emptyAria": "Ticker di mercato non disponibile",
     "sourceSummary": "Snapshot del ticker aggiornabile da {{provider}}.",
     "errorSummary": "Snapshot del ticker non disponibile: {{message}}",
-    "emptyState": "I dati del ticker non sono attualmente disponibili dal provider configurato."
+    "emptyState": "I dati del ticker non sono attualmente disponibili dal provider configurato.",
+    "marketClosed": "Mercato chiuso"
   },
   "status": {
     "nominal": "Nominale",
