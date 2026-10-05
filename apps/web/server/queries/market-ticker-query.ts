@@ -5,7 +5,7 @@ import { unstable_cache } from 'next/cache';
 import { perfLog, perfNow } from '../lib/perf';
 import { loadQuoteSnapshots } from '../services/stock-simulation-service';
 
-const tickerUniverse = [
+export const tickerUniverse = [
   { symbol: 'SPY', label: 'S&P 500', assetClass: 'index' as const },
   { symbol: 'QQQ', label: 'Nasdaq 100', assetClass: 'etf' as const },
   { symbol: 'AAPL', label: 'Apple', assetClass: 'stock' as const },
@@ -14,6 +14,16 @@ const tickerUniverse = [
   { symbol: 'BINANCE:BTCUSDT', label: 'Bitcoin', assetClass: 'crypto' as const },
   { symbol: 'BINANCE:ETHUSDT', label: 'Ethereum', assetClass: 'crypto' as const },
 ] as const;
+
+/** Canonical symbol list the ticker renders — reused by the refresh cron so the
+ *  writer and the reader can never drift to different universes. */
+export const tickerSymbols: readonly string[] = tickerUniverse.map((item) => item.symbol);
+
+/** Data Cache tag for the ticker's cached quote read. The refresh cron calls
+ *  `revalidateTag(MARKET_TICKER_CACHE_TAG)` after it writes fresh snapshots so
+ *  the ambient ticker surfaces new prices within one cron tick instead of
+ *  waiting out the `revalidate` window. */
+export const MARKET_TICKER_CACHE_TAG = 'market-ticker-quotes';
 
 export type MarketTickerReadModel = {
   provider: string;
@@ -33,7 +43,11 @@ export type MarketTickerReadModel = {
 const loadTickerQuotes = unstable_cache(
   async () => loadQuoteSnapshots(tickerUniverse.map((item) => item.symbol), undefined, { preferCached: true, maxSymbols: 12 }),
   ['market-ticker-quotes-v1'],
-  { revalidate: 60 },
+  // `revalidate` is the ambient fallback ceiling (keeps site-wide Neon reads low
+  // when no refresher is running). The tag lets the refresh cron invalidate this
+  // entry the instant it writes fresher snapshots, so the displayed freshness is
+  // bounded by the cron cadence rather than by this 60s window.
+  { revalidate: 60, tags: [MARKET_TICKER_CACHE_TAG] },
 );
 
 export async function getMarketTickerReadModel(): Promise<MarketTickerReadModel> {

@@ -1,0 +1,47 @@
+name: Market quotes refresh
+
+# Keeps the ambient market ticker fresh in production by pinging the batch
+# refresh endpoint, which fetches the ticker universe from the provider, upserts
+# app.market_quote_snapshots, and invalidates the ticker Data Cache tag.
+#
+# NOTE ON CADENCE: GitHub-hosted cron has a ~5-minute floor and is best-effort
+# (runs can be delayed or dropped under load). This workflow is the zero-external-
+# dependency baseline. For a strict ≤1-minute cadence use cron-job.org / Upstash
+# QStash / Vercel Pro cron pointed at the same endpoint (see the route docstring).
+#
+# Required repo config (Settings → Secrets and variables → Actions):
+#   Secret   CRON_SECRET          must equal the deployment's CRON_SECRET env var
+#   Variable MARKET_REFRESH_URL   e.g. https://aurox.mitterbergerlab.at/api/cron/market-quotes
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch: {}
+
+concurrency:
+  group: market-quotes-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Ping refresh endpoint
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          MARKET_REFRESH_URL: ${{ vars.MARKET_REFRESH_URL }}
+        run: |
+          if [ -z "$MARKET_REFRESH_URL" ]; then
+            echo "::error::MARKET_REFRESH_URL repo variable is not set"
+            exit 1
+          fi
+          code=$(curl -fsS -w '%{http_code}' -o /tmp/body \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "$MARKET_REFRESH_URL" || true)
+          echo "HTTP $code"
+          cat /tmp/body || true
+          case "$code" in
+            200) echo "refresh ok" ;;
+            *) echo "::error::refresh failed (HTTP $code)"; exit 1 ;;
+          esac
