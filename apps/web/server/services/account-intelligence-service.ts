@@ -1,6 +1,6 @@
-import { getSimulationWorkspace, getUserWatchlist } from '@repo/db';
 import type { Locale } from '@repo/api-contracts';
 import { requireCurrentSession } from '../auth/session';
+import { getAccountIntelligenceSources } from '../queries/account-query';
 import { getSimulationJournalRowsForCurrentUser } from './simulation-journal-service';
 import {
   computeAccountInsights,
@@ -177,10 +177,9 @@ function dayPnlLabel(point: DailyAccountPoint | null, code: 'USD' | 'EUR', local
 export async function getAccountIntelligenceViewModel(locale: Locale = 'en'): Promise<AccountIntelligenceViewModel> {
   const auth = await requireCurrentSession('/account');
 
-  const [workspace, journalRows, watchlist] = await Promise.all([
-    getSimulationWorkspace(auth.user.id).catch(() => null),
+  const [{ workspace, watchlist }, journalRows] = await Promise.all([
+    getAccountIntelligenceSources(auth.user.id),
     getSimulationJournalRowsForCurrentUser(120).catch(() => []),
-    getUserWatchlist(auth.user.id).catch(() => []),
   ]);
 
   const code: 'USD' | 'EUR' = workspace?.summary.currency ?? 'USD';

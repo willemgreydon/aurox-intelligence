@@ -1,8 +1,8 @@
 import { accountOverviewSchema, type AccountOverview } from '@repo/api-contracts';
-import { countActiveAuthSessionsForUser, getUserDashboardPreset, listRecentAuthSessionsForUser } from '@repo/db';
 import { formatDateTimeLabel } from '../../lib/formatters';
 import type { Locale } from '@repo/api-contracts';
 import type { CurrentAuthSession } from '../auth/session';
+import { getAccountOverviewSources } from '../queries/account-query';
 
 export type AccountOverviewViewModel = Omit<AccountOverview, 'recentSessions'> & {
   memberSinceLabel: string;
@@ -21,11 +21,7 @@ function formatDateTime(value: string, locale: Locale) {
 }
 
 export async function getAccountOverviewData(auth: CurrentAuthSession, locale: Locale = 'en'): Promise<AccountOverviewViewModel> {
-  const [activeSessionCount, recentSessions, preferences] = await Promise.all([
-    countActiveAuthSessionsForUser(auth.user.id),
-    listRecentAuthSessionsForUser(auth.user.id, auth.session.id),
-    getUserDashboardPreset(auth.user.id),
-  ]);
+  const { activeSessionCount, recentSessions, preferences } = await getAccountOverviewSources(auth.user.id, auth.session.id);
 
   const overview = accountOverviewSchema.parse({
     user: auth.user,
