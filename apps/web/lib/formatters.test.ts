@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatCompactUsd } from './formatters';
+import { formatCompactUsd, formatCurrencyLabel } from './formatters';
 
 describe('formatCompactUsd', () => {
   describe('thousands (K)', () => {
@@ -132,5 +132,16 @@ describe('formatCompactUsd', () => {
         expect(result).not.toMatch(/\.0M$/);
       });
     });
+  });
+});
+
+describe('formatCurrencyLabel', () => {
+  it('uses the requested locale and account currency', () => {
+    expect(formatCurrencyLabel(1234.5, 'EUR', 'de')).toBe('1.234,50 €');
+    expect(formatCurrencyLabel(1234.5, 'USD', 'en')).toBe('$1,234.50');
+  });
+
+  it('returns the unavailable label for non-finite values', () => {
+    expect(formatCurrencyLabel(Number.NaN, 'EUR', 'de', '—')).toBe('—');
   });
 });

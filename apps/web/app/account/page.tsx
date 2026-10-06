@@ -7,15 +7,22 @@ import { AccountIdentityPanel } from '../../components/account/account-identity-
 import { getMessages } from '../../lib/i18n/messages';
 import { getRequestLocale } from '../../server/i18n/locale';
 
+function identityReference(userId: string): string {
+  const compactId = userId.replace(/[^a-z0-9]/gi, '').toUpperCase();
+  if (compactId.length < 12) return 'SIMULATION';
+  const suffix = compactId.slice(-12);
+  return `${suffix.slice(0, 4)} ${suffix.slice(4, 8)} ${suffix.slice(8)}`;
+}
+
 // User-specific financial data — never cached at the route level.
 export const dynamic = 'force-dynamic';
 
 export default async function AccountOverviewPage() {
   const auth = await requireCurrentSession('/account');
-  const [overview, vm, locale] = await Promise.all([
-    getAccountOverviewData(auth),
-    getAccountIntelligenceViewModel(),
-    getRequestLocale(),
+  const locale = await getRequestLocale();
+  const [overview, vm] = await Promise.all([
+    getAccountOverviewData(auth, locale),
+    getAccountIntelligenceViewModel(locale),
   ]);
   const messages = getMessages(locale);
 
@@ -65,7 +72,7 @@ export default async function AccountOverviewPage() {
     <AccountIntelligenceCockpit
       vm={vm}
       membershipDisclosure={membershipDisclosure}
-      identityCardLabels={messages.account.identityCard}
+      identityCardLabels={{ ...messages.account.identityCard, number: identityReference(auth.user.id) }}
       identityDetails={{ role: overview.user.role, memberSince: overview.memberSinceLabel }}
       accountDetails={accountDetails}
     />

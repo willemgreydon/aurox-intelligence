@@ -113,9 +113,9 @@ export function AccountPerformanceTimeline({ timeline, period }: Props) {
     <div className="account-timeline">
       <div className="account-timeline__head">
         <div className="account-timeline__chips" role="group" aria-label="Period performance">
-          <PeriodChip label="Today" metric={period.todayPnl} />
-          <PeriodChip label="7 days" metric={period.sevenDayPnl} />
-          <PeriodChip label="30 days" metric={period.thirtyDayPnl} />
+          <PeriodChip label="Latest recorded day" metric={period.todayPnl} />
+          <PeriodChip label="7 recorded days" metric={period.sevenDayPnl} />
+          <PeriodChip label="30 recorded days" metric={period.thirtyDayPnl} />
         </div>
         <div className="account-timeline__ranges" role="group" aria-label="Timeline range">
           {RANGES.map((r) => (

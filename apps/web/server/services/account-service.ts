@@ -1,6 +1,7 @@
 import { accountOverviewSchema, type AccountOverview } from '@repo/api-contracts';
 import { countActiveAuthSessionsForUser, getUserDashboardPreset, listRecentAuthSessionsForUser } from '@repo/db';
 import { formatDateTimeLabel } from '../../lib/formatters';
+import type { Locale } from '@repo/api-contracts';
 import type { CurrentAuthSession } from '../auth/session';
 
 export type AccountOverviewViewModel = Omit<AccountOverview, 'recentSessions'> & {
@@ -15,11 +16,11 @@ export type AccountOverviewViewModel = Omit<AccountOverview, 'recentSessions'> &
   >;
 };
 
-function formatDateTime(value: string) {
-  return formatDateTimeLabel(value);
+function formatDateTime(value: string, locale: Locale) {
+  return formatDateTimeLabel(value, locale);
 }
 
-export async function getAccountOverviewData(auth: CurrentAuthSession): Promise<AccountOverviewViewModel> {
+export async function getAccountOverviewData(auth: CurrentAuthSession, locale: Locale = 'en'): Promise<AccountOverviewViewModel> {
   const [activeSessionCount, recentSessions, preferences] = await Promise.all([
     countActiveAuthSessionsForUser(auth.user.id),
     listRecentAuthSessionsForUser(auth.user.id, auth.session.id),
@@ -36,13 +37,13 @@ export async function getAccountOverviewData(auth: CurrentAuthSession): Promise<
 
   return {
     ...overview,
-    memberSinceLabel: formatDateTime(overview.user.createdAt),
-    sessionExpiresLabel: formatDateTime(overview.currentSession.expiresAt),
+    memberSinceLabel: formatDateTime(overview.user.createdAt, locale),
+    sessionExpiresLabel: formatDateTime(overview.currentSession.expiresAt, locale),
     recentSessions: overview.recentSessions.map((session) => ({
       ...session,
-      createdAtLabel: formatDateTime(session.createdAt),
-      expiresAtLabel: formatDateTime(session.expiresAt),
-      lastSeenLabel: session.lastSeenAt ? formatDateTime(session.lastSeenAt) : 'Pending activity',
+      createdAtLabel: formatDateTime(session.createdAt, locale),
+      expiresAtLabel: formatDateTime(session.expiresAt, locale),
+      lastSeenLabel: session.lastSeenAt ? formatDateTime(session.lastSeenAt, locale) : 'Pending activity',
     })),
   };
 }

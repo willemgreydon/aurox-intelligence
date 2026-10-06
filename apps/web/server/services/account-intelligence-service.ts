@@ -1,4 +1,5 @@
 import { getSimulationWorkspace, getUserWatchlist } from '@repo/db';
+import type { Locale } from '@repo/api-contracts';
 import { requireCurrentSession } from '../auth/session';
 import { getSimulationJournalRowsForCurrentUser } from './simulation-journal-service';
 import {
@@ -11,6 +12,7 @@ import {
   computePeriodPnL,
   type DailyAccountPoint,
 } from '../../lib/account-analytics';
+import { formatCurrencyLabel } from '../../lib/formatters';
 
 /**
  * Account Intelligence service.
@@ -132,15 +134,14 @@ export type AccountIntelligenceViewModel = {
 const SIMULATION_ONLY_NOTICE =
   'Simulated performance · paper trading. Values are estimated from available quote data. Not financial advice.';
 
-function currency(value: number | null | undefined, code: 'USD' | 'EUR'): string {
-  if (value === null || value === undefined || !Number.isFinite(value)) return '—';
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: code, maximumFractionDigits: 2 }).format(value);
+function currency(value: number | null | undefined, code: 'USD' | 'EUR', locale: Locale): string {
+  return formatCurrencyLabel(value, code, locale, '—');
 }
 
-function signedCurrency(value: number | null | undefined, code: 'USD' | 'EUR'): string {
+function signedCurrency(value: number | null | undefined, code: 'USD' | 'EUR', locale: Locale): string {
   if (value === null || value === undefined || !Number.isFinite(value)) return '—';
   const sign = value > 0 ? '+' : '';
-  return `${sign}${currency(value, code)}`;
+  return `${sign}${currency(value, code, locale)}`;
 }
 
 function toneOf(value: number | null | undefined): Tone {
@@ -148,32 +149,32 @@ function toneOf(value: number | null | undefined): Tone {
   return value > 0 ? 'positive' : 'negative';
 }
 
-function pnlMetric(value: number | null, code: 'USD' | 'EUR', percent?: number | null): AccountMetric {
+function pnlMetric(value: number | null, code: 'USD' | 'EUR', percent: number | null | undefined, locale: Locale): AccountMetric {
   if (value === null || !Number.isFinite(value)) {
     return { label: 'Not enough data', tone: 'neutral', available: false };
   }
   const pct = percent !== undefined && percent !== null && Number.isFinite(percent) ? ` (${percent > 0 ? '+' : ''}${percent.toFixed(2)}%)` : '';
-  return { label: `${signedCurrency(value, code)}${pct}`, tone: toneOf(value), available: true };
+  return { label: `${signedCurrency(value, code, locale)}${pct}`, tone: toneOf(value), available: true };
 }
 
-function dateLabel(iso: string): string {
+function dateLabel(iso: string, locale: Locale): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return d.toLocaleDateString(locale === 'de' ? 'de-DE' : locale, { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
 }
 
-function dateTimeLabel(iso: string): string {
+function dateTimeLabel(iso: string, locale: Locale): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleString(locale === 'de' ? 'de-DE' : locale, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
 }
 
-function dayPnlLabel(point: DailyAccountPoint | null, code: 'USD' | 'EUR'): string | null {
+function dayPnlLabel(point: DailyAccountPoint | null, code: 'USD' | 'EUR', locale: Locale): string | null {
   if (!point || point.dailyPnL === null) return null;
-  return `${dateLabel(point.date)} · ${signedCurrency(point.dailyPnL, code)}`;
+  return `${dateLabel(point.date, locale)} · ${signedCurrency(point.dailyPnL, code, locale)}`;
 }
 
-export async function getAccountIntelligenceViewModel(): Promise<AccountIntelligenceViewModel> {
+export async function getAccountIntelligenceViewModel(locale: Locale = 'en'): Promise<AccountIntelligenceViewModel> {
   const auth = await requireCurrentSession('/account');
 
   const [workspace, journalRows, watchlist] = await Promise.all([
@@ -241,9 +242,9 @@ export async function getAccountIntelligenceViewModel(): Promise<AccountIntellig
       return {
         id: `${tx.createdAt}-${index}`,
         label: `${isBuy ? 'Simulated buy' : 'Simulated sell'} ${tx.symbol ?? ''}`.trim(),
-        detail: `${currency(tx.grossAmount, code)}${tx.realizedPnl ? ` · realized ${signedCurrency(tx.realizedPnl, code)}` : ''}`,
+        detail: `${currency(tx.grossAmount, code, locale)}${tx.realizedPnl ? ` · realized ${signedCurrency(tx.realizedPnl, code, locale)}` : ''}`,
         tone: isBuy ? ('neutral' as Tone) : toneOf(tx.realizedPnl),
-        timestampLabel: dateTimeLabel(tx.createdAt),
+        timestampLabel: dateTimeLabel(tx.createdAt, locale),
       };
     });
 
@@ -251,53 +252,53 @@ export async function getAccountIntelligenceViewModel(): Promise<AccountIntellig
     identity: {
       userName: auth.user.name,
       email: auth.user.email,
-      memberSinceLabel: dateLabel(auth.user.createdAt),
-      lastActivityLabel: activity.lastActivityAt ? dateTimeLabel(activity.lastActivityAt) : 'No activity yet',
+      memberSinceLabel: dateLabel(auth.user.createdAt, locale),
+      lastActivityLabel: activity.lastActivityAt ? dateTimeLabel(activity.lastActivityAt, locale) : 'No activity yet',
     },
     simulationOnlyNotice: SIMULATION_ONLY_NOTICE,
     hasAccount,
     hasTrades,
     hero: {
-      totalValueLabel: currency(summary?.equityValue ?? 0, code),
-      cashLabel: currency(summary?.availableCash ?? 0, code),
-      investedLabel: currency(summary?.investedCapital ?? 0, code),
-      unrealizedPnl: pnlMetric(summary ? summary.unrealizedPnl : null, code),
-      realizedPnl: pnlMetric(summary ? summary.realizedPnl : null, code),
-      todayPnl: pnlMetric(todayPnl.changeAbsolute, code, todayPnl.changePercent),
-      sevenDayPnl: pnlMetric(sevenDayPnl.changeAbsolute, code, sevenDayPnl.changePercent),
-      thirtyDayPnl: pnlMetric(thirtyDayPnl.changeAbsolute, code, thirtyDayPnl.changePercent),
+      totalValueLabel: currency(summary?.equityValue ?? 0, code, locale),
+      cashLabel: currency(summary?.availableCash ?? 0, code, locale),
+      investedLabel: currency(summary?.investedCapital ?? 0, code, locale),
+      unrealizedPnl: pnlMetric(summary ? summary.unrealizedPnl : null, code, undefined, locale),
+      realizedPnl: pnlMetric(summary ? summary.realizedPnl : null, code, undefined, locale),
+      todayPnl: pnlMetric(todayPnl.changeAbsolute, code, todayPnl.changePercent, locale),
+      sevenDayPnl: pnlMetric(sevenDayPnl.changeAbsolute, code, sevenDayPnl.changePercent, locale),
+      thirtyDayPnl: pnlMetric(thirtyDayPnl.changeAbsolute, code, thirtyDayPnl.changePercent, locale),
       positionCount: summary?.activeInvestmentCount ?? 0,
       tradeCount: activity.totalTrades,
     },
     timeline: {
       hasData: daily.length >= 2,
       points: daily.map((d) => ({ date: d.date, accountValue: d.accountValue, dailyPnL: d.dailyPnL })),
-      bestDayLabel: dayPnlLabel(insights.bestDay, code),
-      worstDayLabel: dayPnlLabel(insights.worstDay, code),
-      averageDailyLabel: insights.averageDailyChange !== null ? signedCurrency(insights.averageDailyChange, code) : null,
+      bestDayLabel: dayPnlLabel(insights.bestDay, code, locale),
+      worstDayLabel: dayPnlLabel(insights.worstDay, code, locale),
+      averageDailyLabel: insights.averageDailyChange !== null ? signedCurrency(insights.averageDailyChange, code, locale) : null,
       winLossLabel: insights.winDays + insights.lossDays > 0 ? `${insights.winDays} up · ${insights.lossDays} down` : null,
       estimatedNote:
         'Daily account values come from recorded simulation snapshots. Days without simulated activity may be absent.',
     },
     moneyflow: {
       hasData: hasTrades,
-      startingCapitalLabel: currency(moneyflow.startingCapital ?? summary?.initialCashBalance ?? null, code),
-      buyVolumeLabel: currency(moneyflow.totalBuyVolume, code),
-      sellVolumeLabel: currency(moneyflow.totalSellVolume, code),
-      netInvestedLabel: currency(moneyflow.netInvested, code),
-      realizedPnl: pnlMetric(moneyflow.realizedPnl, code),
-      feesLabel: currency(moneyflow.totalFees, code),
+      startingCapitalLabel: currency(moneyflow.startingCapital ?? summary?.initialCashBalance ?? null, code, locale),
+      buyVolumeLabel: currency(moneyflow.totalBuyVolume, code, locale),
+      sellVolumeLabel: currency(moneyflow.totalSellVolume, code, locale),
+      netInvestedLabel: currency(moneyflow.netInvested, code, locale),
+      realizedPnl: pnlMetric(moneyflow.realizedPnl, code, undefined, locale),
+      feesLabel: currency(moneyflow.totalFees, code, locale),
       largestInflowLabel: moneyflow.largestInflow
-        ? `${moneyflow.largestInflow.symbol ?? '—'} · ${currency(moneyflow.largestInflow.amount, code)}`
+        ? `${moneyflow.largestInflow.symbol ?? '—'} · ${currency(moneyflow.largestInflow.amount, code, locale)}`
         : null,
       largestOutflowLabel: moneyflow.largestOutflow
-        ? `${moneyflow.largestOutflow.symbol ?? '—'} · ${currency(moneyflow.largestOutflow.amount, code)}`
+        ? `${moneyflow.largestOutflow.symbol ?? '—'} · ${currency(moneyflow.largestOutflow.amount, code, locale)}`
         : null,
       assetFlows: moneyflow.assetFlows.slice(0, 6).map((flow) => ({
         symbol: flow.symbol,
-        buyLabel: currency(flow.buyVolume, code),
-        sellLabel: currency(flow.sellVolume, code),
-        realizedPnl: pnlMetric(flow.realizedPnl, code),
+        buyLabel: currency(flow.buyVolume, code, locale),
+        sellLabel: currency(flow.sellVolume, code, locale),
+        realizedPnl: pnlMetric(flow.realizedPnl, code, undefined, locale),
         tradeCount: flow.tradeCount,
       })),
     },
@@ -307,15 +308,15 @@ export async function getAccountIntelligenceViewModel(): Promise<AccountIntellig
       sellCount: activity.sellCount,
       buySellRatioLabel: activity.sellCount > 0 ? `${(activity.buyCount / activity.sellCount).toFixed(2)} : 1` : `${activity.buyCount} : 0`,
       activeDays: activity.activeDays,
-      averageTradeSizeLabel: currency(activity.averageTradeSize, code),
+      averageTradeSizeLabel: currency(activity.averageTradeSize, code, locale),
       journalEntryCount: activity.journalEntryCount,
       watchlistCount: watchlist.length,
       mostTradedSymbols: activity.mostTradedSymbols,
     },
     insights: {
       reviewSuggestions: insights.reviewSuggestions,
-      bestAssetLabel: insights.bestAsset ? `${insights.bestAsset.symbol} · ${signedCurrency(insights.bestAsset.realizedPnl, code)}` : null,
-      worstAssetLabel: insights.worstAsset ? `${insights.worstAsset.symbol} · ${signedCurrency(insights.worstAsset.realizedPnl, code)}` : null,
+      bestAssetLabel: insights.bestAsset ? `${insights.bestAsset.symbol} · ${signedCurrency(insights.bestAsset.realizedPnl, code, locale)}` : null,
+      worstAssetLabel: insights.worstAsset ? `${insights.worstAsset.symbol} · ${signedCurrency(insights.worstAsset.realizedPnl, code, locale)}` : null,
     },
     assetContributions: {
       hasData: contributionItems.length > 0,
@@ -323,7 +324,7 @@ export async function getAccountIntelligenceViewModel(): Promise<AccountIntellig
       items: contributionItems.map((c) => ({
         symbol: c.symbol,
         realizedPnl: c.realizedPnl,
-        label: signedCurrency(c.realizedPnl, code),
+        label: signedCurrency(c.realizedPnl, code, locale),
         tone: toneOf(c.realizedPnl),
       })),
     },
@@ -339,10 +340,10 @@ export async function getAccountIntelligenceViewModel(): Promise<AccountIntellig
       cashDeploymentRatio,
       journalCoverageLabel: journalCoverage !== null ? `${Math.round(journalCoverage * 100)}%` : '—',
       bestUnrealizedLabel: concentration.bestUnrealized
-        ? `${concentration.bestUnrealized.symbol} · ${signedCurrency(concentration.bestUnrealized.unrealizedPnl, code)}`
+        ? `${concentration.bestUnrealized.symbol} · ${signedCurrency(concentration.bestUnrealized.unrealizedPnl, code, locale)}`
         : null,
       worstUnrealizedLabel: concentration.worstUnrealized
-        ? `${concentration.worstUnrealized.symbol} · ${signedCurrency(concentration.worstUnrealized.unrealizedPnl, code)}`
+        ? `${concentration.worstUnrealized.symbol} · ${signedCurrency(concentration.worstUnrealized.unrealizedPnl, code, locale)}`
         : null,
       warnings: riskWarnings,
     },

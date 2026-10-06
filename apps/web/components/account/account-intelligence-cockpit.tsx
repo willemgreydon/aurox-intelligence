@@ -76,13 +76,13 @@ export function AccountIntelligenceCockpit({ vm, membershipDisclosure, identityC
               status={{ label: 'SIMULATION', tone: 'simulation' }}
             />
             <CompactStatCard
-              label="Today's P/L (est.)"
+              label="Latest recorded P/L (est.)"
               value={vm.hero.todayPnl.label}
               valueTone={vm.hero.todayPnl.tone}
               detail="Change vs the previous recorded snapshot. Estimated."
             />
             <CompactStatCard label="Available cash" value={vm.hero.cashLabel} detail="Simulated cash available for new paper trades." />
-            <CompactStatCard label="Invested value" value={vm.hero.investedLabel} detail="Cost basis of currently open simulated positions." />
+            <CompactStatCard label="Invested cost basis" value={vm.hero.investedLabel} detail="Original cost basis of currently open simulated positions; not current market value." />
             <CompactStatCard label="Unrealized P/L (est.)" value={vm.hero.unrealizedPnl.label} valueTone={vm.hero.unrealizedPnl.tone} detail="Open positions marked at the latest available quote." />
             <CompactStatCard label="Realized P/L" value={vm.hero.realizedPnl.label} valueTone={vm.hero.realizedPnl.tone} detail="Locked-in gains and losses from simulated sells." />
           </div>

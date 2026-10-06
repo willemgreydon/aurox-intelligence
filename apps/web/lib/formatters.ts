@@ -62,6 +62,23 @@ export function formatPercent(value: number): string {
   return `${(value * 100).toFixed(2)}%`;
 }
 
+export function formatCurrencyLabel(
+  value: number | null | undefined,
+  currency: 'USD' | 'EUR',
+  locale: Locale = 'en',
+  unavailableLabel = 'Unavailable',
+): string {
+  if (value === null || value === undefined || !Number.isFinite(value)) {
+    return unavailableLabel;
+  }
+
+  return new Intl.NumberFormat(toLocaleTag(locale), {
+    style: 'currency',
+    currency,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
 function toValidDate(value: string): Date | null {
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
